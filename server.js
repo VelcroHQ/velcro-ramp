@@ -694,6 +694,23 @@ app.post('/api/paj/initiate', async (req, res, next) => {
       return res.status(400).json(errorResponse('fiatAmount, recipient, and mint are required'));
     }
     const order = await pajModule.createOnrampOrder({ fiatAmount, recipient, mint });
+    const d = order || {};
+    const assetInfo = pajModule.PAJ_ASSETS.find(a => a.mint === mint);
+    await safeDbWrite(() => Transaction.create({
+      reference: d.id || `paj_${Date.now()}`,
+      type: 'ONRAMP',
+      status: d.status || 'AWAITING_DEPOSIT',
+      country: 'NG',
+      currency: 'NGN',
+      asset: assetInfo ? assetInfo.symbol : 'SOL',
+      channel: 'BANK',
+      amount: fiatAmount,
+      deposit_bank_name: d.bank || 'PAJ Partner Bank',
+      deposit_account_number: d.accountNumber || null,
+      deposit_account_name: d.accountName || null,
+      wallet_address: recipient,
+      meta: JSON.stringify(d)
+    }));
     res.json(successResponse(order));
   } catch (err) { next(err); }
 });
@@ -711,6 +728,26 @@ app.get('/api/paj/status', async (req, res, next) => {
 app.get('/api/paj/session', (req, res) => {
   if (!pajModule) return res.status(503).json(errorResponse('PAJ module not available'));
   res.json(successResponse(pajModule.getSessionStatus()));
+});
+
+// PAJ Webhook handler
+app.post('/webhook/paj', async (req, res) => {
+  try {
+    const payload = req.body;
+    const txId = payload.id || (payload.data && payload.data.id);
+    const status = payload.status || (payload.data && payload.data.status);
+    if (txId && status) {
+      await safeDbWrite(() => Transaction.findOneAndUpdate(
+        { reference: txId },
+        { status, meta: JSON.stringify(payload) },
+        { new: true }
+      ));
+    }
+    res.json({ received: true });
+  } catch (err) {
+    console.error('PAJ webhook error:', err.message);
+    res.json({ received: true }); // Always acknowledge
+  }
 });
 
 // ─── Admin PAJ Session Routes ───
