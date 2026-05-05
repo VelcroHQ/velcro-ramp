@@ -2892,6 +2892,7 @@
             clearInterval(statusPollInterval);
             if (status === 'COMPLETED') {
               showToast('Transaction Completed Successfully!', 'success');
+              const txHash = data.signature || data.hash || '';
               const modalData = {
                 reference: currentTxDetails.reference || txId,
                 amount: currentTxDetails.amount,
@@ -2899,8 +2900,8 @@
                 asset: currentTxDetails.asset,
                 network: 'solana',
                 walletAddress: currentTxDetails.walletAddress || data.recipient || '',
-                explorerUrl: data.signature ? `https://solscan.io/tx/${data.signature}` : '',
-                hash: data.signature || ''
+                explorerUrl: txHash ? `https://solscan.io/tx/${txHash}` : '',
+                hash: txHash
               };
               setTimeout(() => showSuccessModal('buy', modalData), 1500);
             } else if (status === 'FAILED') {
