@@ -885,14 +885,21 @@
         .dark .progress-bar-bg {
             background: #1e293b;
         }
+        .dark .settings-grid .table-card > div[style*="background: var(--bg-light)"] {
+            background: #1e293b !important;
+            border-color: var(--border) !important;
+        }
 
         @media (max-width: 1100px) {
             .stats-grid, .stats-grid-2, .analytics-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
         }
         @media (max-width: 640px) {
-            .stats-grid, .stats-grid-2, .analytics-grid {
+            .stats-grid, .stats-grid-2, .analytics-grid, .settings-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -1228,100 +1235,149 @@
             <header>
                 <div class="header-title">
                     <h1>Settings</h1>
-                    <p>Adjust platform variables.</p>
+                    <p>Manage platform configuration, integrations, and maintenance.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="refresh-btn" onclick="fetchData()"><i data-lucide="rotate-cw"></i></button>
                 </div>
             </header>
 
-            <div class="table-card" style="max-width: 500px;">
-                <label style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; display: block;">DEVELOPER FEE (%)</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <input type="number" id="fee-input" placeholder="e.g. 0.5" step="0.01" min="0" max="10" style="margin-bottom: 0;">
-                    <button class="refresh-btn" onclick="fetchData()" title="Refresh Settings" style="height: 50px; width: 50px; flex-shrink: 0;"><i data-lucide="rotate-cw"></i></button>
-                </div>
-                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">This fee is deducted from the "You'll receive" amount shown to users. Range: 0% – 10%.</p>
-
-                <label style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; display: block;">SELL LIMITS (USD)</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Minimum</label>
-                        <input type="number" id="sell-min-input" placeholder="e.g. 1" min="1" max="100000" style="margin-bottom: 0;">
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Maximum</label>
-                        <input type="number" id="sell-max-input" placeholder="e.g. 10000" min="10" max="1000000" style="margin-bottom: 0;">
-                    </div>
-                </div>
-                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Offramp (sell) transaction limits per transaction. Min: $1 – $100,000. Max: $10 – $1,000,000.</p>
-                <button class="btn-primary" onclick="saveSettings()">Save Configuration</button>
-            </div>
-
-            <!-- Fix PAJ Channels -->
-            <div class="table-card" style="max-width: 500px; margin-top: 20px;">
-                <label style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; display: block;">DATA MIGRATION</label>
-                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Old PAJ transactions were saved with <code>channel: 'BANK'</code>. Click below to retroactively tag them as PAJ.</p>
-                <button class="btn-primary" onclick="fixPajChannels()" id="fix-paj-btn" style="background: #7c3aed;">Fix PAJ Channels</button>
-                <p id="fix-paj-status" style="font-size: 12px; margin-top: 8px; display: none;"></p>
-            </div>
-
-            <!-- PAJ Session Management -->
-            <div class="table-card" style="max-width: 500px; margin-top: 20px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-                    <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #4318ff 0%, #7c3aed 100%); display: flex; align-items: center; justify-content: center;">
-                        <i data-lucide="shield-check" style="width: 18px; height: 18px; color: white;"></i>
-                    </div>
-                    <div>
-                        <label style="font-size: 14px; font-weight: 700; color: var(--text-main); display: block;">PAJ Ramp Session</label>
-                        <span style="font-size: 11px; color: var(--text-secondary);">Solana on-ramp provider</span>
-                    </div>
-                </div>
-
-                <!-- Status Indicator -->
-                <div id="paj-session-status" style="margin-bottom: 16px; padding: 16px; border-radius: 14px; background: #f8f9fc; border: 1px solid var(--border); text-align: center; transition: all 0.3s ease;">
-                    <div id="paj-status-icon" style="width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
-                        <i data-lucide="loader" style="width: 20px; height: 20px; color: #94a3b8;"></i>
-                    </div>
-                    <p id="paj-status-title" style="font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">Checking session...</p>
-                    <p id="paj-status-sub" style="font-size: 12px; color: var(--text-secondary);">Please wait</p>
-                </div>
-
-                <!-- Email Configuration -->
-                <div style="margin-bottom: 16px; padding: 14px; border-radius: 12px; background: #f8f9fc; border: 1px solid var(--border);">
-                    <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 8px;">Registered Email</label>
-                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
-                        <div style="flex: 1; position: relative;">
-                            <i data-lucide="mail" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-secondary);"></i>
-                            <input type="email" id="paj-email-input" placeholder="your@email.com" style="margin-bottom: 0; padding-left: 40px; font-size: 13px;">
+            <div class="settings-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Platform Configuration -->
+                <div class="table-card">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
+                        <div class="stat-icon-sm blue"><i data-lucide="sliders-horizontal"></i></div>
+                        <div>
+                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Platform Configuration</h3>
+                            <p style="font-size: 12px; color: var(--text-secondary);">Fees and transaction limits</p>
                         </div>
-                        <button class="btn-primary" id="paj-save-email-btn" onclick="savePajEmail()" style="height: 50px; padding: 0 18px; white-space: nowrap; font-size: 13px;">Save</button>
                     </div>
-                    <p style="font-size: 11px; color: var(--text-secondary);">OTP will be sent to this email. Use an inbox you can access.</p>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Platform Fee (%)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="fee-input" placeholder="0.5" step="0.01" min="0" max="10" style="margin-bottom: 0; flex: 1;">
+                            <span style="display: flex; align-items: center; padding: 0 14px; background: var(--bg-light); border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--text-secondary);">%</span>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Deducted from the "You'll receive" amount. Range: 0% – 10%.</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Buy Maximum Limit (USD)</label>
+                        <input type="number" id="buy-max-input" placeholder="e.g. 10000" min="1000" max="10000000" style="margin-bottom: 0;">
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Maximum onramp (buy) amount per transaction.</p>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Sell Limits (USD)</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Minimum</label>
+                                <input type="number" id="sell-min-input" placeholder="1" min="1" max="100000" style="margin-bottom: 0;">
+                            </div>
+                            <div>
+                                <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Maximum</label>
+                                <input type="number" id="sell-max-input" placeholder="10000" min="10" max="1000000" style="margin-bottom: 0;">
+                            </div>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Offramp (sell) limits per transaction.</p>
+                    </div>
+
+                    <button class="btn-primary" onclick="saveSettings()" style="width: 100%;">Save Configuration</button>
                 </div>
 
-                <!-- Inline Message -->
-                <div id="paj-message" class="hidden" style="margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; font-size: 13px; font-weight: 500; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;"></div>
-
-                <!-- OTP Section -->
-                <div id="paj-otp-section" class="hidden" style="margin-bottom: 16px; padding: 16px; border-radius: 14px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde047;">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                        <i data-lucide="key-round" style="width: 16px; height: 16px; color: #a16207;"></i>
-                        <span style="font-size: 12px; font-weight: 600; color: #854d0e;">OTP Verification</span>
+                <!-- PAJ Integration -->
+                <div class="table-card">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
+                        <div class="stat-icon-sm purple"><i data-lucide="shield-check"></i></div>
+                        <div>
+                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">PAJ Integration</h3>
+                            <p style="font-size: 12px; color: var(--text-secondary);">Solana on-ramp provider session</p>
+                        </div>
                     </div>
-                    <p style="font-size: 12px; color: #a16207; margin-bottom: 12px;">Enter the 6-digit code sent to your email.</p>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="paj-otp-input" placeholder="000000" maxlength="10" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 18px; font-weight: 600; letter-spacing: 4px; font-family: monospace;">
-                        <button class="btn-primary" id="paj-verify-btn" onclick="verifyPajOtp()" style="padding: 0 20px; white-space: nowrap;">Verify</button>
+
+                    <!-- Status Indicator -->
+                    <div id="paj-session-status" style="margin-bottom: 20px; padding: 16px; border-radius: 14px; background: #f8f9fc; border: 1px solid var(--border); text-align: center; transition: all 0.3s ease;">
+                        <div id="paj-status-icon" style="width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                            <i data-lucide="loader" style="width: 20px; height: 20px; color: #94a3b8;"></i>
+                        </div>
+                        <p id="paj-status-title" style="font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">Checking session...</p>
+                        <p id="paj-status-sub" style="font-size: 12px; color: var(--text-secondary);">Please wait</p>
+                    </div>
+
+                    <!-- Email -->
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Registered Email</label>
+                        <div style="display: flex; gap: 8px;">
+                            <div style="flex: 1; position: relative;">
+                                <i data-lucide="mail" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-secondary);"></i>
+                                <input type="email" id="paj-email-input" placeholder="your@email.com" style="margin-bottom: 0; padding-left: 40px; font-size: 13px;">
+                            </div>
+                            <button class="btn-primary" id="paj-save-email-btn" onclick="savePajEmail()" style="height: 50px; padding: 0 18px; white-space: nowrap; font-size: 13px;">Save</button>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">OTP will be sent to this email address.</p>
+                    </div>
+
+                    <!-- Inline Message -->
+                    <div id="paj-message" class="hidden" style="margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; font-size: 13px; font-weight: 500; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;"></div>
+
+                    <!-- OTP Section -->
+                    <div id="paj-otp-section" class="hidden" style="margin-bottom: 16px; padding: 16px; border-radius: 14px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde047;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <i data-lucide="key-round" style="width: 16px; height: 16px; color: #a16207;"></i>
+                            <span style="font-size: 12px; font-weight: 600; color: #854d0e;">OTP Verification</span>
+                        </div>
+                        <p style="font-size: 12px; color: #a16207; margin-bottom: 12px;">Enter the 6-digit code sent to your email.</p>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="paj-otp-input" placeholder="000000" maxlength="10" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 18px; font-weight: 600; letter-spacing: 4px; font-family: monospace;">
+                            <button class="btn-primary" id="paj-verify-btn" onclick="verifyPajOtp()" style="padding: 0 20px; white-space: nowrap;">Verify</button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-primary" id="paj-initiate-btn" onclick="initiatePajSession()" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+                            <span>Initiate Session</span>
+                        </button>
+                        <button class="refresh-btn" onclick="fetchPajSession()" title="Refresh" style="height: 50px; width: 50px; flex-shrink: 0;">
+                            <i data-lucide="rotate-cw"></i>
+                        </button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Action Buttons -->
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn-primary" id="paj-initiate-btn" onclick="initiatePajSession()" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <i data-lucide="send" style="width: 16px; height: 16px;"></i>
-                        <span>Initiate Session</span>
-                    </button>
-                    <button class="refresh-btn" onclick="fetchPajSession()" title="Refresh" style="height: 50px; width: 50px; flex-shrink: 0;">
-                        <i data-lucide="rotate-cw"></i>
-                    </button>
+            <!-- System Maintenance -->
+            <div class="table-card" style="margin-top: 20px; max-width: 100%;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                    <div class="stat-icon-sm amber"><i data-lucide="wrench"></i></div>
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">System Maintenance</h3>
+                        <p style="font-size: 12px; color: var(--text-secondary);">Data fixes and cleanup tools</p>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(124, 58, 237, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="tag" style="width: 16px; height: 16px; color: #7c3aed;"></i>
+                            </div>
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Fix PAJ Channels</div>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Retroactively tag old PAJ transactions that were incorrectly saved with <code>channel: 'BANK'</code>.</p>
+                        <button class="btn-primary" onclick="fixPajChannels()" id="fix-paj-btn" style="background: #7c3aed; width: 100%;">Fix PAJ Channels</button>
+                        <p id="fix-paj-status" style="font-size: 12px; margin-top: 8px; display: none;"></p>
+                    </div>
+                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(13, 13, 89, 0.08); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="refresh-cw" style="width: 16px; height: 16px; color: var(--velcro-navy);"></i>
+                            </div>
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Refresh All Data</div>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Pull the latest transactions, users, stats, and settings from the server.</p>
+                        <button class="btn-primary" onclick="fetchData()" style="width: 100%;">Refresh Data</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1620,6 +1676,7 @@
                 const settingsRes = await fetch('/api/admin/settings', { headers });
                 const settings = await settingsRes.json();
                 document.getElementById('fee-input').value = settings.platform_fee;
+                document.getElementById('buy-max-input').value = settings.buy_max_limit ?? 10000;
                 document.getElementById('sell-min-input').value = settings.sell_min_limit ?? 1;
                 document.getElementById('sell-max-input').value = settings.sell_max_limit ?? 10000;
                 document.getElementById('paj-email-input').value = settings.paj_email || '';
@@ -1801,8 +1858,13 @@
                 alert('Fee must be between 0 and 10');
                 return;
             }
+            const buyMax = parseFloat(document.getElementById('buy-max-input').value);
             const sellMin = parseFloat(document.getElementById('sell-min-input').value);
             const sellMax = parseFloat(document.getElementById('sell-max-input').value);
+            if (Number.isNaN(buyMax) || buyMax < 1000 || buyMax > 10000000) {
+                alert('Buy maximum must be between 1,000 and 10,000,000');
+                return;
+            }
             if (Number.isNaN(sellMin) || sellMin < 1 || sellMin > 100000) {
                 alert('Sell minimum must be between 1 and 100,000');
                 return;
@@ -1819,7 +1881,7 @@
                 const res = await fetch('/api/admin/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
-                    body: JSON.stringify({ platform_fee: fee, sell_min_limit: sellMin, sell_max_limit: sellMax })
+                    body: JSON.stringify({ platform_fee: fee, buy_max_limit: buyMax, sell_min_limit: sellMin, sell_max_limit: sellMax })
                 });
                 const data = await res.json();
                 if (data.success) {
