@@ -960,6 +960,11 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                   </button>
                 </div>
+                <a id="sell-explorer-link" href="#" target="_blank" rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1 mt-2 text-xs font-medium text-velcro-navy hover:text-velcro-green transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                  View on <span id="sell-explorer-name">Explorer</span>
+                </a>
               </div>
               <div class="bg-white rounded-xl border border-gray-200 p-3 mb-3 text-left">
                 <p class="text-xs text-gray-500 mb-1">Reference</p>
@@ -989,7 +994,7 @@
                     <p class="text-xs text-gray-500 leading-relaxed">Send crypto to the address above. Auto-detection usually takes ~30 seconds. If not credited, paste your transaction hash below.</p>
                   </div>
                   <button onclick="showManualConfirm('sell')"
-                    class="text-xs bg-white border border-amber-300 text-amber-700 px-2.5 py-1.5 rounded-lg hover:bg-amber-100 transition-colors font-medium shrink-0">Paste hash</button>
+                    class="text-xs bg-white border border-amber-300 text-amber-700 px-2.5 py-1.5 rounded-lg hover:bg-amber-100 transition-colors font-medium shrink-0">Paste tx hash</button>
                 </div>
                 <div id="sell-manual-confirm" class="hidden p-3 bg-amber-50/50 rounded-xl border border-amber-200">
                   <p class="text-[11px] text-gray-500 mb-2">Paste your transaction hash to confirm manually</p>
@@ -2875,6 +2880,16 @@
         document.getElementById('sell-wallet-address').textContent = walletAddress;
         document.getElementById('sell-reference').textContent = data.reference || '-';
         currentReference = data.reference || '';
+        // Update explorer link
+        const explorerLink = document.getElementById('sell-explorer-link');
+        const explorerName = document.getElementById('sell-explorer-name');
+        if (explorerLink && walletAddress !== '-' && currentSellNetwork) {
+          explorerLink.href = getWalletExplorerUrl(walletAddress, currentSellNetwork);
+          const netLabel = currentSellNetwork.charAt(0).toUpperCase() + currentSellNetwork.slice(1);
+          if (explorerName) explorerName.textContent = netLabel + ' Explorer';
+        } else if (explorerLink) {
+          explorerLink.href = '#';
+        }
         // Generate QR code for wallet address (local)
         const qrContainer = document.getElementById('sell-qr-code');
         if (qrContainer && walletAddress !== '-') {
@@ -3384,6 +3399,8 @@
     function resetSellTransaction() {
       document.getElementById('sell-generated-address').classList.add('hidden');
       document.getElementById('sell-qr-code').innerHTML = '';
+      const explorerLink = document.getElementById('sell-explorer-link');
+      if (explorerLink) explorerLink.href = '#';
       document.getElementById('sell-btn').disabled = false;
       document.getElementById('sell-btn').classList.remove('opacity-50', 'cursor-not-allowed');
       document.getElementById('sell-btn').innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address';
