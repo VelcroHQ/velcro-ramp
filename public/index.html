@@ -1516,6 +1516,31 @@
       return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23007BFF'/%3E%3Ctext x='12' y='16' text-anchor='middle' fill='white' font-size='11' font-weight='bold' font-family='sans-serif'%3E${initial}%3C/text%3E%3C/svg%3E`;
     }
 
+    const ASSET_PRIORITY = ['USDT', 'USDC'];
+    const CHAIN_PRIORITY = ['solana', 'ethereum', 'bsc', 'base', 'arbitrum', 'tron', 'polygon'];
+
+    function sortAssets(symbols) {
+      return symbols.slice().sort((a, b) => {
+        const aIdx = ASSET_PRIORITY.indexOf(a);
+        const bIdx = ASSET_PRIORITY.indexOf(b);
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
+        return a.localeCompare(b);
+      });
+    }
+
+    function sortChains(chains) {
+      return chains.slice().sort((a, b) => {
+        const aIdx = CHAIN_PRIORITY.indexOf(a);
+        const bIdx = CHAIN_PRIORITY.indexOf(b);
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
+        return a.localeCompare(b);
+      });
+    }
+
     function fmtNum(str, decimals) {
       if (!str && str !== 0) return '';
       let clean = String(str).replace(/[^0-9.]/g, '');
@@ -1585,7 +1610,7 @@
       const container = document.getElementById('sell-asset-list');
       if (!container) return;
       const assets = switchAssetsData.offramp || {};
-      const symbols = Object.keys(assets).sort();
+      const symbols = sortAssets(Object.keys(assets));
       container.innerHTML = symbols.map(sym => {
         const asset = assets[sym];
         const logo = getAssetLogo(sym);
@@ -1598,7 +1623,7 @@
       const container = document.getElementById('buy-asset-list');
       if (!container) return;
       const assets = switchAssetsData.onramp || {};
-      const symbols = Object.keys(assets).sort();
+      const symbols = sortAssets(Object.keys(assets));
       const switchItems = symbols.map(sym => {
         const asset = assets[sym];
         const logo = getAssetLogo(sym);
@@ -1637,7 +1662,7 @@
       if (!asset) return;
       const container = document.getElementById('sell-network-options');
       if (!container) return;
-      container.innerHTML = asset.chains.map(chain => {
+      container.innerHTML = sortChains(asset.chains).map(chain => {
         const bc = switchAssetsData.blockchains[chain];
         const logo = getChainLogo(chain);
         const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
@@ -1651,7 +1676,7 @@
       if (!asset) return;
       const container = document.getElementById('buy-network-options');
       if (!container) return;
-      container.innerHTML = asset.chains.map(chain => {
+      container.innerHTML = sortChains(asset.chains).map(chain => {
         const bc = switchAssetsData.blockchains[chain];
         const logo = getChainLogo(chain);
         const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
