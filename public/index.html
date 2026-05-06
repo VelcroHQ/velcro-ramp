@@ -2,6 +2,14 @@
 <html lang="en">
 
 <head>
+  <script>
+    (function() {
+      const theme = localStorage.getItem('velcro-theme');
+      if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Velcro Convert | Crypto to Cash Instantly</title>
@@ -507,6 +515,158 @@
     }
 
   </style>
+
+  <style>
+    /* ─── Dark Mode Overrides ─── */
+
+    /* Page background */
+    .dark body { background-color: #020617; }
+
+    /* Tailwind utility overrides */
+    .dark .bg-white { background-color: #0f172a !important; }
+    .dark .bg-gray-50 { background-color: #020617 !important; }
+    .dark .bg-gray-100 { background-color: #1e293b !important; }
+    .dark .bg-gray-200 { background-color: #334155 !important; }
+
+    .dark .text-gray-900 { color: #e2e8f0 !important; }
+    .dark .text-gray-800 { color: #cbd5e1 !important; }
+    .dark .text-gray-700 { color: #94a3b8 !important; }
+    .dark .text-gray-600 { color: #94a3b8 !important; }
+    .dark .text-gray-500 { color: #94a3b8 !important; }
+    .dark .text-gray-400 { color: #64748b !important; }
+    .dark .text-gray-300 { color: #475569 !important; }
+
+    .dark .border-gray-100 { border-color: #1e293b !important; }
+    .dark .border-gray-200 { border-color: #334155 !important; }
+    .dark .border-gray-300 { border-color: #475569 !important; }
+    .dark .border-white { border-color: #1e293b !important; }
+
+    /* Velcro brand colors in dark mode */
+    .dark .text-velcro-navy { color: #a8cf45 !important; }
+    .dark .hover\:text-velcro-navy:hover { color: #a8cf45 !important; }
+    /* Keep tab text dark on green indicator background */
+    .dark #tab-sell.text-velcro-navy,
+    .dark #tab-buy.text-velcro-navy { color: #0D0D59 !important; }
+    .dark .bg-velcro-navy\/5 { background-color: rgba(168, 207, 69, 0.08) !important; }
+    .dark .border-velcro-navy\/10 { border-color: rgba(168, 207, 69, 0.15) !important; }
+
+    /* Hover state overrides */
+    .dark .hover\:bg-gray-50:hover { background-color: #0f172a !important; }
+    .dark .hover\:bg-gray-100:hover { background-color: #1e293b !important; }
+    .dark .hover\:bg-gray-200:hover { background-color: #334155 !important; }
+    .dark .hover\:bg-amber-100:hover { background-color: #78350f !important; }
+    .dark .hover\:text-gray-600:hover { color: #94a3b8 !important; }
+    .dark .group:hover .group-hover\:text-velcro-green { color: #a8cf45 !important; }
+
+    /* Focus overrides */
+    .dark .focus\:bg-white:focus { background-color: #0f172a !important; }
+
+    /* Placeholder */
+    .dark .placeholder-gray-400::placeholder { color: #475569 !important; }
+    .dark .amount-input::placeholder { color: #475569; }
+
+    /* Custom component overrides */
+    .dark .input-panel { background: #0f172a; border-color: #334155; }
+    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); }
+
+    .dark .asset-pill { background: #0f172a; border-color: #334155; color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    .dark .asset-pill:hover { background: #1e293b; border-color: #A8CF45; }
+
+    .dark .network-pill { background: #0f172a; border-color: #334155; color: #94a3b8; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    .dark .network-pill:hover { background: #1e293b; border-color: #A8CF45; }
+
+    .dark .swap-btn { border-color: #0f172a; }
+
+    .dark .custom-select-options { background: #1e293b; border-color: #475569; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+    .dark .custom-option:hover { background: #334155; }
+    .dark .custom-option.selected { background: #064e3b; }
+
+    /* Asset picker modal */
+    .dark .asset-picker-sheet { background: #0f172a; box-shadow: 0 -10px 40px rgba(0,0,0,0.4); }
+    .dark .asset-picker-header { border-color: #334155; }
+    .dark .asset-picker-back { background: #334155; color: #cbd5e1; }
+    .dark .asset-picker-back:hover { background: #475569; }
+    .dark .asset-picker-search-wrap { background: #1e293b; }
+    .dark .asset-picker-search-wrap input { color: #e2e8f0; }
+    .dark .asset-picker-search-wrap input::placeholder { color: #64748b; }
+    .dark .asset-picker-item { border-color: #1e293b; }
+    .dark .asset-picker-item:hover { background: #1e293b; }
+    .dark .asset-picker-item.selected { background: #064e3b; }
+    .dark .asset-picker-divider { background: #020617; color: #64748b; }
+    .dark .asset-picker-symbol { color: #e2e8f0; }
+
+    /* Step indicators */
+    .dark .step-dot.inactive { background: #334155; color: #64748b; }
+    .dark .step-line { background: #334155; }
+
+    /* Copy flash animation */
+    .dark .copy-flash { animation: copyFlashDark 0.6s ease; }
+    @keyframes copyFlashDark {
+      0% { background: #A8CF45; }
+      100% { background: #0f172a; }
+    }
+
+    /* Semantic colors - dark variants */
+    .dark .bg-amber-50 { background-color: #451a03 !important; }
+    .dark .bg-amber-100 { background-color: #78350f !important; }
+    .dark .text-amber-500 { color: #fbbf24 !important; }
+    .dark .text-amber-600 { color: #fbbf24 !important; }
+    .dark .text-amber-700 { color: #fbbf24 !important; }
+    .dark .border-amber-200 { border-color: #78350f !important; }
+    .dark .border-amber-300 { border-color: #92400e !important; }
+
+    .dark .bg-green-50 { background-color: #022c22 !important; }
+    .dark .bg-green-100 { background-color: #064e3b !important; }
+    .dark .text-green-600 { color: #34d399 !important; }
+    .dark .text-green-700 { color: #34d399 !important; }
+    .dark .border-green-200 { border-color: #065f46 !important; }
+
+    .dark .bg-red-100 { background-color: #450a0a !important; }
+    .dark .text-red-400 { color: #f87171 !important; }
+    .dark .text-red-500 { color: #f87171 !important; }
+    .dark .text-red-700 { color: #f87171 !important; }
+    .dark .border-red-200 { border-color: #7f1d1d !important; }
+
+    /* Modal backdrops */
+    .dark #history-modal > div.absolute.inset-0,
+    .dark #success-modal > div.absolute.inset-0 {
+      background-color: rgba(0, 0, 0, 0.65) !important;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    /* Support widget buttons */
+    .dark #support-widget .bg-white\/80 { background-color: rgba(15, 23, 42, 0.8) !important; }
+
+    /* Footer */
+    .dark footer { background-color: #020617 !important; }
+
+    /* Card shadow in dark mode */
+    .dark .card-shadow { box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25); }
+
+    /* QR code - keep white for scannability */
+    .dark #sell-qr-code,
+    .dark #buy-qr-code { background-color: #ffffff !important; }
+
+    /* Bank filter sticky header in dropdown */
+    .dark .custom-select-options .sticky { background: #1e293b; }
+
+    /* Toast close button */
+    .dark .toast-close:hover { color: #e2e8f0; }
+
+    /* Glow button less intense in dark */
+    .dark .btn-glow:hover { box-shadow: 0 8px 30px rgba(168, 207, 69, 0.2); }
+
+    /* History item hover */
+    .dark .history-item-hover:hover { background-color: #1e293b !important; }
+
+    /* Nav separator */
+    .dark #main-nav .text-gray-400 { color: #64748b !important; }
+
+    /* Dark mode toggle button */
+    .dark #dark-mode-toggle { color: #94a3b8; }
+    .dark #dark-mode-toggle:hover { background-color: #1e293b; }
+  </style>
 </head>
 
 <body class="bg-gray-50 min-h-screen" style="padding-bottom: 80px">
@@ -530,6 +690,13 @@
               <path d="M12 7v5l4 2"/>
             </svg>
             History
+          </button>
+          <button onclick="toggleDarkMode()" id="dark-mode-toggle"
+            class="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-400"
+            title="Toggle dark mode">
+            <svg id="dark-mode-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            </svg>
           </button>
         </div>
       </div>
@@ -1274,6 +1441,24 @@
   </footer>
 
   <script>
+    // Dark mode toggle
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const isDark = html.classList.toggle('dark');
+      localStorage.setItem('velcro-theme', isDark ? 'dark' : 'light');
+      updateDarkModeIcon();
+    }
+    function updateDarkModeIcon() {
+      const btn = document.getElementById('dark-mode-toggle');
+      if (!btn) return;
+      const isDark = document.documentElement.classList.contains('dark');
+      btn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+      btn.innerHTML = isDark
+        ? '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+        : '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+    }
+    document.addEventListener('DOMContentLoaded', updateDarkModeIcon);
+
     var API_BASE = '';
     var currentCountry = 'NG';
     var currentCurrency = 'NGN';
