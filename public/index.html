@@ -849,11 +849,9 @@
               </div>
             </div>
           </div>
-          <div class="flex items-center justify-between -mt-3">
-            <span id="sell-min-label" class="text-xs text-gray-400 font-medium">Min: $1</span>
+          <div class="flex items-center justify-end -mt-3">
             <span id="sell-max-label" class="text-xs text-gray-400 font-medium">Max: $10,000</span>
           </div>
-          <p id="sell-limit-error" class="hidden text-xs text-red-500 mt-1 font-medium"></p>
 
           <!-- Bank Details -->
           <div class="input-panel space-y-4">
@@ -1796,8 +1794,6 @@
           }
           if (typeof data.data.sell_min_limit === 'number') {
             SELL_MIN_LIMIT = data.data.sell_min_limit;
-            const minLabel = document.getElementById('sell-min-label');
-            if (minLabel) minLabel.textContent = `Min: $${SELL_MIN_LIMIT.toLocaleString()}`;
           }
           if (typeof data.data.sell_max_limit === 'number') {
             SELL_MAX_LIMIT = data.data.sell_max_limit;
@@ -2468,7 +2464,6 @@
 
     function calculateSell() {
       const amount = getNum('sell-amount');
-      validateSellLimit(amount);
       const rate = Number(currentRate.sell);
       if (Number.isNaN(rate) || rate <= 0) {
         setFmt('sell-receive', '', 2);
@@ -2511,18 +2506,7 @@
     }
 
     function validateSellLimit(amount) {
-      const errorEl = document.getElementById('sell-limit-error');
-      if (amount < SELL_MIN_LIMIT) {
-        errorEl.textContent = `Minimum sell amount is $${SELL_MIN_LIMIT.toLocaleString()} per transaction.`;
-        errorEl.classList.remove('hidden');
-        return false;
-      }
-      if (amount > SELL_MAX_LIMIT) {
-        errorEl.textContent = `Maximum sell amount is $${SELL_MAX_LIMIT.toLocaleString()} per transaction.`;
-        errorEl.classList.remove('hidden');
-        return false;
-      }
-      errorEl.classList.add('hidden');
+      if (amount > SELL_MAX_LIMIT) return false;
       return true;
     }
 
