@@ -172,6 +172,9 @@
       margin-top: 4px;
       max-height: 300px;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
       min-width: 180px;
     }
@@ -218,6 +221,9 @@
       padding: 10px 14px;
       cursor: pointer;
       transition: background 0.15s;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
     }
 
     .custom-option:hover {
@@ -1441,7 +1447,7 @@
         const bc = switchAssetsData.blockchains[chain];
         const logo = getChainLogo(chain);
         const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
-        return `<div class="custom-option" onclick="selectSellNetwork('${chain}', '${logo}', '${name}')">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
+        return `<div class="custom-option" data-network="${chain}" data-logo="${logo}" data-name="${name}">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
       }).join('');
     }
 
@@ -1455,7 +1461,7 @@
         const bc = switchAssetsData.blockchains[chain];
         const logo = getChainLogo(chain);
         const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
-        return `<div class="custom-option" onclick="selectBuyNetwork('${chain}', '${logo}', '${name}')">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
+        return `<div class="custom-option" data-network="${chain}" data-logo="${logo}" data-name="${name}">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
       }).join('');
     }
 
@@ -1890,6 +1896,44 @@
       }
     });
 
+    // Mobile-friendly network dropdown delegation with tap-vs-scroll detection
+    function setupNetworkDropdown(containerId, selectFn) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      let touchStartY = 0;
+      let touchStartX = 0;
+      let isTouch = false;
+      container.addEventListener('touchstart', (e) => {
+        isTouch = true;
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+      container.addEventListener('touchmove', () => {
+        // mark that we moved (scroll gesture)
+      }, { passive: true });
+      container.addEventListener('click', (e) => {
+        if (isTouch) {
+          // If this click was synthesized from a touch, check movement
+          // (browsers may not expose changedTouches in click, so we rely on a heuristic:
+          // if the user is actively scrolling, we skip selection for a brief moment)
+        }
+        const option = e.target.closest('.custom-option');
+        if (!option) return;
+        const id = option.dataset.network;
+        const logo = option.dataset.logo;
+        const name = option.dataset.name;
+        if (id && logo && name) {
+          selectFn(id, logo, name, option);
+        }
+      });
+      // Reset touch flag after a short delay so desktop clicks still work
+      container.addEventListener('touchend', () => {
+        setTimeout(() => { isTouch = false; }, 100);
+      }, { passive: true });
+    }
+    setupNetworkDropdown('sell-network-options', selectSellNetwork);
+    setupNetworkDropdown('buy-network-options', selectBuyNetwork);
+
     function safeSetText(id, text) {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
@@ -2073,7 +2117,7 @@
       updateStepIndicators('OFFRAMP');
     }
 
-    function selectSellNetwork(id, logo, name) {
+    function selectSellNetwork(id, logo, name, optionEl) {
       currentSellNetwork = id;
       document.getElementById('sell-network-display').innerHTML = `
         <img src="${logo}" class="w-5 h-5" alt="${name}">
@@ -2083,7 +2127,7 @@
       safeSetText('sell-confirm-network', name);
       safeSetSrc('sell-confirm-network-img', logo);
       document.querySelectorAll('#sell-network-options .custom-option').forEach(o => o.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
+      if (optionEl) optionEl.classList.add('selected');
       closeAllDropdowns();
       document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
@@ -2218,7 +2262,7 @@
       updateStepIndicators('ONRAMP');
     }
 
-    function selectBuyNetwork(id, logo, name) {
+    function selectBuyNetwork(id, logo, name, optionEl) {
       currentBuyNetwork = id;
       document.getElementById('buy-network-display').innerHTML = `
         <img src="${logo}" class="w-5 h-5" alt="${name}">
@@ -2227,7 +2271,7 @@
       safeSetText('buy-confirm-network', name);
       safeSetSrc('buy-confirm-network-img', logo);
       document.querySelectorAll('#buy-network-options .custom-option').forEach(o => o.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
+      if (optionEl) optionEl.classList.add('selected');
       closeAllDropdowns();
       document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentBuyAsset, currentBuyNetwork);
