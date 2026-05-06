@@ -681,7 +681,7 @@
         .dark .sidebar-overlay {
             background: rgba(0, 0, 0, 0.7);
         }
-        .dark .dark-mode-toggle {
+        .dark-mode-toggle {
             background: rgba(255,255,255,0.1);
             color: rgba(255,255,255,0.8);
             border: none;
@@ -694,8 +694,9 @@
             transition: 0.3s;
             margin-top: auto;
             margin-bottom: 16px;
+            width: 100%;
         }
-        .dark .dark-mode-toggle:hover {
+        .dark-mode-toggle:hover {
             background: rgba(255,255,255,0.2);
         }
 
@@ -2503,6 +2504,8 @@
         function logout() { localStorage.removeItem('velcro_admin_key'); location.reload(); }
 
         window.onload = () => {
+            // Ensure icons render even before auth
+            setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 100);
             const overlay = document.getElementById('auth-overlay');
             if (adminKey) {
                 if (overlay) overlay.style.display = 'none';
