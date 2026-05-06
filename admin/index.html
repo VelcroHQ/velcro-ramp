@@ -2,6 +2,14 @@
 <html lang="en">
 
 <head>
+    <script>
+      (function() {
+        const theme = localStorage.getItem('velcro-admin-theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Velcro Private Admin | Insights</title>
@@ -22,6 +30,17 @@
             --border: #e9edf7;
             --velcro-green: #A8CF45;
             --velcro-navy: #0D0D59;
+        }
+
+        .dark {
+            --sidebar-bg: #08083d;
+            --sidebar-hover: #12125a;
+            --bg-light: #020617;
+            --card-bg: #0f172a;
+            --text-main: #e2e8f0;
+            --text-secondary: #64748b;
+            --accent: #6366f1;
+            --border: #334155;
         }
 
         * {
@@ -568,6 +587,117 @@
             header { margin-bottom: 20px; }
             .header-title h1 { font-size: 20px; }
         }
+
+        /* ─── Dark Mode Overrides ─── */
+        .dark body {
+            background-color: var(--bg-light);
+            color: var(--text-main);
+        }
+        .dark #auth-overlay {
+            background: var(--bg-light);
+        }
+        .dark .auth-card {
+            background: var(--card-bg);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        .dark input,
+        .dark select {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border-color: var(--border);
+        }
+        .dark .stat-card,
+        .dark .table-card,
+        .dark .tx-modal-content {
+            background: var(--card-bg);
+        }
+        .dark .stat-icon {
+            background: #1e293b;
+            color: var(--text-main);
+        }
+        .dark .refresh-btn {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border-color: var(--border);
+        }
+        .dark .refresh-btn:hover {
+            background: #1e293b;
+        }
+        .dark td {
+            border-bottom-color: #1e293b;
+        }
+        .dark tbody tr:hover {
+            background: #1e293b;
+        }
+        .dark .detail-mini-card {
+            background: #1e293b;
+        }
+        .dark .btn-view {
+            background: var(--card-bg);
+            color: var(--text-main);
+        }
+        .dark .btn-view:hover {
+            background: #1e293b;
+        }
+        .dark .completed {
+            background: rgba(168, 207, 69, 0.15);
+            color: #c4e860;
+        }
+        .dark .awaiting_deposit, .dark .processing, .dark .received, .dark .verified {
+            background: rgba(168, 207, 69, 0.1);
+            color: var(--velcro-green);
+        }
+        .dark .user-profile-lg {
+            background: #1e293b;
+            color: var(--text-main);
+        }
+        .dark .avatar {
+            background: #1e293b;
+            color: var(--text-main);
+        }
+        .dark #paj-message {
+            background: #064e3b !important;
+            color: #34d399 !important;
+            border-color: #065f46 !important;
+        }
+        .dark #paj-otp-section {
+            background: linear-gradient(135deg, #451a03 0%, #78350f 100%) !important;
+            border-color: #92400e !important;
+        }
+        .dark #paj-otp-section span,
+        .dark #paj-otp-section p {
+            color: #fbbf24 !important;
+        }
+        .dark #paj-status-icon {
+            background: #334155 !important;
+        }
+        .dark #paj-status-icon i {
+            color: #94a3b8 !important;
+        }
+        .dark #paj-session-status {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+        }
+        .dark .sidebar-overlay {
+            background: rgba(0, 0, 0, 0.7);
+        }
+        .dark .dark-mode-toggle {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            border: none;
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+            margin-top: auto;
+            margin-bottom: 16px;
+        }
+        .dark .dark-mode-toggle:hover {
+            background: rgba(255,255,255,0.2);
+        }
     </style>
 </head>
 
@@ -624,6 +754,9 @@
                 </li>
             </ul>
         </nav>
+        <button onclick="toggleDarkMode()" class="dark-mode-toggle" id="dark-mode-toggle" title="Toggle dark mode">
+            <svg id="dark-mode-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
     </aside>
 
     <main>
@@ -1068,6 +1201,24 @@
     </div>
 
     <script>
+        // Dark mode toggle
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('velcro-admin-theme', isDark ? 'dark' : 'light');
+            updateDarkModeIcon();
+        }
+        function updateDarkModeIcon() {
+            const btn = document.getElementById('dark-mode-toggle');
+            if (!btn) return;
+            const isDark = document.documentElement.classList.contains('dark');
+            btn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+            btn.innerHTML = isDark
+                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+        }
+        document.addEventListener('DOMContentLoaded', updateDarkModeIcon);
+
         let adminKey = localStorage.getItem('velcro_admin_key') || '';
         let currentTxs = [];
 
