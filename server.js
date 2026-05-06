@@ -33,7 +33,7 @@ function loadSettings() {
   } catch (err) {
     console.error('Failed to load settings:', err.message);
   }
-  return { platform_fee: DEVELOPER_FEE };
+  return { platform_fee: DEVELOPER_FEE, buy_max_limit: 50000 };
 }
 
 function saveSettings(settings) {
@@ -51,24 +51,6 @@ function getPlatformFee() {
   const fee = parseFloat(settings.platform_fee);
   return Number.isNaN(fee) ? DEVELOPER_FEE : fee;
 }
-
-// ─── Auto-Withdrawal Logic (DISABLED - crashes server due to MongoDB timeout) ───
-// Use /api/admin/withdraw endpoint manually instead
-async function autoWithdrawFees() {
-  if (!DEVELOPER_RECIPIENT || DEVELOPER_RECIPIENT === 'your_actual_wallet_address') return;
-  try {
-    console.log('🔄 Checking accumulated developer fees...');
-    const feesData = await switchApi('/developer/fees');
-    if (feesData.success && feesData.data && feesData.data.amount > 1) {
-      console.log(`💰 Found $${feesData.data.amount} in fees. Use /api/admin/withdraw to withdraw manually.`);
-    }
-  } catch (err) {
-    console.log('ℹ️ Fee check skipped:', err.message);
-  }
-}
-// Auto-withdrawal disabled to prevent server crashes. Manual withdrawal via admin dashboard.
-// setInterval(autoWithdrawFees, 60 * 60 * 1000);
-// setTimeout(autoWithdrawFees, 30 * 1000);
 
 // ─── MongoDB Schema ───
 const transactionSchema = new mongoose.Schema({
@@ -333,7 +315,7 @@ app.post('/api/initiate', async (req, res, next) => {
     const {
       direction, amount, country, asset, currency, channel,
       beneficiary, callback_url, reference, reason, exact_output,
-      wallet_address, sender_name
+      wallet_address
     } = req.body;
 
     if (!direction || !amount || !country || !asset) {
@@ -440,9 +422,7 @@ app.post('/api/confirm', async (req, res, next) => {
     const { reference, hash } = req.body;
     if (!reference) return res.status(400).json(errorResponse('reference is required'));
 
-    const tx = await safeDbRead(() => Transaction.findOne({ reference }));
     // Don't require DB record for confirmation — Switch is source of truth
-    // if (!tx) return res.status(404).json(errorResponse('Transaction not found'));
 
     const payload = { reference };
     if (hash) payload.hash = hash;
@@ -577,6 +557,26 @@ app.get('/api/admin/transactions', adminAuth, async (req, res) => {
   }
 });
 
+// One-time fix: retroactively tag old PAJ transactions that were saved with channel: 'BANK'
+app.post('/api/admin/fix-paj-channels', adminAuth, async (req, res) => {
+  try {
+    const allTxs = await safeDbRead(() => Transaction.find({}));
+    const pajRefs = [];
+    for (const tx of allTxs) {
+      const isPaj = tx.channel === 'PAJ' ||
+                    (tx.reference && tx.reference.startsWith('paj_')) ||
+                    (tx.deposit_bank_name && tx.deposit_bank_name.toLowerCase().includes('paj'));
+      if (isPaj && tx.channel !== 'PAJ') {
+        await safeDbWrite(() => Transaction.updateOne({ _id: tx._id }, { channel: 'PAJ' }));
+        pajRefs.push(tx.reference);
+      }
+    }
+    res.json({ success: true, fixed: pajRefs.length, references: pajRefs });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/admin/users', adminAuth, async (req, res) => {
   try {
     const txs = await safeDbRead(() => Transaction.find({}));
@@ -624,18 +624,28 @@ app.post('/api/admin/withdraw', adminAuth, async (req, res) => {
 
 // Public settings (fee only)
 app.get('/api/settings', async (req, res) => {
-  res.json(successResponse({ platform_fee: getPlatformFee() }));
+  const settings = loadSettings();
+  const limit = parseInt(settings.buy_max_limit, 10);
+  res.json(successResponse({ platform_fee: getPlatformFee(), buy_max_limit: Number.isNaN(limit) ? 50000 : limit }));
 });
 
 app.get('/api/admin/settings', adminAuth, async (req, res) => {
   const settings = loadSettings();
-  res.json({ platform_fee: getPlatformFee(), paj_email: settings.paj_email || process.env.PAJ_EMAIL || 'paj@usevelcro.com' });
+  const limit = parseInt(settings.buy_max_limit, 10);
+  res.json({ platform_fee: getPlatformFee(), buy_max_limit: Number.isNaN(limit) ? 50000 : limit, paj_email: settings.paj_email || process.env.PAJ_EMAIL || 'paj@usevelcro.com' });
 });
 
 app.post('/api/admin/settings', adminAuth, async (req, res) => {
   try {
-    const { platform_fee, paj_email } = req.body;
+    const { platform_fee, buy_max_limit, paj_email } = req.body;
     const settings = loadSettings();
+    if (buy_max_limit !== undefined) {
+      const limit = parseInt(buy_max_limit, 10);
+      if (Number.isNaN(limit) || limit < 1000 || limit > 10000000) {
+        return res.status(400).json({ success: false, error: 'Buy max limit must be between 1,000 and 10,000,000' });
+      }
+      settings.buy_max_limit = limit;
+    }
     if (platform_fee !== undefined) {
       const fee = parseFloat(platform_fee);
       if (Number.isNaN(fee) || fee < 0 || fee > 10) {
@@ -703,7 +713,7 @@ app.post('/api/paj/initiate', async (req, res, next) => {
       country: 'NG',
       currency: 'NGN',
       asset: assetInfo ? assetInfo.symbol : 'SOL',
-      channel: 'BANK',
+      channel: 'PAJ',
       amount: fiatAmount,
       deposit_bank_name: d.bank || 'PAJ Partner Bank',
       deposit_account_number: d.accountNumber || null,
@@ -721,6 +731,21 @@ app.get('/api/paj/status', async (req, res, next) => {
     const { id } = req.query;
     if (!id) return res.status(400).json(errorResponse('id is required'));
     const tx = await pajModule.getTransactionStatus(id);
+
+    // Sync PAJ status back to local DB so admin dashboard shows correct status
+    try {
+      const d = tx || {};
+      const update = { status: d.status || 'AWAITING_DEPOSIT', meta: JSON.stringify(d) };
+      if (d.signature || d.hash) update.hash = d.signature || d.hash;
+      if (d.recipient) update.wallet_address = d.recipient;
+      await safeDbWrite(() => Transaction.findOneAndUpdate(
+        { $or: [{ reference: id }, { switch_reference: id }] },
+        update
+      ));
+    } catch (dbErr) {
+      console.log('PAJ status DB sync failed (non-critical):', dbErr.message);
+    }
+
     res.json(successResponse(tx));
   } catch (err) { next(err); }
 });
@@ -734,14 +759,27 @@ app.get('/api/paj/session', (req, res) => {
 app.post('/webhook/paj', async (req, res) => {
   try {
     const payload = req.body;
-    const txId = payload.id || (payload.data && payload.data.id);
-    const status = payload.status || (payload.data && payload.data.status);
+    console.log('[PAJ Webhook]', JSON.stringify(payload));
+    const txId = payload.id || (payload.data && payload.data.id) || payload.reference || payload.orderId;
+    const status = payload.status || (payload.data && payload.data.status) || payload.state;
+    const hash = payload.signature || payload.hash || (payload.data && (payload.data.signature || payload.data.hash));
+    const recipient = payload.recipient || (payload.data && payload.data.recipient);
     if (txId && status) {
-      await safeDbWrite(() => Transaction.findOneAndUpdate(
-        { reference: txId },
-        { status, meta: JSON.stringify(payload) },
+      const update = { status: status.toUpperCase(), meta: JSON.stringify(payload) };
+      if (hash) update.hash = hash;
+      if (recipient) update.wallet_address = recipient;
+      const result = await safeDbWrite(() => Transaction.findOneAndUpdate(
+        { $or: [{ reference: txId }, { switch_reference: txId }] },
+        update,
         { new: true }
       ));
+      if (result) {
+        console.log(`✅ PAJ webhook updated tx ${txId} → ${status}`);
+      } else {
+        console.log(`⚠️ PAJ webhook: no tx found for ${txId}`);
+      }
+    } else {
+      console.log('⚠️ PAJ webhook: missing id or status', { txId, status });
     }
     res.json({ received: true });
   } catch (err) {

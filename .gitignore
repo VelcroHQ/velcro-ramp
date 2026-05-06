@@ -12,3 +12,6 @@ backend/
 ramp/
 v16/
 package-lock.json
+paj-session.json
+settings.json
+withdraw.js

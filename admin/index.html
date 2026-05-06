@@ -682,6 +682,7 @@
                         <tr>
                             <th>Wallet</th>
                             <th>Type</th>
+                            <th>Channel</th>
                             <th>Amount</th>
                             <th>Status</th>
                             <th>Time</th>
@@ -733,6 +734,14 @@
                         </select>
                     </div>
                     <div>
+                        <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Channel</label>
+                        <select id="filter-channel" onchange="applyFilters()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; background: white;">
+                            <option value="">All Channels</option>
+                            <option value="PAJ">PAJ</option>
+                            <option value="BANK">Switch</option>
+                        </select>
+                    </div>
+                    <div>
                         <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Date From</label>
                         <input type="date" id="filter-date-from" onchange="applyFilters()" style="margin-bottom: 0; padding: 10px 12px; font-size: 13px;">
                     </div>
@@ -754,6 +763,7 @@
                             <th>Wallet</th>
                             <th class="hide-mobile">Reference</th>
                             <th class="hide-mobile">Type</th>
+                            <th>Channel</th>
                             <th>Amount</th>
                             <th>Status</th>
                             <th class="hide-mobile">Date</th>
@@ -860,6 +870,14 @@
                 <button class="btn-primary" onclick="saveSettings()">Save Configuration</button>
             </div>
 
+            <!-- Fix PAJ Channels -->
+            <div class="table-card" style="max-width: 500px; margin-top: 20px;">
+                <label style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; display: block;">DATA MIGRATION</label>
+                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Old PAJ transactions were saved with <code>channel: 'BANK'</code>. Click below to retroactively tag them as PAJ.</p>
+                <button class="btn-primary" onclick="fixPajChannels()" id="fix-paj-btn" style="background: #7c3aed;">Fix PAJ Channels</button>
+                <p id="fix-paj-status" style="font-size: 12px; margin-top: 8px; display: none;"></p>
+            </div>
+
             <!-- PAJ Session Management -->
             <div class="table-card" style="max-width: 500px; margin-top: 20px;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
@@ -942,6 +960,10 @@
                     <span>Type</span>
                     <b id="modal-type">ONRAMP</b>
                 </div>
+                <div>
+                    <span>Channel</span>
+                    <b id="modal-channel">-</b>
+                </div>
             </div>
             <div style="margin-bottom: 20px;">
                 <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">REFERENCE</label>
@@ -949,12 +971,67 @@
             </div>
             <div style="margin-bottom: 20px;">
                 <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">TX HASH</label>
-                <a id="modal-hash-link" href="#" target="_blank" style="color: var(--sidebar-bg); font-size: 12px; word-break: break-all;">-</a>
+                <a id="modal-hash-link" href="#" target="_blank" style="color: var(--sidebar-bg); font-size: 12px; word-break: break-all; display: block; margin-bottom: 4px;">-</a>
+                <a id="modal-wallet-explorer-link" href="#" target="_blank" style="color: var(--sidebar-bg); font-size: 11px; word-break: break-all; display: none;">
+                  <span style="display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    View wallet on explorer
+                  </span>
+                </a>
+            </div>
+            <!-- ONRAMP Details -->
+            <div id="modal-onramp-details" style="display: none; margin-bottom: 20px;">
+                <div style="border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                    <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 8px;">Crypto Received</label>
+                    <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">
+                        <span id="modal-crypto-amount">-</span> <span id="modal-crypto-asset">-</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">at <span id="modal-rate-display">-</span></div>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">DESTINATION WALLET</label>
+                    <div id="modal-wallet-address" style="background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
+                </div>
+                <div style="border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
+                    <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 8px;">Deposit Bank (User sent fiat here)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                        <div><span style="color: var(--text-secondary);">Bank:</span> <b id="modal-deposit-bank">-</b></div>
+                        <div><span style="color: var(--text-secondary);">Account #:</span> <b id="modal-deposit-number">-</b></div>
+                        <div style="grid-column: 1 / -1;"><span style="color: var(--text-secondary);">Account Name:</span> <b id="modal-deposit-name">-</b></div>
+                    </div>
+                </div>
+            </div>
+            <!-- OFFRAMP Details -->
+            <div id="modal-offramp-details" style="display: none; margin-bottom: 20px;">
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">DEPOSIT ADDRESS (User sent crypto here)</label>
+                    <div id="modal-deposit-address" style="background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
+                    <a id="modal-deposit-explorer" href="#" target="_blank" style="display: none; margin-top: 6px; font-size: 11px; color: var(--sidebar-bg); align-items: center; gap: 4px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        View address on explorer
+                    </a>
+                </div>
+                <div style="border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
+                    <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 8px;">Beneficiary Bank (Fiat sent here)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                        <div><span style="color: var(--text-secondary);">Bank:</span> <b id="modal-beneficiary-bank">-</b></div>
+                        <div><span style="color: var(--text-secondary);">Account #:</span> <b id="modal-beneficiary-number">-</b></div>
+                        <div style="grid-column: 1 / -1;"><span style="color: var(--text-secondary);">Account Name:</span> <b id="modal-beneficiary-name">-</b></div>
+                    </div>
+                </div>
             </div>
             <div class="tx-modal-grid">
                 <div>
                     <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">DATE</label>
                     <div id="modal-date" style="font-size: 13px;">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">RATE</label>
+                    <div id="modal-rate" style="font-size: 13px;">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">FEES</label>
+                    <div id="modal-fees" style="font-size: 13px;">-</div>
                 </div>
             </div>
             <!-- Admin Confirm Section -->
@@ -1244,14 +1321,80 @@
             }
         }
 
+        async function fixPajChannels() {
+            const btn = document.getElementById('fix-paj-btn');
+            const statusEl = document.getElementById('fix-paj-status');
+            btn.disabled = true;
+            btn.innerText = 'Fixing...';
+            statusEl.style.display = 'none';
+            try {
+                const res = await fetch('/api/admin/fix-paj-channels', {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--success)';
+                    statusEl.innerText = `Fixed ${data.fixed} PAJ transactions. Refresh to see changes.`;
+                    btn.innerText = 'Fixed ✓';
+                } else {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--failed)';
+                    statusEl.innerText = data.error || 'Fix failed';
+                    btn.disabled = false;
+                    btn.innerText = 'Fix PAJ Channels';
+                }
+            } catch (e) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--failed)';
+                statusEl.innerText = e.message || 'Network error';
+                btn.disabled = false;
+                btn.innerText = 'Fix PAJ Channels';
+            }
+        }
+
+        function getWalletExplorerUrl(address, network) {
+            const map = {
+                'solana': `https://solscan.io/account/${address}`,
+                'ethereum': `https://etherscan.io/address/${address}`,
+                'bsc': `https://bscscan.com/address/${address}`,
+                'polygon': `https://polygonscan.com/address/${address}`,
+                'arbitrum': `https://arbiscan.io/address/${address}`,
+                'base': `https://basescan.org/address/${address}`,
+                'tron': `https://tronscan.org/#/address/${address}`,
+                'bitcoin': `https://mempool.space/address/${address}`,
+                'sui': `https://suivision.xyz/account/${address}`
+            };
+            return map[network?.toLowerCase()] || '#';
+        }
+
+        function isPajTx(tx) {
+            if (tx.channel === 'PAJ') return true;
+            if (tx.reference?.startsWith('paj_')) return true;
+            if (tx.deposit_bank_name?.toLowerCase().includes('paj')) return true;
+            try {
+                const meta = JSON.parse(tx.meta || '{}');
+                if (meta.mint || meta.provider === 'PAJ' || meta.id?.startsWith('paj')) return true;
+            } catch (e) {}
+            return false;
+        }
+
         function renderTransactions(txs) {
             const summaryBody = document.getElementById('tx-summary-body');
             const allBody = document.getElementById('all-tx-body');
             
+            const channelBadge = (tx) => {
+                const paj = isPajTx(tx);
+                const label = paj ? 'PAJ' : 'Switch';
+                const color = paj ? 'background: rgba(124, 58, 237, 0.1); color: #7c3aed;' : 'background: rgba(13, 13, 89, 0.1); color: var(--velcro-navy);';
+                return `<span style="${color} padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">${label}</span>`;
+            };
             const summaryRows = txs.map(tx => `
                 <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
-                    <td data-label="Wallet"><div class="user-cell"><div class="avatar">${tx.wallet_address?.slice(-4) || '??'}</div><b style="font-size: 11px;">${tx.wallet_address?.slice(0, 8)}...</b></div></td>
+                    <td data-label="Wallet"><div class="user-cell"><div class="avatar">${(tx.wallet_address || '??').slice(-4)}</div><b style="font-size: 11px;">${(tx.wallet_address || 'unknown').slice(0, 8)}${tx.wallet_address ? '...' : ''}</b></div></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
+                    <td data-label="Channel">${channelBadge(tx)}</td>
                     <td data-label="Amount"><b>${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}</b></td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Time">${new Date(tx.created_at).toLocaleDateString()}</td>
@@ -1260,9 +1403,10 @@
 
             const allRows = txs.map(tx => `
                 <tr>
-                    <td data-label="Wallet"><div class="user-cell"><div class="avatar">${tx.wallet_address?.slice(-4) || '??'}</div><b style="font-size: 11px;">${tx.wallet_address?.slice(0, 8)}...</b></div></td>
+                    <td data-label="Wallet"><div class="user-cell"><div class="avatar">${(tx.wallet_address || '??').slice(-4)}</div><b style="font-size: 11px;">${(tx.wallet_address || 'unknown').slice(0, 8)}${tx.wallet_address ? '...' : ''}</b></div></td>
                     <td data-label="Reference" class="hide-mobile">${tx.reference.slice(0, 10)}...</td>
                     <td data-label="Type"><b>${tx.type}</b></td>
+                    <td data-label="Channel">${channelBadge(tx)}</td>
                     <td data-label="Amount"><b>${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}</b></td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Date" class="hide-mobile">${new Date(tx.created_at).toLocaleDateString()}</td>
@@ -1299,9 +1443,78 @@
             document.getElementById('modal-status').className = `status-pill ${tx.status.toLowerCase()}`;
             document.getElementById('modal-amount').innerText = `${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}`;
             document.getElementById('modal-type').innerText = tx.type;
-            document.getElementById('modal-hash-link').innerText = tx.hash || 'No hash available';
-            document.getElementById('modal-hash-link').href = tx.explorer_url || '#';
+            document.getElementById('modal-channel').innerText = isPajTx(tx) ? 'PAJ' : 'Switch';
+            const hashLink = document.getElementById('modal-hash-link');
+            const walletExplorerLink = document.getElementById('modal-wallet-explorer-link');
+            if (tx.hash) {
+                hashLink.innerText = tx.hash;
+                hashLink.href = tx.explorer_url || '#';
+                walletExplorerLink.style.display = 'none';
+            } else if (tx.wallet_address) {
+                hashLink.innerText = 'No hash available';
+                hashLink.href = '#';
+                walletExplorerLink.href = getWalletExplorerUrl(tx.wallet_address, tx.asset === 'SOL' ? 'solana' : tx.asset === 'USDT' || tx.asset === 'USDC' ? 'solana' : tx.asset);
+                walletExplorerLink.style.display = 'block';
+            } else {
+                hashLink.innerText = 'No hash available';
+                hashLink.href = '#';
+                walletExplorerLink.style.display = 'none';
+            }
             document.getElementById('modal-date').innerText = new Date(tx.created_at).toLocaleString();
+
+            // Rate & Fees
+            const rateEl = document.getElementById('modal-rate');
+            const feesEl = document.getElementById('modal-fees');
+            if (tx.rate) {
+                rateEl.innerText = `1 ${tx.asset || 'USD'} = ₦${Number(tx.rate).toLocaleString()}`;
+            } else {
+                rateEl.innerText = '-';
+            }
+            const feeParts = [];
+            if (tx.fee_total) feeParts.push(`Total: ₦${Number(tx.fee_total).toLocaleString()}`);
+            if (tx.fee_platform) feeParts.push(`Platform: ₦${Number(tx.fee_platform).toLocaleString()}`);
+            if (tx.fee_developer) feeParts.push(`Dev: ₦${Number(tx.fee_developer).toLocaleString()}`);
+            feesEl.innerText = feeParts.length ? feeParts.join(' | ') : '-';
+
+            // Type-specific details
+            const onrampSection = document.getElementById('modal-onramp-details');
+            const offrampSection = document.getElementById('modal-offramp-details');
+            if (tx.type === 'ONRAMP') {
+                onrampSection.style.display = 'block';
+                offrampSection.style.display = 'none';
+                // Crypto received
+                const destAmount = tx.destination_amount || 0;
+                document.getElementById('modal-crypto-amount').innerText = destAmount > 0 ? destAmount.toFixed(4) : '-';
+                document.getElementById('modal-crypto-asset').innerText = tx.asset || '-';
+                document.getElementById('modal-rate-display').innerText = tx.rate ? `1 ${tx.asset} = ₦${Number(tx.rate).toLocaleString()}` : '-';
+                // Wallet
+                document.getElementById('modal-wallet-address').innerText = tx.wallet_address || 'Not provided';
+                // Deposit bank
+                document.getElementById('modal-deposit-bank').innerText = tx.deposit_bank_name || '-';
+                document.getElementById('modal-deposit-number').innerText = tx.deposit_account_number || '-';
+                document.getElementById('modal-deposit-name').innerText = tx.deposit_account_name || '-';
+            } else {
+                onrampSection.style.display = 'none';
+                offrampSection.style.display = 'block';
+                // Deposit address
+                const depAddr = tx.deposit_address || '';
+                document.getElementById('modal-deposit-address').innerText = depAddr || 'Not generated';
+                // Deposit address explorer link
+                const depExplorer = document.getElementById('modal-deposit-explorer');
+                const depNetwork = tx.asset?.includes(':') ? tx.asset.split(':')[0] : (tx.meta ? (() => { try { const m = JSON.parse(tx.meta); return m.network || m.chain; } catch(e) { return null; } })() : null) || 'solana';
+                if (depAddr && depExplorer) {
+                    depExplorer.href = getWalletExplorerUrl(depAddr, depNetwork);
+                    depExplorer.style.display = 'inline-flex';
+                } else if (depExplorer) {
+                    depExplorer.style.display = 'none';
+                }
+                // Beneficiary
+                let ben = {};
+                try { if (tx.beneficiary) ben = JSON.parse(tx.beneficiary); } catch (e) {}
+                document.getElementById('modal-beneficiary-bank').innerText = ben.institution || ben.bankName || ben.bank || '-';
+                document.getElementById('modal-beneficiary-number').innerText = ben.accountNumber || ben.account_number || '-';
+                document.getElementById('modal-beneficiary-name').innerText = ben.accountName || ben.account_name || ben.name || '-';
+            }
 
             // Show confirm section only for pending/awaiting deposits
             const confirmSection = document.getElementById('modal-confirm-section');
@@ -1419,6 +1632,7 @@
             const search = document.getElementById('filter-search').value.trim().toLowerCase();
             const type = document.getElementById('filter-type').value;
             const status = document.getElementById('filter-status').value;
+            const channel = document.getElementById('filter-channel').value;
             const dateFrom = document.getElementById('filter-date-from').value;
             const dateTo = document.getElementById('filter-date-to').value;
 
@@ -1436,6 +1650,9 @@
                 // Status filter
                 const matchesStatus = !status || tx.status === status;
 
+                // Channel filter
+                const matchesChannel = !channel || tx.channel === channel;
+
                 // Date filter
                 let matchesDate = true;
                 const txDate = new Date(tx.created_at);
@@ -1450,7 +1667,7 @@
                     if (txDate > to) matchesDate = false;
                 }
 
-                return matchesSearch && matchesType && matchesStatus && matchesDate;
+                return matchesSearch && matchesType && matchesStatus && matchesChannel && matchesDate;
             });
 
             renderTransactions(filtered);
@@ -1461,6 +1678,7 @@
             document.getElementById('filter-search').value = '';
             document.getElementById('filter-type').value = '';
             document.getElementById('filter-status').value = '';
+            document.getElementById('filter-channel').value = '';
             document.getElementById('filter-date-from').value = '';
             document.getElementById('filter-date-to').value = '';
             renderTransactions(currentTxs);
