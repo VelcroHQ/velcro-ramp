@@ -1331,7 +1331,7 @@
             <header>
                 <div class="header-title">
                     <h1>Analytics & Profit</h1>
-                    <p>Revenue breakdown, cost tracking, and net profit calculation.</p>
+                    <p>Revenue calculated at 0.5% per successful transaction. Input costs to see net profit.</p>
                 </div>
                 <div class="header-actions">
                     <button class="refresh-btn" onclick="fetchData()"><i data-lucide="rotate-cw"></i></button>
@@ -2014,20 +2014,32 @@
             if (!txs) txs = currentTxs || [];
             const completed = txs.filter(t => t.status === 'COMPLETED');
 
-            // Revenue estimates (fee_platform + fee_developer in NGN, rough USD estimate at 1500)
-            const totalFeesNGN = completed.reduce((s, t) => s + (t.fee_platform || 0) + (t.fee_developer || 0), 0);
-            const totalRevenueUSD = totalFeesNGN / 1500;
+            // Calculate revenue as 0.5% of successful transaction volume
+            function txRevenueUSD(t) {
+                if (t.type === 'OFFRAMP') {
+                    return (t.amount || 0) * 0.005;
+                }
+                // ONRAMP: amount is NGN, convert to USD using rate or fallback 1500
+                const usdValue = t.rate ? (t.amount / t.rate) : (t.amount / 1500);
+                return (usdValue || 0) * 0.005;
+            }
+
+            const totalRevenueUSD = completed.reduce((s, t) => s + txRevenueUSD(t), 0);
 
             const pajCompleted = completed.filter(t => isPajTx(t));
             const switchCompleted = completed.filter(t => !isPajTx(t));
-            const pajFeesNGN = pajCompleted.reduce((s, t) => s + (t.fee_platform || 0) + (t.fee_developer || 0), 0);
-            const switchFeesNGN = switchCompleted.reduce((s, t) => s + (t.fee_platform || 0) + (t.fee_developer || 0), 0);
+            const pajRevenueUSD = pajCompleted.reduce((s, t) => s + txRevenueUSD(t), 0);
+            const switchRevenueUSD = switchCompleted.reduce((s, t) => s + txRevenueUSD(t), 0);
 
-            const avgTx = completed.length ? (totalRevenueUSD / completed.length) : 0;
+            // Avg transaction size in USD
+            const avgTx = completed.length ? (completed.reduce((s, t) => {
+                if (t.type === 'OFFRAMP') return s + (t.amount || 0);
+                return s + (t.rate ? (t.amount / t.rate) : (t.amount / 1500));
+            }, 0) / completed.length) : 0;
 
             document.getElementById('analytic-total-revenue').innerText = `$${totalRevenueUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.getElementById('analytic-paj-revenue').innerText = `$${(pajFeesNGN / 1500).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.getElementById('analytic-switch-revenue').innerText = `$${(switchFeesNGN / 1500).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('analytic-paj-revenue').innerText = `$${pajRevenueUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('analytic-switch-revenue').innerText = `$${switchRevenueUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             document.getElementById('analytic-avg-tx').innerText = `$${avgTx.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             renderBreakdowns(txs);
