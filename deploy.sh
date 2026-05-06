@@ -15,6 +15,6 @@ git push origin main
 
 # 2. Update the VPS
 echo "🌐 Updating VPS server..."
-ssh -t ${SERVER_USER}@${SERVER_IP} "cd ${SERVER_PATH} && git pull && npm install && pm2 restart velcro-ramp && pm2 logs velcro-ramp --lines 20 --no-daemon"
+ssh -t ${SERVER_USER}@${SERVER_IP} "cd ${SERVER_PATH} && git fetch origin && git reset --hard origin/main && npm install && pm2 delete velcro-ramp && pm2 start server.js --name velcro-ramp && pm2 status"
 
 echo "✅ Deployment Complete!"
