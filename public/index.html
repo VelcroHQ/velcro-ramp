@@ -773,7 +773,7 @@
                 <input type="text" inputmode="decimal" id="sell-amount" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-row sm:flex-col items-start sm:items-end gap-2 shrink-0 w-full sm:w-auto">
+              <div class="flex flex-col items-end gap-2 shrink-0 w-full sm:w-auto">
                 <div class="flex flex-col items-center sm:items-end gap-0.5">
                   <div class="custom-select" id="sell-asset-wrap">
                     <div class="asset-pill" onclick="openSellAssetPicker()">
@@ -1056,7 +1056,7 @@
                   oninput="handleAmountInput(this, 4); calculateBuyFromCrypto();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-row sm:flex-col items-start sm:items-end gap-2 shrink-0 w-full sm:w-auto">
+              <div class="flex flex-col items-end gap-2 shrink-0 w-full sm:w-auto">
                 <div class="flex flex-col items-center sm:items-end gap-0.5">
                   <div class="custom-select" id="buy-asset-wrap">
                     <div class="asset-pill" onclick="openBuyAssetPicker()">
