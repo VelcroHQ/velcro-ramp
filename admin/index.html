@@ -1085,7 +1085,7 @@
                 document.getElementById('stat-total-users').innerText = stats.totalUsers;
                 document.getElementById('stat-total-txs').innerText = stats.allTransactions;
                 document.getElementById('stat-total-volume').innerText = `$${Number(stats.totalVolumeUSD).toLocaleString(undefined, {maximumFractionDigits: 0})} | ₦${Number(stats.totalVolumeNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
-                document.getElementById('stat-total-earned').innerText = `${Number(stats.developerFees.amount).toFixed(2)} ${stats.developerFees.currency || 'USDC'}`;
+                document.getElementById('stat-total-earned').innerText = `${Number(stats.developerFees.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${stats.developerFees.currency || 'USDC'}`;
 
                 // 2. Transactions
                 const txRes = await fetch('/api/admin/transactions', { headers });
@@ -1364,7 +1364,18 @@
                 'base': `https://basescan.org/address/${address}`,
                 'tron': `https://tronscan.org/#/address/${address}`,
                 'bitcoin': `https://mempool.space/address/${address}`,
-                'sui': `https://suivision.xyz/account/${address}`
+                'sui': `https://suivision.xyz/account/${address}`,
+                'optimism': `https://optimistic.etherscan.io/address/${address}`,
+                'avalanche': `https://snowtrace.io/address/${address}`,
+                'gnosis': `https://gnosisscan.io/address/${address}`,
+                'celo': `https://celoscan.io/address/${address}`,
+                'linea': `https://lineascan.build/address/${address}`,
+                'sonic': `https://sonicscan.org/address/${address}`,
+                'monad': `https://monadscan.io/address/${address}`,
+                'plasma': `https://plasmascan.io/address/${address}`,
+                'mantle': `https://mantlescan.info/address/${address}`,
+                'hyperevm': `https://hyperevmscan.io/address/${address}`,
+                'berachain': `https://berascan.io/address/${address}`
             };
             return map[network?.toLowerCase()] || '#';
         }
@@ -1484,7 +1495,7 @@
                 offrampSection.style.display = 'none';
                 // Crypto received
                 const destAmount = tx.destination_amount || 0;
-                document.getElementById('modal-crypto-amount').innerText = destAmount > 0 ? destAmount.toFixed(4) : '-';
+                document.getElementById('modal-crypto-amount').innerText = destAmount > 0 ? Number(destAmount).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4}) : '-';
                 document.getElementById('modal-crypto-asset').innerText = tx.asset || '-';
                 document.getElementById('modal-rate-display').innerText = tx.rate ? `1 ${tx.asset} = ₦${Number(tx.rate).toLocaleString()}` : '-';
                 // Wallet

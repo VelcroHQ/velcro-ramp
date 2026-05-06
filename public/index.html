@@ -627,33 +627,8 @@
                       </svg>
                     </div>
                     <div class="custom-select-options" id="sell-network-options">
-                    <div class="custom-option" onclick="selectSellNetwork('solana', '/logos/solana.png', 'Solana')">
-                      <img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana</span>
+                      <!-- Dynamically populated from Switch API -->
                     </div>
-                    <div class="custom-option"
-                      onclick="selectSellNetwork('ethereum', '/logos/ethereum.png', 'Ethereum')">
-                      <img src="/logos/ethereum.png" class="w-6 h-6" alt="Ethereum"><span
-                        class="font-medium">Ethereum</span>
-                    </div>
-                    <div class="custom-option" onclick="selectSellNetwork('bsc', '/logos/bsc.png', 'BSC')">
-                      <img src="/logos/bsc.png" class="w-6 h-6" alt="BSC"><span class="font-medium">BSC</span>
-                    </div>
-                    <div class="custom-option" onclick="selectSellNetwork('polygon', '/logos/polygon.png', 'Polygon')">
-                      <img src="/logos/polygon.png" class="w-6 h-6" alt="Polygon"><span
-                        class="font-medium">Polygon</span>
-                    </div>
-                    <div class="custom-option"
-                      onclick="selectSellNetwork('arbitrum', '/logos/arbitrum.png', 'Arbitrum')">
-                      <img src="/logos/arbitrum.png" class="w-6 h-6" alt="Arbitrum"><span
-                        class="font-medium">Arbitrum</span>
-                    </div>
-                    <div class="custom-option" onclick="selectSellNetwork('base', '/logos/base.png', 'Base')">
-                      <img src="/logos/base.png" class="w-6 h-6" alt="Base"><span class="font-medium">Base</span>
-                    </div>
-                    <div class="custom-option" onclick="selectSellNetwork('tron', '/logos/tron.png', 'Tron')">
-                      <img src="/logos/tron.png" class="w-6 h-6" alt="Tron"><span class="font-medium">Tron</span>
-                    </div>
-                  </div>
                   </div>
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide">Choose Blockchain</span>
                 </div>
@@ -931,33 +906,8 @@
                       </svg>
                     </div>
                     <div class="custom-select-options" id="buy-network-options">
-                    <div class="custom-option" onclick="selectBuyNetwork('solana', '/logos/solana.png', 'Solana')">
-                      <img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana</span>
+                      <!-- Dynamically populated from Switch API -->
                     </div>
-                    <div class="custom-option"
-                      onclick="selectBuyNetwork('ethereum', '/logos/ethereum.png', 'Ethereum')">
-                      <img src="/logos/ethereum.png" class="w-6 h-6" alt="Ethereum"><span
-                        class="font-medium">Ethereum</span>
-                    </div>
-                    <div class="custom-option" onclick="selectBuyNetwork('bsc', '/logos/bsc.png', 'BSC')">
-                      <img src="/logos/bsc.png" class="w-6 h-6" alt="BSC"><span class="font-medium">BSC</span>
-                    </div>
-                    <div class="custom-option" onclick="selectBuyNetwork('polygon', '/logos/polygon.png', 'Polygon')">
-                      <img src="/logos/polygon.png" class="w-6 h-6" alt="Polygon"><span
-                        class="font-medium">Polygon</span>
-                    </div>
-                    <div class="custom-option"
-                      onclick="selectBuyNetwork('arbitrum', '/logos/arbitrum.png', 'Arbitrum')">
-                      <img src="/logos/arbitrum.png" class="w-6 h-6" alt="Arbitrum"><span
-                        class="font-medium">Arbitrum</span>
-                    </div>
-                    <div class="custom-option" onclick="selectBuyNetwork('base', '/logos/base.png', 'Base')">
-                      <img src="/logos/base.png" class="w-6 h-6" alt="Base"><span class="font-medium">Base</span>
-                    </div>
-                    <div class="custom-option" onclick="selectBuyNetwork('tron', '/logos/tron.png', 'Tron')">
-                      <img src="/logos/tron.png" class="w-6 h-6" alt="Tron"><span class="font-medium">Tron</span>
-                    </div>
-                  </div>
                   </div>
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide">Choose Blockchain</span>
                 </div>
@@ -1334,6 +1284,7 @@
     var rateFetchedAt = null;
     var rateExpiryInterval = null;
     const RATE_EXPIRY_SECONDS = 300; // 5 minutes
+    let switchAssetsData = null; // Dynamically fetched from Switch API
 
     function safeLucideInit() {
       if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -1341,54 +1292,194 @@
       }
     }
 
-    // Init icons
+    function getChainLogo(chain) {
+      const known = {
+        solana: '/logos/solana.png', ethereum: '/logos/ethereum.png', bsc: '/logos/bsc.png',
+        polygon: '/logos/polygon.png', arbitrum: '/logos/arbitrum.png', base: '/logos/base.png',
+        tron: '/logos/tron.png'
+      };
+      if (known[chain]) return known[chain];
+      const initial = chain.charAt(0).toUpperCase();
+      return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23A8CF45'/%3E%3Ctext x='12' y='16' text-anchor='middle' fill='white' font-size='12' font-weight='bold' font-family='sans-serif'%3E${initial}%3C/text%3E%3C/svg%3E`;
+    }
+
+    function getAssetLogo(symbol) {
+      const known = { USDT: '/logos/usdt.png', USDC: '/logos/usdc.png', CNGN: '/logos/cngn.png?v=2', SOL: '/logos/solana.png', JUP: '/logos/jup.png', USDG: '/logos/usdg.png' };
+      if (known[symbol]) return known[symbol];
+      const initial = symbol.charAt(0).toUpperCase();
+      return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23007BFF'/%3E%3Ctext x='12' y='16' text-anchor='middle' fill='white' font-size='11' font-weight='bold' font-family='sans-serif'%3E${initial}%3C/text%3E%3C/svg%3E`;
+    }
+
+    async function loadSwitchAssets() {
+      try {
+        const res = await fetch(`${API_BASE}/api/assets`);
+        const json = await res.json();
+        if (!json.success) return;
+        switchAssetsData = json.data;
+        renderSellAssetList();
+        renderBuyAssetList();
+        setDefaults();
+      } catch (e) {
+        console.error('Failed to load Switch assets:', e);
+      }
+    }
+
+    function renderSellAssetList() {
+      if (!switchAssetsData) return;
+      const container = document.getElementById('sell-asset-list');
+      if (!container) return;
+      const assets = switchAssetsData.offramp || {};
+      const symbols = Object.keys(assets).sort();
+      container.innerHTML = symbols.map(sym => {
+        const asset = assets[sym];
+        const logo = getAssetLogo(sym);
+        return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectSellAsset('${sym}', '${logo}', '${asset.name}')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
+      }).join('');
+    }
+
+    function renderBuyAssetList() {
+      if (!switchAssetsData) return;
+      const container = document.getElementById('buy-asset-list');
+      if (!container) return;
+      const assets = switchAssetsData.onramp || {};
+      const symbols = Object.keys(assets).sort();
+      const switchItems = symbols.map(sym => {
+        const asset = assets[sym];
+        const logo = getAssetLogo(sym);
+        return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectBuyAsset('${sym}', '${logo}', '${asset.name}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
+      }).join('');
+      // Append static PAJ assets
+      const pajItems = `
+        <div class="asset-picker-divider">PAJ (Solana)</div>
+        <div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectBuyAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
+          <img src="/logos/solana.png" class="asset-picker-logo" alt="SOL">
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol">SOL</div>
+            <div class="asset-picker-name">Solana</div>
+          </div>
+        </div>
+        <div class="asset-picker-item" data-symbol="JUP" data-name="Jupiter" onclick="selectBuyAsset('JUP', '/logos/jup.png', 'Jupiter', 'paj')">
+          <img src="/logos/jup.png" class="asset-picker-logo" alt="JUP">
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol">JUP</div>
+            <div class="asset-picker-name">Jupiter</div>
+          </div>
+        </div>
+        <div class="asset-picker-item" data-symbol="USDG" data-name="Global Dollar" onclick="selectBuyAsset('USDG', '/logos/usdg.png', 'Global Dollar', 'paj')">
+          <img src="/logos/usdg.png" class="asset-picker-logo" alt="USDG">
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol">USDG</div>
+            <div class="asset-picker-name">Global Dollar</div>
+          </div>
+        </div>`;
+      container.innerHTML = switchItems + pajItems;
+    }
+
+    function renderSellNetworks(symbol) {
+      if (!switchAssetsData || !symbol) return;
+      const asset = switchAssetsData.offramp[symbol];
+      if (!asset) return;
+      const container = document.getElementById('sell-network-options');
+      if (!container) return;
+      container.innerHTML = asset.chains.map(chain => {
+        const bc = switchAssetsData.blockchains[chain];
+        const logo = getChainLogo(chain);
+        const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
+        return `<div class="custom-option" onclick="selectSellNetwork('${chain}', '${logo}', '${name}')">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
+      }).join('');
+    }
+
+    function renderBuyNetworks(symbol) {
+      if (!switchAssetsData || !symbol) return;
+      const asset = switchAssetsData.onramp[symbol];
+      if (!asset) return;
+      const container = document.getElementById('buy-network-options');
+      if (!container) return;
+      container.innerHTML = asset.chains.map(chain => {
+        const bc = switchAssetsData.blockchains[chain];
+        const logo = getChainLogo(chain);
+        const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
+        return `<div class="custom-option" onclick="selectBuyNetwork('${chain}', '${logo}', '${name}')">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
+      }).join('');
+    }
+
     async function setDefaults() {
       try {
-        // Sell defaults: USDT on Solana
-        currentSellAsset = 'USDT';
-        currentSellNetwork = 'solana';
-        document.getElementById('sell-asset-display').innerHTML = `<img src="/logos/usdt.png" class="w-6 h-6" alt="USDT"><span class="font-medium">USDT</span><span class="text-gray-500 text-xs">Tether</span>`;
-        document.getElementById('sell-currency-prefix').innerHTML = '$';
-        document.getElementById('sell-asset-name').textContent = 'USDT';
-        document.getElementById('sell-confirm-asset').textContent = 'USDT';
-        document.getElementById('sell-confirm-asset-img').src = '/logos/usdt.png';
-        document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
-        document.getElementById('sell-network-display').innerHTML = `<img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-semibold">Solana</span>`;
-        document.getElementById('sell-network-name').textContent = 'Solana';
-        document.getElementById('sell-confirm-network-img').src = '/logos/solana.png';
-        document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
+        const offramp = switchAssetsData ? switchAssetsData.offramp : null;
+        const onramp = switchAssetsData ? switchAssetsData.onramp : null;
 
-        // Buy defaults: USDT on Solana
-        currentBuyAsset = 'USDT';
-        currentBuyNetwork = 'solana';
-        document.getElementById('buy-asset-display').innerHTML = `<img src="/logos/usdt.png" class="w-6 h-6" alt="USDT"><span class="font-medium">USDT</span><span class="text-gray-500 text-xs">Tether</span>`;
-        document.getElementById('buy-amount-label').textContent = 'USDT';
-        document.getElementById('buy-confirm-asset').textContent = 'USDT';
-        document.getElementById('buy-confirm-asset-img').src = '/logos/usdt.png';
-        document.getElementById('buy-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
-        document.getElementById('buy-network-display').innerHTML = `<img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-semibold">Solana</span>`;
-        document.getElementById('buy-confirm-network').textContent = 'Solana';
-        document.getElementById('buy-confirm-network-img').src = '/logos/solana.png';
-        document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
+        // Sell defaults: prefer USDT on Solana, fallback to first available
+        if (offramp && Object.keys(offramp).length > 0) {
+          const sellSym = offramp['USDT'] ? 'USDT' : Object.keys(offramp)[0];
+          const sellAsset = offramp[sellSym];
+          const sellChain = sellAsset.chains.includes('solana') ? 'solana' : sellAsset.chains[0];
+          const sellLogo = getAssetLogo(sellSym);
+          const chainLogo = getChainLogo(sellChain);
+          const chainName = switchAssetsData.blockchains[sellChain]?.name || sellChain.charAt(0).toUpperCase() + sellChain.slice(1);
 
-        // Mark options selected
-        document.querySelectorAll('#sell-asset-list .asset-picker-item').forEach(o => {
-          if (o.dataset.symbol === 'USDT') o.classList.add('selected');
-        });
-        document.querySelectorAll('#buy-asset-list .asset-picker-item').forEach(o => {
-          if (o.dataset.symbol === 'USDT') o.classList.add('selected');
-        });
-        document.querySelectorAll('#sell-network-options .custom-option, #buy-network-options .custom-option').forEach(o => {
-          if (o.textContent.includes('Solana')) o.classList.add('selected');
-        });
+          currentSellAsset = sellSym;
+          currentSellNetwork = sellChain;
+          document.getElementById('sell-asset-display').innerHTML = `<img src="${sellLogo}" class="w-6 h-6" alt="${sellSym}"><span class="font-medium">${sellSym}</span><span class="text-gray-500 text-xs">${sellAsset.name}</span>`;
+          document.getElementById('sell-currency-prefix').innerHTML = sellSym === 'CNGN' ? '₦' : '$';
+          document.getElementById('sell-asset-name').textContent = sellSym;
+          document.getElementById('sell-confirm-asset').textContent = sellSym;
+          document.getElementById('sell-confirm-asset-img').src = sellLogo;
+          document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
+          document.getElementById('sell-network-display').innerHTML = `<img src="${chainLogo}" class="w-6 h-6" alt="${chainName}"><span class="font-semibold">${chainName}</span>`;
+          document.getElementById('sell-network-name').textContent = chainName;
+          document.getElementById('sell-confirm-network-img').src = chainLogo;
+          document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
+          renderSellNetworks(sellSym);
 
-        currentSwitchAsset = getSwitchAsset('USDT', 'solana');
+          document.querySelectorAll('#sell-asset-list .asset-picker-item').forEach(o => {
+            if (o.dataset.symbol === sellSym) o.classList.add('selected');
+          });
+          document.querySelectorAll('#sell-network-options .custom-option').forEach(o => {
+            if (o.textContent.includes(chainName)) o.classList.add('selected');
+          });
+        }
+
+        // Buy defaults: prefer USDT on Solana via Switch, fallback to first available
+        if (onramp && Object.keys(onramp).length > 0) {
+          const buySym = onramp['USDT'] ? 'USDT' : Object.keys(onramp)[0];
+          const buyAsset = onramp[buySym];
+          const buyChain = buyAsset.chains.includes('solana') ? 'solana' : buyAsset.chains[0];
+          const buyLogo = getAssetLogo(buySym);
+          const chainLogo = getChainLogo(buyChain);
+          const chainName = switchAssetsData.blockchains[buyChain]?.name || buyChain.charAt(0).toUpperCase() + buyChain.slice(1);
+
+          currentBuyAsset = buySym;
+          currentBuyNetwork = buyChain;
+          currentProvider = 'switch';
+          document.getElementById('buy-asset-display').innerHTML = `<img src="${buyLogo}" class="w-6 h-6" alt="${buySym}"><span class="font-medium">${buySym}</span><span class="text-gray-500 text-xs">${buyAsset.name}</span>`;
+          document.getElementById('buy-amount-label').textContent = buySym;
+          document.getElementById('buy-confirm-asset').textContent = buySym;
+          document.getElementById('buy-confirm-asset-img').src = buyLogo;
+          document.getElementById('buy-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
+          const netCol = document.getElementById('buy-network-col');
+          if (netCol) netCol.style.display = '';
+          document.getElementById('buy-network-display').innerHTML = `<img src="${chainLogo}" class="w-6 h-6" alt="${chainName}"><span class="font-semibold">${chainName}</span>`;
+          document.getElementById('buy-confirm-network').textContent = chainName;
+          document.getElementById('buy-confirm-network-img').src = chainLogo;
+          document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
+          renderBuyNetworks(buySym);
+
+          document.querySelectorAll('#buy-asset-list .asset-picker-item').forEach(o => {
+            if (o.dataset.symbol === buySym) o.classList.add('selected');
+          });
+          document.querySelectorAll('#buy-network-options .custom-option').forEach(o => {
+            if (o.textContent.includes(chainName)) o.classList.add('selected');
+          });
+        }
+
+        currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
         if (currentSwitchAsset) {
           await fetchRate('OFFRAMP');
           await fetchRate('ONRAMP');
           updateRateDisplays();
         }
       } catch (e) {
+        console.error('setDefaults error:', e);
       }
     }
 
@@ -1396,17 +1487,12 @@
       safeLucideInit();
       fetchSettings();
       switchTab('sell');
-      setDefaults();
+      loadSwitchAssets();
     });
 
     function getSwitchAsset(symbol, network) {
       if (!symbol || !network) return '';
-      const map = {
-        'USDT': { 'solana': 'solana:usdt', 'ethereum': 'ethereum:usdt', 'bsc': 'bsc:usdt', 'polygon': 'polygon:usdt', 'arbitrum': 'arbitrum:usdt', 'base': 'base:usdt', 'tron': 'tron:usdt' },
-        'USDC': { 'solana': 'solana:usdc', 'ethereum': 'ethereum:usdc', 'bsc': 'bsc:usdc', 'polygon': 'polygon:usdc', 'arbitrum': 'arbitrum:usdc', 'base': 'base:usdc' },
-        'CNGN': { 'base': 'base:cngn', 'bsc': 'bsc:cngn' }
-      };
-      return map[symbol]?.[network] || '';
+      return `${network}:${symbol.toLowerCase()}`;
     }
 
     function formatCurrency(value) {
@@ -1910,9 +1996,13 @@
       document.querySelectorAll('#sell-asset-list .asset-picker-item').forEach(o => {
         if (o.dataset.symbol === symbol) o.classList.add('selected');
       });
+      // Reset network and render supported chains for this asset
+      currentSellNetwork = '';
+      currentSwitchAsset = '';
+      document.getElementById('sell-network-display').innerHTML = '<span class="text-gray-400 text-sm">Select Network</span>';
       document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
-      currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
-      if (currentSwitchAsset) fetchRate();
+      document.getElementById('sell-amount-step').classList.add('opacity-50', 'pointer-events-none');
+      renderSellNetworks(symbol);
       calculateSell();
       updateStepIndicators('OFFRAMP');
     }
@@ -2049,10 +2139,14 @@
         // Show network selector column for Switch assets
         const netCol = document.getElementById('buy-network-col');
         if (netCol) netCol.style.display = '';
+        // Reset network and render supported chains for this asset
+        currentBuyNetwork = '';
+        currentSwitchAsset = '';
+        document.getElementById('buy-network-display').innerHTML = '<span class="text-gray-400 text-sm">Select Network</span>';
         const netWrap = document.getElementById('buy-network-wrap');
         netWrap.classList.remove('opacity-50', 'pointer-events-none');
-        currentSwitchAsset = getSwitchAsset(currentBuyAsset, currentBuyNetwork);
-        if (currentSwitchAsset) await fetchRate();
+        document.getElementById('buy-amount-step').classList.add('opacity-50', 'pointer-events-none');
+        renderBuyNetworks(symbol);
       }
       calculateBuy();
       updateStepIndicators('ONRAMP');
@@ -2092,7 +2186,7 @@
       const previewCrypto = document.getElementById('sell-preview-crypto');
       const previewFiat = document.getElementById('sell-preview-fiat');
       if (amount > 0) {
-        previewCrypto.textContent = `${amount} ${currentSellAsset || 'USDT'}`;
+        previewCrypto.textContent = `${Number(amount).toLocaleString()} ${currentSellAsset || 'USDT'}`;
         previewFiat.textContent = `₦${receiveAfterFee.toLocaleString()}`;
         preview.classList.remove('hidden');
       } else {
@@ -2441,7 +2535,7 @@
       if (!accName) { showToast('Please wait for account name verification', 'warning'); return; }
       if (!currentSwitchAsset) { showToast('Please select a valid asset and network', 'warning'); return; }
       const btn = document.getElementById('sell-btn');
-      document.getElementById('sell-confirm-amount').textContent = amount;
+      document.getElementById('sell-confirm-amount').textContent = Number(amount).toLocaleString();
       document.getElementById('sell-confirm-asset').textContent = currentSellAsset;
       btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
       try {
@@ -2536,16 +2630,10 @@
       const evmRegex = /^0x[a-fA-F0-9]{40}$/;
       const solanaRegex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
       const tronRegex = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
-      switch (network) {
-        case 'ethereum': case 'bsc': case 'polygon': case 'arbitrum': case 'base':
-          return evmRegex.test(address);
-        case 'solana':
-          return solanaRegex.test(address);
-        case 'tron':
-          return tronRegex.test(address);
-        default:
-          return address.length >= 26;
-      }
+      if (network === 'solana') return solanaRegex.test(address);
+      if (network === 'tron') return tronRegex.test(address);
+      // All other networks (including all EVM chains from Switch) use EVM address format
+      return evmRegex.test(address);
     }
 
     async function generateBankAccount() {
@@ -2562,7 +2650,7 @@
       if (!wallet) { showToast('Please enter your wallet address', 'warning'); return; }
 
       const btn = document.getElementById('buy-btn');
-      document.getElementById('buy-confirm-ngn').textContent = amount.toFixed(2);
+      document.getElementById('buy-confirm-ngn').textContent = Number(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
       btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
 
       // PAJ Provider flow
@@ -2814,7 +2902,18 @@
         'base': `https://basescan.org/tx/${hash}`,
         'tron': `https://tronscan.org/#/transaction/${hash}`,
         'bitcoin': `https://mempool.space/tx/${hash}`,
-        'sui': `https://suivision.xyz/txblock/${hash}`
+        'sui': `https://suivision.xyz/txblock/${hash}`,
+        'optimism': `https://optimistic.etherscan.io/tx/${hash}`,
+        'avalanche': `https://snowtrace.io/tx/${hash}`,
+        'gnosis': `https://gnosisscan.io/tx/${hash}`,
+        'celo': `https://celoscan.io/tx/${hash}`,
+        'linea': `https://lineascan.build/tx/${hash}`,
+        'sonic': `https://sonicscan.org/tx/${hash}`,
+        'monad': `https://monadscan.io/tx/${hash}`,
+        'plasma': `https://plasmascan.io/tx/${hash}`,
+        'mantle': `https://mantlescan.info/tx/${hash}`,
+        'hyperevm': `https://hyperevmscan.io/tx/${hash}`,
+        'berachain': `https://berascan.io/tx/${hash}`
       };
       return explorers[network] || '#';
     }
@@ -2829,7 +2928,18 @@
         'base': `https://basescan.org/address/${address}`,
         'tron': `https://tronscan.org/#/address/${address}`,
         'bitcoin': `https://mempool.space/address/${address}`,
-        'sui': `https://suivision.xyz/account/${address}`
+        'sui': `https://suivision.xyz/account/${address}`,
+        'optimism': `https://optimistic.etherscan.io/address/${address}`,
+        'avalanche': `https://snowtrace.io/address/${address}`,
+        'gnosis': `https://gnosisscan.io/address/${address}`,
+        'celo': `https://celoscan.io/address/${address}`,
+        'linea': `https://lineascan.build/address/${address}`,
+        'sonic': `https://sonicscan.org/address/${address}`,
+        'monad': `https://monadscan.io/address/${address}`,
+        'plasma': `https://plasmascan.io/address/${address}`,
+        'mantle': `https://mantlescan.info/address/${address}`,
+        'hyperevm': `https://hyperevmscan.io/address/${address}`,
+        'berachain': `https://berascan.io/address/${address}`
       };
       return explorers[network] || '#';
     }
@@ -3107,7 +3217,7 @@
                   </div>
                   <div class="flex justify-between items-end">
                     <div>
-                      <p class="text-xs text-gray-600">${isBuy ? `₦${tx.amount.toLocaleString()} → ${tx.destination_amount?.toFixed(4) || ''} ${assetName}` : `${tx.amount} ${assetName} → ₦${tx.destination_amount?.toLocaleString() || ''}`}</p>
+                      <p class="text-xs text-gray-600">${isBuy ? `₦${tx.amount.toLocaleString()} → ${tx.destination_amount?.toFixed(4) || ''} ${assetName}` : `${Number(tx.amount).toLocaleString()} ${assetName} → ₦${tx.destination_amount?.toLocaleString() || ''}`}</p>
                       <p class="text-[10px] text-gray-400 mt-1">${date}</p>
                     </div>
                     <div class="text-right">
@@ -3121,7 +3231,7 @@
                     <div><span class="text-gray-400 text-[10px] uppercase">Status</span><p class="font-medium text-gray-700">${tx.status}</p></div>
                   </div>
                   <div class="grid grid-cols-2 gap-2">
-                    <div><span class="text-gray-400 text-[10px] uppercase">You Sent</span><p class="font-medium text-gray-700">${isBuy ? `₦${tx.amount.toLocaleString()}` : `${tx.amount} ${assetName}`}</p></div>
+                    <div><span class="text-gray-400 text-[10px] uppercase">You Sent</span><p class="font-medium text-gray-700">${isBuy ? `₦${tx.amount.toLocaleString()}` : `${Number(tx.amount).toLocaleString()} ${assetName}`}</p></div>
                     <div><span class="text-gray-400 text-[10px] uppercase">You Received</span><p class="font-medium text-gray-700">${isBuy ? `${tx.destination_amount?.toFixed(4) || '-'} ${assetName}` : `₦${tx.destination_amount?.toLocaleString() || '-'}`}</p></div>
                   </div>
                   <div class="grid grid-cols-2 gap-2">
@@ -3186,7 +3296,7 @@
       } else {
         title.textContent = 'Crypto Delivered!';
         subtitle.textContent = 'Your crypto has been sent to your wallet.';
-        amountEl.textContent = `${data.destinationAmount?.toFixed(4) || data.amount || '-'} ${data.asset || ''}`;
+        amountEl.textContent = `${data.destinationAmount?.toFixed(4) || (data.amount ? Number(data.amount).toFixed(4) : '-')} ${data.asset || ''}`;
         destLabel.textContent = 'Network';
         destEl.textContent = data.network || '-';
         detailLabel.textContent = 'Wallet';
@@ -3238,28 +3348,7 @@
         </div>
       </div>
       <div class="asset-picker-list" id="sell-asset-list">
-        <div class="asset-picker-divider">Stablecoins</div>
-        <div class="asset-picker-item" data-symbol="USDT" data-name="Tether" onclick="selectSellAsset('USDT', '/logos/usdt.png', 'Tether')">
-          <img src="/logos/usdt.png" class="asset-picker-logo" alt="USDT">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">USDT</div>
-            <div class="asset-picker-name">Tether</div>
-          </div>
-        </div>
-        <div class="asset-picker-item" data-symbol="USDC" data-name="USD Coin" onclick="selectSellAsset('USDC', '/logos/usdc.png', 'USD Coin')">
-          <img src="/logos/usdc.png" class="asset-picker-logo" alt="USDC">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">USDC</div>
-            <div class="asset-picker-name">USD Coin</div>
-          </div>
-        </div>
-        <div class="asset-picker-item" data-symbol="CNGN" data-name="Naira Token" onclick="selectSellAsset('CNGN', '/logos/cngn.png?v=2', 'Naira Token')">
-          <img src="/logos/cngn.png?v=2" class="asset-picker-logo" alt="CNGN">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">CNGN</div>
-            <div class="asset-picker-name">Naira Token</div>
-          </div>
-        </div>
+        <!-- Dynamically populated from Switch API -->
       </div>
     </div>
   </div>
@@ -3281,50 +3370,7 @@
         </div>
       </div>
       <div class="asset-picker-list" id="buy-asset-list">
-        <div class="asset-picker-divider">Stablecoins</div>
-        <div class="asset-picker-item" data-symbol="USDT" data-name="Tether" onclick="selectBuyAsset('USDT', '/logos/usdt.png', 'Tether', 'switch')">
-          <img src="/logos/usdt.png" class="asset-picker-logo" alt="USDT">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">USDT</div>
-            <div class="asset-picker-name">Tether</div>
-          </div>
-        </div>
-        <div class="asset-picker-item" data-symbol="USDC" data-name="USD Coin" onclick="selectBuyAsset('USDC', '/logos/usdc.png', 'USD Coin', 'switch')">
-          <img src="/logos/usdc.png" class="asset-picker-logo" alt="USDC">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">USDC</div>
-            <div class="asset-picker-name">USD Coin</div>
-          </div>
-        </div>
-        <div class="asset-picker-item" data-symbol="CNGN" data-name="Naira Token" onclick="selectBuyAsset('CNGN', '/logos/cngn.png?v=2', 'Naira Token', 'switch')">
-          <img src="/logos/cngn.png?v=2" class="asset-picker-logo" alt="CNGN">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">CNGN</div>
-            <div class="asset-picker-name">Naira Token</div>
-          </div>
-        </div>
-        <div class="asset-picker-divider">Solana</div>
-        <div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectBuyAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
-          <img src="/logos/solana.png" class="asset-picker-logo" alt="SOL">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">SOL</div>
-            <div class="asset-picker-name">Solana</div>
-          </div>
-        </div>
-        <div class="asset-picker-item" data-symbol="JUP" data-name="Jupiter" onclick="selectBuyAsset('JUP', '/logos/jup.png', 'Jupiter', 'paj')">
-          <img src="/logos/jup.png" class="asset-picker-logo" alt="JUP">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">JUP</div>
-            <div class="asset-picker-name">Jupiter</div>
-          </div>
-        </div>
-        <div class="asset-picker-item" data-symbol="USDG" data-name="Global Dollar" onclick="selectBuyAsset('USDG', '/logos/usdg.png', 'Global Dollar', 'paj')">
-          <img src="/logos/usdg.png" class="asset-picker-logo" alt="USDG">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">USDG</div>
-            <div class="asset-picker-name">Global Dollar</div>
-          </div>
-        </div>
+        <!-- Dynamically populated from Switch API + static PAJ assets -->
       </div>
     </div>
   </div>

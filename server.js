@@ -230,7 +230,37 @@ app.get('/api/health', (req, res) => {
 app.get('/api/assets', async (req, res, next) => {
   try {
     const data = await switchApi('/asset');
-    res.json(data);
+    const assets = data.data || [];
+    const offramp = {};
+    const onramp = {};
+    const blockchains = {};
+
+    for (const asset of assets) {
+      const chainId = asset.blockchain.name.toLowerCase();
+      const chainName = asset.blockchain.name;
+      const symbol = asset.code;
+      const name = asset.name;
+
+      if (!blockchains[chainId]) {
+        blockchains[chainId] = { id: chainId, name: chainName, type: asset.blockchain.type };
+      }
+
+      if (asset.offramp_supported) {
+        if (!offramp[symbol]) offramp[symbol] = { name, chains: [] };
+        offramp[symbol].chains.push(chainId);
+      }
+
+      if (asset.onramp_supported) {
+        if (!onramp[symbol]) onramp[symbol] = { name, chains: [] };
+        onramp[symbol].chains.push(chainId);
+      }
+    }
+
+    // Sort chains consistently
+    for (const sym of Object.keys(offramp)) offramp[sym].chains.sort();
+    for (const sym of Object.keys(onramp)) onramp[sym].chains.sort();
+
+    res.json(successResponse({ offramp, onramp, blockchains }));
   } catch (err) { next(err); }
 });
 
