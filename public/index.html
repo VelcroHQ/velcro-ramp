@@ -597,7 +597,7 @@
               <div class="flex items-center gap-2 flex-1 min-w-0 opacity-50 pointer-events-none transition-opacity"
                 id="sell-amount-step">
                 <span class="text-2xl sm:text-3xl font-bold text-gray-300" id="sell-currency-prefix">$</span>
-                <input type="number" id="sell-amount" placeholder="0.00" min="0" step="0.01" oninput="calculateSell()"
+                <input type="text" inputmode="decimal" id="sell-amount" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="flex flex-row sm:flex-col items-start sm:items-end gap-2 shrink-0 w-full sm:w-auto">
@@ -662,8 +662,8 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <span class="text-2xl sm:text-3xl font-bold text-gray-300" id="sell-receive-currency">&#8358;</span>
-                <input type="number" id="sell-receive" placeholder="0.00" min="0" step="0.01"
-                  oninput="calculateSellFromNgn()"
+                <input type="text" inputmode="decimal" id="sell-receive" placeholder="0.00"
+                  oninput="handleAmountInput(this, 2); calculateSellFromNgn();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="shrink-0 w-full sm:w-auto flex justify-end">
@@ -674,7 +674,11 @@
               </div>
             </div>
           </div>
-          <div class="text-xs text-gray-400 font-medium -mt-3">Min: $1</div>
+          <div class="flex items-center justify-between -mt-3">
+            <span id="sell-min-label" class="text-xs text-gray-400 font-medium">Min: $1</span>
+            <span id="sell-max-label" class="text-xs text-gray-400 font-medium">Max: $10,000</span>
+          </div>
+          <p id="sell-limit-error" class="hidden text-xs text-red-500 mt-1 font-medium"></p>
 
           <!-- Bank Details -->
           <div class="input-panel space-y-4">
@@ -875,8 +879,8 @@
             </div>
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div class="flex items-center gap-2 flex-1 min-w-0">
-                <input type="number" id="buy-receive" placeholder="0.00" min="0" step="0.01"
-                  oninput="calculateBuyFromCrypto()"
+                <input type="text" inputmode="decimal" id="buy-receive" placeholder="0.00"
+                  oninput="handleAmountInput(this, 4); calculateBuyFromCrypto();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="flex flex-row sm:flex-col items-start sm:items-end gap-2 shrink-0 w-full sm:w-auto">
@@ -935,7 +939,7 @@
               <div class="flex items-center gap-2 flex-1 min-w-0 opacity-50 pointer-events-none transition-opacity"
                 id="buy-amount-step">
                 <span class="text-2xl sm:text-3xl font-bold text-gray-300" id="buy-send-currency">&#8358;</span>
-                <input type="number" id="buy-amount" placeholder="0.00" min="0" step="0.01" oninput="calculateBuy()"
+                <input type="text" inputmode="decimal" id="buy-amount" placeholder="0.00" oninput="handleAmountInput(this, 2); calculateBuy();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="shrink-0 w-full sm:w-auto flex justify-end">
@@ -1280,6 +1284,8 @@
     var statusPollInterval = null;
     var currentTxDetails = {}; // Stores details for success modal
     let BUY_MAX_LIMIT = 50000; // Maximum buy amount per transaction (fetched from /api/settings)
+    let SELL_MIN_LIMIT = 1; // Minimum sell amount per transaction (fetched from /api/settings)
+    let SELL_MAX_LIMIT = 10000; // Maximum sell amount per transaction (fetched from /api/settings)
     let currentFee = 0.5; // Platform fee percentage (fetched from /api/settings)
     var rateFetchedAt = null;
     var rateExpiryInterval = null;
@@ -1308,6 +1314,56 @@
       if (known[symbol]) return known[symbol];
       const initial = symbol.charAt(0).toUpperCase();
       return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23007BFF'/%3E%3Ctext x='12' y='16' text-anchor='middle' fill='white' font-size='11' font-weight='bold' font-family='sans-serif'%3E${initial}%3C/text%3E%3C/svg%3E`;
+    }
+
+    function fmtNum(str, decimals) {
+      if (!str && str !== 0) return '';
+      let clean = String(str).replace(/[^0-9.]/g, '');
+      if (clean === '' || clean === '.') return '';
+      const parts = clean.split('.');
+      if (parts.length > 2) clean = parts[0] + '.' + parts.slice(1).join('');
+      const [intPart, decPart] = clean.split('.');
+      let result = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      if (decPart !== undefined && decimals > 0) {
+        result += '.' + decPart.slice(0, decimals);
+      }
+      return result;
+    }
+
+    function handleAmountInput(el, decimals) {
+      const oldVal = el.value;
+      const cursor = el.selectionStart;
+      const beforeCursor = oldVal.slice(0, cursor);
+      const digitsBeforeCursor = beforeCursor.replace(/[^0-9]/g, '').length;
+      const newVal = fmtNum(oldVal, decimals);
+      if (newVal !== oldVal) {
+        el.value = newVal;
+        let newCursor = 0;
+        let digitCount = 0;
+        for (let i = 0; i < newVal.length; i++) {
+          if (/\d/.test(newVal[i])) digitCount++;
+          if (digitCount >= digitsBeforeCursor) {
+            newCursor = i + 1;
+            break;
+          }
+        }
+        el.setSelectionRange(newCursor, newCursor);
+      }
+    }
+
+    function getNum(id) {
+      const val = document.getElementById(id)?.value || '';
+      return parseFloat(val.replace(/,/g, '')) || 0;
+    }
+
+    function setFmt(id, num, decimals) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (num === '' || num === null || num === undefined || Number.isNaN(num)) {
+        el.value = '';
+        return;
+      }
+      el.value = fmtNum(num.toFixed(decimals), decimals);
     }
 
     async function loadSwitchAssets() {
@@ -1544,6 +1600,16 @@
             const errMsg = document.getElementById('buy-limit-error');
             if (maxLabel) maxLabel.textContent = `Max: ₦${BUY_MAX_LIMIT.toLocaleString()}`;
             if (errMsg) errMsg.textContent = `Maximum buy amount is ₦${BUY_MAX_LIMIT.toLocaleString()} per transaction.`;
+          }
+          if (typeof data.data.sell_min_limit === 'number') {
+            SELL_MIN_LIMIT = data.data.sell_min_limit;
+            const minLabel = document.getElementById('sell-min-label');
+            if (minLabel) minLabel.textContent = `Min: $${SELL_MIN_LIMIT.toLocaleString()}`;
+          }
+          if (typeof data.data.sell_max_limit === 'number') {
+            SELL_MAX_LIMIT = data.data.sell_max_limit;
+            const maxLabel = document.getElementById('sell-max-label');
+            if (maxLabel) maxLabel.textContent = `Max: $${SELL_MAX_LIMIT.toLocaleString()}`;
           }
         }
       } catch (err) {
@@ -2170,17 +2236,18 @@
     }
 
     function calculateSell() {
-      const amount = parseFloat(document.getElementById('sell-amount').value) || 0;
+      const amount = getNum('sell-amount');
+      validateSellLimit(amount);
       const rate = Number(currentRate.sell);
       if (Number.isNaN(rate) || rate <= 0) {
-        document.getElementById('sell-receive').value = '';
+        setFmt('sell-receive', '', 2);
         document.getElementById('sell-preview').classList.add('hidden');
         updateStepIndicators('OFFRAMP');
         return;
       }
       const receiveBeforeFee = amount * rate;
       const receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
-      document.getElementById('sell-receive').value = receiveAfterFee.toFixed(2);
+      setFmt('sell-receive', receiveAfterFee, 2);
       // Update preview
       const preview = document.getElementById('sell-preview');
       const previewCrypto = document.getElementById('sell-preview-crypto');
@@ -2196,15 +2263,31 @@
     }
 
     function calculateSellFromNgn() {
-      const ngn = parseFloat(document.getElementById('sell-receive').value) || 0;
+      const ngn = getNum('sell-receive');
       const ngnBeforeFee = ngn / (1 - currentFee / 100);
       const crypto = ngnBeforeFee / currentRate.sell;
-      document.getElementById('sell-amount').value = crypto.toFixed(4);
+      setFmt('sell-amount', crypto, 4);
     }
 
     function validateBuyLimit(amount) {
       const errorEl = document.getElementById('buy-limit-error');
       if (amount > BUY_MAX_LIMIT) {
+        errorEl.classList.remove('hidden');
+        return false;
+      }
+      errorEl.classList.add('hidden');
+      return true;
+    }
+
+    function validateSellLimit(amount) {
+      const errorEl = document.getElementById('sell-limit-error');
+      if (amount < SELL_MIN_LIMIT) {
+        errorEl.textContent = `Minimum sell amount is $${SELL_MIN_LIMIT.toLocaleString()} per transaction.`;
+        errorEl.classList.remove('hidden');
+        return false;
+      }
+      if (amount > SELL_MAX_LIMIT) {
+        errorEl.textContent = `Maximum sell amount is $${SELL_MAX_LIMIT.toLocaleString()} per transaction.`;
         errorEl.classList.remove('hidden');
         return false;
       }
@@ -2220,7 +2303,7 @@
     let pajValueTimeout = null;
 
     function calculateBuy() {
-      const amount = parseFloat(document.getElementById('buy-amount').value) || 0;
+      const amount = getNum('buy-amount');
       validateBuyLimit(amount);
 
       // PAJ provider: display approximate immediately, then fetch exact PAJ value
@@ -2230,7 +2313,7 @@
         if (pajRate > 0 && tokenUsd > 0 && amount > 0) {
           const usdValue = amount / pajRate;
           const tokenAmount = usdValue / tokenUsd;
-          document.getElementById('buy-receive').value = tokenAmount.toFixed(4);
+          setFmt('buy-receive', tokenAmount, 4);
           const preview = document.getElementById('buy-preview');
           const previewFiat = document.getElementById('buy-preview-fiat');
           const previewCrypto = document.getElementById('buy-preview-crypto');
@@ -2238,7 +2321,7 @@
           previewCrypto.textContent = `$${usdValue.toFixed(2)} of ${currentBuyAsset}`;
           preview.classList.remove('hidden');
         } else {
-          document.getElementById('buy-receive').value = '';
+          setFmt('buy-receive', '', 4);
           document.getElementById('buy-preview').classList.add('hidden');
         }
         // Fetch exact PAJ value in background (may refine the display)
@@ -2250,19 +2333,19 @@
 
       const rate = Number(currentRate.buy);
       if (Number.isNaN(rate) || rate <= 0) {
-        document.getElementById('buy-receive').value = '';
+        setFmt('buy-receive', '', 4);
         document.getElementById('buy-preview').classList.add('hidden');
         updateStepIndicators('ONRAMP');
         return;
       }
       const receive = amount / rate;
       if (Number.isNaN(receive)) {
-        document.getElementById('buy-receive').value = '';
+        setFmt('buy-receive', '', 4);
         document.getElementById('buy-preview').classList.add('hidden');
         updateStepIndicators('ONRAMP');
         return;
       }
-      document.getElementById('buy-receive').value = receive.toFixed(4);
+      setFmt('buy-receive', receive, 4);
       // Update preview
       const preview = document.getElementById('buy-preview');
       const previewFiat = document.getElementById('buy-preview-fiat');
@@ -2293,13 +2376,13 @@
         const tokenRate = data.tokenRate;
         if (tokenRate && tokenRate > 0) {
           const tokenAmount = fiatAmount / tokenRate;
-          document.getElementById('buy-receive').value = tokenAmount.toFixed(4);
+          setFmt('buy-receive', tokenAmount, 4);
           return tokenAmount;
         }
         // Fallback: only use amount if it's clearly a token amount (much smaller than fiat)
         const amount = data.amount;
         if (amount !== undefined && amount < fiatAmount * 0.1) {
-          document.getElementById('buy-receive').value = amount.toFixed(4);
+          setFmt('buy-receive', amount, 4);
           return amount;
         }
       } catch (err) {
@@ -2309,9 +2392,9 @@
     }
 
     function calculateBuyFromCrypto() {
-      const crypto = parseFloat(document.getElementById('buy-receive').value) || 0;
+      const crypto = getNum('buy-receive');
       const ngn = crypto * currentRate.buy;
-      document.getElementById('buy-amount').value = ngn.toFixed(2);
+      setFmt('buy-amount', ngn, 2);
       validateBuyLimit(ngn);
     }
 
@@ -2523,9 +2606,10 @@
       }
       if (!currentSellAsset) { showToast('Please select an asset', 'warning'); return; }
       if (!currentSellNetwork || document.getElementById('sell-network-display').textContent.trim() === 'Select Network') { showToast('Please select a network', 'warning'); return; }
-      const amount = parseFloat(document.getElementById('sell-amount').value);
+      const amount = getNum('sell-amount');
       if (!amount || amount <= 0) { showToast('Please enter a valid amount', 'warning'); return; }
-      if (amount < 1) { showToast('Minimum amount is $1', 'warning'); return; }
+      if (amount < SELL_MIN_LIMIT) { showToast(`Minimum sell amount is $${SELL_MIN_LIMIT.toLocaleString()}`, 'warning'); return; }
+      if (amount > SELL_MAX_LIMIT) { showToast(`Maximum sell amount is $${SELL_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
       const bankNum = document.getElementById('sell-bank-number').value.trim();
       const accReq = countryRequirements['account_number'];
       const accRegex = accReq?.regex ? new RegExp(accReq.regex) : /^[0-9]{10,11}$/;
@@ -2642,8 +2726,8 @@
         return;
       }
       if (!currentBuyAsset) { showToast('Please select an asset', 'warning'); return; }
-      const amount = parseFloat(document.getElementById('buy-amount').value);
-      const receive = parseFloat(document.getElementById('buy-receive').value) || 0;
+      const amount = getNum('buy-amount');
+      const receive = getNum('buy-receive');
       if (!amount || amount <= 0) { showToast('Please enter a valid amount', 'warning'); return; }
       if (amount > BUY_MAX_LIMIT) { showToast(`Maximum buy amount is ₦${BUY_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
       const wallet = document.getElementById('buy-wallet').value.trim();
@@ -3051,10 +3135,10 @@
     function updateStepIndicators(direction) {
       const asset = direction === 'OFFRAMP' ? currentSellAsset : currentBuyAsset;
       const network = direction === 'OFFRAMP' ? currentSellNetwork : currentBuyNetwork;
-      const amount = direction === 'OFFRAMP' ? document.getElementById('sell-amount').value : document.getElementById('buy-amount').value;
+      const amount = direction === 'OFFRAMP' ? getNum('sell-amount') : getNum('buy-amount');
       const details = direction === 'OFFRAMP' ? currentBankCode : document.getElementById('buy-wallet').value.trim();
 
-      const steps = [!!asset, !!network, !!amount && parseFloat(amount) > 0, !!details];
+      const steps = [!!asset, !!network, amount > 0, !!details];
 
       for (let i = 0; i < 4; i++) {
         const dot = document.getElementById(`step-${i + 1}`);

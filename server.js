@@ -33,7 +33,7 @@ function loadSettings() {
   } catch (err) {
     console.error('Failed to load settings:', err.message);
   }
-  return { platform_fee: DEVELOPER_FEE, buy_max_limit: 50000 };
+  return { platform_fee: DEVELOPER_FEE, buy_max_limit: 50000, sell_min_limit: 1, sell_max_limit: 10000 };
 }
 
 function saveSettings(settings) {
@@ -655,19 +655,34 @@ app.post('/api/admin/withdraw', adminAuth, async (req, res) => {
 // Public settings (fee only)
 app.get('/api/settings', async (req, res) => {
   const settings = loadSettings();
-  const limit = parseInt(settings.buy_max_limit, 10);
-  res.json(successResponse({ platform_fee: getPlatformFee(), buy_max_limit: Number.isNaN(limit) ? 50000 : limit }));
+  const buyLimit = parseInt(settings.buy_max_limit, 10);
+  const sellMin = parseFloat(settings.sell_min_limit);
+  const sellMax = parseFloat(settings.sell_max_limit);
+  res.json(successResponse({
+    platform_fee: getPlatformFee(),
+    buy_max_limit: Number.isNaN(buyLimit) ? 50000 : buyLimit,
+    sell_min_limit: Number.isNaN(sellMin) ? 1 : sellMin,
+    sell_max_limit: Number.isNaN(sellMax) ? 10000 : sellMax
+  }));
 });
 
 app.get('/api/admin/settings', adminAuth, async (req, res) => {
   const settings = loadSettings();
-  const limit = parseInt(settings.buy_max_limit, 10);
-  res.json({ platform_fee: getPlatformFee(), buy_max_limit: Number.isNaN(limit) ? 50000 : limit, paj_email: settings.paj_email || process.env.PAJ_EMAIL || 'paj@usevelcro.com' });
+  const buyLimit = parseInt(settings.buy_max_limit, 10);
+  const sellMin = parseFloat(settings.sell_min_limit);
+  const sellMax = parseFloat(settings.sell_max_limit);
+  res.json({
+    platform_fee: getPlatformFee(),
+    buy_max_limit: Number.isNaN(buyLimit) ? 50000 : buyLimit,
+    sell_min_limit: Number.isNaN(sellMin) ? 1 : sellMin,
+    sell_max_limit: Number.isNaN(sellMax) ? 10000 : sellMax,
+    paj_email: settings.paj_email || process.env.PAJ_EMAIL || 'paj@usevelcro.com'
+  });
 });
 
 app.post('/api/admin/settings', adminAuth, async (req, res) => {
   try {
-    const { platform_fee, buy_max_limit, paj_email } = req.body;
+    const { platform_fee, buy_max_limit, sell_min_limit, sell_max_limit, paj_email } = req.body;
     const settings = loadSettings();
     if (buy_max_limit !== undefined) {
       const limit = parseInt(buy_max_limit, 10);
@@ -675,6 +690,20 @@ app.post('/api/admin/settings', adminAuth, async (req, res) => {
         return res.status(400).json({ success: false, error: 'Buy max limit must be between 1,000 and 10,000,000' });
       }
       settings.buy_max_limit = limit;
+    }
+    if (sell_min_limit !== undefined) {
+      const min = parseFloat(sell_min_limit);
+      if (Number.isNaN(min) || min < 1 || min > 100000) {
+        return res.status(400).json({ success: false, error: 'Sell min limit must be between 1 and 100,000' });
+      }
+      settings.sell_min_limit = min;
+    }
+    if (sell_max_limit !== undefined) {
+      const max = parseFloat(sell_max_limit);
+      if (Number.isNaN(max) || max < 10 || max > 1000000) {
+        return res.status(400).json({ success: false, error: 'Sell max limit must be between 10 and 1,000,000' });
+      }
+      settings.sell_max_limit = max;
     }
     if (platform_fee !== undefined) {
       const fee = parseFloat(platform_fee);

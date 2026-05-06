@@ -867,6 +867,19 @@
                     <button class="refresh-btn" onclick="fetchData()" title="Refresh Settings" style="height: 50px; width: 50px; flex-shrink: 0;"><i data-lucide="rotate-cw"></i></button>
                 </div>
                 <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">This fee is deducted from the "You'll receive" amount shown to users. Range: 0% – 10%.</p>
+
+                <label style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; display: block;">SELL LIMITS (USD)</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Minimum</label>
+                        <input type="number" id="sell-min-input" placeholder="e.g. 1" min="1" max="100000" style="margin-bottom: 0;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Maximum</label>
+                        <input type="number" id="sell-max-input" placeholder="e.g. 10000" min="10" max="1000000" style="margin-bottom: 0;">
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Offramp (sell) transaction limits per transaction. Min: $1 – $100,000. Max: $10 – $1,000,000.</p>
                 <button class="btn-primary" onclick="saveSettings()">Save Configuration</button>
             </div>
 
@@ -1101,6 +1114,8 @@
                 const settingsRes = await fetch('/api/admin/settings', { headers });
                 const settings = await settingsRes.json();
                 document.getElementById('fee-input').value = settings.platform_fee;
+                document.getElementById('sell-min-input').value = settings.sell_min_limit ?? 1;
+                document.getElementById('sell-max-input').value = settings.sell_max_limit ?? 10000;
                 document.getElementById('paj-email-input').value = settings.paj_email || '';
 
                 // 5. PAJ Session
@@ -1275,15 +1290,29 @@
                 alert('Fee must be between 0 and 10');
                 return;
             }
+            const sellMin = parseFloat(document.getElementById('sell-min-input').value);
+            const sellMax = parseFloat(document.getElementById('sell-max-input').value);
+            if (Number.isNaN(sellMin) || sellMin < 1 || sellMin > 100000) {
+                alert('Sell minimum must be between 1 and 100,000');
+                return;
+            }
+            if (Number.isNaN(sellMax) || sellMax < 10 || sellMax > 1000000) {
+                alert('Sell maximum must be between 10 and 1,000,000');
+                return;
+            }
+            if (sellMax <= sellMin) {
+                alert('Sell maximum must be greater than sell minimum');
+                return;
+            }
             try {
                 const res = await fetch('/api/admin/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
-                    body: JSON.stringify({ platform_fee: fee })
+                    body: JSON.stringify({ platform_fee: fee, sell_min_limit: sellMin, sell_max_limit: sellMax })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`Platform fee updated to ${fee}%`);
+                    alert(`Settings saved. Fee: ${fee}%, Sell limits: $${sellMin.toLocaleString()} – $${sellMax.toLocaleString()}`);
                 } else {
                     alert(data.error || 'Failed to save settings');
                 }
