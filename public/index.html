@@ -1725,7 +1725,7 @@
           });
         }
 
-        // Buy defaults: prefer USDT on Solana via Switch, fallback to first available
+        // Buy defaults: prefer USDT on Solana via Switch, fallback to PAJ SOL if Switch is down
         if (onramp && Object.keys(onramp).length > 0) {
           const buySym = onramp['USDT'] ? 'USDT' : Object.keys(onramp)[0];
           const buyAsset = onramp[buySym];
@@ -1756,6 +1756,22 @@
           document.querySelectorAll('#buy-network-options .custom-option').forEach(o => {
             if (o.textContent.includes(chainName)) o.classList.add('selected');
           });
+        } else {
+          // Fallback to PAJ SOL if Switch is down
+          const buySym = 'SOL';
+          const buyLogo = '/logos/solana.png';
+          currentBuyAsset = buySym;
+          currentBuyNetwork = 'solana';
+          currentProvider = 'paj';
+          document.getElementById('buy-asset-display').innerHTML = `<img src="${buyLogo}" class="w-6 h-6" alt="${buySym}"><span class="font-medium">${buySym}</span><span class="text-gray-500 text-xs">Solana</span>`;
+          document.getElementById('buy-amount-label').textContent = buySym;
+          safeSetText('buy-confirm-asset', buySym);
+          safeSetSrc('buy-confirm-asset-img', buyLogo);
+          document.getElementById('buy-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
+          const netCol = document.getElementById('buy-network-col');
+          if (netCol) netCol.style.display = 'none';
+          document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
+          fetchPajRate();
         }
 
         currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
@@ -2466,6 +2482,7 @@
         if (netCol) netCol.style.display = 'none';
         document.getElementById('buy-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
         currentRate.buy = 0; // reset to avoid stale switch rate
+        document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
         await fetchPajRate();
       } else {
         // Show network selector column for Switch assets
