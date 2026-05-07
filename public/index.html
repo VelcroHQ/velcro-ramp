@@ -1736,6 +1736,8 @@
     }
 
     async function setDefaults() {
+      // Force everything closed on startup
+      closeAllDropdowns();
       try {
         const offramp = switchAssetsData ? switchAssetsData.offramp : null;
         const onramp = switchAssetsData ? switchAssetsData.onramp : null;
@@ -2422,6 +2424,7 @@
     }
 
     async function selectSellAsset(symbol, logo, name, provider) {
+      closeAllDropdowns(); // Clear everything first
       currentSellAsset = symbol;
       currentProvider = provider || 'switch';
       currentSellInputMode = 'USD';
@@ -2598,6 +2601,7 @@
     }
 
     async function selectBuyAsset(symbol, logo, name, provider) {
+      closeAllDropdowns(); // Clear everything first
       currentBuyAsset = symbol;
       currentProvider = provider || 'switch';
       document.getElementById('buy-asset-display').innerHTML = `
