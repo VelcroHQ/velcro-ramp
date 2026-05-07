@@ -1050,7 +1050,7 @@
             <!-- Withdraw button row -->
             <div style="margin-bottom: 30px;">
                 <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    <button id="btn-withdraw-fees" onclick="withdrawFees()" title="Withdraw all fees to Solana wallet" 
+                    <button id="btn-withdraw-otp" onclick="requestWithdrawOTP()" title="Request OTP for withdrawal" 
                         style="background: linear-gradient(135deg, #9945FF, #14F195); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;">
                         💸 Withdraw Fees to Solana
                     </button>
@@ -1061,6 +1061,22 @@
                 <div id="withdraw-security-banner" class="hidden" style="margin-top: 12px; padding: 12px 16px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; font-size: 13px; font-weight: 600;">
                     🚫 Withdrawal BLOCKED — This recipient is NOT in your allowed whitelist. Funds will not be sent.
                 </div>
+
+                <!-- OTP Section -->
+                <div id="withdraw-otp-section" class="hidden" style="margin-top: 16px; padding: 16px; border-radius: 14px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde047;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <i data-lucide="mail" style="width: 16px; height: 16px; color: #a16207;"></i>
+                        <span style="font-size: 12px; font-weight: 600; color: #854d0e;">2FA Required</span>
+                    </div>
+                    <p style="font-size: 12px; color: #a16207; margin-bottom: 12px;">A 6-digit OTP has been sent to your admin email. Enter it below to confirm withdrawal.</p>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input type="text" id="withdraw-otp-input" placeholder="000000" maxlength="10" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 18px; font-weight: 600; letter-spacing: 4px; font-family: monospace; max-width: 200px;">
+                        <button class="btn-primary" id="btn-withdraw-confirm" onclick="confirmWithdrawal()" style="padding: 0 20px; white-space: nowrap;">Confirm Withdrawal</button>
+                        <button onclick="cancelWithdrawal()" style="background: white; border: 1px solid var(--border); padding: 0 16px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-main);">Cancel</button>
+                    </div>
+                    <p id="withdraw-otp-status" style="font-size: 12px; margin-top: 8px; display: none;"></p>
+                </div>
+
                 <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">
                     ⚠️ Make sure the recipient address above matches your wallet. If wrong, update <code>DEVELOPER_RECIPIENT</code> in the server <code>.env</code> file and restart.
                 </p>
@@ -2518,24 +2534,88 @@
             switchSection('user-detail');
         }
 
-        async function withdrawFees() {
+        async function requestWithdrawOTP() {
             const recipient = currentConfig.developer_recipient || 'unknown';
-            const msg = `Withdraw all accumulated fees to:\n${recipient}\n\nPlease verify this address is correct before confirming.`;
-            if (!confirm(msg)) return;
-            const btn = document.getElementById('btn-withdraw-fees');
-            btn.innerText = '⌛ Processing...';
-            const res = await fetch('/api/admin/withdraw', { 
-                method: 'POST', 
-                headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ asset: 'solana:usdc' })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(`Success! Withdrawal initiated.\nHash: ${data.data.hash}\nRecipient: ${recipient}`);
-                fetchData();
-            } else {
-                alert(`Error: ${data.error || data.message || 'Unknown error'}`);
-                btn.innerText = '💸 Withdraw Fees to Solana';
+            if (!confirm(`Withdraw all accumulated fees to:\n${recipient}\n\nAn OTP will be sent to your admin email. Proceed?`)) return;
+
+            const btn = document.getElementById('btn-withdraw-otp');
+            const otpSection = document.getElementById('withdraw-otp-section');
+            const statusEl = document.getElementById('withdraw-otp-status');
+            const originalText = btn.innerText;
+
+            btn.innerText = '⌛ Sending OTP...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/admin/withdraw/otp', {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    otpSection.classList.remove('hidden');
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = '#166534';
+                    statusEl.innerText = data.message;
+                    document.getElementById('withdraw-otp-input').focus();
+                    btn.innerText = '⏳ Waiting for OTP...';
+                } else {
+                    alert(`Error: ${data.error}`);
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert('Network error: ' + e.message);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function cancelWithdrawal() {
+            document.getElementById('withdraw-otp-section').classList.add('hidden');
+            document.getElementById('withdraw-otp-input').value = '';
+            const btn = document.getElementById('btn-withdraw-otp');
+            btn.innerText = '💸 Withdraw Fees to Solana';
+            btn.disabled = false;
+        }
+
+        async function confirmWithdrawal() {
+            const otp = document.getElementById('withdraw-otp-input').value.trim();
+            if (!otp) { alert('Please enter the OTP'); return; }
+
+            const btn = document.getElementById('btn-withdraw-confirm');
+            const statusEl = document.getElementById('withdraw-otp-status');
+            const originalText = btn.innerText;
+
+            btn.innerText = 'Processing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/admin/withdraw', {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ asset: 'solana:usdc', otp })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(`Success! Withdrawal initiated.\nHash: ${data.data.hash}\nRecipient: ${currentConfig.developer_recipient || 'unknown'}`);
+                    cancelWithdrawal();
+                    fetchData();
+                } else {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = '#dc2626';
+                    statusEl.innerText = data.error || 'Withdrawal failed';
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = '#dc2626';
+                statusEl.innerText = 'Network error: ' + e.message;
+                btn.innerText = originalText;
+                btn.disabled = false;
             }
         }
 

@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
-const { randomUUID, createHash } = require('crypto');
+const { randomUUID, createHash, randomInt } = require('crypto');
 const path = require('path');
 const fs = require('fs');
 
@@ -41,6 +41,75 @@ const ADMIN_PASSWORD_HASH = ADMIN_PASSWORD_RAW.startsWith('sha256:')
 const WITHDRAWAL_ALLOWED_RECIPIENTS = (process.env.WITHDRAWAL_ALLOWED_RECIPIENTS || DEVELOPER_RECIPIENT)
   .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const SETTINGS_PATH = path.join(__dirname, 'settings.json');
+
+// ─── Email (Nodemailer) ───
+let nodemailer;
+try { nodemailer = require('nodemailer'); } catch (e) { console.log('⚠️ Nodemailer not available'); }
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = parseInt(process.env.SMTP_PORT, 10) || 587;
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+
+let mailTransporter = null;
+if (nodemailer && SMTP_HOST && SMTP_USER && SMTP_PASS) {
+  mailTransporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
+  });
+}
+
+async function sendMail(subject, html, text) {
+  if (!mailTransporter || !ADMIN_EMAIL) return { sent: false, reason: 'SMTP not configured' };
+  try {
+    const info = await mailTransporter.sendMail({
+      from: `"Velcro Admin" <${SMTP_FROM}>`,
+      to: ADMIN_EMAIL,
+      subject,
+      text,
+      html
+    });
+    return { sent: true, messageId: info.messageId };
+  } catch (err) {
+    console.error('Email send failed:', err.message);
+    return { sent: false, error: err.message };
+  }
+}
+
+// ─── OTP Storage ───
+const otpStore = new Map(); // key: 'withdraw', value: { code, expiry, attempts }
+const OTP_VALID_MS = 5 * 60 * 1000; // 5 minutes
+const OTP_MAX_ATTEMPTS = 3;
+
+function generateOTP() {
+  return String(randomInt(100000, 999999));
+}
+
+function storeOTP(key, code) {
+  otpStore.set(key, { code, expiry: Date.now() + OTP_VALID_MS, attempts: 0 });
+}
+
+function verifyOTP(key, input) {
+  const record = otpStore.get(key);
+  if (!record) return { valid: false, reason: 'No OTP requested. Click "Get OTP" first.' };
+  if (Date.now() > record.expiry) {
+    otpStore.delete(key);
+    return { valid: false, reason: 'OTP expired. Request a new one.' };
+  }
+  if (record.attempts >= OTP_MAX_ATTEMPTS) {
+    otpStore.delete(key);
+    return { valid: false, reason: 'Too many failed attempts. Request a new OTP.' };
+  }
+  if (record.code !== String(input).trim()) {
+    record.attempts++;
+    return { valid: false, reason: 'Invalid OTP. ' + (OTP_MAX_ATTEMPTS - record.attempts) + ' attempts remaining.' };
+  }
+  otpStore.delete(key);
+  return { valid: true };
+}
 
 // ─── Security Audit Logger ───
 const AUDIT_LOG_PATH = path.join(__dirname, 'audit.log');
@@ -706,9 +775,42 @@ app.get('/api/admin/users', adminRateLimiter, adminAuth, async (req, res) => {
   }
 });
 
+// ─── Withdrawal OTP ───
+app.post('/api/admin/withdraw/otp', adminRateLimiter, adminAuth, async (req, res) => {
+  try {
+    const otp = generateOTP();
+    storeOTP('withdraw', otp);
+    const maskedRecipient = DEVELOPER_RECIPIENT.slice(0, 6) + '...' + DEVELOPER_RECIPIENT.slice(-6);
+
+    const emailText = `Velcro Admin — Withdrawal OTP\n\nCode: ${otp}\nRecipient: ${DEVELOPER_RECIPIENT}\nExpires in 5 minutes.\n\nIf you did not request this, change your admin password immediately.`;
+    const emailHtml = `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px;"><h2 style="color:#0D0D59;margin-bottom:8px;">Velcro Admin</h2><p style="color:#64748b;font-size:14px;">Withdrawal OTP</p><div style="background:#f4f7fe;padding:16px;border-radius:8px;text-align:center;margin:16px 0;"><div style="font-size:32px;font-weight:700;color:#0D0D59;letter-spacing:4px;">${otp}</div><p style="font-size:12px;color:#94a3b8;margin-top:8px;">Expires in 5 minutes</p></div><p style="font-size:13px;color:#64748b;">Recipient: <code>${DEVELOPER_RECIPIENT}</code></p><p style="font-size:12px;color:#dc2626;margin-top:12px;">If you did not request this, change your admin password immediately.</p></div>`;
+
+    const mailResult = await sendMail('Velcro Admin — Withdrawal OTP', emailHtml, emailText);
+    auditLog('WITHDRAW_OTP_SENT', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, emailSent: mailResult.sent });
+
+    res.json({
+      success: true,
+      message: mailResult.sent
+        ? 'OTP sent to your admin email. Check your inbox.'
+        : 'OTP generated. (Email not configured — check server logs for the code.)',
+      emailConfigured: mailResult.sent
+    });
+  } catch (err) {
+    console.error('[WITHDRAW OTP] Error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/admin/withdraw', adminRateLimiter, adminAuth, async (req, res) => {
   try {
-    const { asset } = req.body;
+    const { asset, otp } = req.body;
+
+    // SECURITY: Verify OTP
+    const otpCheck = verifyOTP('withdraw', otp);
+    if (!otpCheck.valid) {
+      auditLog('WITHDRAW_BLOCKED_OTP', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, reason: otpCheck.reason });
+      return res.status(403).json({ success: false, error: otpCheck.reason });
+    }
 
     // SECURITY: Cooldown between withdrawals
     const now = Date.now();
@@ -737,6 +839,13 @@ app.post('/api/admin/withdraw', adminRateLimiter, adminAuth, async (req, res) =>
     console.log('[WITHDRAW] Request payload:', JSON.stringify(payload));
     auditLog('WITHDRAW_INITIATED', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, asset: payload.asset });
 
+    // Email notification: withdrawal initiated
+    await sendMail(
+      'Velcro — Withdrawal Initiated',
+      `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px;"><h2 style="color:#0D0D59;">Withdrawal Initiated</h2><p>A fee withdrawal has been initiated to:</p><code>${DEVELOPER_RECIPIENT}</code><p style="color:#64748b;font-size:12px;margin-top:12px;">Time: ${new Date().toISOString()}</p></div>`,
+      `Velcro Admin — Withdrawal Initiated\n\nRecipient: ${DEVELOPER_RECIPIENT}\nTime: ${new Date().toISOString()}\n\nIf this was not you, change your password immediately.`
+    );
+
     const data = await switchApi('/developer/withdraw', {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -746,9 +855,25 @@ app.post('/api/admin/withdraw', adminRateLimiter, adminAuth, async (req, res) =>
     if (data.success) {
       lastWithdrawalTime = Date.now();
       auditLog('WITHDRAW_SUCCESS', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, hash: data.data?.hash });
+
+      // Email notification: withdrawal success
+      await sendMail(
+        'Velcro — Withdrawal Successful',
+        `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;"><h2 style="color:#166534;">Withdrawal Successful</h2><p>Your fees have been withdrawn.</p><p><b>Hash:</b> <code>${data.data?.hash || 'N/A'}</code></p><p><b>Recipient:</b> <code>${DEVELOPER_RECIPIENT}</code></p></div>`,
+        `Velcro Admin — Withdrawal Successful\n\nHash: ${data.data?.hash || 'N/A'}\nRecipient: ${DEVELOPER_RECIPIENT}\nTime: ${new Date().toISOString()}`
+      );
+
       res.json({ success: true, data: data.data });
     } else {
       auditLog('WITHDRAW_FAILED', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, error: data.message });
+
+      // Email notification: withdrawal failed
+      await sendMail(
+        'Velcro — Withdrawal Failed',
+        `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #fecaca;border-radius:12px;background:#fef2f2;"><h2 style="color:#dc2626;">Withdrawal Failed</h2><p>Error: ${data.message || 'Unknown error'}</p><p><b>Recipient:</b> <code>${DEVELOPER_RECIPIENT}</code></p></div>`,
+        `Velcro Admin — Withdrawal Failed\n\nError: ${data.message || 'Unknown error'}\nRecipient: ${DEVELOPER_RECIPIENT}\nTime: ${new Date().toISOString()}`
+      );
+
       res.status(400).json({ success: false, error: data.message, raw: data });
     }
   } catch (err) {
