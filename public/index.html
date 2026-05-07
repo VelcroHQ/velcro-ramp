@@ -66,6 +66,16 @@
       transform: translateY(0);
     }
 
+    .sm\:hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 640px) {
+      .sm\:hidden {
+        display: flex !important;
+      }
+    }
+
     .input-panel {
       background: #ffffff;
       border: 1.5px solid #e5e7eb;
@@ -777,9 +787,9 @@
                 <input type="text" inputmode="decimal" id="sell-amount" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-col items-end gap-2 shrink-0 w-full sm:w-auto">
-                <div class="flex flex-col items-center sm:items-end gap-0.5">
-                  <div class="custom-select" id="sell-asset-wrap">
+              <div class="flex flex-col items-end gap-2.5 shrink-0 w-full sm:w-auto">
+                <div class="flex flex-col items-center sm:items-end gap-2">
+                  <div class="custom-select pb-1" id="sell-asset-wrap">
                     <div class="asset-pill" onclick="openSellAssetPicker()">
                       <div class="flex items-center gap-1.5" id="sell-asset-display">
                         <span class="text-gray-400 text-sm">Select</span>
@@ -792,8 +802,8 @@
                   </div>
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide">Choose Asset</span>
                 </div>
-                <div class="flex flex-col items-center sm:items-end gap-0.5">
-                  <div class="custom-select">
+                <div class="flex flex-col items-center sm:items-end gap-2">
+                  <div class="custom-select pb-1">
                     <div class="network-pill opacity-50 pointer-events-none" id="sell-network-wrap"
                       onclick="toggleDropdown('sell-network-options')">
                       <span id="sell-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select
@@ -1063,9 +1073,9 @@
                   oninput="handleAmountInput(this, 4); calculateBuyFromCrypto();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-col items-end gap-2 shrink-0 w-full sm:w-auto">
-                <div class="flex flex-col items-center sm:items-end gap-0.5">
-                  <div class="custom-select" id="buy-asset-wrap">
+              <div class="flex flex-col items-end gap-2.5 shrink-0 w-full sm:w-auto">
+                <div class="flex flex-col items-center sm:items-end gap-2">
+                  <div class="custom-select pb-1" id="buy-asset-wrap">
                     <div class="asset-pill" onclick="openBuyAssetPicker()">
                       <div class="flex items-center gap-1.5" id="buy-asset-display">
                         <span class="text-gray-400 text-sm">Select</span>
@@ -1078,8 +1088,8 @@
                   </div>
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide">Choose Asset</span>
                 </div>
-                <div class="flex flex-col items-center sm:items-end gap-0.5" id="buy-network-col">
-                  <div class="custom-select">
+                <div class="flex flex-col items-center sm:items-end gap-2" id="buy-network-col">
+                  <div class="custom-select pb-1">
                     <div class="network-pill opacity-50 pointer-events-none" id="buy-network-wrap"
                       onclick="toggleDropdown('buy-network-options')">
                       <span id="buy-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select
@@ -2125,6 +2135,17 @@
         banks = banks.filter(b => b.name.toLowerCase().includes(term));
       }
 
+      // Deduplicate banks by code
+      const uniqueBanks = [];
+      const seenCodes = new Set();
+      for (const b of banks) {
+        if (!seenCodes.has(b.code)) {
+          uniqueBanks.push(b);
+          seenCodes.add(b.code);
+        }
+      }
+      banks = uniqueBanks;
+
       let html = '';
       let topCount = 0;
       banks.forEach((b, i) => {
@@ -2135,7 +2156,7 @@
         }
         if (isTop) topCount++;
         const safeName = b.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        html += `<div class="custom-option" data-bank-code="${b.code}" onclick="selectSellBank('${safeName}', '${b.code}')">${b.name}</div>`;
+        html += `<div class="custom-option" data-bank-code="${b.code}" onclick="selectSellBank('${safeName}', '${b.code}'); event.stopPropagation();">${b.name}</div>`;
       });
 
       if (banks.length === 0) {
@@ -2456,12 +2477,16 @@
       updateStepIndicators('OFFRAMP');
     }
 
-    function selectSellBank(name, code) {
+    function selectSellBank(name, code, event) {
+      if (event) event.stopPropagation();
       currentBankCode = code;
-      document.getElementById('sell-bank-display').innerHTML = `<span class="font-medium text-gray-900">${name}</span>`;
+      document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${name}</span>`;
+      
+      // Explicitly close all dropdowns
+      document.querySelectorAll('.custom-select-options').forEach(o => o.classList.remove('open'));
       document.querySelectorAll('#sell-bank-options .custom-option').forEach(o => o.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
-      closeAllDropdowns();
+      if (event) event.currentTarget.classList.add('selected');
+      
       validateAccount();
       updateStepIndicators('OFFRAMP');
     }
