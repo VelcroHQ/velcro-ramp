@@ -180,6 +180,8 @@
       margin-top: 4px;
       max-height: 300px;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
       -webkit-overflow-scrolling: touch;
       touch-action: pan-y;
       overscroll-behavior: contain;
@@ -2080,9 +2082,32 @@
 
     function populateBanks(filter = '') {
       const container = document.getElementById('sell-bank-options');
+      if (!container) return;
+      
+      // Initialize header if not present
+      if (!container.querySelector('.dropdown-header')) {
+        container.innerHTML = `
+          <div class="dropdown-header sticky top-0 bg-white z-20 p-2 border-b border-gray-100">
+            <div class="flex items-center gap-2 mb-2 sm:hidden">
+              <span class="text-sm font-bold text-gray-900 flex-1 px-2">Select Bank</span>
+              <button onclick="toggleDropdown('sell-bank-options')" class="p-2 hover:bg-gray-100 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            <div class="relative">
+              <input type="text" id="bank-filter" placeholder="Search banks..." 
+                class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-velcro-green bg-gray-50 transition-all" 
+                oninput="populateBanks(this.value)" onclick="event.stopPropagation()">
+            </div>
+          </div>
+          <div id="bank-list-items"></div>
+        `;
+      }
+
+      const listContainer = document.getElementById('bank-list-items');
       let banks = cachedBanks;
       if (banks.length === 0) {
-        container.innerHTML = `<div class="custom-option text-gray-400">No banks available</div>`;
+        listContainer.innerHTML = `<div class="custom-option text-gray-400">No banks available</div>`;
         return;
       }
 
@@ -2100,10 +2125,7 @@
         banks = banks.filter(b => b.name.toLowerCase().includes(term));
       }
 
-      let html = `<div class="sticky top-0 bg-white z-10 p-2 border-b border-gray-100">
-        <input type="text" id="bank-filter" placeholder="Search banks..." class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-velcro-green" oninput="populateBanks(this.value)" onclick="event.stopPropagation()">
-      </div>`;
-
+      let html = '';
       let topCount = 0;
       banks.forEach((b, i) => {
         const isTop = TOP_BANK_CODES.includes(b.code);
@@ -2119,15 +2141,7 @@
       if (banks.length === 0) {
         html += `<div class="custom-option text-gray-400">No banks found</div>`;
       }
-
-      container.innerHTML = html;
-      const input = document.getElementById('bank-filter');
-      if (input && term) {
-        input.value = term;
-        input.focus();
-        const len = input.value.length;
-        input.setSelectionRange(len, len);
-      }
+      listContainer.innerHTML = html;
     }
 
     async function selectCountry(code, currency, label, flag) {
