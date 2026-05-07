@@ -2483,9 +2483,10 @@
       safeSetText('sell-network-name', name);
       safeSetText('sell-confirm-network', name);
       safeSetSrc('sell-confirm-network-img', logo);
-      document.querySelectorAll('#sell-network-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
-      closeAllDropdowns();
+      
+      // Explicitly close all dropdowns
+      document.querySelectorAll('.custom-select-options').forEach(o => o.classList.remove('open'));
       document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
       if (currentSwitchAsset) fetchRate();
