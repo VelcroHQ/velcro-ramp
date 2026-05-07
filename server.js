@@ -338,11 +338,17 @@ app.get('/api/health', (req, res) => {
 
 app.get('/api/assets', async (req, res, next) => {
   try {
-    const data = await switchApi('/asset');
-    const assets = data.data || [];
+    let assets = [];
+    let blockchains = {};
+    try {
+      const data = await switchApi('/asset');
+      assets = data.data || [];
+    } catch (err) {
+      console.error('⚠️  Switch /api/assets failed:', err.message);
+    }
+
     const offramp = {};
     const onramp = {};
-    const blockchains = {};
 
     for (const asset of assets) {
       const chainId = asset.blockchain.name.toLowerCase();
@@ -382,8 +388,14 @@ app.get('/api/rates', async (req, res, next) => {
     if (currency) params.append('currency', currency);
     const qs = params.toString();
     if (qs) path += '?' + qs;
-    const data = await switchApi(path);
-    res.json(data);
+    
+    try {
+      const data = await switchApi(path);
+      res.json(data);
+    } catch (err) {
+      console.error('⚠️  Switch /api/rates failed:', err.message);
+      res.json(successResponse([], 'Switch rates unavailable'));
+    }
   } catch (err) { next(err); }
 });
 
@@ -397,8 +409,14 @@ app.get('/api/institutions', async (req, res, next) => {
     let path = '/institution';
     const qs = params.toString();
     if (qs) path += '?' + qs;
-    const data = await switchApi(path);
-    res.json(data);
+    
+    try {
+      const data = await switchApi(path);
+      res.json(data);
+    } catch (err) {
+      console.error('⚠️  Switch /api/institutions failed:', err.message);
+      res.json(successResponse([], 'Switch institutions unavailable'));
+    }
   } catch (err) { next(err); }
 });
 
@@ -428,8 +446,14 @@ app.get('/api/requirements', async (req, res, next) => {
     if (currency) params.append('currency', currency);
     if (type) params.append('type', type);
     if (channel) params.append('channel', channel);
-    const data = await switchApi(`/requirement?${params.toString()}`);
-    res.json(data);
+    
+    try {
+      const data = await switchApi(`/requirement?${params.toString()}`);
+      res.json(data);
+    } catch (err) {
+      console.error('⚠️  Switch /api/requirements failed:', err.message);
+      res.json(successResponse([], 'Switch requirements unavailable'));
+    }
   } catch (err) { next(err); }
 });
 

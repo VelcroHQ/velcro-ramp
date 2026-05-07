@@ -1594,14 +1594,19 @@
     async function loadSwitchAssets() {
       try {
         const res = await fetch(`${API_BASE}/api/assets`);
-        const json = await res.json();
-        if (!json.success) return;
-        switchAssetsData = json.data;
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            switchAssetsData = json.data;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load Switch assets:', e);
+      } finally {
+        // Always render lists, even if Switch data is missing (Paj assets are static/internal)
         renderSellAssetList();
         renderBuyAssetList();
         setDefaults();
-      } catch (e) {
-        console.error('Failed to load Switch assets:', e);
       }
     }
 
