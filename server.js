@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
-const { randomUUID } = require('crypto');
+const { randomUUID, createHash } = require('crypto');
 const path = require('path');
 const fs = require('fs');
 
@@ -19,12 +19,50 @@ try { pajModule = require('./paj'); } catch (err) { console.log('⚠️  PAJ mod
 const SWITCH_BASE_URL = process.env.SWITCH_BASE_URL || 'https://api.onswitch.xyz';
 const SWITCH_SERVICE_KEY = process.env.SWITCH_SERVICE_KEY;
 const DEVELOPER_FEE = parseFloat(process.env.DEVELOPER_FEE) || 0.5;
-const DEVELOPER_RECIPIENT = process.env.DEVELOPER_RECIPIENT || '8hM6fCeFrBZAenN8HdQDZ6qN7G5Yv8qu34VJFy95mejh';
+
+// SECURITY: No hardcoded fallback for sensitive addresses. Crash if missing.
+const DEVELOPER_RECIPIENT = process.env.DEVELOPER_RECIPIENT;
+if (!DEVELOPER_RECIPIENT) {
+  console.error('FATAL: DEVELOPER_RECIPIENT env var is required.');
+  process.exit(1);
+}
 const DEVELOPER_WITHDRAW_ASSET = process.env.DEVELOPER_WITHDRAW_ASSET || 'solana:usdc';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'velcroadmin2026';
+
+// SECURITY: Admin password — support plain text OR bcrypt-style hash (sha256)
+const ADMIN_PASSWORD_RAW = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD_RAW) {
+  console.error('FATAL: ADMIN_PASSWORD env var is required.');
+  process.exit(1);
+}
+const ADMIN_PASSWORD_HASH = ADMIN_PASSWORD_RAW.startsWith('sha256:')
+  ? ADMIN_PASSWORD_RAW.slice(7)
+  : createHash('sha256').update(ADMIN_PASSWORD_RAW).digest('hex');
+
 const WITHDRAWAL_ALLOWED_RECIPIENTS = (process.env.WITHDRAWAL_ALLOWED_RECIPIENTS || DEVELOPER_RECIPIENT)
   .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const SETTINGS_PATH = path.join(__dirname, 'settings.json');
+
+// ─── Security Audit Logger ───
+const AUDIT_LOG_PATH = path.join(__dirname, 'audit.log');
+function auditLog(action, details = {}) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    action,
+    ip: details.ip || 'unknown',
+    userAgent: details.userAgent || 'unknown',
+    ...details
+  };
+  try {
+    fs.appendFileSync(AUDIT_LOG_PATH, JSON.stringify(entry) + '\n');
+  } catch (e) { console.error('Audit log failed:', e.message); }
+}
+
+// ─── Admin Auth Helpers ───
+function verifyAdminPassword(input) {
+  const clean = input.replace(/^Bearer\s+/i, '');
+  const inputHash = createHash('sha256').update(clean).digest('hex');
+  return inputHash === ADMIN_PASSWORD_HASH;
+}
 
 // ─── Persistent Settings ───
 function loadSettings() {
@@ -547,15 +585,29 @@ app.post('/webhook/switch', express.json(), async (req, res) => {
 });
 
 // ─── Admin Endpoints ───
+const adminRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20, // 20 requests per 5 min per IP
+  message: { error: 'Too many admin requests. Try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const adminAuth = (req, res, next) => {
   const auth = req.headers.authorization;
-  if (auth && (auth === `Bearer ${ADMIN_PASSWORD}` || auth === ADMIN_PASSWORD)) {
+  if (auth && verifyAdminPassword(auth)) {
+    req.adminClientIp = req.ip || req.connection.remoteAddress || 'unknown';
     return next();
   }
+  auditLog('ADMIN_AUTH_FAIL', { ip: req.ip, userAgent: req.headers['user-agent'] });
   res.status(401).json({ error: 'Unauthorized' });
 };
 
-app.get('/api/admin/stats', adminAuth, async (req, res) => {
+// Withdrawal cooldown: last withdrawal timestamp
+let lastWithdrawalTime = 0;
+const WITHDRAWAL_COOLDOWN_MS = 60 * 1000; // 1 minute between withdrawals
+
+app.get('/api/admin/stats', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const allTxs = await safeDbRead(() => Transaction.find({}));
     const totalUsers = new Set(allTxs.map(t => t.wallet_address).filter(Boolean)).size;
@@ -585,7 +637,7 @@ function isWithdrawalAllowed(address) {
   return WITHDRAWAL_ALLOWED_RECIPIENTS.includes((address || '').toLowerCase());
 }
 
-app.get('/api/admin/config', adminAuth, async (req, res) => {
+app.get('/api/admin/config', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     res.json({
       developer_recipient: DEVELOPER_RECIPIENT,
@@ -600,7 +652,7 @@ app.get('/api/admin/config', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/api/admin/transactions', adminAuth, async (req, res) => {
+app.get('/api/admin/transactions', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const rows = await safeDbRead(() => Transaction.find({}).sort({ created_at: -1 }).limit(200));
     res.json(rows);
@@ -610,7 +662,7 @@ app.get('/api/admin/transactions', adminAuth, async (req, res) => {
 });
 
 // One-time fix: retroactively tag old PAJ transactions that were saved with channel: 'BANK'
-app.post('/api/admin/fix-paj-channels', adminAuth, async (req, res) => {
+app.post('/api/admin/fix-paj-channels', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const allTxs = await safeDbRead(() => Transaction.find({}));
     const pajRefs = [];
@@ -629,7 +681,7 @@ app.post('/api/admin/fix-paj-channels', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/api/admin/users', adminAuth, async (req, res) => {
+app.get('/api/admin/users', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const txs = await safeDbRead(() => Transaction.find({}));
     const userMap = {};
@@ -654,13 +706,22 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
   }
 });
 
-app.post('/api/admin/withdraw', adminAuth, async (req, res) => {
+app.post('/api/admin/withdraw', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const { asset } = req.body;
+
+    // SECURITY: Cooldown between withdrawals
+    const now = Date.now();
+    if (now - lastWithdrawalTime < WITHDRAWAL_COOLDOWN_MS) {
+      const waitSec = Math.ceil((WITHDRAWAL_COOLDOWN_MS - (now - lastWithdrawalTime)) / 1000);
+      auditLog('WITHDRAW_BLOCKED_COOLDOWN', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT });
+      return res.status(429).json({ success: false, error: `Please wait ${waitSec}s before another withdrawal.` });
+    }
 
     // SECURITY: Block withdrawal if recipient is not whitelisted
     if (!isWithdrawalAllowed(DEVELOPER_RECIPIENT)) {
       console.error('[WITHDRAW] BLOCKED — Recipient not in whitelist:', DEVELOPER_RECIPIENT);
+      auditLog('WITHDRAW_BLOCKED_WHITELIST', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT });
       return res.status(403).json({
         success: false,
         error: 'Withdrawal blocked — recipient address is not in the allowed whitelist.',
@@ -674,18 +735,25 @@ app.post('/api/admin/withdraw', adminAuth, async (req, res) => {
       beneficiary: { wallet_address: DEVELOPER_RECIPIENT }
     };
     console.log('[WITHDRAW] Request payload:', JSON.stringify(payload));
+    auditLog('WITHDRAW_INITIATED', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, asset: payload.asset });
+
     const data = await switchApi('/developer/withdraw', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
     console.log('[WITHDRAW] Switch response:', JSON.stringify(data));
+
     if (data.success) {
+      lastWithdrawalTime = Date.now();
+      auditLog('WITHDRAW_SUCCESS', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, hash: data.data?.hash });
       res.json({ success: true, data: data.data });
     } else {
+      auditLog('WITHDRAW_FAILED', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, error: data.message });
       res.status(400).json({ success: false, error: data.message, raw: data });
     }
   } catch (err) {
     console.error('[WITHDRAW] Error:', err.message);
+    auditLog('WITHDRAW_ERROR', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, error: err.message });
     res.status(500).json({ error: err.message });
   }
 });
@@ -718,7 +786,7 @@ app.get('/api/admin/settings', adminAuth, async (req, res) => {
   });
 });
 
-app.post('/api/admin/settings', adminAuth, async (req, res) => {
+app.post('/api/admin/settings', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const { platform_fee, buy_max_limit, sell_min_limit, sell_max_limit, paj_email } = req.body;
     const settings = loadSettings();
@@ -759,6 +827,7 @@ app.post('/api/admin/settings', adminAuth, async (req, res) => {
     }
     if (saveSettings(settings)) {
       console.log('✅ Settings updated:', JSON.stringify(settings));
+      auditLog('SETTINGS_UPDATED', { ip: req.adminClientIp, changes: { platform_fee, buy_max_limit, sell_min_limit, sell_max_limit, paj_email } });
       res.json({ success: true, ...settings });
     } else {
       res.status(500).json({ success: false, error: 'Failed to save settings' });
@@ -886,15 +955,16 @@ app.post('/webhook/paj', async (req, res) => {
 });
 
 // ─── Admin PAJ Session Routes ───
-app.post('/api/admin/paj/initiate', adminAuth, async (req, res, next) => {
+app.post('/api/admin/paj/initiate', adminRateLimiter, adminAuth, async (req, res, next) => {
   try {
     if (!pajModule) return res.status(503).json({ error: 'PAJ module not available' });
+    auditLog('PAJ_INITIATE', { ip: req.adminClientIp });
     const result = await pajModule.initiateSession();
     res.json(result);
   } catch (err) { next(err); }
 });
 
-app.post('/api/admin/paj/verify', adminAuth, async (req, res, next) => {
+app.post('/api/admin/paj/verify', adminRateLimiter, adminAuth, async (req, res, next) => {
   try {
     if (!pajModule) return res.status(503).json({ error: 'PAJ module not available' });
     const { otp } = req.body;
