@@ -1049,10 +1049,18 @@
 
             <!-- Withdraw button row -->
             <div style="margin-bottom: 30px;">
-                <button id="btn-withdraw-fees" onclick="withdrawFees()" title="Withdraw all fees to Solana wallet" 
-                    style="background: linear-gradient(135deg, #9945FF, #14F195); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;">
-                    💸 Withdraw Fees to Solana
-                </button>
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <button id="btn-withdraw-fees" onclick="withdrawFees()" title="Withdraw all fees to Solana wallet" 
+                        style="background: linear-gradient(135deg, #9945FF, #14F195); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;">
+                        💸 Withdraw Fees to Solana
+                    </button>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        Recipient: <code id="withdraw-recipient-display" style="background: var(--bg-light); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: var(--text-main); font-weight: 600;">—</code>
+                    </div>
+                </div>
+                <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">
+                    ⚠️ Make sure the recipient address above matches your wallet. If wrong, update <code>DEVELOPER_RECIPIENT</code> in the server <code>.env</code> file and restart.
+                </p>
             </div>
 
             <div class="table-card">
@@ -1648,9 +1656,11 @@
                 });
         }
 
+        let currentConfig = {};
+
         async function fetchData() {
             const btn = document.querySelector('.refresh-btn');
-            btn.classList.add('spinning');
+            if (btn) btn.classList.add('spinning');
             const headers = { 'Authorization': adminKey };
 
             try {
@@ -1662,18 +1672,27 @@
                 document.getElementById('stat-total-volume').innerText = `$${Number(stats.totalVolumeUSD).toLocaleString(undefined, {maximumFractionDigits: 0})} | ₦${Number(stats.totalVolumeNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
                 document.getElementById('stat-total-earned').innerText = `${Number(stats.developerFees.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${stats.developerFees.currency || 'USDC'}`;
 
-                // 2. Transactions
+                // 2. Config (recipient address, etc.)
+                const configRes = await fetch('/api/admin/config', { headers });
+                currentConfig = await configRes.json();
+                const recipientEl = document.getElementById('withdraw-recipient-display');
+                if (recipientEl && currentConfig.developer_recipient) {
+                    recipientEl.innerText = currentConfig.developer_recipient.slice(0, 6) + '...' + currentConfig.developer_recipient.slice(-6);
+                    recipientEl.title = currentConfig.developer_recipient;
+                }
+
+                // 3. Transactions
                 const txRes = await fetch('/api/admin/transactions', { headers });
                 currentTxs = await txRes.json();
                 renderTransactions(currentTxs);
                 computeStats(currentTxs);
 
-                // 3. Users (Wallets)
+                // 4. Users (Wallets)
                 const userRes = await fetch('/api/admin/users', { headers });
                 const users = await userRes.json();
                 renderUsers(users);
 
-                // 4. Settings
+                // 5. Settings
                 const settingsRes = await fetch('/api/admin/settings', { headers });
                 const settings = await settingsRes.json();
                 document.getElementById('fee-input').value = settings.platform_fee;
@@ -1682,7 +1701,7 @@
                 document.getElementById('sell-max-input').value = settings.sell_max_limit ?? 10000;
                 document.getElementById('paj-email-input').value = settings.paj_email || '';
 
-                // 5. PAJ Session
+                // 6. PAJ Session
                 await fetchPajSession();
 
                 lucide.createIcons();
@@ -1703,7 +1722,7 @@
                 document.getElementById('tx-summary-body').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--failed);padding:20px;">Unable to connect to server.<br>${retryBtn}</td></tr>`;
                 document.getElementById('all-tx-body').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--failed);padding:20px;">Unable to connect to server.<br>${retryBtn}</td></tr>`;
             } finally {
-                btn.classList.remove('spinning');
+                if (btn) btn.classList.remove('spinning');
             }
         }
 
@@ -2469,7 +2488,9 @@
         }
 
         async function withdrawFees() {
-            if (!confirm('Initiate withdrawal of all fees to your Solana wallet?')) return;
+            const recipient = currentConfig.developer_recipient || 'unknown';
+            const msg = `Withdraw all accumulated fees to:\n${recipient}\n\nPlease verify this address is correct before confirming.`;
+            if (!confirm(msg)) return;
             const btn = document.getElementById('btn-withdraw-fees');
             btn.innerText = '⌛ Processing...';
             const res = await fetch('/api/admin/withdraw', { 
@@ -2479,11 +2500,11 @@
             });
             const data = await res.json();
             if (data.success) {
-                alert(`Success! Withdrawal initiated.\nHash: ${data.data.hash}`);
+                alert(`Success! Withdrawal initiated.\nHash: ${data.data.hash}\nRecipient: ${recipient}`);
                 fetchData();
             } else {
-                alert(`Error: ${data.error}`);
-                btn.innerText = '💸 Withdraw to Solana';
+                alert(`Error: ${data.error || data.message || 'Unknown error'}`);
+                btn.innerText = '💸 Withdraw Fees to Solana';
             }
         }
 

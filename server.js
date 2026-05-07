@@ -578,6 +578,19 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
   }
 });
 
+app.get('/api/admin/config', adminAuth, async (req, res) => {
+  try {
+    res.json({
+      developer_recipient: DEVELOPER_RECIPIENT,
+      developer_asset: DEVELOPER_WITHDRAW_ASSET,
+      developer_fee: DEVELOPER_FEE,
+      switch_base_url: SWITCH_BASE_URL
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/admin/transactions', adminAuth, async (req, res) => {
   try {
     const rows = await safeDbRead(() => Transaction.find({}).sort({ created_at: -1 }).limit(200));
@@ -635,19 +648,23 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
 app.post('/api/admin/withdraw', adminAuth, async (req, res) => {
   try {
     const { asset } = req.body;
+    const payload = {
+      asset: asset || DEVELOPER_WITHDRAW_ASSET,
+      beneficiary: { wallet_address: DEVELOPER_RECIPIENT }
+    };
+    console.log('[WITHDRAW] Request payload:', JSON.stringify(payload));
     const data = await switchApi('/developer/withdraw', {
       method: 'POST',
-      body: JSON.stringify({
-        asset: asset || DEVELOPER_WITHDRAW_ASSET,
-        beneficiary: { wallet_address: DEVELOPER_RECIPIENT }
-      })
+      body: JSON.stringify(payload)
     });
+    console.log('[WITHDRAW] Switch response:', JSON.stringify(data));
     if (data.success) {
       res.json({ success: true, data: data.data });
     } else {
-      res.status(400).json({ success: false, error: data.message });
+      res.status(400).json({ success: false, error: data.message, raw: data });
     }
   } catch (err) {
+    console.error('[WITHDRAW] Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
