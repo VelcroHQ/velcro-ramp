@@ -2217,7 +2217,9 @@
     }
 
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('.custom-select')) {
+      const isSelect = e.target.closest('.custom-select');
+      const isOption = e.target.closest('.custom-option');
+      if (!isSelect || isOption) {
         closeAllDropdowns();
       }
     });
@@ -2238,11 +2240,7 @@
         // mark that we moved (scroll gesture)
       }, { passive: true });
       container.addEventListener('click', (e) => {
-        if (isTouch) {
-          // If this click was synthesized from a touch, check movement
-          // (browsers may not expose changedTouches in click, so we rely on a heuristic:
-          // if the user is actively scrolling, we skip selection for a brief moment)
-        }
+        e.stopPropagation();
         const option = e.target.closest('.custom-option');
         if (!option) return;
         const id = option.dataset.network;
@@ -2484,9 +2482,7 @@
       safeSetText('sell-confirm-network', name);
       safeSetSrc('sell-confirm-network-img', logo);
       if (optionEl) optionEl.classList.add('selected');
-      
-      // Explicitly close all dropdowns
-      document.querySelectorAll('.custom-select-options').forEach(o => o.classList.remove('open'));
+      setTimeout(closeAllDropdowns, 50);
       document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
       if (currentSwitchAsset) fetchRate();
@@ -2641,7 +2637,7 @@
       safeSetSrc('buy-confirm-network-img', logo);
       document.querySelectorAll('#buy-network-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
-      closeAllDropdowns();
+      setTimeout(closeAllDropdowns, 50);
       document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentBuyAsset, currentBuyNetwork);
       if (currentSwitchAsset) fetchRate();
