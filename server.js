@@ -779,6 +779,7 @@ app.get('/api/admin/users', adminRateLimiter, adminAuth, async (req, res) => {
 app.post('/api/admin/withdraw/otp', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const otp = generateOTP();
+    console.log(`[OTP] Withdrawal code generated: ${otp}`); 
     storeOTP('withdraw', otp);
     const maskedRecipient = DEVELOPER_RECIPIENT.slice(0, 6) + '...' + DEVELOPER_RECIPIENT.slice(-6);
 
