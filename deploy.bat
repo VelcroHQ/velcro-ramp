@@ -21,6 +21,13 @@ if exist "!SSH_KEY!" (
 )
 
 :: 3. Update VPS
+echo Pushing configuration (.env) to VPS...
+if exist "!SSH_KEY!" (
+    scp -i "!SSH_KEY!" .env root@187.124.13.111:/root/velcro-ramp/.env
+) else (
+    scp .env root@187.124.13.111:/root/velcro-ramp/.env
+)
+
 echo Connecting to VPS (187.124.13.111)...
 !SSH_CMD! root@187.124.13.111 "cd /root/velcro-ramp && (git fetch origin && git reset --hard origin/main) || (echo Git authentication failed on VPS. Please configure your GitHub token. && exit 1) && npm install && pm2 delete velcro-ramp 2>/dev/null || true && pm2 start server.js --name velcro-ramp && pm2 status"
 
