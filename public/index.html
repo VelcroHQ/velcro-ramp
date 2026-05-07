@@ -197,13 +197,16 @@
       margin-top: 4px;
       max-height: 300px;
       overflow-y: auto;
-      display: flex;
       flex-direction: column;
       -webkit-overflow-scrolling: touch;
       touch-action: pan-y;
       overscroll-behavior: contain;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
       min-width: 180px;
+    }
+
+    .custom-select-options.open {
+      display: flex !important;
     }
 
     /* Mobile dropdown overlay */
