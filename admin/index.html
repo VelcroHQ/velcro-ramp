@@ -1390,6 +1390,17 @@
                         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Pull the latest transactions, users, stats, and settings from the server.</p>
                         <button class="btn-primary" onclick="fetchData()" style="width: 100%;">Refresh Data</button>
                     </div>
+                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(220, 38, 38, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="shield-alert" style="width: 16px; height: 16px; color: #dc2626;"></i>
+                            </div>
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Security Audit Log</div>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">View recent admin actions, login attempts, and withdrawal events.</p>
+                        <button class="btn-primary" onclick="fetchAuditLog()" style="width: 100%; background: #dc2626;">View Audit Log</button>
+                        <div id="audit-log-container" style="margin-top: 12px; max-height: 200px; overflow-y: auto; font-size: 11px; display: none;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2525,6 +2536,28 @@
             } else {
                 alert(`Error: ${data.error || data.message || 'Unknown error'}`);
                 btn.innerText = '💸 Withdraw Fees to Solana';
+            }
+        }
+
+        async function fetchAuditLog() {
+            const container = document.getElementById('audit-log-container');
+            container.style.display = 'block';
+            container.innerHTML = '<p style="color:var(--text-secondary)">Loading...</p>';
+            try {
+                const res = await fetch('/api/admin/audit', { headers: { 'Authorization': adminKey } });
+                const data = await res.json();
+                if (!data.success || !data.logs.length) {
+                    container.innerHTML = '<p style="color:var(--text-secondary)">No audit events found.</p>';
+                    return;
+                }
+                const rows = data.logs.map(log => {
+                    const time = new Date(log.timestamp).toLocaleTimeString();
+                    const actionColor = log.action.includes('BLOCK') || log.action.includes('FAIL') ? 'color:#dc2626;' : 'color:var(--text-main);';
+                    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);${actionColor}"><b>${time}</b> · ${log.action}${log.recipient ? ' → ' + log.recipient.slice(0,8) + '...' : ''}${log.ip ? ' <span style="color:var(--text-secondary)">(' + log.ip + ')</span>' : ''}</div>`;
+                }).join('');
+                container.innerHTML = rows;
+            } catch (e) {
+                container.innerHTML = '<p style="color:#dc2626">Failed to load audit log.</p>';
             }
         }
 
