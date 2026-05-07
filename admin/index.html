@@ -1058,6 +1058,9 @@
                         Recipient: <code id="withdraw-recipient-display" style="background: var(--bg-light); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: var(--text-main); font-weight: 600;">—</code>
                     </div>
                 </div>
+                <div id="withdraw-security-banner" class="hidden" style="margin-top: 12px; padding: 12px 16px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; font-size: 13px; font-weight: 600;">
+                    🚫 Withdrawal BLOCKED — This recipient is NOT in your allowed whitelist. Funds will not be sent.
+                </div>
                 <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">
                     ⚠️ Make sure the recipient address above matches your wallet. If wrong, update <code>DEVELOPER_RECIPIENT</code> in the server <code>.env</code> file and restart.
                 </p>
@@ -1679,6 +1682,23 @@
                 if (recipientEl && currentConfig.developer_recipient) {
                     recipientEl.innerText = currentConfig.developer_recipient.slice(0, 6) + '...' + currentConfig.developer_recipient.slice(-6);
                     recipientEl.title = currentConfig.developer_recipient;
+                }
+                const banner = document.getElementById('withdraw-security-banner');
+                const withdrawBtn = document.getElementById('btn-withdraw-fees');
+                if (banner && currentConfig.withdrawal_allowed === false) {
+                    banner.classList.remove('hidden');
+                    if (withdrawBtn) {
+                        withdrawBtn.style.opacity = '0.5';
+                        withdrawBtn.style.cursor = 'not-allowed';
+                        withdrawBtn.title = 'Withdrawal blocked — address not whitelisted';
+                    }
+                } else if (banner) {
+                    banner.classList.add('hidden');
+                    if (withdrawBtn) {
+                        withdrawBtn.style.opacity = '1';
+                        withdrawBtn.style.cursor = 'pointer';
+                        withdrawBtn.title = 'Withdraw all fees to Solana wallet';
+                    }
                 }
 
                 // 3. Transactions

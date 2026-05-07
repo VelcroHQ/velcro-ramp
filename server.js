@@ -22,6 +22,8 @@ const DEVELOPER_FEE = parseFloat(process.env.DEVELOPER_FEE) || 0.5;
 const DEVELOPER_RECIPIENT = process.env.DEVELOPER_RECIPIENT || '8hM6fCeFrBZAenN8HdQDZ6qN7G5Yv8qu34VJFy95mejh';
 const DEVELOPER_WITHDRAW_ASSET = process.env.DEVELOPER_WITHDRAW_ASSET || 'solana:usdc';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'velcroadmin2026';
+const WITHDRAWAL_ALLOWED_RECIPIENTS = (process.env.WITHDRAWAL_ALLOWED_RECIPIENTS || DEVELOPER_RECIPIENT)
+  .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const SETTINGS_PATH = path.join(__dirname, 'settings.json');
 
 // ─── Persistent Settings ───
@@ -578,13 +580,20 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
   }
 });
 
+function isWithdrawalAllowed(address) {
+  if (!WITHDRAWAL_ALLOWED_RECIPIENTS.length) return true;
+  return WITHDRAWAL_ALLOWED_RECIPIENTS.includes((address || '').toLowerCase());
+}
+
 app.get('/api/admin/config', adminAuth, async (req, res) => {
   try {
     res.json({
       developer_recipient: DEVELOPER_RECIPIENT,
       developer_asset: DEVELOPER_WITHDRAW_ASSET,
       developer_fee: DEVELOPER_FEE,
-      switch_base_url: SWITCH_BASE_URL
+      switch_base_url: SWITCH_BASE_URL,
+      withdrawal_allowed_recipients: WITHDRAWAL_ALLOWED_RECIPIENTS,
+      withdrawal_allowed: isWithdrawalAllowed(DEVELOPER_RECIPIENT)
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -648,6 +657,18 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
 app.post('/api/admin/withdraw', adminAuth, async (req, res) => {
   try {
     const { asset } = req.body;
+
+    // SECURITY: Block withdrawal if recipient is not whitelisted
+    if (!isWithdrawalAllowed(DEVELOPER_RECIPIENT)) {
+      console.error('[WITHDRAW] BLOCKED — Recipient not in whitelist:', DEVELOPER_RECIPIENT);
+      return res.status(403).json({
+        success: false,
+        error: 'Withdrawal blocked — recipient address is not in the allowed whitelist.',
+        recipient: DEVELOPER_RECIPIENT,
+        allowed: WITHDRAWAL_ALLOWED_RECIPIENTS
+      });
+    }
+
     const payload = {
       asset: asset || DEVELOPER_WITHDRAW_ASSET,
       beneficiary: { wallet_address: DEVELOPER_RECIPIENT }
