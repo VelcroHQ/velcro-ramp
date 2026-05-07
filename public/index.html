@@ -771,7 +771,7 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div class="flex items-center gap-2 flex-1 min-w-0 opacity-50 pointer-events-none transition-opacity"
                 id="sell-amount-step">
-                <span class="text-2xl sm:text-3xl font-bold text-gray-300" id="sell-currency-prefix">$</span>
+                <button id="sell-currency-prefix" onclick="toggleSellInputMode()" class="text-2xl sm:text-3xl font-bold text-gray-300 hover:text-velcro-green transition-colors cursor-pointer">$</button>
                 <input type="text" inputmode="decimal" id="sell-amount" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
@@ -1486,6 +1486,7 @@
     var rateFetchedAt = null;
     var rateExpiryInterval = null;
     const RATE_EXPIRY_SECONDS = 300; // 5 minutes
+    var currentSellInputMode = 'USD'; // 'USD' or 'ASSET'
     let switchAssetsData = null; // Dynamically fetched from Switch API
 
     function safeLucideInit() {
@@ -1611,29 +1612,55 @@
     }
 
     function renderSellAssetList() {
-      if (!switchAssetsData) return;
       const container = document.getElementById('sell-asset-list');
       if (!container) return;
-      const assets = switchAssetsData.offramp || {};
-      const symbols = sortAssets(Object.keys(assets));
-      container.innerHTML = symbols.map(sym => {
-        const asset = assets[sym];
-        const logo = getAssetLogo(sym);
-        return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectSellAsset('${sym}', '${logo}', '${asset.name}')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
-      }).join('');
+      
+      let switchItems = '';
+      if (switchAssetsData) {
+        const assets = switchAssetsData.offramp || {};
+        const symbols = sortAssets(Object.keys(assets));
+        switchItems = symbols.map(sym => {
+          const asset = assets[sym];
+          const logo = getAssetLogo(sym);
+          return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectSellAsset('${sym}', '${logo}', '${asset.name}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
+        }).join('');
+      }
+
+      // Append PAJ assets (SOL and JUP only, per user request to avoid USDC/USDT)
+      const pajItems = `
+        <div class="asset-picker-divider">PAJ (Solana)</div>
+        <div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectSellAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
+          <img src="/logos/solana.png" class="asset-picker-logo" alt="SOL">
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol">SOL</div>
+            <div class="asset-picker-name">Solana</div>
+          </div>
+        </div>
+        <div class="asset-picker-item" data-symbol="JUP" data-name="Jupiter" onclick="selectSellAsset('JUP', '/logos/jup.png', 'Jupiter', 'paj')">
+          <img src="/logos/jup.png" class="asset-picker-logo" alt="JUP">
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol">JUP</div>
+            <div class="asset-picker-name">Jupiter</div>
+          </div>
+        </div>
+      `;
+      container.innerHTML = switchItems + pajItems;
     }
 
     function renderBuyAssetList() {
-      if (!switchAssetsData) return;
       const container = document.getElementById('buy-asset-list');
       if (!container) return;
-      const assets = switchAssetsData.onramp || {};
-      const symbols = sortAssets(Object.keys(assets));
-      const switchItems = symbols.map(sym => {
-        const asset = assets[sym];
-        const logo = getAssetLogo(sym);
-        return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectBuyAsset('${sym}', '${logo}', '${asset.name}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
-      }).join('');
+
+      let switchItems = '';
+      if (switchAssetsData) {
+        const assets = switchAssetsData.onramp || {};
+        const symbols = sortAssets(Object.keys(assets));
+        switchItems = symbols.map(sym => {
+          const asset = assets[sym];
+          const logo = getAssetLogo(sym);
+          return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectBuyAsset('${sym}', '${logo}', '${asset.name}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
+        }).join('');
+      }
       // Append static PAJ assets
       const pajItems = `
         <div class="asset-picker-divider">PAJ (Solana)</div>
@@ -1956,21 +1983,30 @@
         if (!res.ok) throw new Error('Failed to fetch PAJ rate');
         const payload = await res.json();
         const data = payload.data || {};
-        // PAJ rate fetched
-        const rawRate = data.onramp?.rate ?? data.onramp;
-        const onrampRate = Number(rawRate);
-        if (!Number.isNaN(onrampRate) && onrampRate > 0) {
-          currentRate.paj = onrampRate;
+        
+        // Use onramp or offramp rate depending on context
+        const direction = document.getElementById('form-sell').classList.contains('hidden') ? 'ONRAMP' : 'OFFRAMP';
+        const rawRate = direction === 'ONRAMP' ? (data.onramp?.rate ?? data.onramp) : (data.offramp?.rate ?? data.offramp);
+        const activeRate = Number(rawRate);
+        if (!Number.isNaN(activeRate) && activeRate > 0) {
+          currentRate.paj = activeRate;
         }
-        // Fetch token prices and compute approximate token rates (no session needed)
+
+        // Fetch token prices and compute approximate token rates
         await fetchPajTokenPrices();
-        if (currentBuyAsset && currentProvider === 'paj') {
-          const approxRate = computePajTokenRate(currentBuyAsset);
-          currentRate.buy = approxRate > 0 ? approxRate : 0;
-          // PAJ rate computed
+        
+        const currentAsset = direction === 'OFFRAMP' ? currentSellAsset : currentBuyAsset;
+        if (currentAsset && currentProvider === 'paj') {
+          const approxRate = computePajTokenRate(currentAsset);
+          if (direction === 'OFFRAMP') {
+            currentRate.sell = approxRate > 0 ? approxRate : 0;
+          } else {
+            currentRate.buy = approxRate > 0 ? approxRate : 0;
+          }
         }
         updateRateDisplays();
-        calculateBuy();
+        if (direction === 'OFFRAMP') calculateSell();
+        else calculateBuy();
       } catch (err) {
       }
     }
@@ -1980,7 +2016,9 @@
       const buyRateEl = document.getElementById('buy-rate-display');
       const pulse = '<span class="w-2 h-2 rounded-full bg-green-500 live-pulse"></span>';
       if (sellRateEl) {
-        if (currentSellAsset && currentRate.sell) {
+        if (currentProvider === 'paj' && currentRate.paj) {
+          sellRateEl.innerHTML = `${pulse}Rate: $1 on ${currentSellAsset} = ${formatCurrency(currentRate.paj)}`;
+        } else if (currentSellAsset && currentRate.sell) {
           sellRateEl.innerHTML = `${pulse}Rate: 1 ${currentSellAsset} = ${formatCurrency(currentRate.sell)}`;
         } else {
           sellRateEl.innerHTML = `${pulse}Rate: --`;
@@ -2328,15 +2366,19 @@
       safeLucideInit();
     }
 
-    function selectSellAsset(symbol, logo, name) {
+    async function selectSellAsset(symbol, logo, name, provider) {
       currentSellAsset = symbol;
+      currentProvider = provider || 'switch';
+      currentSellInputMode = 'USD';
+      const prefix = document.getElementById('sell-currency-prefix');
+      if (prefix) prefix.textContent = '$';
+
       document.getElementById('sell-asset-display').innerHTML = `
         <img src="${logo}" class="w-6 h-6" alt="${symbol}">
         <span class="font-bold text-sm sm:text-base">${symbol}</span>
         <span class="text-gray-400 text-[10px] hidden sm:inline ml-1">${name}</span>
       `;
       closeSellAssetPicker();
-      document.getElementById('sell-currency-prefix').textContent = symbol === 'CNGN' ? '₦' : '$';
       safeSetText('sell-asset-name', symbol);
       safeSetText('sell-confirm-asset', symbol);
       safeSetSrc('sell-confirm-asset-img', logo);
@@ -2344,15 +2386,42 @@
       document.querySelectorAll('#sell-asset-list .asset-picker-item').forEach(o => {
         if (o.dataset.symbol === symbol) o.classList.add('selected');
       });
+
       // Reset network and render supported chains for this asset
       currentSellNetwork = '';
       currentSwitchAsset = '';
       document.getElementById('sell-network-display').innerHTML = '<span class="text-gray-400 text-sm">Select Network</span>';
       document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
       document.getElementById('sell-amount-step').classList.add('opacity-50', 'pointer-events-none');
-      renderSellNetworks(symbol);
+      
+      if (currentProvider === 'paj') {
+        currentSellNetwork = 'solana';
+        document.getElementById('sell-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
+        document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
+        await fetchPajRate();
+        fetchPajBanks();
+      } else {
+        renderSellNetworks(symbol);
+        fetchInstitutions(); // Switch banks
+      }
       calculateSell();
       updateStepIndicators('OFFRAMP');
+    }
+
+    async function fetchPajBanks() {
+      try {
+        const res = await fetch(`${API_BASE}/api/paj/banks`);
+        if (!res.ok) throw new Error('Failed to fetch PAJ banks');
+        const payload = await res.json();
+        cachedBanks = (payload.data || []).map(b => ({
+          id: b.id,
+          code: b.id, // PAJ uses ID as code for resolution
+          name: b.name
+        }));
+        populateBanks();
+      } catch (err) {
+        showToast('Failed to load PAJ banks', 'error');
+      }
     }
 
     function selectSellNetwork(id, logo, name, optionEl) {
@@ -2397,22 +2466,28 @@
       nameError.classList.add('hidden');
 
       try {
-        const res = await fetch(`${API_BASE}/api/resolve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            country: currentCountry,
-            beneficiary: {
-              account_number: bankNum,
-              bank_code: currentBankCode
-            }
-          })
-        });
-        const payload = await res.json();
-        if (!res.ok) {
-          throw new Error(payload.message || 'Could not resolve account name');
+        let payload;
+        if (currentProvider === 'paj') {
+          const res = await fetch(`${API_BASE}/api/paj/resolve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bank: currentBankCode, accountNumber: bankNum })
+          });
+          payload = await res.json();
+          if (!res.ok) throw new Error(payload.message || 'Could not resolve account name');
+        } else {
+          const res = await fetch(`${API_BASE}/api/resolve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              country: currentCountry,
+              beneficiary: { account_number: bankNum, bank_code: currentBankCode }
+            })
+          });
+          payload = await res.json();
+          if (!res.ok) throw new Error(payload.message || 'Could not resolve account name');
         }
-        const resolvedName = payload.data?.account_name || payload.data?.holder_name || payload.data?.name;
+        const resolvedName = payload.data?.accountName || payload.data?.account_name || payload.data?.holder_name || payload.data?.name;
         if (resolvedName) {
           nameInput.value = resolvedName;
           nameInput.classList.remove('hidden');
@@ -2518,24 +2593,54 @@
       updateStepIndicators('ONRAMP');
     }
 
+    function toggleSellInputMode() {
+      if (!currentSellAsset) return;
+      currentSellInputMode = currentSellInputMode === 'USD' ? 'ASSET' : 'USD';
+      const prefix = document.getElementById('sell-currency-prefix');
+      prefix.textContent = currentSellInputMode === 'USD' ? '$' : currentSellAsset;
+      calculateSell();
+    }
+
     function calculateSell() {
       const amount = getNum('sell-amount');
-      const rate = Number(currentRate.sell);
-      if (Number.isNaN(rate) || rate <= 0) {
-        setFmt('sell-receive', '', 2);
-        document.getElementById('sell-preview').classList.add('hidden');
-        updateStepIndicators('OFFRAMP');
-        return;
+      const pajRate = Number(currentRate.paj);
+      const tokenUsd = Number(PAJ_TOKEN_PRICES[currentSellAsset] || 0);
+      const switchRate = Number(currentRate.sell);
+      
+      let receiveAfterFee = 0;
+      let cryptoToSend = 0;
+
+      if (currentProvider === 'paj') {
+        if (currentSellInputMode === 'USD') {
+          // Input is in USD ($)
+          const receiveBeforeFee = amount * pajRate;
+          receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
+          cryptoToSend = tokenUsd > 0 ? amount / tokenUsd : 0;
+        } else {
+          // Input is in ASSET (SOL/JUP)
+          const receiveBeforeFee = amount * (pajRate * tokenUsd);
+          receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
+          cryptoToSend = amount;
+        }
+      } else {
+        // Switch provider (always treats input as asset amount for now)
+        const receiveBeforeFee = amount * switchRate;
+        receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
+        cryptoToSend = amount;
       }
-      const receiveBeforeFee = amount * rate;
-      const receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
-      setFmt('sell-receive', receiveAfterFee, 2);
+
+      if (receiveAfterFee > 0) {
+        setFmt('sell-receive', receiveAfterFee, 2);
+      } else {
+        setFmt('sell-receive', '', 2);
+      }
+
       // Update preview
       const preview = document.getElementById('sell-preview');
       const previewCrypto = document.getElementById('sell-preview-crypto');
       const previewFiat = document.getElementById('sell-preview-fiat');
-      if (amount > 0) {
-        previewCrypto.textContent = `${Number(amount).toLocaleString()} ${currentSellAsset || 'USDT'}`;
+      if (amount > 0 && cryptoToSend > 0) {
+        previewCrypto.textContent = `${Number(cryptoToSend).toLocaleString(undefined, {maximumFractionDigits: 4})} ${currentSellAsset}`;
         previewFiat.textContent = `₦${receiveAfterFee.toLocaleString()}`;
         preview.classList.remove('hidden');
       } else {
@@ -2546,9 +2651,25 @@
 
     function calculateSellFromNgn() {
       const ngn = getNum('sell-receive');
+      const pajRate = Number(currentRate.paj);
+      const tokenUsd = Number(PAJ_TOKEN_PRICES[currentSellAsset] || 0);
+      const switchRate = Number(currentRate.sell);
+
       const ngnBeforeFee = ngn / (1 - currentFee / 100);
-      const crypto = ngnBeforeFee / currentRate.sell;
-      setFmt('sell-amount', crypto, 4);
+      
+      if (currentProvider === 'paj') {
+        if (currentSellInputMode === 'USD') {
+          const usd = ngnBeforeFee / pajRate;
+          setFmt('sell-amount', usd, 2);
+        } else {
+          const crypto = ngnBeforeFee / (pajRate * tokenUsd);
+          setFmt('sell-amount', crypto, 4);
+        }
+      } else {
+        const crypto = ngnBeforeFee / switchRate;
+        setFmt('sell-amount', crypto, 4);
+      }
+      calculateSell(); // To update preview
     }
 
     function validateBuyLimit(amount) {
@@ -2876,23 +2997,85 @@
         return;
       }
       if (!currentSellAsset) { showToast('Please select an asset', 'warning'); return; }
-      if (!currentSellNetwork || document.getElementById('sell-network-display').textContent.trim() === 'Select Network') { showToast('Please select a network', 'warning'); return; }
       const amount = getNum('sell-amount');
+      const receive = getNum('sell-receive');
       if (!amount || amount <= 0) { showToast('Please enter a valid amount', 'warning'); return; }
-      if (amount < SELL_MIN_LIMIT) { showToast(`Minimum sell amount is $${SELL_MIN_LIMIT.toLocaleString()}`, 'warning'); return; }
-      if (amount > SELL_MAX_LIMIT) { showToast(`Maximum sell amount is $${SELL_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
+      if (!validateSellLimit(amount)) { showToast(`Maximum sell amount is $${SELL_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
+      
       const bankNum = document.getElementById('sell-bank-number').value.trim();
-      const accReq = countryRequirements['account_number'];
-      const accRegex = accReq?.regex ? new RegExp(accReq.regex) : /^[0-9]{10,11}$/;
-      if (!accRegex.test(bankNum) || bankNum.length < 10) { showToast(accReq?.hint || 'Please enter a valid account number', 'warning'); return; }
-      if (document.getElementById('sell-bank-display').textContent.trim() === 'Select your bank') { showToast('Please select a bank', 'warning'); return; }
-      const accName = document.getElementById('sell-account-name').value.trim();
-      if (!accName) { showToast('Please wait for account name verification', 'warning'); return; }
-      if (!currentSwitchAsset) { showToast('Please select a valid asset and network', 'warning'); return; }
+      const accountName = document.getElementById('sell-account-name').value.trim();
+      if (!currentBankCode) { showToast('Please select your bank', 'warning'); return; }
+      if (!bankNum || bankNum.length < 10) { showToast('Please enter a valid account number', 'warning'); return; }
+      if (!accountName) { showToast('Please wait for account name verification', 'warning'); return; }
+
       const btn = document.getElementById('sell-btn');
-      document.getElementById('sell-confirm-amount').textContent = Number(amount).toLocaleString();
-      document.getElementById('sell-confirm-asset').textContent = currentSellAsset;
+      document.getElementById('sell-confirm-amount').textContent = Number(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
       btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
+
+      // PAJ Provider flow
+      if (currentProvider === 'paj') {
+        const mint = PAJ_MINTS[currentSellAsset];
+        if (!mint) { showToast('Invalid PAJ asset', 'warning'); btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address'; safeLucideInit(); return; }
+        try {
+          const res = await fetch(`${API_BASE}/api/paj/sell`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fiatAmount: receive, mint, bank: currentBankCode, accountNumber: bankNum })
+          });
+          const responseBody = await res.text();
+          if (!res.ok) {
+            let errorMsg = 'Failed to initiate PAJ sell transaction';
+            try { const err = JSON.parse(responseBody); errorMsg = err.message || errorMsg; } catch { }
+            throw new Error(errorMsg);
+          }
+          const payload = JSON.parse(responseBody);
+          const data = payload.data || {};
+          document.getElementById('sell-wallet-address').textContent = data.address || '-';
+          document.getElementById('sell-reference').textContent = data.id || '-';
+          currentReference = data.id || '';
+          
+          // Use exact crypto amount from PAJ response if available
+          if (data.amount) {
+            document.getElementById('sell-confirm-amount').textContent = Number(data.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6});
+          }
+          
+          // Generate QR Code
+          document.getElementById('sell-qr-code').innerHTML = '';
+          new QRCode(document.getElementById('sell-qr-code'), {
+            text: data.address,
+            width: 160,
+            height: 160,
+            colorDark: "#0D0D59",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+          });
+
+          document.getElementById('sell-generated-address').classList.remove('hidden');
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Address Generated';
+          btn.disabled = true;
+          btn.classList.add('opacity-50', 'cursor-not-allowed');
+          lockSellForm();
+          safeLucideInit();
+          currentTxDetails = {
+            type: 'sell',
+            reference: data.id,
+            amount: amount,
+            destinationAmount: receive,
+            asset: currentSellAsset,
+            network: 'solana',
+            bankName: document.getElementById('sell-bank-display').textContent.trim(),
+            accountNumber: bankNum,
+            accountName: accountName,
+            provider: 'paj'
+          };
+          startPajStatusPoll(data.id, 'sell');
+        } catch (err) {
+          btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address';
+          safeLucideInit();
+          showToast(err.message || 'Failed to generate address', 'error');
+        }
+        return;
+      }
       try {
         const res = await fetch(`${API_BASE}/api/initiate`, {
           method: 'POST',
@@ -3197,7 +3380,7 @@
       }, 5000); // Polling every 5 seconds for better responsiveness
     }
 
-    function startPajStatusPoll(txId) {
+    function startPajStatusPoll(txId, type = 'buy') {
       if (statusPollInterval) clearInterval(statusPollInterval);
       statusPollInterval = setInterval(async () => {
         try {
@@ -3216,12 +3399,21 @@
             'CANCELLED': 'CANCELLED'
           };
           const mappedStatus = statusMap[status] || status;
-          updateStatusUI(mappedStatus, 'buy');
-          // Show blockchain explorer link for completed buy transactions
+          updateStatusUI(mappedStatus, type);
+          // Show blockchain explorer link for completed transactions
           if (status === 'COMPLETED') {
             const txHash = data.signature || data.hash || '';
-            const explorerLink = document.getElementById('buy-explorer-link');
-            const statusDetail = document.getElementById('buy-status-detail');
+            const explorerLink = document.getElementById((type === 'sell' ? '' : 'buy') + '-explorer-link');
+            const statusDetail = document.getElementById((type === 'sell' ? '' : 'buy') + '-status-detail');
+            
+            // For sell, also update status-1 explorer link
+            if (type === 'sell') {
+              const sellExpLink = document.getElementById('sell-status-explorer-link');
+              if (sellExpLink && txHash) {
+                sellExpLink.href = `https://solscan.io/tx/${txHash}`;
+              }
+            }
+
             if (explorerLink && txHash) {
               explorerLink.href = `https://solscan.io/tx/${txHash}`;
               explorerLink.classList.remove('hidden');
@@ -3238,14 +3430,17 @@
               const modalData = {
                 reference: currentTxDetails.reference || txId,
                 amount: currentTxDetails.amount,
-                destinationAmount: data.amount || currentTxDetails.destinationAmount,
+                destinationAmount: data.amount || data.fiatAmount || currentTxDetails.destinationAmount,
                 asset: currentTxDetails.asset,
                 network: 'solana',
+                bankName: currentTxDetails.bankName,
+                accountNumber: currentTxDetails.accountNumber,
+                accountName: currentTxDetails.accountName,
                 walletAddress: currentTxDetails.walletAddress || data.recipient || '',
                 explorerUrl: txHash ? `https://solscan.io/tx/${txHash}` : '',
                 hash: txHash
               };
-              setTimeout(() => showSuccessModal('buy', modalData), 1500);
+              setTimeout(() => showSuccessModal(type, modalData), 1500);
             } else if (status === 'FAILED') {
               showToast('Transaction Failed. Please contact support.', 'error');
             }

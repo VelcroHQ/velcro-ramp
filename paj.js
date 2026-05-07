@@ -173,6 +173,42 @@ async function getTokenValue(fiatAmount, mint) {
   }
 }
 
+// Get fiat value (token amount → fiat)
+async function getFiatValue(amount, mint) {
+  const token = await getSessionToken();
+  try {
+    const result = await pajSdk.getFiatValue(
+      { amount, mint, currency: pajSdk.Currency.NGN },
+      token
+    );
+    return result;
+  } catch (err) {
+    throw new Error('PAJ fiat value fetch failed: ' + err.message);
+  }
+}
+
+// Get banks list
+async function getBanks() {
+  const token = await getSessionToken();
+  try {
+    const result = await pajSdk.getBanks(token);
+    return result;
+  } catch (err) {
+    throw new Error('PAJ fetch banks failed: ' + err.message);
+  }
+}
+
+// Resolve bank account
+async function resolveBankAccount(bankId, accountNumber) {
+  const token = await getSessionToken();
+  try {
+    const result = await pajSdk.resolveBankAccount(token, bankId, accountNumber);
+    return result;
+  } catch (err) {
+    throw new Error('PAJ resolve account failed: ' + err.message);
+  }
+}
+
 // Create onramp order
 async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL }) {
   const token = await getSessionToken();
@@ -191,6 +227,28 @@ async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL }) {
     return result;
   } catch (err) {
     throw new Error('PAJ onramp order failed: ' + err.message);
+  }
+}
+
+// Create offramp order
+async function createOfframpOrder({ bank, accountNumber, mint, fiatAmount, webhookURL }) {
+  const token = await getSessionToken();
+  try {
+    const result = await pajSdk.createOfframpOrder(
+      {
+        bank,
+        accountNumber,
+        currency: pajSdk.Currency.NGN,
+        fiatAmount,
+        mint,
+        chain: pajSdk.Chain.SOLANA,
+        webhookURL: webhookURL || `${process.env.CALLBACK_URL || ''}/webhook/paj`
+      },
+      token
+    );
+    return result;
+  } catch (err) {
+    throw new Error('PAJ offramp order failed: ' + err.message);
   }
 }
 
@@ -227,7 +285,11 @@ module.exports = {
   getSessionToken,
   getPajRate,
   getTokenValue,
+  getFiatValue,
+  getBanks,
+  resolveBankAccount,
   createOnrampOrder,
+  createOfframpOrder,
   getTransactionStatus,
   getAssets,
   getSessionStatus,

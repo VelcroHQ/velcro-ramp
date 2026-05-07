@@ -1055,6 +1055,51 @@ app.post('/api/paj/initiate', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+app.post('/api/paj/sell', async (req, res, next) => {
+  try {
+    if (!pajModule) return res.status(503).json(errorResponse('PAJ module not available'));
+    const { fiatAmount, mint, bank, accountNumber } = req.body;
+    if (!fiatAmount || !mint || !bank || !accountNumber) {
+      return res.status(400).json(errorResponse('fiatAmount, mint, bank, and accountNumber are required'));
+    }
+    const order = await pajModule.createOfframpOrder({ fiatAmount, mint, bank, accountNumber });
+    const d = order || {};
+    const assetInfo = pajModule.PAJ_ASSETS.find(a => a.mint === mint);
+    await safeDbWrite(() => Transaction.create({
+      reference: d.id || `paj_${Date.now()}`,
+      type: 'OFFRAMP',
+      status: d.status || 'AWAITING_DEPOSIT',
+      country: 'NG',
+      currency: 'NGN',
+      asset: assetInfo ? assetInfo.symbol : 'SOL',
+      channel: 'PAJ',
+      amount: fiatAmount,
+      deposit_address: d.address || null,
+      beneficiary: JSON.stringify({ bank, accountNumber, holder_name: d.accountName || 'Customer' }),
+      meta: JSON.stringify(d)
+    }));
+    res.json(successResponse(order));
+  } catch (err) { next(err); }
+});
+
+app.get('/api/paj/banks', async (req, res, next) => {
+  try {
+    if (!pajModule) return res.status(503).json(errorResponse('PAJ module not available'));
+    const banks = await pajModule.getBanks();
+    res.json(successResponse(banks));
+  } catch (err) { next(err); }
+});
+
+app.post('/api/paj/resolve', async (req, res, next) => {
+  try {
+    if (!pajModule) return res.status(503).json(errorResponse('PAJ module not available'));
+    const { bank, accountNumber } = req.body;
+    if (!bank || !accountNumber) return res.status(400).json(errorResponse('bank and accountNumber are required'));
+    const resolved = await pajModule.resolveBankAccount(bank, accountNumber);
+    res.json(successResponse(resolved));
+  } catch (err) { next(err); }
+});
+
 app.get('/api/paj/status', async (req, res, next) => {
   try {
     if (!pajModule) return res.status(503).json(errorResponse('PAJ module not available'));
