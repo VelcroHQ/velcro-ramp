@@ -172,6 +172,13 @@
       }
     }
 
+    .mt-2 { margin-top: 0.5rem !important; }
+    .mt-4 { margin-top: 1rem !important; }
+    .block { display: block !important; }
+    .pb-1 { padding-bottom: 0.25rem !important; }
+    .pb-4 { padding-bottom: 1rem !important; }
+    .gap-4 { gap: 1rem !important; }
+
     .custom-select {
       position: relative;
       z-index: 10;
@@ -788,8 +795,8 @@
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="flex flex-col items-end gap-2.5 shrink-0 w-full sm:w-auto">
-                <div class="flex flex-col items-center sm:items-end gap-2">
-                  <div class="custom-select pb-1" id="sell-asset-wrap">
+                <div class="flex flex-col items-center sm:items-end gap-4">
+                  <div class="custom-select pb-4" id="sell-asset-wrap">
                     <div class="asset-pill" onclick="openSellAssetPicker()">
                       <div class="flex items-center gap-1.5" id="sell-asset-display">
                         <span class="text-gray-400 text-sm">Select</span>
@@ -800,10 +807,10 @@
                       </svg>
                     </div>
                   </div>
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide mt-2 block">Choose Asset</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide mt-4 block text-right">Choose Asset</span>
                 </div>
-                <div class="flex flex-col items-center sm:items-end gap-2">
-                  <div class="custom-select pb-1">
+                <div class="flex flex-col items-center sm:items-end gap-4">
+                  <div class="custom-select pb-4">
                     <div class="network-pill opacity-50 pointer-events-none" id="sell-network-wrap"
                       onclick="toggleDropdown('sell-network-options')">
                       <span id="sell-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select
@@ -817,7 +824,7 @@
                       <!-- Dynamically populated from Switch API -->
                     </div>
                   </div>
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide mt-2 block">Choose Blockchain</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide mt-4 block text-right">Choose Blockchain</span>
                 </div>
               </div>
             </div>
@@ -1074,8 +1081,8 @@
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="flex flex-col items-end gap-2.5 shrink-0 w-full sm:w-auto">
-                <div class="flex flex-col items-center sm:items-end gap-2">
-                  <div class="custom-select pb-1" id="buy-asset-wrap">
+                <div class="flex flex-col items-center sm:items-end gap-4">
+                  <div class="custom-select pb-4" id="buy-asset-wrap">
                     <div class="asset-pill" onclick="openBuyAssetPicker()">
                       <div class="flex items-center gap-1.5" id="buy-asset-display">
                         <span class="text-gray-400 text-sm">Select</span>
@@ -1086,10 +1093,10 @@
                       </svg>
                     </div>
                   </div>
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide">Choose Asset</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide mt-4 block text-right">Choose Asset</span>
                 </div>
-                <div class="flex flex-col items-center sm:items-end gap-2" id="buy-network-col">
-                  <div class="custom-select pb-1">
+                <div class="flex flex-col items-center sm:items-end gap-4" id="buy-network-col">
+                  <div class="custom-select pb-4">
                     <div class="network-pill opacity-50 pointer-events-none" id="buy-network-wrap"
                       onclick="toggleDropdown('buy-network-options')">
                       <span id="buy-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select
@@ -1103,7 +1110,7 @@
                       <!-- Dynamically populated from Switch API -->
                     </div>
                   </div>
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide">Choose Blockchain</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide mt-4 block text-right">Choose Blockchain</span>
                 </div>
               </div>
             </div>
