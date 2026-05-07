@@ -800,7 +800,7 @@
                       </svg>
                     </div>
                   </div>
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide">Choose Asset</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide mt-2 block">Choose Asset</span>
                 </div>
                 <div class="flex flex-col items-center sm:items-end gap-2">
                   <div class="custom-select pb-1">
@@ -817,7 +817,7 @@
                       <!-- Dynamically populated from Switch API -->
                     </div>
                   </div>
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide">Choose Blockchain</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide mt-2 block">Choose Blockchain</span>
                 </div>
               </div>
             </div>
@@ -2116,8 +2116,16 @@
 
       const listContainer = document.getElementById('bank-list-items');
       let banks = cachedBanks;
+      if (!currentSellAsset || !currentSellNetwork) {
+        listContainer.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs">Select an asset and network first</div>`;
+        return;
+      }
       if (banks.length === 0) {
-        listContainer.innerHTML = `<div class="custom-option text-gray-400">No banks available</div>`;
+        listContainer.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs flex flex-col items-center gap-2">
+          <i data-lucide="alert-circle" class="w-5 h-5 opacity-50"></i>
+          <span>No banks available for this selection</span>
+        </div>`;
+        safeLucideInit();
         return;
       }
 
