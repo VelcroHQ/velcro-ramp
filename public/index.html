@@ -2216,6 +2216,8 @@
       fetchInstitutions();
     }
 
+    let lastModalClose = 0;
+
     document.addEventListener('click', (e) => {
       const isSelect = e.target.closest('.custom-select');
       const isOption = e.target.closest('.custom-option');
@@ -2271,6 +2273,7 @@
     }
 
     function toggleDropdown(id) {
+      if (Date.now() - lastModalClose < 300) return;
       const el = document.getElementById(id);
       const isOpen = el.classList.contains('open');
       closeAllDropdowns();
@@ -2316,6 +2319,7 @@
       const modal = document.getElementById('buy-asset-options');
       if (modal) modal.classList.remove('open');
       document.body.style.overflow = '';
+      lastModalClose = Date.now();
     }
 
     function filterBuyAssets() {
@@ -2359,6 +2363,7 @@
       const modal = document.getElementById('sell-asset-options');
       if (modal) modal.classList.remove('open');
       document.body.style.overflow = '';
+      lastModalClose = Date.now();
     }
 
     function filterSellAssets() {
