@@ -2240,9 +2240,11 @@
         // mark that we moved (scroll gesture)
       }, { passive: true });
       container.addEventListener('click', (e) => {
-        e.stopPropagation();
         const option = e.target.closest('.custom-option');
         if (!option) return;
+        e.stopPropagation();
+        e.preventDefault();
+        
         const id = option.dataset.network;
         const logo = option.dataset.logo;
         const name = option.dataset.name;
@@ -2445,11 +2447,13 @@
       if (currentProvider === 'paj') {
         currentSellNetwork = 'solana';
         document.getElementById('sell-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
+        document.getElementById('sell-network-wrap').classList.add('opacity-50', 'pointer-events-none');
         document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
         await fetchPajRate();
         fetchPajBanks();
       } else {
         renderSellNetworks(symbol);
+        document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
         fetchInstitutions(); // Switch banks
       }
       calculateSell();
@@ -2475,13 +2479,17 @@
     function selectSellNetwork(id, logo, name, optionEl) {
       currentSellNetwork = id;
       document.getElementById('sell-network-display').innerHTML = `
-        <img src="${logo}" class="w-5 h-5" alt="${name}">
-        <span class="font-bold text-xs sm:text-sm">${name}</span>
+        <img src="${logo}" class="w-5 h-5 rounded-full" alt="${name}">
+        <span class="font-medium text-sm">${name}</span>
       `;
       safeSetText('sell-network-name', name);
       safeSetText('sell-confirm-network', name);
       safeSetSrc('sell-confirm-network-img', logo);
+      
+      // Update highlights
+      document.querySelectorAll('#sell-network-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
+      
       setTimeout(closeAllDropdowns, 50);
       document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
@@ -2619,7 +2627,6 @@
         currentSwitchAsset = '';
         document.getElementById('buy-network-display').innerHTML = '<span class="text-gray-400 text-sm">Select Network</span>';
         const netWrap = document.getElementById('buy-network-wrap');
-        netWrap.classList.remove('opacity-50', 'pointer-events-none');
         document.getElementById('buy-amount-step').classList.add('opacity-50', 'pointer-events-none');
         renderBuyNetworks(symbol);
       }
@@ -2630,13 +2637,16 @@
     function selectBuyNetwork(id, logo, name, optionEl) {
       currentBuyNetwork = id;
       document.getElementById('buy-network-display').innerHTML = `
-        <img src="${logo}" class="w-5 h-5" alt="${name}">
-        <span class="font-bold text-xs sm:text-sm">${name}</span>
+        <img src="${logo}" class="w-5 h-5 rounded-full" alt="${name}">
+        <span class="font-medium text-sm">${name}</span>
       `;
       safeSetText('buy-confirm-network', name);
       safeSetSrc('buy-confirm-network-img', logo);
+      
+      // Update highlights
       document.querySelectorAll('#buy-network-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
+      
       setTimeout(closeAllDropdowns, 50);
       document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentBuyAsset, currentBuyNetwork);
