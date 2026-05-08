@@ -210,20 +210,22 @@ async function resolveBankAccount(bankId, accountNumber) {
 }
 
 // Create onramp order
-async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL }) {
+async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL, developerFee, developerRecipient }) {
   const token = await getSessionToken();
   try {
-    const result = await pajSdk.createOnrampOrder(
-      {
-        fiatAmount,
-        currency: pajSdk.Currency.NGN,
-        recipient,
-        mint,
-        chain: pajSdk.Chain.SOLANA,
-        webhookURL: webhookURL || `${process.env.CALLBACK_URL || ''}/webhook/paj`
-      },
-      token
-    );
+    const payload = {
+      fiatAmount,
+      currency: pajSdk.Currency.NGN,
+      recipient,
+      mint,
+      chain: pajSdk.Chain.SOLANA,
+      webhookURL: webhookURL || `${process.env.CALLBACK_URL || ''}/webhook/paj`
+    };
+
+    if (developerFee !== undefined) payload.developer_fee = developerFee;
+    if (developerRecipient) payload.developer_recipient = developerRecipient;
+
+    const result = await pajSdk.createOnrampOrder(payload, token);
     return result;
   } catch (err) {
     throw new Error('PAJ onramp order failed: ' + err.message);
@@ -231,21 +233,23 @@ async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL }) {
 }
 
 // Create offramp order
-async function createOfframpOrder({ bank, accountNumber, mint, fiatAmount, webhookURL }) {
+async function createOfframpOrder({ bank, accountNumber, mint, fiatAmount, webhookURL, developerFee, developerRecipient }) {
   const token = await getSessionToken();
   try {
-    const result = await pajSdk.createOfframpOrder(
-      {
-        bank,
-        accountNumber,
-        currency: pajSdk.Currency.NGN,
-        fiatAmount,
-        mint,
-        chain: pajSdk.Chain.SOLANA,
-        webhookURL: webhookURL || `${process.env.CALLBACK_URL || ''}/webhook/paj`
-      },
-      token
-    );
+    const payload = {
+      bank,
+      accountNumber,
+      currency: pajSdk.Currency.NGN,
+      fiatAmount,
+      mint,
+      chain: pajSdk.Chain.SOLANA,
+      webhookURL: webhookURL || `${process.env.CALLBACK_URL || ''}/webhook/paj`
+    };
+
+    if (developerFee !== undefined) payload.developer_fee = developerFee;
+    if (developerRecipient) payload.developer_recipient = developerRecipient;
+
+    const result = await pajSdk.createOfframpOrder(payload, token);
     return result;
   } catch (err) {
     throw new Error('PAJ offramp order failed: ' + err.message);

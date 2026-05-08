@@ -478,7 +478,14 @@ app.post('/api/rate', async (req, res, next) => {
     const endpoint = direction === 'ONRAMP' ? '/onramp/rate' : '/offramp/rate';
     const data = await switchApi(endpoint, {
       method: 'POST',
-      body: JSON.stringify({ asset, country, currency, channel }),
+      body: JSON.stringify({ 
+        asset, 
+        country, 
+        currency, 
+        channel,
+        developer_fee: getPlatformFee(),
+        developer_recipient: DEVELOPER_RECIPIENT
+      }),
     });
     res.json(data);
   } catch (err) { next(err); }
@@ -1047,7 +1054,13 @@ app.post('/api/paj/initiate', async (req, res, next) => {
     if (!fiatAmount || !recipient || !mint) {
       return res.status(400).json(errorResponse('fiatAmount, recipient, and mint are required'));
     }
-    const order = await pajModule.createOnrampOrder({ fiatAmount, recipient, mint });
+    const order = await pajModule.createOnrampOrder({ 
+      fiatAmount, 
+      recipient, 
+      mint,
+      developerFee: getPlatformFee(),
+      developerRecipient: DEVELOPER_RECIPIENT
+    });
     const d = order || {};
     const assetInfo = pajModule.PAJ_ASSETS.find(a => a.mint === mint);
     await safeDbWrite(() => Transaction.create({
@@ -1076,7 +1089,14 @@ app.post('/api/paj/sell', async (req, res, next) => {
     if (!fiatAmount || !mint || !bank || !accountNumber) {
       return res.status(400).json(errorResponse('fiatAmount, mint, bank, and accountNumber are required'));
     }
-    const order = await pajModule.createOfframpOrder({ fiatAmount, mint, bank, accountNumber });
+    const order = await pajModule.createOfframpOrder({ 
+      fiatAmount, 
+      mint, 
+      bank, 
+      accountNumber,
+      developerFee: getPlatformFee(),
+      developerRecipient: DEVELOPER_RECIPIENT
+    });
     const d = order || {};
     const assetInfo = pajModule.PAJ_ASSETS.find(a => a.mint === mint);
     await safeDbWrite(() => Transaction.create({
