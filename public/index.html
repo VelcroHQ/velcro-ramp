@@ -3164,7 +3164,7 @@
             narration: 'Crypto Offramp Settlement',
             beneficiary: {
               holder_type: 'INDIVIDUAL',
-              holder_name: accName,
+              holder_name: accountName,
               account_number: bankNum,
               bank_code: currentBankCode
             }
@@ -3220,7 +3220,7 @@
           destinationAmount: data.destination?.amount || data.destination_amount,
           bankName: bankDisplay !== 'Select your bank' ? bankDisplay : '-',
           accountNumber: bankNum,
-          accountName: accName,
+          accountName: accountName,
           asset: currentSellAsset,
           network: currentSellNetwork
         };
