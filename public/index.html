@@ -3708,7 +3708,16 @@
         el.classList.remove('opacity-50', 'pointer-events-none');
       });
     }
-    function resetSellTransaction() {
+    async function resetSellTransaction() {
+      if (currentReference) {
+        try {
+          fetch(`${API_BASE}/api/cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reference: currentReference })
+          });
+        } catch (e) { console.error('Failed to cancel transaction:', e); }
+      }
       document.getElementById('sell-generated-address').classList.add('hidden');
       document.getElementById('sell-qr-code').innerHTML = '';
       const statusExplorerLink = document.getElementById('sell-status-explorer-link');
@@ -3736,7 +3745,16 @@
         el.classList.remove('opacity-50', 'pointer-events-none');
       });
     }
-    function resetBuyTransaction() {
+    async function resetBuyTransaction() {
+      if (currentReference) {
+        try {
+          fetch(`${API_BASE}/api/cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reference: currentReference })
+          });
+        } catch (e) { console.error('Failed to cancel transaction:', e); }
+      }
       document.getElementById('buy-generated-account').classList.add('hidden');
       document.getElementById('buy-btn').disabled = false;
       document.getElementById('buy-btn').classList.remove('opacity-50', 'cursor-not-allowed');

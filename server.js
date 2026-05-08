@@ -135,14 +135,25 @@ function verifyAdminPassword(input) {
 
 // ─── Persistent Settings ───
 function loadSettings() {
+  const defaults = { 
+    platform_fee: DEVELOPER_FEE, 
+    buy_max_limit: 50000, 
+    sell_min_limit: 1, 
+    sell_max_limit: 10000,
+    paj_email: process.env.PAJ_EMAIL || 'paj@usevelcro.com'
+  };
   try {
     if (fs.existsSync(SETTINGS_PATH)) {
-      return JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
+      const content = fs.readFileSync(SETTINGS_PATH, 'utf8');
+      if (content) {
+        const data = JSON.parse(content);
+        return { ...defaults, ...data };
+      }
     }
   } catch (err) {
     console.error('Failed to load settings:', err.message);
   }
-  return { platform_fee: DEVELOPER_FEE, buy_max_limit: 50000, sell_min_limit: 1, sell_max_limit: 10000 };
+  return defaults;
 }
 
 function saveSettings(settings) {
@@ -579,6 +590,21 @@ app.get('/api/status', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+app.post('/api/cancel', async (req, res, next) => {
+  try {
+    const { reference } = req.body;
+    if (!reference) return res.status(400).json(errorResponse('reference is required'));
+
+    await safeDbWrite(() => Transaction.findOneAndUpdate(
+      { reference },
+      { status: 'CANCELLED' },
+      { new: true }
+    ));
+
+    res.json({ success: true, message: 'Transaction cancelled' });
+  } catch (err) { next(err); }
+});
+
 // Update to use /payment/confirm
 app.post('/api/confirm', async (req, res, next) => {
   try {
@@ -925,29 +951,17 @@ app.post('/api/admin/withdraw', adminRateLimiter, adminAuth, async (req, res) =>
 // Public settings (fee only)
 app.get('/api/settings', async (req, res) => {
   const settings = loadSettings();
-  const buyLimit = parseInt(settings.buy_max_limit, 10);
-  const sellMin = parseFloat(settings.sell_min_limit);
-  const sellMax = parseFloat(settings.sell_max_limit);
   res.json(successResponse({
-    platform_fee: getPlatformFee(),
-    buy_max_limit: Number.isNaN(buyLimit) ? 50000 : buyLimit,
-    sell_min_limit: Number.isNaN(sellMin) ? 1 : sellMin,
-    sell_max_limit: Number.isNaN(sellMax) ? 10000 : sellMax
+    platform_fee: settings.platform_fee,
+    buy_max_limit: settings.buy_max_limit,
+    sell_min_limit: settings.sell_min_limit,
+    sell_max_limit: settings.sell_max_limit
   }));
 });
 
 app.get('/api/admin/settings', adminAuth, async (req, res) => {
   const settings = loadSettings();
-  const buyLimit = parseInt(settings.buy_max_limit, 10);
-  const sellMin = parseFloat(settings.sell_min_limit);
-  const sellMax = parseFloat(settings.sell_max_limit);
-  res.json({
-    platform_fee: getPlatformFee(),
-    buy_max_limit: Number.isNaN(buyLimit) ? 50000 : buyLimit,
-    sell_min_limit: Number.isNaN(sellMin) ? 1 : sellMin,
-    sell_max_limit: Number.isNaN(sellMax) ? 10000 : sellMax,
-    paj_email: settings.paj_email || process.env.PAJ_EMAIL || 'paj@usevelcro.com'
-  });
+  res.json(settings);
 });
 
 app.post('/api/admin/settings', adminRateLimiter, adminAuth, async (req, res) => {

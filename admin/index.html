@@ -1755,9 +1755,9 @@
                 const settingsRes = await fetch('/api/admin/settings', { headers });
                 const settings = await settingsRes.json();
                 document.getElementById('fee-input').value = settings.platform_fee;
-                document.getElementById('buy-max-input').value = settings.buy_max_limit ?? 10000;
-                document.getElementById('sell-min-input').value = settings.sell_min_limit ?? 1;
-                document.getElementById('sell-max-input').value = settings.sell_max_limit ?? 10000;
+                document.getElementById('buy-max-input').value = settings.buy_max_limit;
+                document.getElementById('sell-min-input').value = settings.sell_min_limit;
+                document.getElementById('sell-max-input').value = settings.sell_max_limit;
                 document.getElementById('paj-email-input').value = settings.paj_email || '';
 
                 // 6. PAJ Session
@@ -1964,7 +1964,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`Settings saved. Fee: ${fee}%, Sell limits: $${sellMin.toLocaleString()} – $${sellMax.toLocaleString()}`);
+                    alert(`Settings saved. Buy Max: ₦${buyMax.toLocaleString()}, Fee: ${fee}%, Sell limits: $${sellMin.toLocaleString()} – $${sellMax.toLocaleString()}`);
                 } else {
                     alert(data.error || 'Failed to save settings');
                 }
