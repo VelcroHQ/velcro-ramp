@@ -1278,6 +1278,7 @@
                     </div>
 
                     <button class="btn-primary" onclick="saveSettings()" style="width: 100%;">Save Configuration</button>
+                    <button class="btn-primary" onclick="viewLastPayload()" style="width: 100%; margin-top: 10px; background: #64748b; border: none;">View Last Transaction Payload</button>
                 </div>
 
                 <!-- PAJ Integration -->
@@ -2679,6 +2680,23 @@
                 setInterval(fetchData, 60000);
             }
         };
+
+        async function viewLastPayload() {
+            try {
+                const headers = { 'Authorization': adminKey };
+                const res = await fetch('/api/admin/debug/last-payload', { headers });
+                const data = await res.json();
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    const win = window.open("", "_blank");
+                    win.document.write("<html><head><title>Last Transaction Payload</title></head><body style='font-family:sans-serif;'><h2 style='color:#0D0D59;'>Last Transaction Payload</h2><pre style='background:#f4f4f4;padding:20px;border-radius:8px;border:1px solid #ddd;overflow-x:auto;'>" + JSON.stringify(data, null, 2) + "</pre></body></html>");
+                    win.document.close();
+                }
+            } catch (e) {
+                alert('Failed to fetch payload: ' + e.message);
+            }
+        }
     </script>
 </body>
 </html>

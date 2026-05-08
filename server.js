@@ -971,6 +971,16 @@ app.get('/api/admin/settings', adminAuth, async (req, res) => {
   res.json(settings);
 });
 
+app.get('/api/admin/debug/last-payload', adminAuth, async (req, res) => {
+  try {
+    const last = await Transaction.findOne().sort({ created_at: -1 });
+    if (!last) return res.status(404).json({ error: 'No transactions found' });
+    res.json(last);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/admin/settings', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const { platform_fee, buy_max_limit, sell_min_limit, sell_max_limit, paj_email } = req.body;
