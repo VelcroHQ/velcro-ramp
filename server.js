@@ -1,4 +1,15 @@
 require('dotenv').config();
+
+// ─── Global Error Handling (Startup Crash Protection) ───
+process.on('uncaughtException', (err) => {
+  console.error('❌ CRITICAL UNCAUGHT EXCEPTION:', err);
+  // Give time for the log to write before exiting
+  setTimeout(() => process.exit(1), 500);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION:', reason);
+});
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
