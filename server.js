@@ -1121,9 +1121,14 @@ app.post('/api/paj/resolve', async (req, res, next) => {
     if (!pajModule) return res.status(503).json(errorResponse('PAJ module not available'));
     const { bank, accountNumber } = req.body;
     if (!bank || !accountNumber) return res.status(400).json(errorResponse('bank and accountNumber are required'));
+    
+    // Ensure bank is passed as a string or number as expected by the SDK
     const resolved = await pajModule.resolveBankAccount(bank, accountNumber);
     res.json(successResponse(resolved));
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error('Error resolving bank account:', err.message);
+    next(err);
+  }
 });
 
 app.get('/api/paj/status', async (req, res, next) => {

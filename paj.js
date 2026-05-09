@@ -214,14 +214,16 @@ async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL }) {
   const token = await getSessionToken();
   try {
     const payload = {
-      fiatAmount,
+      fiatAmount: Number(fiatAmount),
       currency: pajSdk.Currency.NGN,
-      recipient,
-      mint,
+      recipient: recipient,
+      mint: mint,
       chain: pajSdk.Chain.SOLANA,
       webhookURL: webhookURL || `${process.env.CALLBACK_URL || ''}/webhook/paj`
     };
 
+    // LOG THE PAYLOAD (Debug)
+    console.log('[PAJ Onramp] Creating order with payload:', JSON.stringify(payload));
 
     const result = await pajSdk.createOnrampOrder(payload, token);
     return result;
@@ -235,15 +237,16 @@ async function createOfframpOrder({ bank, accountNumber, mint, fiatAmount, webho
   const token = await getSessionToken();
   try {
     const payload = {
-      bank,
-      accountNumber,
+      bank: bank,
+      accountNumber: String(accountNumber),
       currency: pajSdk.Currency.NGN,
-      fiatAmount,
-      mint,
+      fiatAmount: Number(fiatAmount),
+      mint: mint,
       chain: pajSdk.Chain.SOLANA,
       webhookURL: webhookURL || `${process.env.CALLBACK_URL || ''}/webhook/paj`
     };
 
+    console.log('[PAJ Offramp] Creating order with payload:', JSON.stringify(payload));
 
     const result = await pajSdk.createOfframpOrder(payload, token);
     return result;
