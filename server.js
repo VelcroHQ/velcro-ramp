@@ -1067,9 +1067,7 @@ app.post('/api/paj/initiate', async (req, res, next) => {
     const order = await pajModule.createOnrampOrder({ 
       fiatAmount, 
       recipient, 
-      mint,
-      developerFee: getPlatformFee(),
-      developerRecipient: DEVELOPER_RECIPIENT
+      mint
     });
     const d = order || {};
     const assetInfo = pajModule.PAJ_ASSETS.find(a => a.mint === mint);
@@ -1103,9 +1101,7 @@ app.post('/api/paj/sell', async (req, res, next) => {
       fiatAmount, 
       mint, 
       bank, 
-      accountNumber,
-      developerFee: getPlatformFee(),
-      developerRecipient: DEVELOPER_RECIPIENT
+      accountNumber
     });
     const d = order || {};
     const assetInfo = pajModule.PAJ_ASSETS.find(a => a.mint === mint);

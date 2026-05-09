@@ -210,7 +210,7 @@ async function resolveBankAccount(bankId, accountNumber) {
 }
 
 // Create onramp order
-async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL, developerFee, developerRecipient }) {
+async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL }) {
   const token = await getSessionToken();
   try {
     const payload = {
@@ -222,8 +222,6 @@ async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL, deve
       webhookURL: webhookURL || `${process.env.CALLBACK_URL || ''}/webhook/paj`
     };
 
-    if (developerFee !== undefined) payload.developer_fee = developerFee;
-    if (developerRecipient) payload.developer_recipient = developerRecipient;
 
     const result = await pajSdk.createOnrampOrder(payload, token);
     return result;
@@ -233,7 +231,7 @@ async function createOnrampOrder({ fiatAmount, recipient, mint, webhookURL, deve
 }
 
 // Create offramp order
-async function createOfframpOrder({ bank, accountNumber, mint, fiatAmount, webhookURL, developerFee, developerRecipient }) {
+async function createOfframpOrder({ bank, accountNumber, mint, fiatAmount, webhookURL }) {
   const token = await getSessionToken();
   try {
     const payload = {
@@ -246,8 +244,6 @@ async function createOfframpOrder({ bank, accountNumber, mint, fiatAmount, webho
       webhookURL: webhookURL || `${process.env.CALLBACK_URL || ''}/webhook/paj`
     };
 
-    if (developerFee !== undefined) payload.developer_fee = developerFee;
-    if (developerRecipient) payload.developer_recipient = developerRecipient;
 
     const result = await pajSdk.createOfframpOrder(payload, token);
     return result;
