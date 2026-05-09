@@ -710,20 +710,6 @@ app.post('/webhook/switch', express.json(), async (req, res) => {
   }
 });
 
-app.post('/api/paj/value', async (req, res, next) => {
-  try {
-    const { fiatAmount, mint } = req.body;
-    if (!fiatAmount || !mint) {
-      return res.status(400).json(errorResponse('fiatAmount and mint are required'));
-    }
-    const result = await paj.getTokenValue(fiatAmount, mint);
-    res.json(successResponse(result));
-  } catch (err) {
-    console.error('PAJ /api/paj/value failed:', err.message);
-    res.status(500).json(errorResponse(err.message));
-  }
-});
-
 // ─── Admin Endpoints ───
 const adminRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
