@@ -54,12 +54,100 @@ const PAJ_ASSETS = [
     logo: '/logos/jup.png'
   },
   {
-    id: 'usdg',
-    symbol: 'USDG',
-    name: 'USDC',
-    mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    id: 'bonk',
+    symbol: 'BONK',
+    name: 'Bonk',
+    mint: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
     chain: 'SOLANA',
-    logo: '/logos/usdg.png'
+    logo: 'https://assets.coingecko.com/coins/images/28600/small/bonk.jpg'
+  },
+  {
+    id: 'wif',
+    symbol: 'WIF',
+    name: 'dogwifhat',
+    mint: 'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg'
+  },
+  {
+    id: 'pyth',
+    symbol: 'PYTH',
+    name: 'Pyth Network',
+    mint: 'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/31924/small/pyth.png'
+  },
+  {
+    id: 'render',
+    symbol: 'RENDER',
+    name: 'Render',
+    mint: 'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/11636/small/rndr.png'
+  },
+  {
+    id: 'ray',
+    symbol: 'RAY',
+    name: 'Raydium',
+    mint: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/13928/small/PSigc4ie_400x400.jpg'
+  },
+  {
+    id: 'w',
+    symbol: 'W',
+    name: 'Wormhole',
+    mint: '85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/35087/small/womrhole_logo_full_color_rgb_2000px_72ppi_fb766ac85a.png'
+  },
+  {
+    id: 'popcat',
+    symbol: 'POPCAT',
+    name: 'POPCAT',
+    mint: '7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/33760/small/image.jpg'
+  },
+  {
+    id: 'mew',
+    symbol: 'MEW',
+    name: 'cat in a dogs world',
+    mint: 'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/34658/small/MEW.png'
+  },
+  {
+    id: 'michi',
+    symbol: 'MICHI',
+    name: 'michi',
+    mint: '5mbK36SZ7J19An8jFochhQS4of8g6BwUjbeCSxBSoWdp',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/36791/small/michi.png'
+  },
+  {
+    id: 'shdw',
+    symbol: 'SHDW',
+    name: 'Shadow Token',
+    mint: 'SHDWyBxihqiCj6YekG2GUr7wqKLeLAMK1gHZck9pL6y',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/22271/small/Property_1_Color.png'
+  },
+  {
+    id: 'orca',
+    symbol: 'ORCA',
+    name: 'Orca',
+    mint: 'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/17547/small/Orca_Logo.png'
+  },
+  {
+    id: 'samo',
+    symbol: 'SAMO',
+    name: 'Samoyedcoin',
+    mint: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
+    chain: 'SOLANA',
+    logo: 'https://assets.coingecko.com/coins/images/15051/small/IXeEj5e.png'
   }
 ];
 

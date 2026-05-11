@@ -1555,7 +1555,22 @@
     }
 
     function getAssetLogo(symbol) {
-      const known = { USDT: '/logos/usdt.png', USDC: '/logos/usdc.png', CNGN: '/logos/cngn.png?v=2', SOL: '/logos/solana.png', JUP: '/logos/jup.png', USDG: '/logos/usdg.png' };
+      const known = {
+        USDT: '/logos/usdt.png', USDC: '/logos/usdc.png', CNGN: '/logos/cngn.png?v=2',
+        SOL: '/logos/solana.png', JUP: '/logos/jup.png',
+        BONK: 'https://assets.coingecko.com/coins/images/28600/small/bonk.jpg',
+        WIF: 'https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg',
+        PYTH: 'https://assets.coingecko.com/coins/images/31924/small/pyth.png',
+        RENDER: 'https://assets.coingecko.com/coins/images/11636/small/rndr.png',
+        RAY: 'https://assets.coingecko.com/coins/images/13928/small/PSigc4ie_400x400.jpg',
+        W: 'https://assets.coingecko.com/coins/images/35087/small/womrhole_logo_full_color_rgb_2000px_72ppi_fb766ac85a.png',
+        POPCAT: 'https://assets.coingecko.com/coins/images/33760/small/image.jpg',
+        MEW: 'https://assets.coingecko.com/coins/images/34658/small/MEW.png',
+        MICHI: 'https://assets.coingecko.com/coins/images/36791/small/michi.png',
+        SHDW: 'https://assets.coingecko.com/coins/images/22271/small/Property_1_Color.png',
+        ORCA: 'https://assets.coingecko.com/coins/images/17547/small/Orca_Logo.png',
+        SAMO: 'https://assets.coingecko.com/coins/images/15051/small/IXeEj5e.png'
+      };
       if (known[symbol]) return known[symbol];
       const initial = symbol.charAt(0).toUpperCase();
       return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23007BFF'/%3E%3Ctext x='12' y='16' text-anchor='middle' fill='white' font-size='11' font-weight='bold' font-family='sans-serif'%3E${initial}%3C/text%3E%3C/svg%3E`;
@@ -1670,22 +1685,64 @@
         }).join('');
       }
 
-      // Append PAJ assets (SOL and JUP only, per user request to avoid USDC/USDT)
+      // Append PAJ assets (all supported Solana tokens except USDT/USDC)
       const pajItems = `
         <div class="asset-picker-divider">PAJ (Solana)</div>
         <div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectSellAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
           <img src="/logos/solana.png" class="asset-picker-logo" alt="SOL">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">SOL</div>
-            <div class="asset-picker-name">Solana</div>
-          </div>
+          <div class="asset-picker-info"><div class="asset-picker-symbol">SOL</div><div class="asset-picker-name">Solana</div></div>
         </div>
         <div class="asset-picker-item" data-symbol="JUP" data-name="Jupiter" onclick="selectSellAsset('JUP', '/logos/jup.png', 'Jupiter', 'paj')">
           <img src="/logos/jup.png" class="asset-picker-logo" alt="JUP">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">JUP</div>
-            <div class="asset-picker-name">Jupiter</div>
-          </div>
+          <div class="asset-picker-info"><div class="asset-picker-symbol">JUP</div><div class="asset-picker-name">Jupiter</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="BONK" data-name="Bonk" onclick="selectSellAsset('BONK', 'https://assets.coingecko.com/coins/images/28600/small/bonk.jpg', 'Bonk', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/28600/small/bonk.jpg" class="asset-picker-logo" alt="BONK">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">BONK</div><div class="asset-picker-name">Bonk</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="WIF" data-name="dogwifhat" onclick="selectSellAsset('WIF', 'https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg', 'dogwifhat', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg" class="asset-picker-logo" alt="WIF">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">WIF</div><div class="asset-picker-name">dogwifhat</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="PYTH" data-name="Pyth Network" onclick="selectSellAsset('PYTH', 'https://assets.coingecko.com/coins/images/31924/small/pyth.png', 'Pyth Network', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/31924/small/pyth.png" class="asset-picker-logo" alt="PYTH">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">PYTH</div><div class="asset-picker-name">Pyth Network</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="RENDER" data-name="Render" onclick="selectSellAsset('RENDER', 'https://assets.coingecko.com/coins/images/11636/small/rndr.png', 'Render', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/11636/small/rndr.png" class="asset-picker-logo" alt="RENDER">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">RENDER</div><div class="asset-picker-name">Render</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="RAY" data-name="Raydium" onclick="selectSellAsset('RAY', 'https://assets.coingecko.com/coins/images/13928/small/PSigc4ie_400x400.jpg', 'Raydium', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/13928/small/PSigc4ie_400x400.jpg" class="asset-picker-logo" alt="RAY">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">RAY</div><div class="asset-picker-name">Raydium</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="W" data-name="Wormhole" onclick="selectSellAsset('W', 'https://assets.coingecko.com/coins/images/35087/small/womrhole_logo_full_color_rgb_2000px_72ppi_fb766ac85a.png', 'Wormhole', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/35087/small/womrhole_logo_full_color_rgb_2000px_72ppi_fb766ac85a.png" class="asset-picker-logo" alt="W">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">W</div><div class="asset-picker-name">Wormhole</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="POPCAT" data-name="POPCAT" onclick="selectSellAsset('POPCAT', 'https://assets.coingecko.com/coins/images/33760/small/image.jpg', 'POPCAT', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/33760/small/image.jpg" class="asset-picker-logo" alt="POPCAT">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">POPCAT</div><div class="asset-picker-name">POPCAT</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="MEW" data-name="cat in a dogs world" onclick="selectSellAsset('MEW', 'https://assets.coingecko.com/coins/images/34658/small/MEW.png', 'cat in a dogs world', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/34658/small/MEW.png" class="asset-picker-logo" alt="MEW">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">MEW</div><div class="asset-picker-name">cat in a dogs world</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="MICHI" data-name="michi" onclick="selectSellAsset('MICHI', 'https://assets.coingecko.com/coins/images/36791/small/michi.png', 'michi', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/36791/small/michi.png" class="asset-picker-logo" alt="MICHI">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">MICHI</div><div class="asset-picker-name">michi</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="SHDW" data-name="Shadow Token" onclick="selectSellAsset('SHDW', 'https://assets.coingecko.com/coins/images/22271/small/Property_1_Color.png', 'Shadow Token', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/22271/small/Property_1_Color.png" class="asset-picker-logo" alt="SHDW">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">SHDW</div><div class="asset-picker-name">Shadow Token</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="ORCA" data-name="Orca" onclick="selectSellAsset('ORCA', 'https://assets.coingecko.com/coins/images/17547/small/Orca_Logo.png', 'Orca', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/17547/small/Orca_Logo.png" class="asset-picker-logo" alt="ORCA">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">ORCA</div><div class="asset-picker-name">Orca</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="SAMO" data-name="Samoyedcoin" onclick="selectSellAsset('SAMO', 'https://assets.coingecko.com/coins/images/15051/small/IXeEj5e.png', 'Samoyedcoin', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/15051/small/IXeEj5e.png" class="asset-picker-logo" alt="SAMO">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">SAMO</div><div class="asset-picker-name">Samoyedcoin</div></div>
         </div>
       `;
       container.innerHTML = switchItems + pajItems;
@@ -1998,19 +2055,26 @@
 
     async function fetchPajTokenPrices() {
       try {
-        const ids = 'solana,jupiter-exchange-solana,usd-coin';
+        const ids = 'solana,jupiter-exchange-solana,bonk,dogwifhat,pyth-network,render-token,raydium,wormhole,popcat,cat-in-a-dogs-world,michi,genesysgo-shadow,orca,samoyedcoin';
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`, { cache: 'default' });
         if (!res.ok) throw new Error('CoinGecko response not ok');
         const data = await res.json();
         PAJ_TOKEN_PRICES['SOL'] = data['solana']?.usd || 0;
         PAJ_TOKEN_PRICES['JUP'] = data['jupiter-exchange-solana']?.usd || 0;
-        PAJ_TOKEN_PRICES['USDG'] = data['usd-coin']?.usd || 1;
+        PAJ_TOKEN_PRICES['BONK'] = data['bonk']?.usd || 0;
+        PAJ_TOKEN_PRICES['WIF'] = data['dogwifhat']?.usd || 0;
+        PAJ_TOKEN_PRICES['PYTH'] = data['pyth-network']?.usd || 0;
+        PAJ_TOKEN_PRICES['RENDER'] = data['render-token']?.usd || 0;
+        PAJ_TOKEN_PRICES['RAY'] = data['raydium']?.usd || 0;
+        PAJ_TOKEN_PRICES['W'] = data['wormhole']?.usd || 0;
+        PAJ_TOKEN_PRICES['POPCAT'] = data['popcat']?.usd || 0;
+        PAJ_TOKEN_PRICES['MEW'] = data['cat-in-a-dogs-world']?.usd || 0;
+        PAJ_TOKEN_PRICES['MICHI'] = data['michi']?.usd || 0;
+        PAJ_TOKEN_PRICES['SHDW'] = data['genesysgo-shadow']?.usd || 0;
+        PAJ_TOKEN_PRICES['ORCA'] = data['orca']?.usd || 0;
+        PAJ_TOKEN_PRICES['SAMO'] = data['samoyedcoin']?.usd || 0;
       } catch (e) {
-        // Token price fetch failed
-        // Fallback prices if CoinGecko is unavailable
-        if (!PAJ_TOKEN_PRICES['SOL']) PAJ_TOKEN_PRICES['SOL'] = 150;
-        if (!PAJ_TOKEN_PRICES['JUP']) PAJ_TOKEN_PRICES['JUP'] = 0.80;
-        if (!PAJ_TOKEN_PRICES['USDG']) PAJ_TOKEN_PRICES['USDG'] = 1;
+        // Token price fetch failed — leave existing prices intact
       }
     }
 
@@ -2785,7 +2849,18 @@
     const PAJ_MINTS = {
       'SOL': 'So11111111111111111111111111111111111111112',
       'JUP': 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',
-      'USDG': 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+      'BONK': 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
+      'WIF': 'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm',
+      'PYTH': 'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3',
+      'RENDER': 'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof',
+      'RAY': '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
+      'W': '85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ',
+      'POPCAT': '7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr',
+      'MEW': 'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5',
+      'MICHI': '5mbK36SZ7J19An8jFochhQS4of8g6BwUjbeCSxBSoWdp',
+      'SHDW': 'SHDWyBxihqiCj6YekG2GUr7wqKLeLAMK1gHZck9pL6y',
+      'ORCA': 'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE',
+      'SAMO': '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU'
     };
     let pajValueTimeout = null;
 
