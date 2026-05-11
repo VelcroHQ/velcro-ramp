@@ -1,3 +1,4 @@
 {"timestamp":"2026-05-11T06:30:37.129Z","action":"ADMIN_AUTH_FAIL","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.26100.8328"}
 {"timestamp":"2026-05-11T06:30:59.338Z","action":"ADMIN_AUTH_FAIL","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.26100.8328"}
 {"timestamp":"2026-05-11T07:24:08.879Z","action":"SETTINGS_UPDATED","ip":"::1","userAgent":"unknown","changes":{"buy_max_limit":75000}}
+{"timestamp":"2026-05-11T08:52:58.887Z","action":"ADMIN_AUTH_FAIL","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.26100.8328"}

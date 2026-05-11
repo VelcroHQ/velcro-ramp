@@ -84,6 +84,22 @@ const PAJ_ASSETS = [
     mint: '2u1tszSeqZ3qBWF3uNGPFc8TzMk2tdiwknnRMWGWjGWH',
     chain: 'SOLANA',
     logo: '/logos/usdg.png'
+  },
+  {
+    id: 'usdt',
+    symbol: 'USDT',
+    name: 'Tether USD',
+    mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+    chain: 'SOLANA',
+    logo: '/logos/usdt.png'
+  },
+  {
+    id: 'usdc',
+    symbol: 'USDC',
+    name: 'USD Coin',
+    mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    chain: 'SOLANA',
+    logo: '/logos/usdc.png'
   }
 ];
 

@@ -87,16 +87,16 @@
     }
 
     .page-bg {
-      background: radial-gradient(ellipse at 10% 0%, rgba(168, 207, 69, 0.08) 0%, transparent 50%),
-                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.06) 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 100%, rgba(168, 207, 69, 0.05) 0%, transparent 50%),
-                  #f9fafb;
+      background: radial-gradient(ellipse at 10% 0%, rgba(37, 99, 235, 0.04) 0%, transparent 50%),
+                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.04) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 100%, rgba(37, 99, 235, 0.03) 0%, transparent 50%),
+                  #f8fafc;
     }
 
     .dark .page-bg {
-      background: radial-gradient(ellipse at 10% 0%, rgba(168, 207, 69, 0.05) 0%, transparent 50%),
-                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.4) 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 100%, rgba(168, 207, 69, 0.03) 0%, transparent 50%),
+      background: radial-gradient(ellipse at 10% 0%, rgba(37, 99, 235, 0.03) 0%, transparent 50%),
+                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.3) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 100%, rgba(37, 99, 235, 0.02) 0%, transparent 50%),
                   #020617;
     }
 
@@ -108,7 +108,7 @@
       position: absolute;
       inset: -2px;
       border-radius: 1.7rem;
-      background: linear-gradient(135deg, rgba(168, 207, 69, 0.45), rgba(13, 13, 89, 0.15), rgba(168, 207, 69, 0.35), rgba(100, 180, 255, 0.15));
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(13, 13, 89, 0.12), rgba(37, 99, 235, 0.18), rgba(100, 180, 255, 0.12));
       background-size: 300% 300%;
       animation: gradientShift 6s ease infinite;
       z-index: -1;
@@ -178,7 +178,7 @@
     }
 
     .btn-glow:hover {
-      box-shadow: 0 8px 30px rgba(168, 207, 69, 0.35);
+      box-shadow: 0 8px 30px rgba(13, 13, 89, 0.2);
       transform: translateY(-2px);
     }
 
@@ -194,6 +194,37 @@
       .sm\:hidden {
         display: flex !important;
       }
+      .step-dot {
+        width: 22px;
+        height: 22px;
+        font-size: 10px;
+      }
+      .step-indicator {
+        gap: 4px;
+      }
+      .step-line {
+        height: 1.5px;
+      }
+      .premium-card {
+        padding: 1rem !important;
+        border-radius: 1.25rem !important;
+      }
+      .card-glow::before {
+        border-radius: 1.4rem !important;
+      }
+      .swap-btn {
+        width: 38px;
+        height: 38px;
+        border-width: 3px;
+      }
+      .input-panel {
+        padding: 0.875rem;
+        border-radius: 0.875rem;
+      }
+      .asset-pill, .network-pill {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8125rem;
+      }
     }
 
     .input-panel {
@@ -205,8 +236,8 @@
     }
 
     .input-panel:focus-within {
-      border-color: #A8CF45;
-      box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.12);
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
 
     .asset-pill {
@@ -227,8 +258,8 @@
     }
 
     .asset-pill:hover {
-      border-color: #A8CF45;
-      background: #fafff0;
+      border-color: #2563EB;
+      background: #eff6ff;
     }
 
     .network-pill {
@@ -249,8 +280,8 @@
     }
 
     .network-pill:hover {
-      border-color: #A8CF45;
-      background: #fafff0;
+      border-color: #2563EB;
+      background: #eff6ff;
     }
 
     .amount-input::placeholder {
@@ -260,12 +291,12 @@
     .swap-btn {
       width: 44px;
       height: 44px;
-      background: linear-gradient(135deg, #A8CF45, #9bd43a);
+      background: linear-gradient(135deg, #0D0D59, #1a1a8c);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 14px rgba(168, 207, 69, 0.4);
+      box-shadow: 0 4px 14px rgba(13, 13, 89, 0.35);
       border: 4px solid #fff;
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -273,7 +304,7 @@
 
     .swap-btn:hover {
       transform: scale(1.08);
-      box-shadow: 0 6px 20px rgba(168, 207, 69, 0.5);
+      box-shadow: 0 6px 20px rgba(13, 13, 89, 0.45);
     }
 
     .swap-btn:active {
@@ -607,8 +638,8 @@
     }
 
     .step-dot.active {
-      background: #A8CF45;
-      color: #0D0D59;
+      background: #0D0D59;
+      color: #ffffff;
     }
 
     .step-dot.inactive {
@@ -624,7 +655,7 @@
     }
 
     .step-line.active {
-      background: #A8CF45;
+      background: #0D0D59;
     }
 
     .copy-flash {
@@ -633,7 +664,7 @@
 
     @keyframes copyFlash {
       0% {
-        background: #A8CF45;
+        background: #2563EB;
       }
 
       100% {
@@ -655,6 +686,24 @@
         opacity: 0.4;
       }
     }
+
+    /* ─── Tailwind Custom Color Overrides (light mode) ─── */
+    .bg-velcro-green { background-color: #0D0D59 !important; }
+    .hover\:bg-velcro-green-dark:hover { background-color: #1a1a8c !important; }
+    .text-velcro-green { color: #0D0D59 !important; }
+    .text-velcro-navy { color: #0D0D59 !important; }
+    .hover\:text-velcro-navy:hover { color: #1a1a8c !important; }
+    .hover\:text-velcro-green:hover { color: #1a1a8c !important; }
+    .hover\:text-velcro-green-dark:hover { color: #1a1a8c !important; }
+    .border-velcro-green { border-color: #0D0D59 !important; }
+    .focus\:border-velcro-green:focus { border-color: #2563EB !important; }
+    .from-velcro-green { --tw-gradient-from: #0D0D59 var(--tw-gradient-from-position) !important; --tw-gradient-to: #0D0D5900 var(--tw-gradient-to-position) !important; }
+    .to-lime-400 { --tw-gradient-to: #2563EB var(--tw-gradient-to-position) !important; }
+    .focus\:ring-velcro-green\/20:focus { --tw-ring-color: rgba(37, 99, 235, 0.2) !important; }
+    .group:hover .group-hover\:text-velcro-green { color: #2563EB !important; }
+    .hover\:bg-velcro-green\/20:hover { background-color: rgba(37, 99, 235, 0.1) !important; }
+    .bg-velcro-navy\/5 { background-color: rgba(13, 13, 89, 0.05) !important; }
+    .border-velcro-navy\/10 { border-color: rgba(13, 13, 89, 0.1) !important; }
 
   </style>
 
@@ -684,15 +733,15 @@
     .dark .border-white { border-color: #1e293b !important; }
 
     /* Velcro brand colors in dark mode */
-    .dark .text-velcro-navy { color: #a8cf45 !important; }
-    .dark .hover\:text-velcro-navy:hover { color: #a8cf45 !important; }
+    .dark .text-velcro-navy { color: #60a5fa !important; }
+    .dark .hover\:text-velcro-navy:hover { color: #60a5fa !important; }
     /* Keep text dark on green button backgrounds */
     .dark .bg-velcro-green.text-velcro-navy { color: #0D0D59 !important; }
     /* Keep tab text dark on green indicator background */
     .dark #tab-sell.text-velcro-navy,
     .dark #tab-buy.text-velcro-navy { color: #0D0D59 !important; }
-    .dark .bg-velcro-navy\/5 { background-color: rgba(168, 207, 69, 0.08) !important; }
-    .dark .border-velcro-navy\/10 { border-color: rgba(168, 207, 69, 0.15) !important; }
+    .dark .bg-velcro-navy\/5 { background-color: rgba(37, 99, 235, 0.1) !important; }
+    .dark .border-velcro-navy\/10 { border-color: rgba(37, 99, 235, 0.2) !important; }
 
     /* Hover state overrides */
     .dark .hover\:bg-gray-50:hover { background-color: #0f172a !important; }
@@ -700,7 +749,7 @@
     .dark .hover\:bg-gray-200:hover { background-color: #334155 !important; }
     .dark .hover\:bg-amber-100:hover { background-color: #78350f !important; }
     .dark .hover\:text-gray-600:hover { color: #94a3b8 !important; }
-    .dark .group:hover .group-hover\:text-velcro-green { color: #a8cf45 !important; }
+    .dark .group:hover .group-hover\:text-velcro-green { color: #60a5fa !important; }
 
     /* Focus overrides */
     .dark .focus\:bg-white:focus { background-color: #0f172a !important; }
@@ -711,13 +760,13 @@
 
     /* Custom component overrides */
     .dark .input-panel { background: #0f172a; border-color: #334155; }
-    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); }
+    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
     .dark .asset-pill { background: #0f172a; border-color: #334155; color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-    .dark .asset-pill:hover { background: #1e293b; border-color: #A8CF45; }
+    .dark .asset-pill:hover { background: #1e293b; border-color: #3b82f6; }
 
     .dark .network-pill { background: #0f172a; border-color: #334155; color: #94a3b8; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-    .dark .network-pill:hover { background: #1e293b; border-color: #A8CF45; }
+    .dark .network-pill:hover { background: #1e293b; border-color: #3b82f6; }
 
     .dark .swap-btn { border-color: #0f172a; }
 
@@ -746,7 +795,7 @@
     /* Copy flash animation */
     .dark .copy-flash { animation: copyFlashDark 0.6s ease; }
     @keyframes copyFlashDark {
-      0% { background: #A8CF45; }
+      0% { background: #3b82f6; }
       100% { background: #0f172a; }
     }
 
@@ -799,7 +848,7 @@
     .dark .toast-close:hover { color: #e2e8f0; }
 
     /* Glow button less intense in dark */
-    .dark .btn-glow:hover { box-shadow: 0 8px 30px rgba(168, 207, 69, 0.2); }
+    .dark .btn-glow:hover { box-shadow: 0 8px 30px rgba(37, 99, 235, 0.25); }
 
     /* History item hover */
     .dark .history-item-hover:hover { background-color: #1e293b !important; }
@@ -919,9 +968,9 @@
                 <input type="text" inputmode="decimal" id="sell-amount" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-col items-end gap-2.5 shrink-0 w-full sm:w-auto">
-                <div class="flex flex-col items-center sm:items-end gap-1.5">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-right uppercase">Choose Asset</span>
+              <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
+                <div class="flex flex-col items-start sm:items-end gap-1.5">
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-left sm:text-right uppercase">Choose Asset</span>
                   <div class="custom-select" id="sell-asset-wrap">
                     <div class="asset-pill" onclick="openSellAssetPicker()">
                       <div class="flex items-center gap-1.5" id="sell-asset-display">
@@ -1205,9 +1254,9 @@
                   oninput="handleAmountInput(this, 4); calculateBuyFromCrypto();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-col items-end gap-2.5 shrink-0 w-full sm:w-auto">
-                <div class="flex flex-col items-center sm:items-end gap-1.5">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-right uppercase">Choose Asset</span>
+              <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
+                <div class="flex flex-col items-start sm:items-end gap-1.5">
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-left sm:text-right uppercase">Choose Asset</span>
                   <div class="custom-select" id="buy-asset-wrap">
                     <div class="asset-pill" onclick="openBuyAssetPicker()">
                       <div class="flex items-center gap-1.5" id="buy-asset-display">
@@ -1619,6 +1668,8 @@
     var currentSellNetwork = '';
     var currentBuyNetwork = '';
     var currentBankCode = '';
+    var currentBankSwitchCode = '';
+    var currentBankPajId = '';
     var countryRequirements = {};
     var currentReference = '';
     var statusPollInterval = null;
@@ -1627,6 +1678,10 @@
     let SELL_MIN_LIMIT = 1; // Minimum sell amount per transaction (fetched from /api/settings)
     let SELL_MAX_LIMIT = 10000; // Maximum sell amount per transaction (fetched from /api/settings)
     let currentFee = 0.5; // Platform fee percentage (fetched from /api/settings)
+    let pajUsdtEnabled = false;
+    let pajUsdcEnabled = false;
+    let switchBanks = [];
+    let pajBanks = [];
     var rateFetchedAt = null;
     var rateExpiryInterval = null;
     const RATE_EXPIRY_SECONDS = 300; // 5 minutes
@@ -1777,7 +1832,7 @@
         }).join('');
       }
 
-      // Append PAJ assets (all supported Solana tokens except USDT/USDC)
+      // Append PAJ assets
       const pajItems = `
         <div class="asset-picker-divider">SOLANA</div>
         <div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectSellAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
@@ -1788,6 +1843,14 @@
           <img src="/logos/usdg.png" class="asset-picker-logo" alt="USDG">
           <div class="asset-picker-info"><div class="asset-picker-symbol">USDG</div><div class="asset-picker-name">Global Dollar</div></div>
         </div>
+        ${pajUsdtEnabled ? `<div class="asset-picker-item" data-symbol="USDT" data-name="Tether USD" onclick="selectSellAsset('USDT', '/logos/usdt.png', 'Tether USD', 'paj')">
+          <img src="/logos/usdt.png" class="asset-picker-logo" alt="USDT">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">USDT</div><div class="asset-picker-name">Tether USD</div></div>
+        </div>` : ''}
+        ${pajUsdcEnabled ? `<div class="asset-picker-item" data-symbol="USDC" data-name="USD Coin" onclick="selectSellAsset('USDC', '/logos/usdc.png', 'USD Coin', 'paj')">
+          <img src="/logos/usdc.png" class="asset-picker-logo" alt="USDC">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">USDC</div><div class="asset-picker-name">USD Coin</div></div>
+        </div>` : ''}
         <div class="asset-picker-item" data-symbol="JUP" data-name="Jupiter" onclick="selectSellAsset('JUP', '/logos/jup.png', 'Jupiter', 'paj')">
           <img src="/logos/jup.png" class="asset-picker-logo" alt="JUP">
           <div class="asset-picker-info"><div class="asset-picker-symbol">JUP</div><div class="asset-picker-name">Jupiter</div></div>
@@ -1822,7 +1885,7 @@
           return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectBuyAsset('${sym}', '${logo}', '${asset.name}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
         }).join('');
       }
-      // Append static PAJ assets (all supported Solana tokens except USDT/USDC)
+      // Append static PAJ assets
       const pajItems = `
         <div class="asset-picker-divider">SOLANA</div>
         <div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectBuyAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
@@ -1833,6 +1896,14 @@
           <img src="/logos/usdg.png" class="asset-picker-logo" alt="USDG">
           <div class="asset-picker-info"><div class="asset-picker-symbol">USDG</div><div class="asset-picker-name">Global Dollar</div></div>
         </div>
+        ${pajUsdtEnabled ? `<div class="asset-picker-item" data-symbol="USDT" data-name="Tether USD" onclick="selectBuyAsset('USDT', '/logos/usdt.png', 'Tether USD', 'paj')">
+          <img src="/logos/usdt.png" class="asset-picker-logo" alt="USDT">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">USDT</div><div class="asset-picker-name">Tether USD</div></div>
+        </div>` : ''}
+        ${pajUsdcEnabled ? `<div class="asset-picker-item" data-symbol="USDC" data-name="USD Coin" onclick="selectBuyAsset('USDC', '/logos/usdc.png', 'USD Coin', 'paj')">
+          <img src="/logos/usdc.png" class="asset-picker-logo" alt="USDC">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">USDC</div><div class="asset-picker-name">USD Coin</div></div>
+        </div>` : ''}
         <div class="asset-picker-item" data-symbol="JUP" data-name="Jupiter" onclick="selectBuyAsset('JUP', '/logos/jup.png', 'Jupiter', 'paj')">
           <img src="/logos/jup.png" class="asset-picker-logo" alt="JUP">
           <div class="asset-picker-info"><div class="asset-picker-symbol">JUP</div><div class="asset-picker-name">Jupiter</div></div>
@@ -2049,6 +2120,12 @@
             const maxLabel = document.getElementById('sell-max-label');
             if (maxLabel) maxLabel.textContent = `Max: $${SELL_MAX_LIMIT.toLocaleString()}`;
           }
+          if (typeof data.data.paj_usdt_enabled === 'boolean') {
+            pajUsdtEnabled = data.data.paj_usdt_enabled;
+          }
+          if (typeof data.data.paj_usdc_enabled === 'boolean') {
+            pajUsdcEnabled = data.data.paj_usdc_enabled;
+          }
         }
       } catch (err) {
         // Use defaults
@@ -2119,7 +2196,7 @@
 
     async function fetchPajTokenPrices() {
       try {
-        const ids = 'solana,jupiter-exchange-solana,bonk,dogwifhat,pyth-network,global-dollar';
+        const ids = 'solana,jupiter-exchange-solana,bonk,dogwifhat,pyth-network,global-dollar,tether,usd-coin';
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`, { cache: 'default' });
         if (!res.ok) throw new Error('CoinGecko response not ok');
         const data = await res.json();
@@ -2129,6 +2206,8 @@
         PAJ_TOKEN_PRICES['WIF'] = data['dogwifhat']?.usd || 0;
         PAJ_TOKEN_PRICES['PYTH'] = data['pyth-network']?.usd || 0;
         PAJ_TOKEN_PRICES['USDG'] = data['global-dollar']?.usd || 1;
+        PAJ_TOKEN_PRICES['USDT'] = data['tether']?.usd || 1;
+        PAJ_TOKEN_PRICES['USDC'] = data['usd-coin']?.usd || 1;
       } catch (e) {
         // Token price fetch failed — leave existing prices intact
       }
@@ -2238,7 +2317,59 @@
     let cachedBanks = [];
     async function fetchInstitutions() {
       const bankReq = countryRequirements['bank_code'];
-      cachedBanks = bankReq?.option || [];
+      switchBanks = bankReq?.option || [];
+      mergeBanks();
+    }
+
+    function normalizeBankName(name) {
+      return name.toLowerCase()
+        .replace(/\b(bank|plc|limited|ltd|inc|corp|co\.?|ng)\b/g, '')
+        .replace(/[^a-z0-9]/g, '')
+        .trim();
+    }
+
+    function mergeBanks() {
+      const merged = [];
+      const byNorm = {};
+
+      // Add Switch banks first
+      for (const b of switchBanks) {
+        const norm = normalizeBankName(b.name);
+        byNorm[norm] = {
+          name: b.name,
+          code: b.code,
+          switchCode: b.code,
+          pajId: ''
+        };
+      }
+
+      // Merge PAJ banks
+      for (const b of pajBanks) {
+        const norm = normalizeBankName(b.name);
+        if (byNorm[norm]) {
+          byNorm[norm].pajId = b.code;
+        } else {
+          // Try fuzzy match
+          let matched = false;
+          for (const key of Object.keys(byNorm)) {
+            if (norm.includes(key) || key.includes(norm)) {
+              byNorm[key].pajId = b.code;
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) {
+            byNorm[norm] = {
+              name: b.name,
+              code: b.code,
+              switchCode: '',
+              pajId: b.code
+            };
+          }
+        }
+      }
+
+      cachedBanks = Object.values(byNorm).sort((a, b) => a.name.localeCompare(b.name));
       populateBanks();
     }
 
@@ -2318,7 +2449,9 @@
         }
         if (isTop) topCount++;
         const safeName = b.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        html += `<div class="custom-option" data-bank-code="${b.code}" onclick="selectSellBank('${safeName}', '${b.code}'); event.stopPropagation();">${b.name}</div>`;
+        const sc = (b.switchCode || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const pj = (b.pajId || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        html += `<div class="custom-option" data-bank-code="${b.code}" onclick="selectSellBank('${safeName}', '${sc}', '${pj}'); event.stopPropagation();">${b.name}</div>`;
       });
 
       if (banks.length === 0) {
@@ -2572,6 +2705,7 @@
       closeAllDropdowns(); // Clear everything first
       currentSellAsset = symbol;
       currentProvider = provider || 'switch';
+      currentBankCode = currentProvider === 'paj' ? (currentBankPajId || currentBankCode) : (currentBankSwitchCode || currentBankCode);
       currentSellInputMode = 'USD';
       const prefix = document.getElementById('sell-currency-prefix');
       if (prefix) prefix.textContent = '$';
@@ -2618,12 +2752,12 @@
         const res = await fetch(`${API_BASE}/api/paj/banks`);
         if (!res.ok) throw new Error('Failed to fetch PAJ banks');
         const payload = await res.json();
-        cachedBanks = (payload.data || []).map(b => ({
+        pajBanks = (payload.data || []).map(b => ({
           id: b.id,
-          code: b.id, // PAJ uses ID as code for resolution
+          code: b.id,
           name: b.name
         }));
-        populateBanks();
+        mergeBanks();
       } catch (err) {
         showToast('Failed to load PAJ banks', 'error');
       }
@@ -2650,9 +2784,11 @@
       updateStepIndicators('OFFRAMP');
     }
 
-    function selectSellBank(name, code, event) {
-      if (event) event.stopPropagation();
-      currentBankCode = code;
+    function selectSellBank(name, switchCode, pajId, event) {
+      if (event && typeof event === 'object' && event.stopPropagation) event.stopPropagation();
+      currentBankSwitchCode = switchCode || '';
+      currentBankPajId = pajId || '';
+      currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
       document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${name}</span>`;
       
       // Explicitly close all dropdowns
@@ -2680,20 +2816,24 @@
       try {
         let payload;
         if (currentProvider === 'paj') {
+          const bankId = currentBankPajId || currentBankCode;
+          if (!bankId) { nameLoading.classList.add('hidden'); nameInput.classList.remove('hidden'); nameError.textContent = 'Selected bank is not supported by PAJ'; nameError.classList.remove('hidden'); return; }
           const res = await fetch(`${API_BASE}/api/paj/resolve`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bank: currentBankCode, accountNumber: bankNum })
+            body: JSON.stringify({ bank: bankId, accountNumber: bankNum })
           });
           payload = await res.json();
           if (!res.ok) throw new Error(payload.message || 'Could not resolve account name');
         } else {
+          const switchCode = currentBankSwitchCode || currentBankCode;
+          if (!switchCode) { nameLoading.classList.add('hidden'); nameInput.classList.remove('hidden'); nameError.textContent = 'Selected bank is not supported by Switch'; nameError.classList.remove('hidden'); return; }
           const res = await fetch(`${API_BASE}/api/resolve`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               country: currentCountry,
-              beneficiary: { account_number: bankNum, bank_code: currentBankCode }
+              beneficiary: { account_number: bankNum, bank_code: switchCode }
             })
           });
           payload = await res.json();
@@ -2908,7 +3048,9 @@
       'BONK': 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
       'WIF': 'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm',
       'PYTH': 'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3',
-      'USDG': '2u1tszSeqZ3qBWF3uNGPFc8TzMk2tdiwknnRMWGWjGWH'
+      'USDG': '2u1tszSeqZ3qBWF3uNGPFc8TzMk2tdiwknnRMWGWjGWH',
+      'USDT': 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+      'USDC': 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
     };
     let pajValueTimeout = null;
 
@@ -3229,10 +3371,12 @@
         const mint = PAJ_MINTS[currentSellAsset];
         if (!mint) { showToast('Invalid PAJ asset', 'warning'); btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address'; safeLucideInit(); return; }
         try {
+          const bankId = currentBankPajId || currentBankCode;
+          if (!bankId) { showToast('Selected bank is not supported by PAJ', 'warning'); btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address'; safeLucideInit(); return; }
           const res = await fetch(`${API_BASE}/api/paj/sell`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fiatAmount: receive, mint, bank: currentBankCode, accountNumber: bankNum })
+            body: JSON.stringify({ fiatAmount: receive, mint, bank: bankId, accountNumber: bankNum })
           });
           const responseBody = await res.text();
           if (!res.ok) {
@@ -3305,7 +3449,7 @@
               holder_type: 'INDIVIDUAL',
               holder_name: accountName,
               account_number: bankNum,
-              bank_code: currentBankCode
+              bank_code: currentBankSwitchCode || currentBankCode
             }
           })
         });

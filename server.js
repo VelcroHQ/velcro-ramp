@@ -151,7 +151,9 @@ function loadSettings() {
     buy_max_limit: 50000, 
     sell_min_limit: 1, 
     sell_max_limit: 10000,
-    paj_email: process.env.PAJ_EMAIL || 'paj@usevelcro.com'
+    paj_email: process.env.PAJ_EMAIL || 'paj@usevelcro.com',
+    paj_usdt_enabled: false,
+    paj_usdc_enabled: false
   };
   try {
     if (fs.existsSync(SETTINGS_PATH)) {
@@ -959,7 +961,9 @@ app.get('/api/settings', async (req, res) => {
     platform_fee: settings.platform_fee,
     buy_max_limit: settings.buy_max_limit,
     sell_min_limit: settings.sell_min_limit,
-    sell_max_limit: settings.sell_max_limit
+    sell_max_limit: settings.sell_max_limit,
+    paj_usdt_enabled: settings.paj_usdt_enabled,
+    paj_usdc_enabled: settings.paj_usdc_enabled
   }));
 });
 
@@ -980,7 +984,7 @@ app.get('/api/admin/debug/last-payload', adminRateLimiter, adminAuth, async (req
 
 app.post('/api/admin/settings', adminRateLimiter, adminAuth, async (req, res) => {
   try {
-    const { platform_fee, buy_max_limit, sell_min_limit, sell_max_limit, paj_email } = req.body;
+    const { platform_fee, buy_max_limit, sell_min_limit, sell_max_limit, paj_email, paj_usdt_enabled, paj_usdc_enabled } = req.body;
     const settings = loadSettings();
     if (buy_max_limit !== undefined) {
       const limit = parseInt(buy_max_limit, 10);
@@ -1017,9 +1021,15 @@ app.post('/api/admin/settings', adminRateLimiter, adminAuth, async (req, res) =>
       }
       settings.paj_email = paj_email;
     }
+    if (paj_usdt_enabled !== undefined) {
+      settings.paj_usdt_enabled = Boolean(paj_usdt_enabled);
+    }
+    if (paj_usdc_enabled !== undefined) {
+      settings.paj_usdc_enabled = Boolean(paj_usdc_enabled);
+    }
     if (saveSettings(settings)) {
       console.log('✅ Settings updated:', JSON.stringify(settings));
-      auditLog('SETTINGS_UPDATED', { ip: req.adminClientIp, changes: { platform_fee, buy_max_limit, sell_min_limit, sell_max_limit, paj_email } });
+      auditLog('SETTINGS_UPDATED', { ip: req.adminClientIp, changes: { platform_fee, buy_max_limit, sell_min_limit, sell_max_limit, paj_email, paj_usdt_enabled, paj_usdc_enabled } });
       res.json({ success: true, ...settings });
     } else {
       res.status(500).json({ success: false, error: 'Failed to save settings' });
