@@ -87,17 +87,11 @@
     }
 
     .page-bg {
-      background: radial-gradient(ellipse at 10% 0%, rgba(168, 207, 69, 0.08) 0%, transparent 50%),
-                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.06) 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 100%, rgba(168, 207, 69, 0.05) 0%, transparent 50%),
-                  #f9fafb;
+      background: #ffffff;
     }
 
     .dark .page-bg {
-      background: radial-gradient(ellipse at 10% 0%, rgba(168, 207, 69, 0.05) 0%, transparent 50%),
-                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.4) 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 100%, rgba(168, 207, 69, 0.03) 0%, transparent 50%),
-                  #020617;
+      background: #020617;
     }
 
     .card-glow {
@@ -126,10 +120,8 @@
     }
 
     .premium-card {
-      background: rgba(255, 255, 255, 0.72);
-      backdrop-filter: blur(24px) saturate(1.4);
-      -webkit-backdrop-filter: blur(24px) saturate(1.4);
-      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
       box-shadow:
         0 1px 2px rgba(13, 13, 89, 0.04),
         0 4px 8px rgba(13, 13, 89, 0.04),
@@ -138,8 +130,8 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
     }
     .dark .premium-card {
-      background: rgba(15, 23, 42, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #0f172a;
+      border: 1px solid #1e293b;
       box-shadow:
         0 1px 2px rgba(0, 0, 0, 0.2),
         0 4px 8px rgba(0, 0, 0, 0.2),
@@ -149,24 +141,21 @@
     }
 
     .premium-tabs {
-      background: rgba(243, 244, 246, 0.6);
+      background: #f3f4f6;
       border: 1px solid rgba(0, 0, 0, 0.04);
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
     }
     .dark .premium-tabs {
-      background: rgba(30, 41, 59, 0.5);
+      background: #1e293b;
       border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .nav-scrolled {
-      background: rgba(255, 255, 255, 0.7) !important;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(229, 231, 235, 0.5) !important;
+      background: #ffffff !important;
+      border-bottom: 1px solid #e5e7eb !important;
     }
     .dark .nav-scrolled {
-      background: rgba(2, 6, 23, 0.7) !important;
-      border-bottom: 1px solid rgba(30, 41, 59, 0.5) !important;
+      background: #020617 !important;
+      border-bottom: 1px solid #1e293b !important;
     }
 
     .card-shadow {
@@ -727,7 +716,7 @@
     .dark .bg-velcro-green.text-velcro-navy { color: #0D0D59 !important; }
     /* Keep tab text dark on green indicator background */
     .dark #tab-sell.text-velcro-navy,
-    .dark #tab-buy.text-velcro-navy { color: #0D0D59 !important; }
+    .dark #tab-buy.text-velcro-navy { color: #a8cf45 !important; }
     .dark .bg-velcro-navy\/5 { background-color: rgba(168, 207, 69, 0.08) !important; }
     .dark .border-velcro-navy\/10 { border-color: rgba(168, 207, 69, 0.15) !important; }
 
@@ -751,10 +740,10 @@
     .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); }
 
     .dark .asset-pill { background: #0f172a; border-color: #334155; color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-    .dark .asset-pill:hover { background: #1e293b; border-color: #3b82f6; }
+    .dark .asset-pill:hover { background: #1e293b; border-color: #A8CF45; }
 
     .dark .network-pill { background: #0f172a; border-color: #334155; color: #94a3b8; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-    .dark .network-pill:hover { background: #1e293b; border-color: #3b82f6; }
+    .dark .network-pill:hover { background: #1e293b; border-color: #A8CF45; }
 
     .dark .swap-btn { border-color: #0f172a; }
 
@@ -851,13 +840,6 @@
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
-
-  <!-- Floating decorative shapes -->
-  <div class="fixed inset-0 pointer-events-none overflow-hidden" style="z-index: 0;">
-    <div class="absolute -top-20 -right-20 w-96 h-96 rounded-full opacity-30" style="background: radial-gradient(circle, rgba(168,207,69,0.15) 0%, transparent 70%);"></div>
-    <div class="absolute top-40 -left-32 w-80 h-80 rounded-full opacity-20" style="background: radial-gradient(circle, rgba(13,13,89,0.1) 0%, transparent 70%);"></div>
-    <div class="absolute bottom-20 right-10 w-64 h-64 rounded-full opacity-20" style="background: radial-gradient(circle, rgba(168,207,69,0.1) 0%, transparent 70%);"></div>
-  </div>
 
   <!-- Navigation -->
   <nav id="main-nav" class="bg-transparent border-none transition-all duration-300">
