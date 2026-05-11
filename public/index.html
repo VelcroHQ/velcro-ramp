@@ -2535,13 +2535,43 @@
       if (!container) return;
       let touchStartY = 0;
       let touchStartX = 0;
+      let touchDidMove = false;
+
       container.addEventListener('touchstart', (e) => {
+        touchDidMove = false;
         touchStartY = e.touches[0].clientY;
         touchStartX = e.touches[0].clientX;
       }, { passive: true });
+
       container.addEventListener('touchmove', () => {
-        // mark that we moved (scroll gesture)
+        touchDidMove = true;
       }, { passive: true });
+
+      // Handle taps on mobile (iOS/Android often don't synthesize click inside scrollable fixed containers)
+      container.addEventListener('touchend', (e) => {
+        const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+        const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+        if (touchDidMove || dy > 10 || dx > 10) {
+          console.log('[BANK] touchend ignored — was a scroll');
+          return;
+        }
+        // It was a tap — find the element under the finger
+        const touch = e.changedTouches[0];
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!el) { console.log('[BANK] touchend — no element at point'); return; }
+        const option = el.closest('.custom-option');
+        if (!option) { console.log('[BANK] touchend — no .custom-option under finger'); return; }
+        const name = option.dataset.bankName;
+        const sc = option.dataset.switchCode;
+        const pj = option.dataset.pajId;
+        console.log('[BANK] touchend TAP on option:', name, sc, pj);
+        if (!name) { console.log('[BANK] touchend skipped — no data-bank-name'); return; }
+        e.preventDefault();
+        e.stopPropagation();
+        selectSellBank(name, sc, pj, option);
+      }, { passive: false });
+
+      // Keep click handler for desktop
       container.addEventListener('click', (e) => {
         const option = e.target.closest('.custom-option');
         if (!option) { console.log('[BANK] click but no .custom-option'); return; }
@@ -2549,7 +2579,7 @@
         const sc = option.dataset.switchCode;
         const pj = option.dataset.pajId;
         console.log('[BANK] click on option:', name, sc, pj);
-        if (!name) { console.log('[BANK] skipped — no data-bank-name'); return; }
+        if (!name) { console.log('[BANK] click skipped — no data-bank-name'); return; }
         e.stopPropagation();
         e.preventDefault();
         selectSellBank(name, sc, pj, option);
