@@ -1301,7 +1301,7 @@
 
           <!-- Preview -->
           <div id="buy-preview" class="hidden text-center">
-            <p class="text-xs text-gray-500">You'll pay <span id="buy-preview-fiat" class="font-bold text-gray-900">--</span> and receive <span id="buy-preview-crypto" class="font-bold text-gray-900">--</span></p>
+            <p class="text-xs text-gray-500">You'll pay <span id="buy-preview-fiat" class="font-bold text-gray-900">--</span> <span id="buy-preview-usd" class="text-gray-400"></span> and receive <span id="buy-preview-crypto" class="font-bold text-gray-900">--</span></p>
 
           </div>
 
@@ -3120,12 +3120,17 @@
       const preview = document.getElementById('buy-preview');
       const previewFiat = document.getElementById('buy-preview-fiat');
       const previewCrypto = document.getElementById('buy-preview-crypto');
+      const previewUsd = document.getElementById('buy-preview-usd');
       if (amount > 0) {
         previewFiat.textContent = `₦${amount.toLocaleString()}`;
+        const tokenUsd = Number(PAJ_TOKEN_PRICES[currentBuyAsset] || 0);
+        const usdVal = tokenUsd ? (receive * tokenUsd).toFixed(2) : (currentRate.paj ? (amount / currentRate.paj).toFixed(2) : '');
+        previewUsd.textContent = usdVal ? `(~$${usdVal})` : '';
         previewCrypto.textContent = `${receive.toFixed(4)} ${currentBuyAsset || 'USDT'}`;
         preview.classList.remove('hidden');
       } else {
         preview.classList.add('hidden');
+        previewUsd.textContent = '';
       }
       updateStepIndicators('ONRAMP');
     }
@@ -3157,7 +3162,10 @@
           const preview = document.getElementById('buy-preview');
           const previewFiat = document.getElementById('buy-preview-fiat');
           const previewCrypto = document.getElementById('buy-preview-crypto');
+          const previewUsd = document.getElementById('buy-preview-usd');
           previewFiat.textContent = `₦${Number(fiatAmount).toLocaleString()}`;
+          const usdVal = currentRate.paj ? (fiatAmount / currentRate.paj).toFixed(2) : '';
+          previewUsd.textContent = usdVal ? `(~$${usdVal})` : '';
           previewCrypto.textContent = `${tokenAmount.toFixed(4)} ${currentBuyAsset}`;
           preview.classList.remove('hidden');
           return tokenAmount;
