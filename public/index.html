@@ -2420,13 +2420,8 @@
         html += `<div class="custom-option text-gray-400">No banks found</div>`;
       }
       listContainer.innerHTML = html;
-      // DEBUG: verify first option has data attributes
       const firstOpt = listContainer.querySelector('.custom-option[data-bank-name]');
-      if (firstOpt) {
-        alert('DEBUG: banks rendered=' + banks.length + ' first=' + firstOpt.dataset.bankName);
-      } else {
-        alert('DEBUG: banks rendered=' + banks.length + ' NO options with data-bank-name found');
-      }
+      console.log('[BANK] populateBanks rendered:', banks.length, 'first:', firstOpt?.dataset.bankName || 'none');
     }
 
     async function selectCountry(code, currency, label, flag) {
@@ -2514,7 +2509,7 @@
     // Mobile-friendly bank dropdown delegation with tap-vs-scroll detection
     (function setupBankDropdown() {
       const container = document.getElementById('sell-bank-options');
-      if (!container) { alert('DEBUG: bank container not found'); return; }
+      if (!container) return;
       let touchStartY = 0;
       let touchStartX = 0;
       container.addEventListener('touchstart', (e) => {
@@ -2525,19 +2520,17 @@
         // mark that we moved (scroll gesture)
       }, { passive: true });
       container.addEventListener('click', (e) => {
-        alert('DEBUG: bank dropdown click fired. target=' + (e.target.tagName || 'unknown'));
         const option = e.target.closest('.custom-option');
-        if (!option) { alert('DEBUG: no .custom-option found from click target'); return; }
+        if (!option) { console.log('[BANK] click but no .custom-option'); return; }
         const name = option.dataset.bankName;
         const sc = option.dataset.switchCode;
         const pj = option.dataset.pajId;
-        alert('DEBUG: option found. name=' + (name || 'EMPTY') + ' sc=' + (sc || 'EMPTY') + ' pj=' + (pj || 'EMPTY'));
-        if (!name) { alert('DEBUG: skipping — no data-bank-name'); return; }
+        console.log('[BANK] click on option:', name, sc, pj);
+        if (!name) { console.log('[BANK] skipped — no data-bank-name'); return; }
         e.stopPropagation();
         e.preventDefault();
         selectSellBank(name, sc, pj, option);
       });
-      alert('DEBUG: bank dropdown handler attached');
     })();
 
     function safeSetText(id, text) {
@@ -2809,14 +2802,11 @@
     }
 
     function selectSellBank(name, switchCode, pajId, optionEl) {
-      alert('DEBUG: selectSellBank called with name=' + name);
+      console.log('[BANK] selectSellBank:', name, switchCode, pajId);
       currentBankSwitchCode = switchCode || '';
       currentBankPajId = pajId || '';
       currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
-      const display = document.getElementById('sell-bank-display');
-      if (!display) { alert('DEBUG: sell-bank-display NOT FOUND'); return; }
-      display.innerHTML = `<span class="text-gray-900 font-medium">${name}</span>`;
-      alert('DEBUG: bank display updated');
+      document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${name}</span>`;
       
       // Update highlights
       document.querySelectorAll('#sell-bank-options .custom-option').forEach(o => o.classList.remove('selected'));
@@ -2825,7 +2815,6 @@
       setTimeout(closeAllDropdowns, 50);
       validateAccount();
       updateStepIndicators('OFFRAMP');
-      alert('DEBUG: selectSellBank finished');
     }
 
     let _resolveTimer = null;
