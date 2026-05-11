@@ -264,16 +264,16 @@ async function safeDbWrite(operation) {
   }
 }
 
-async function safeDbRead(operation) {
+async function safeDbRead(operation, defaultValue = []) {
   if (!dbConnected) {
     console.log('⏭️  DB read skipped (MongoDB unavailable)');
-    return [];
+    return defaultValue;
   }
   try {
     return await operation();
   } catch (err) {
     console.error('DB read error:', err.message);
-    return [];
+    return defaultValue;
   }
 }
 
@@ -670,7 +670,7 @@ app.get('/api/transactions', async (req, res) => {
 
 app.get('/api/transactions/:reference', async (req, res) => {
   try {
-    const row = await safeDbRead(() => Transaction.findOne({ reference: req.params.reference }));
+    const row = await safeDbRead(() => Transaction.findOne({ reference: req.params.reference }), null);
     if (!row) return res.status(404).json(errorResponse('Transaction not found', 404));
     res.json(successResponse(row));
   } catch (err) {
@@ -963,12 +963,12 @@ app.get('/api/settings', async (req, res) => {
   }));
 });
 
-app.get('/api/admin/settings', adminAuth, async (req, res) => {
+app.get('/api/admin/settings', adminRateLimiter, adminAuth, async (req, res) => {
   const settings = loadSettings();
   res.json(settings);
 });
 
-app.get('/api/admin/debug/last-payload', adminAuth, async (req, res) => {
+app.get('/api/admin/debug/last-payload', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const last = await Transaction.findOne().sort({ created_at: -1 });
     if (!last) return res.status(404).json({ error: 'No transactions found' });

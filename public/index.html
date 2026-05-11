@@ -764,21 +764,6 @@
     </div>
   </nav>
 
-  <!-- Hero Section -->
-  <section class="gradient-hero text-white py-8 lg:py-12">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="max-w-2xl text-center sm:text-left">
-        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 leading-tight">
-          Convert crypto to cash — <span class="text-velcro-green">instantly.</span>
-        </h1>
-        <p class="text-sm sm:text-base text-white/70 mb-5 leading-relaxed">
-          Sell USDT, USDC, or CNGN and receive Naira directly in your bank account.
-          Buy stablecoins with Naira and receive them in your wallet.
-        </p>
-      </div>
-    </div>
-  </section>
-
   <section id="convert" class="py-12 lg:py-16">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -2808,27 +2793,14 @@
       const amount = getNum('buy-amount');
       validateBuyLimit(amount);
 
-      // PAJ provider: display approximate immediately, then fetch exact PAJ value
+      // PAJ provider: use exact PAJ value only — no frontend calculations
       if (currentProvider === 'paj') {
-        const pajRate = currentRate.paj || 0;
-        const tokenUsd = PAJ_TOKEN_PRICES[currentBuyAsset] || 0;
-        if (pajRate > 0 && tokenUsd > 0 && amount > 0) {
-          const usdValue = amount / pajRate;
-          const tokenAmount = usdValue / tokenUsd;
-          setFmt('buy-receive', tokenAmount, 4);
-          const preview = document.getElementById('buy-preview');
-          const previewFiat = document.getElementById('buy-preview-fiat');
-          const previewCrypto = document.getElementById('buy-preview-crypto');
-          previewFiat.textContent = `₦${amount.toLocaleString()}`;
-          previewCrypto.textContent = `$${usdValue.toFixed(2)} of ${currentBuyAsset}`;
-          preview.classList.remove('hidden');
-        } else {
-          setFmt('buy-receive', '', 4);
-          document.getElementById('buy-preview').classList.add('hidden');
+        setFmt('buy-receive', '', 4);
+        document.getElementById('buy-preview').classList.add('hidden');
+        if (amount > 0) {
+          if (pajValueTimeout) clearTimeout(pajValueTimeout);
+          pajValueTimeout = setTimeout(() => fetchPajValue(amount), 300);
         }
-        // Fetch exact PAJ value in background (may refine the display)
-        if (pajValueTimeout) clearTimeout(pajValueTimeout);
-        pajValueTimeout = setTimeout(() => fetchPajValue(amount), 400);
         updateStepIndicators('ONRAMP');
         return;
       }
@@ -2874,21 +2846,28 @@
         if (!res.ok) throw new Error('Failed to fetch PAJ value');
         const payload = await res.json();
         const data = payload.data || {};
-        // PAJ returns input amount in `data.amount` (echo) — use tokenRate for exact calc
         const tokenRate = data.tokenRate;
+        let tokenAmount = null;
         if (tokenRate && tokenRate > 0) {
-          const tokenAmount = fiatAmount / tokenRate;
+          tokenAmount = fiatAmount / tokenRate;
+        } else {
+          const amount = data.amount;
+          if (amount !== undefined && amount < fiatAmount * 0.1) {
+            tokenAmount = amount;
+          }
+        }
+        if (tokenAmount !== null) {
           setFmt('buy-receive', tokenAmount, 4);
+          const preview = document.getElementById('buy-preview');
+          const previewFiat = document.getElementById('buy-preview-fiat');
+          const previewCrypto = document.getElementById('buy-preview-crypto');
+          previewFiat.textContent = `₦${Number(fiatAmount).toLocaleString()}`;
+          previewCrypto.textContent = `${tokenAmount.toFixed(4)} ${currentBuyAsset}`;
+          preview.classList.remove('hidden');
           return tokenAmount;
         }
-        // Fallback: only use amount if it's clearly a token amount (much smaller than fiat)
-        const amount = data.amount;
-        if (amount !== undefined && amount < fiatAmount * 0.1) {
-          setFmt('buy-receive', amount, 4);
-          return amount;
-        }
       } catch (err) {
-        // PAJ value fetch failed
+        // PAJ value fetch failed — leave field blank
       }
       return null;
     }
