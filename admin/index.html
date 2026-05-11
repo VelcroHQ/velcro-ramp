@@ -112,7 +112,7 @@
         }
 
         input:focus {
-            border-color: var(--sidebar-bg);
+            border-color: var(--success);
         }
 
         .btn-primary {
@@ -319,7 +319,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--sidebar-bg);
+            color: var(--success);
             flex-shrink: 0;
         }
 
@@ -388,7 +388,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--sidebar-bg);
+            color: var(--success);
             font-weight: 700;
             font-size: 12px;
             flex-shrink: 0;
@@ -454,7 +454,7 @@
             align-items: center;
             justify-content: center;
             font-size: 28px;
-            color: var(--sidebar-bg);
+            color: var(--success);
         }
 
         .user-details-stats {
@@ -1125,7 +1125,7 @@
                 </div>
                 <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
                     <span id="filter-count" style="font-size: 12px; color: var(--text-secondary);">Showing all transactions</span>
-                    <button onclick="clearFilters()" style="background: none; border: none; color: var(--sidebar-bg); font-size: 12px; font-weight: 600; cursor: pointer;">Clear Filters</button>
+                    <button onclick="clearFilters()" style="background: none; border: none; color: var(--success); font-size: 12px; font-weight: 600; cursor: pointer;">Clear Filters</button>
                 </div>
             </div>
 
@@ -1194,7 +1194,7 @@
 
             <div class="user-details-stats">
                 <div class="detail-mini-card">
-                    <b id="detail-vol" style="color: var(--sidebar-bg);">$0</b>
+                    <b id="detail-vol" style="color: var(--success);">$0</b>
                     <span>Total Volume</span>
                 </div>
                 <div class="detail-mini-card">
@@ -1609,8 +1609,8 @@
             </div>
             <div style="margin-bottom: 20px;">
                 <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">TX HASH</label>
-                <a id="modal-hash-link" href="#" target="_blank" style="color: var(--sidebar-bg); font-size: 12px; word-break: break-all; display: block; margin-bottom: 4px;">-</a>
-                <a id="modal-wallet-explorer-link" href="#" target="_blank" style="color: var(--sidebar-bg); font-size: 11px; word-break: break-all; display: none;">
+                <a id="modal-hash-link" href="#" target="_blank" style="color: var(--success); font-size: 12px; word-break: break-all; display: block; margin-bottom: 4px;">-</a>
+                <a id="modal-wallet-explorer-link" href="#" target="_blank" style="color: var(--success); font-size: 11px; word-break: break-all; display: none;">
                   <span style="display: inline-flex; align-items: center; gap: 4px;">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     View wallet on explorer
@@ -1644,7 +1644,7 @@
                 <div style="margin-bottom: 12px;">
                     <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">DEPOSIT ADDRESS (User sent crypto here)</label>
                     <div id="modal-deposit-address" style="background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
-                    <a id="modal-deposit-explorer" href="#" target="_blank" style="display: none; margin-top: 6px; font-size: 11px; color: var(--sidebar-bg); align-items: center; gap: 4px;">
+                    <a id="modal-deposit-explorer" href="#" target="_blank" style="display: none; margin-top: 6px; font-size: 11px; color: var(--success); align-items: center; gap: 4px;"
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                         View address on explorer
                     </a>
@@ -2752,7 +2752,7 @@
                     alert(data.error);
                 } else {
                     const win = window.open("", "_blank");
-                    win.document.write("<html><head><title>Last Transaction Payload</title></head><body style='font-family:sans-serif;'><h2 style='color:#0D0D59;'>Last Transaction Payload</h2><pre style='background:#f4f4f4;padding:20px;border-radius:8px;border:1px solid #ddd;overflow-x:auto;'>" + JSON.stringify(data, null, 2) + "</pre></body></html>");
+                    win.document.write("<html><head><title>Last Transaction Payload</title></head><body style='font-family:sans-serif;'><h2 style='color:#A8CF45;'>Last Transaction Payload</h2><pre style='background:#f4f4f4;padding:20px;border-radius:8px;border:1px solid #ddd;overflow-x:auto;'>" + JSON.stringify(data, null, 2) + "</pre></body></html>");
                     win.document.close();
                 }
             } catch (e) {
