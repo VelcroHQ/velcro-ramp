@@ -87,16 +87,16 @@
     }
 
     .page-bg {
-      background: radial-gradient(ellipse at 10% 0%, rgba(37, 99, 235, 0.04) 0%, transparent 50%),
-                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.04) 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 100%, rgba(37, 99, 235, 0.03) 0%, transparent 50%),
-                  #f8fafc;
+      background: radial-gradient(ellipse at 10% 0%, rgba(168, 207, 69, 0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.06) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 100%, rgba(168, 207, 69, 0.05) 0%, transparent 50%),
+                  #f9fafb;
     }
 
     .dark .page-bg {
-      background: radial-gradient(ellipse at 10% 0%, rgba(37, 99, 235, 0.03) 0%, transparent 50%),
-                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.3) 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 100%, rgba(37, 99, 235, 0.02) 0%, transparent 50%),
+      background: radial-gradient(ellipse at 10% 0%, rgba(168, 207, 69, 0.05) 0%, transparent 50%),
+                  radial-gradient(ellipse at 90% 10%, rgba(13, 13, 89, 0.4) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 100%, rgba(168, 207, 69, 0.03) 0%, transparent 50%),
                   #020617;
     }
 
@@ -108,7 +108,7 @@
       position: absolute;
       inset: -2px;
       border-radius: 1.7rem;
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(13, 13, 89, 0.12), rgba(37, 99, 235, 0.18), rgba(100, 180, 255, 0.12));
+      background: linear-gradient(135deg, rgba(168, 207, 69, 0.45), rgba(13, 13, 89, 0.15), rgba(168, 207, 69, 0.35), rgba(100, 180, 255, 0.15));
       background-size: 300% 300%;
       animation: gradientShift 6s ease infinite;
       z-index: -1;
@@ -178,7 +178,7 @@
     }
 
     .btn-glow:hover {
-      box-shadow: 0 8px 30px rgba(13, 13, 89, 0.2);
+      box-shadow: 0 8px 30px rgba(168, 207, 69, 0.35);
       transform: translateY(-2px);
     }
 
@@ -236,8 +236,8 @@
     }
 
     .input-panel:focus-within {
-      border-color: #2563EB;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      border-color: #A8CF45;
+      box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.12);
     }
 
     .asset-pill {
@@ -258,8 +258,8 @@
     }
 
     .asset-pill:hover {
-      border-color: #2563EB;
-      background: #eff6ff;
+      border-color: #A8CF45;
+      background: #fafff0;
     }
 
     .network-pill {
@@ -280,8 +280,8 @@
     }
 
     .network-pill:hover {
-      border-color: #2563EB;
-      background: #eff6ff;
+      border-color: #A8CF45;
+      background: #fafff0;
     }
 
     .amount-input::placeholder {
@@ -291,12 +291,12 @@
     .swap-btn {
       width: 44px;
       height: 44px;
-      background: linear-gradient(135deg, #0D0D59, #1a1a8c);
+      background: linear-gradient(135deg, #A8CF45, #9bd43a);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 14px rgba(13, 13, 89, 0.35);
+      box-shadow: 0 4px 14px rgba(168, 207, 69, 0.4);
       border: 4px solid #fff;
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -304,7 +304,7 @@
 
     .swap-btn:hover {
       transform: scale(1.08);
-      box-shadow: 0 6px 20px rgba(13, 13, 89, 0.45);
+      box-shadow: 0 6px 20px rgba(168, 207, 69, 0.5);
     }
 
     .swap-btn:active {
@@ -638,8 +638,8 @@
     }
 
     .step-dot.active {
-      background: #0D0D59;
-      color: #ffffff;
+      background: #A8CF45;
+      color: #0D0D59;
     }
 
     .step-dot.inactive {
@@ -655,7 +655,7 @@
     }
 
     .step-line.active {
-      background: #0D0D59;
+      background: #A8CF45;
     }
 
     .copy-flash {
@@ -664,7 +664,7 @@
 
     @keyframes copyFlash {
       0% {
-        background: #2563EB;
+        background: #A8CF45;
       }
 
       100% {
@@ -686,24 +686,6 @@
         opacity: 0.4;
       }
     }
-
-    /* ─── Tailwind Custom Color Overrides (light mode) ─── */
-    .bg-velcro-green { background-color: #0D0D59 !important; }
-    .hover\:bg-velcro-green-dark:hover { background-color: #1a1a8c !important; }
-    .text-velcro-green { color: #0D0D59 !important; }
-    .text-velcro-navy { color: #0D0D59 !important; }
-    .hover\:text-velcro-navy:hover { color: #1a1a8c !important; }
-    .hover\:text-velcro-green:hover { color: #1a1a8c !important; }
-    .hover\:text-velcro-green-dark:hover { color: #1a1a8c !important; }
-    .border-velcro-green { border-color: #0D0D59 !important; }
-    .focus\:border-velcro-green:focus { border-color: #2563EB !important; }
-    .from-velcro-green { --tw-gradient-from: #0D0D59 var(--tw-gradient-from-position) !important; --tw-gradient-to: #0D0D5900 var(--tw-gradient-to-position) !important; }
-    .to-lime-400 { --tw-gradient-to: #2563EB var(--tw-gradient-to-position) !important; }
-    .focus\:ring-velcro-green\/20:focus { --tw-ring-color: rgba(37, 99, 235, 0.2) !important; }
-    .group:hover .group-hover\:text-velcro-green { color: #2563EB !important; }
-    .hover\:bg-velcro-green\/20:hover { background-color: rgba(37, 99, 235, 0.1) !important; }
-    .bg-velcro-navy\/5 { background-color: rgba(13, 13, 89, 0.05) !important; }
-    .border-velcro-navy\/10 { border-color: rgba(13, 13, 89, 0.1) !important; }
 
   </style>
 
@@ -733,15 +715,15 @@
     .dark .border-white { border-color: #1e293b !important; }
 
     /* Velcro brand colors in dark mode */
-    .dark .text-velcro-navy { color: #60a5fa !important; }
-    .dark .hover\:text-velcro-navy:hover { color: #60a5fa !important; }
+    .dark .text-velcro-navy { color: #a8cf45 !important; }
+    .dark .hover\:text-velcro-navy:hover { color: #a8cf45 !important; }
     /* Keep text dark on green button backgrounds */
     .dark .bg-velcro-green.text-velcro-navy { color: #0D0D59 !important; }
     /* Keep tab text dark on green indicator background */
     .dark #tab-sell.text-velcro-navy,
     .dark #tab-buy.text-velcro-navy { color: #0D0D59 !important; }
-    .dark .bg-velcro-navy\/5 { background-color: rgba(37, 99, 235, 0.1) !important; }
-    .dark .border-velcro-navy\/10 { border-color: rgba(37, 99, 235, 0.2) !important; }
+    .dark .bg-velcro-navy\/5 { background-color: rgba(168, 207, 69, 0.08) !important; }
+    .dark .border-velcro-navy\/10 { border-color: rgba(168, 207, 69, 0.15) !important; }
 
     /* Hover state overrides */
     .dark .hover\:bg-gray-50:hover { background-color: #0f172a !important; }
@@ -749,7 +731,7 @@
     .dark .hover\:bg-gray-200:hover { background-color: #334155 !important; }
     .dark .hover\:bg-amber-100:hover { background-color: #78350f !important; }
     .dark .hover\:text-gray-600:hover { color: #94a3b8 !important; }
-    .dark .group:hover .group-hover\:text-velcro-green { color: #60a5fa !important; }
+    .dark .group:hover .group-hover\:text-velcro-green { color: #a8cf45 !important; }
 
     /* Focus overrides */
     .dark .focus\:bg-white:focus { background-color: #0f172a !important; }
@@ -760,7 +742,7 @@
 
     /* Custom component overrides */
     .dark .input-panel { background: #0f172a; border-color: #334155; }
-    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); }
 
     .dark .asset-pill { background: #0f172a; border-color: #334155; color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
     .dark .asset-pill:hover { background: #1e293b; border-color: #3b82f6; }
@@ -795,7 +777,7 @@
     /* Copy flash animation */
     .dark .copy-flash { animation: copyFlashDark 0.6s ease; }
     @keyframes copyFlashDark {
-      0% { background: #3b82f6; }
+      0% { background: #A8CF45; }
       100% { background: #0f172a; }
     }
 
@@ -848,7 +830,7 @@
     .dark .toast-close:hover { color: #e2e8f0; }
 
     /* Glow button less intense in dark */
-    .dark .btn-glow:hover { box-shadow: 0 8px 30px rgba(37, 99, 235, 0.25); }
+    .dark .btn-glow:hover { box-shadow: 0 8px 30px rgba(168, 207, 69, 0.2); }
 
     /* History item hover */
     .dark .history-item-hover:hover { background-color: #1e293b !important; }
