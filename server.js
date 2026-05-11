@@ -598,7 +598,7 @@ app.get('/api/status', async (req, res, next) => {
       await safeDbWrite(() => Transaction.findOneAndUpdate(
         { reference },
         { 
-          status: d.status, 
+          status: String(d.status).toUpperCase(), 
           hash: (d.meta && d.meta.hash) || d.hash || null, 
           explorer_url: (d.meta && d.meta.explorer_url) || d.explorer_url || null 
         },
@@ -704,10 +704,11 @@ app.post('/webhook/switch', express.json(), async (req, res) => {
     const status = payload.status || (payload.data && payload.data.status);
 
     if (reference && status) {
+      const normalizedStatus = String(status).toUpperCase();
       await safeDbWrite(() => Transaction.findOneAndUpdate(
         { reference },
         { 
-          status, 
+          status: normalizedStatus,
           meta: JSON.stringify(payload),
           hash: (payload.data && payload.data.hash) || null,
           explorer_url: (payload.data && payload.data.explorer_url) || null
@@ -1162,7 +1163,7 @@ app.get('/api/paj/status', async (req, res, next) => {
     // Sync PAJ status back to local DB so admin dashboard shows correct status
     try {
       const d = tx || {};
-      const update = { status: d.status || 'AWAITING_DEPOSIT', meta: JSON.stringify(d) };
+      const update = { status: String(d.status || 'AWAITING_DEPOSIT').toUpperCase(), meta: JSON.stringify(d) };
       if (d.signature || d.hash) update.hash = d.signature || d.hash;
       if (d.recipient) update.wallet_address = d.recipient;
       await safeDbWrite(() => Transaction.findOneAndUpdate(

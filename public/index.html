@@ -791,6 +791,10 @@
     .dark .text-red-700 { color: #f87171 !important; }
     .dark .border-red-200 { border-color: #7f1d1d !important; }
 
+    .dark .bg-blue-100 { background-color: #172554 !important; }
+    .dark .text-blue-600 { color: #60a5fa !important; }
+    .dark .text-blue-700 { color: #60a5fa !important; }
+
     /* Modal backdrops */
     .dark #history-modal > div.absolute.inset-0,
     .dark #success-modal > div.absolute.inset-0 {
@@ -4164,8 +4168,9 @@
           list.innerHTML = txs.map(tx => {
             const isBuy = tx.type === 'ONRAMP';
             const statusClass = tx.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-              tx.status === 'FAILED' ? 'bg-red-100 text-red-700' :
-                'bg-amber-100 text-amber-700';
+              tx.status === 'FAILED' || tx.status === 'CANCELLED' || tx.status === 'EXPIRED' ? 'bg-red-100 text-red-700' :
+                tx.status === 'PROCESSING' ? 'bg-blue-100 text-blue-700' :
+                  'bg-amber-100 text-amber-700';
             const date = new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             const assetName = tx.asset.includes(':') ? tx.asset.split(':')[1].toUpperCase() : tx.asset.toUpperCase();
             const ben = tx.beneficiary ? JSON.parse(tx.beneficiary) : {};
