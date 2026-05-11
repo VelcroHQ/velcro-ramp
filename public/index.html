@@ -2409,10 +2409,10 @@
           topCount = 99;
         }
         if (isTop) topCount++;
-        const safeName = b.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        const sc = (b.switchCode || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        const pj = (b.pajId || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        html += `<div class="custom-option" data-bank-code="${b.code}" onclick="selectSellBank('${safeName}', '${sc}', '${pj}'); event.stopPropagation();">${b.name}</div>`;
+        const safeName = b.name.replace(/"/g, '&quot;');
+        const sc = (b.switchCode || '').replace(/"/g, '&quot;');
+        const pj = (b.pajId || '').replace(/"/g, '&quot;');
+        html += `<div class="custom-option" data-bank-code="${b.code}" data-bank-name="${safeName}" data-switch-code="${sc}" data-paj-id="${pj}">${b.name}</div>`;
       });
 
       if (banks.length === 0) {
@@ -2502,6 +2502,55 @@
     }
     setupNetworkDropdown('sell-network-options', selectSellNetwork);
     setupNetworkDropdown('buy-network-options', selectBuyNetwork);
+
+    // Mobile-friendly bank dropdown — handles taps inside scrollable fixed-position container
+    (function setupBankDropdown() {
+      const container = document.getElementById('sell-bank-options');
+      if (!container) return;
+      let touchStartY = 0;
+      let touchStartX = 0;
+      let touchDidMove = false;
+
+      container.addEventListener('touchstart', (e) => {
+        touchDidMove = false;
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+
+      container.addEventListener('touchmove', () => {
+        touchDidMove = true;
+      }, { passive: true });
+
+      container.addEventListener('touchend', (e) => {
+        const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+        const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+        if (touchDidMove || dy > 10 || dx > 10) return;
+        const touch = e.changedTouches[0];
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!el) return;
+        const option = el.closest('.custom-option');
+        if (!option) return;
+        const name = option.dataset.bankName;
+        const sc = option.dataset.switchCode;
+        const pj = option.dataset.pajId;
+        if (!name) return;
+        e.preventDefault();
+        e.stopPropagation();
+        selectSellBank(name, sc, pj, option);
+      }, { passive: false });
+
+      container.addEventListener('click', (e) => {
+        const option = e.target.closest('.custom-option');
+        if (!option) return;
+        const name = option.dataset.bankName;
+        const sc = option.dataset.switchCode;
+        const pj = option.dataset.pajId;
+        if (!name) return;
+        e.stopPropagation();
+        e.preventDefault();
+        selectSellBank(name, sc, pj, option);
+      });
+    })();
 
     function safeSetText(id, text) {
       const el = document.getElementById(id);
@@ -2769,20 +2818,20 @@
       currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
       if (currentSwitchAsset) fetchRate();
       updateStepIndicators('OFFRAMP');
+      populateBanks();
     }
 
-    function selectSellBank(name, switchCode, pajId, event) {
-      if (event && typeof event === 'object' && event.stopPropagation) event.stopPropagation();
+    function selectSellBank(name, switchCode, pajId, optionEl) {
       currentBankSwitchCode = switchCode || '';
       currentBankPajId = pajId || '';
       currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
       document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${name}</span>`;
       
-      // Explicitly close all dropdowns
-      document.querySelectorAll('.custom-select-options').forEach(o => o.classList.remove('open'));
+      // Update highlights
       document.querySelectorAll('#sell-bank-options .custom-option').forEach(o => o.classList.remove('selected'));
-      if (event) event.currentTarget.classList.add('selected');
+      if (optionEl) optionEl.classList.add('selected');
       
+      setTimeout(closeAllDropdowns, 50);
       validateAccount();
       updateStepIndicators('OFFRAMP');
     }
