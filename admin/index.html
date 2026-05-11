@@ -1236,14 +1236,14 @@
                 </div>
             </header>
 
-            <div class="settings-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="settings-grid">
                 <!-- Platform Configuration -->
                 <div class="table-card">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
                         <div class="stat-icon-sm blue"><i data-lucide="sliders-horizontal"></i></div>
                         <div>
                             <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Platform Configuration</h3>
-                            <p style="font-size: 12px; color: var(--text-secondary);">Fees and transaction limits</p>
+                            <p style="font-size: 12px; color: var(--text-secondary);">Fees, limits, and fallback assets</p>
                         </div>
                     </div>
 
@@ -1262,7 +1262,7 @@
                         <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Maximum onramp (buy) amount per transaction.</p>
                     </div>
 
-                    <div style="margin-bottom: 24px;">
+                    <div style="margin-bottom: 20px;">
                         <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Sell Limits (USD)</label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div>
@@ -1277,8 +1277,28 @@
                         <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Offramp (sell) limits per transaction.</p>
                     </div>
 
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; display: block;">Fallback Assets (when Switch is down)</label>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 10px; background: var(--bg-light); border: 1px solid var(--border);">
+                                <input type="checkbox" id="paj-usdt-toggle" style="width: 18px; height: 18px; accent-color: var(--success); cursor: pointer;">
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Enable PAJ USDT</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">Show USDT on Solana via PAJ</div>
+                                </div>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 10px; background: var(--bg-light); border: 1px solid var(--border);">
+                                <input type="checkbox" id="paj-usdc-toggle" style="width: 18px; height: 18px; accent-color: var(--success); cursor: pointer;">
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Enable PAJ USDC</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">Show USDC on Solana via PAJ</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="settings-message" class="hidden" style="margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;"></div>
                     <button class="btn-primary" onclick="saveSettings()" style="width: 100%;">Save Configuration</button>
-                    <button class="btn-primary" onclick="viewLastPayload()" style="width: 100%; margin-top: 10px; background: #64748b; border: none;">View Last Transaction Payload</button>
                 </div>
 
                 <!-- PAJ Integration -->
@@ -1311,27 +1331,6 @@
                             <button class="btn-primary" id="paj-save-email-btn" onclick="savePajEmail()" style="height: 50px; padding: 0 18px; white-space: nowrap; font-size: 13px;">Save</button>
                         </div>
                         <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">OTP will be sent to this email address.</p>
-                    </div>
-
-                    <!-- Fallback Assets -->
-                    <div style="margin-bottom: 16px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; display: block;">Fallback Assets (when Switch is down)</label>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 10px; background: var(--bg-light); border: 1px solid var(--border);">
-                                <input type="checkbox" id="paj-usdt-toggle" style="width: 18px; height: 18px; accent-color: var(--success); cursor: pointer;">
-                                <div>
-                                    <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Enable PAJ USDT</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">Show USDT on Solana via PAJ</div>
-                                </div>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 10px; background: var(--bg-light); border: 1px solid var(--border);">
-                                <input type="checkbox" id="paj-usdc-toggle" style="width: 18px; height: 18px; accent-color: var(--success); cursor: pointer;">
-                                <div>
-                                    <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Enable PAJ USDC</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">Show USDC on Solana via PAJ</div>
-                                </div>
-                            </label>
-                        </div>
                     </div>
 
                     <!-- Inline Message -->
@@ -1439,6 +1438,16 @@
                         </div>
                         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Pull the latest transactions, users, stats, and settings from the server.</p>
                         <button class="btn-primary" onclick="fetchData()" style="width: 100%;">Refresh Data</button>
+                    </div>
+                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(100, 116, 139, 0.1); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="bug" style="width: 16px; height: 16px; color: #64748b;"></i>
+                            </div>
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Debug Tools</div>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Inspect the last transaction payload for troubleshooting.</p>
+                        <button class="btn-primary" onclick="viewLastPayload()" style="width: 100%; background: #64748b; border: none;">View Last Transaction Payload</button>
                     </div>
                     <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -1954,32 +1963,57 @@
             }
         }
 
+        function setSettingsMessage(text, type) {
+            const el = document.getElementById('settings-message');
+            if (!el) return;
+            el.textContent = text;
+            el.classList.remove('hidden');
+            if (type === 'error') {
+                el.style.background = '#fef2f2';
+                el.style.color = '#dc2626';
+                el.style.border = '1px solid #fecaca';
+            } else if (type === 'success') {
+                el.style.background = '#f0fdf4';
+                el.style.color = '#166534';
+                el.style.border = '1px solid #bbf7d0';
+            } else {
+                el.style.background = '#f8f9fc';
+                el.style.color = 'var(--text-main)';
+                el.style.border = '1px solid var(--border)';
+            }
+            setTimeout(() => { el.classList.add('hidden'); }, 5000);
+        }
+
         async function saveSettings() {
             const feeInput = document.getElementById('fee-input');
             const fee = parseFloat(feeInput.value);
             if (Number.isNaN(fee) || fee < 0 || fee > 10) {
-                alert('Fee must be between 0 and 10');
+                setSettingsMessage('Fee must be between 0 and 10', 'error');
                 return;
             }
             const buyMax = parseFloat(document.getElementById('buy-max-input').value);
             const sellMin = parseFloat(document.getElementById('sell-min-input').value);
             const sellMax = parseFloat(document.getElementById('sell-max-input').value);
             if (Number.isNaN(buyMax) || buyMax < 1000 || buyMax > 10000000) {
-                alert('Buy maximum must be between 1,000 and 10,000,000');
+                setSettingsMessage('Buy maximum must be between 1,000 and 10,000,000', 'error');
                 return;
             }
             if (Number.isNaN(sellMin) || sellMin < 1 || sellMin > 100000) {
-                alert('Sell minimum must be between 1 and 100,000');
+                setSettingsMessage('Sell minimum must be between 1 and 100,000', 'error');
                 return;
             }
             if (Number.isNaN(sellMax) || sellMax < 10 || sellMax > 1000000) {
-                alert('Sell maximum must be between 10 and 1,000,000');
+                setSettingsMessage('Sell maximum must be between 10 and 1,000,000', 'error');
                 return;
             }
             if (sellMax <= sellMin) {
-                alert('Sell maximum must be greater than sell minimum');
+                setSettingsMessage('Sell maximum must be greater than sell minimum', 'error');
                 return;
             }
+            const btn = document.querySelector('#section-settings .btn-primary');
+            const originalText = btn.innerText;
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
             try {
                 const pajUsdt = document.getElementById('paj-usdt-toggle').checked;
                 const pajUsdc = document.getElementById('paj-usdc-toggle').checked;
@@ -1990,12 +2024,15 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`Settings saved. Buy Max: ₦${buyMax.toLocaleString()}, Fee: ${fee}%, Sell limits: $${sellMin.toLocaleString()} – $${sellMax.toLocaleString()}, PAJ USDT: ${pajUsdt ? 'ON' : 'OFF'}, PAJ USDC: ${pajUsdc ? 'ON' : 'OFF'}`);
+                    setSettingsMessage(`Saved successfully. Fee: ${fee}%, Buy Max: ₦${buyMax.toLocaleString()}, Sell: $${sellMin.toLocaleString()}–$${sellMax.toLocaleString()}`, 'success');
                 } else {
-                    alert(data.error || 'Failed to save settings');
+                    setSettingsMessage(data.error || 'Failed to save settings', 'error');
                 }
             } catch (e) {
-                alert('Error saving settings: ' + e.message);
+                setSettingsMessage('Error saving settings: ' + e.message, 'error');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
             }
         }
 
