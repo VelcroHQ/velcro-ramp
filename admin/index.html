@@ -574,6 +574,51 @@
                 word-break: break-all;
                 white-space: pre-wrap;
             }
+            /* PAJ Session mobile fixes */
+            #paj-session-status {
+                padding: 14px 12px;
+            }
+            #paj-status-icon {
+                width: 40px;
+                height: 40px;
+            }
+            #paj-email-input + div,
+            #paj-email-input {
+                min-width: 0;
+            }
+            #paj-otp-section {
+                padding: 14px 12px;
+            }
+            #paj-otp-input {
+                font-size: 20px;
+                letter-spacing: 6px;
+                min-height: 52px;
+                padding: 10px 8px;
+                -webkit-appearance: none;
+            }
+            #paj-verify-btn {
+                min-height: 52px;
+                padding: 0 16px;
+                font-size: 14px;
+            }
+            #paj-initiate-btn {
+                min-height: 52px;
+                font-size: 14px;
+            }
+            .paj-email-row {
+                flex-direction: column;
+            }
+            .paj-email-row button {
+                width: 100%;
+            }
+            .paj-otp-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .paj-otp-row input,
+            .paj-otp-row button {
+                width: 100%;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1323,10 +1368,10 @@
                     <!-- Email -->
                     <div style="margin-bottom: 16px;">
                         <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Registered Email</label>
-                        <div style="display: flex; gap: 8px;">
-                            <div style="flex: 1; position: relative;">
+                        <div class="paj-email-row" style="display: flex; gap: 8px;">
+                            <div style="flex: 1; position: relative; min-width: 0;">
                                 <i data-lucide="mail" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-secondary);"></i>
-                                <input type="email" id="paj-email-input" placeholder="your@email.com" style="margin-bottom: 0; padding-left: 40px; font-size: 13px;">
+                                <input type="email" id="paj-email-input" placeholder="your@email.com" style="margin-bottom: 0; padding-left: 40px; font-size: 13px; width: 100%;">
                             </div>
                             <button class="btn-primary" id="paj-save-email-btn" onclick="savePajEmail()" style="height: 50px; padding: 0 18px; white-space: nowrap; font-size: 13px;">Save</button>
                         </div>
@@ -1343,9 +1388,9 @@
                             <span style="font-size: 12px; font-weight: 600; color: #854d0e;">OTP Verification</span>
                         </div>
                         <p style="font-size: 12px; color: #a16207; margin-bottom: 12px;">Enter the 6-digit code sent to your email.</p>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="text" id="paj-otp-input" placeholder="000000" maxlength="10" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 18px; font-weight: 600; letter-spacing: 4px; font-family: monospace;">
-                            <button class="btn-primary" id="paj-verify-btn" onclick="verifyPajOtp()" style="padding: 0 20px; white-space: nowrap;">Verify</button>
+                        <div class="paj-otp-row" style="display: flex; gap: 8px;">
+                            <input type="text" id="paj-otp-input" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 20px; font-weight: 600; letter-spacing: 6px; font-family: monospace; min-height: 52px; padding: 10px 8px;">
+                            <button class="btn-primary" id="paj-verify-btn" onclick="verifyPajOtp()" style="padding: 0 20px; white-space: nowrap; min-height: 52px;">Verify</button>
                         </div>
                     </div>
 

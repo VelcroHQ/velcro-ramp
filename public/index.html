@@ -3137,15 +3137,15 @@
         });
         if (!res.ok) throw new Error('Failed to fetch PAJ value');
         const payload = await res.json();
-        const data = payload.data || {};
-        const tokenRate = data.tokenRate;
+        const data = payload.data;
         let tokenAmount = null;
-        if (tokenRate && tokenRate > 0) {
-          tokenAmount = fiatAmount / tokenRate;
-        } else {
-          const amount = data.amount;
-          if (amount !== undefined && amount < fiatAmount * 0.1) {
-            tokenAmount = amount;
+        if (typeof data === 'number' && data > 0) {
+          tokenAmount = data;
+        } else if (data && typeof data === 'object') {
+          if (data.tokenRate && data.tokenRate > 0) {
+            tokenAmount = fiatAmount / data.tokenRate;
+          } else if (data.amount !== undefined && data.amount > 0) {
+            tokenAmount = data.amount;
           }
         }
         if (tokenAmount !== null) {
