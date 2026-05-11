@@ -352,7 +352,7 @@
     }
 
     .custom-select-options.open {
-      display: flex !important;
+      display: block;
     }
 
     /* Mobile dropdown overlay */
@@ -373,8 +373,9 @@
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,0.4);
+        background: rgba(0,0,0,0.15);
         z-index: 9998;
+        pointer-events: none;
       }
       .dropdown-backdrop.active {
         display: block;
@@ -384,10 +385,6 @@
     @keyframes slideUp {
       from { transform: translateY(100%); }
       to { transform: translateY(0); }
-    }
-
-    .custom-select-options.open {
-      display: block;
     }
 
     .custom-option {
@@ -400,6 +397,8 @@
       -webkit-user-select: none;
       user-select: none;
       -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     .custom-option:hover {
