@@ -874,17 +874,7 @@
     </div>
   </nav>
 
-  <!-- Tagline -->
-  <div class="relative z-10 pt-6 pb-2 text-center">
-    <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-      Convert crypto to cash — <span class="text-velcro-green">instantly.</span>
-    </h1>
-    <p class="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-      Sell or buy crypto with Naira. Fast, secure, and straight to your bank or wallet.
-    </p>
-  </div>
-
-  <section id="convert" class="py-8 lg:py-12 relative z-10">
+  <section id="convert" class="pt-6 pb-8 lg:pt-10 lg:pb-12 relative z-10">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
 
       <!-- Conversion Card -->
@@ -2695,23 +2685,49 @@
         if (o.dataset.symbol === symbol) o.classList.add('selected');
       });
 
-      // Reset network and render supported chains for this asset
+      // Reset network, bank, and render supported chains for this asset
       currentSellNetwork = '';
       currentSwitchAsset = '';
+      currentBankCode = '';
+      currentBankSwitchCode = '';
+      currentBankPajId = '';
+      document.getElementById('sell-bank-display').innerHTML = '<span class="text-gray-400">Select your bank</span>';
       document.getElementById('sell-network-display').innerHTML = '<span class="text-gray-400 text-sm">Select Network</span>';
       document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
       document.getElementById('sell-amount-step').classList.add('opacity-50', 'pointer-events-none');
       
       if (currentProvider === 'paj') {
         currentSellNetwork = 'solana';
+        currentRate.sell = 0;
         document.getElementById('sell-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
-        document.getElementById('sell-network-wrap').classList.add('opacity-50', 'pointer-events-none');
+        document.getElementById('sell-network-wrap').classList.add('pointer-events-none');
         document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
         await fetchPajRate();
         fetchPajBanks();
       } else {
+        currentRate.paj = 0;
         renderSellNetworks(symbol);
-        document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
+        // Auto-select default network (Solana preferred) and fetch rate immediately
+        const asset = switchAssetsData.offramp[symbol];
+        const chains = asset ? sortChains(asset.chains) : [];
+        const defaultChain = chains[0] || '';
+        if (defaultChain) {
+          currentSellNetwork = defaultChain;
+          const bc = switchAssetsData.blockchains[defaultChain];
+          const chainLogo = getChainLogo(defaultChain);
+          const chainName = bc ? bc.name : defaultChain.charAt(0).toUpperCase() + defaultChain.slice(1);
+          document.getElementById('sell-network-display').innerHTML = `<img src="${chainLogo}" class="w-5 h-5 rounded-full" alt="${chainName}"><span class="font-medium text-sm">${chainName}</span>`;
+          safeSetText('sell-network-name', chainName);
+          safeSetText('sell-confirm-network', chainName);
+          safeSetSrc('sell-confirm-network-img', chainLogo);
+          document.querySelectorAll('#sell-network-options .custom-option').forEach(o => {
+            o.classList.toggle('selected', o.dataset.network === defaultChain);
+          });
+          currentSwitchAsset = getSwitchAsset(symbol, defaultChain);
+          if (currentSwitchAsset) fetchRate('OFFRAMP');
+          document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
+        }
+        await fetchRequirements();
         fetchInstitutions(); // Switch banks
       }
       calculateSell();
@@ -2876,24 +2892,38 @@
 
       if (currentProvider === 'paj') {
         currentBuyNetwork = 'solana';
+        currentRate.buy = 0;
         // Hide network selector column for PAJ (always Solana)
         const netCol = document.getElementById('buy-network-col');
         if (netCol) netCol.style.display = 'none';
         document.getElementById('buy-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
-        currentRate.buy = 0; // reset to avoid stale switch rate
         document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
         await fetchPajRate();
       } else {
+        currentRate.paj = 0;
         // Show network selector column for Switch assets
         const netCol = document.getElementById('buy-network-col');
         if (netCol) netCol.style.display = '';
-        // Reset network and render supported chains for this asset
-        currentBuyNetwork = '';
-        currentSwitchAsset = '';
-        document.getElementById('buy-network-display').innerHTML = '<span class="text-gray-400 text-sm">Select Network</span>';
-        const netWrap = document.getElementById('buy-network-wrap');
-        document.getElementById('buy-amount-step').classList.add('opacity-50', 'pointer-events-none');
         renderBuyNetworks(symbol);
+        // Auto-select default network (Solana preferred) and fetch rate immediately
+        const asset = switchAssetsData.onramp[symbol];
+        const chains = asset ? sortChains(asset.chains) : [];
+        const defaultChain = chains[0] || '';
+        if (defaultChain) {
+          currentBuyNetwork = defaultChain;
+          const bc = switchAssetsData.blockchains[defaultChain];
+          const chainLogo = getChainLogo(defaultChain);
+          const chainName = bc ? bc.name : defaultChain.charAt(0).toUpperCase() + defaultChain.slice(1);
+          document.getElementById('buy-network-display').innerHTML = `<img src="${chainLogo}" class="w-5 h-5 rounded-full" alt="${chainName}"><span class="font-medium text-sm">${chainName}</span>`;
+          safeSetText('buy-confirm-network', chainName);
+          safeSetSrc('buy-confirm-network-img', chainLogo);
+          document.querySelectorAll('#buy-network-options .custom-option').forEach(o => {
+            o.classList.toggle('selected', o.dataset.network === defaultChain);
+          });
+          currentSwitchAsset = getSwitchAsset(symbol, defaultChain);
+          if (currentSwitchAsset) fetchRate('ONRAMP');
+          document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
+        }
       }
       calculateBuy();
       updateStepIndicators('ONRAMP');
