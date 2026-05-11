@@ -148,6 +148,14 @@ const PAJ_ASSETS = [
     mint: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
     chain: 'SOLANA',
     logo: 'https://assets.coingecko.com/coins/images/15051/small/IXeEj5e.png'
+  },
+  {
+    id: 'usdg',
+    symbol: 'USDG',
+    name: 'USDC',
+    mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    chain: 'SOLANA',
+    logo: '/logos/usdg.png'
   }
 ];
 

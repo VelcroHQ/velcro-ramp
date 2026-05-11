@@ -12,8 +12,8 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sell & Buy USDT in Nigeria | Velcro Convert — Crypto to Naira Instantly</title>
-  <meta name="description" content="Sell USDT, USDC, SOL and receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
+  <title>Sell & Buy Crypto in Nigeria | Velcro Convert — Crypto to Naira Instantly</title>
+  <meta name="description" content="Sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens. Receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="EPBy3CyMZBGr0nYRYqH8G1YjTCr3rGUxMWOQIPrl68I">
   <link rel="canonical" href="https://usevelcro.xyz/">
@@ -30,7 +30,7 @@
         "name": "Velcro Convert",
         "url": "https://usevelcro.xyz",
         "logo": "https://usevelcro.xyz/velcro_logo.png",
-        "description": "Fast, secure crypto onramp and offramp for Nigeria. Buy and sell USDT, USDC, SOL instantly with Naira.",
+        "description": "Fast, secure crypto onramp and offramp for Nigeria. Buy and sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens instantly with Naira.",
         "sameAs": []
       },
       {
@@ -45,7 +45,7 @@
         "@id": "https://usevelcro.xyz/#webpage",
         "url": "https://usevelcro.xyz/",
         "name": "Sell & Buy USDT in Nigeria | Velcro Convert",
-        "description": "Buy and sell USDT, USDC, SOL instantly with Naira. Fast, secure crypto onramp & offramp for Nigeria.",
+        "description": "Buy and sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens instantly with Naira. Fast, secure crypto onramp & offramp for Nigeria.",
         "isPartOf": { "@id": "https://usevelcro.xyz/#website" },
         "about": { "@id": "https://usevelcro.xyz/#organization" }
       }
@@ -57,7 +57,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://usevelcro.xyz">
   <meta property="og:title" content="Sell & Buy USDT in Nigeria | Velcro Convert">
-  <meta property="og:description" content="Sell USDT, USDC, SOL and receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
+  <meta property="og:description" content="Sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens. Receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
   <meta property="og:image" content="https://usevelcro.xyz/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -67,7 +67,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://usevelcro.xyz">
   <meta name="twitter:title" content="Sell & Buy USDT in Nigeria | Velcro Convert">
-  <meta name="twitter:description" content="Sell USDT, USDC, SOL and receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
+  <meta name="twitter:description" content="Sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens. Receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
   <meta name="twitter:image" content="https://usevelcro.xyz/og-image.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1762,30 +1762,66 @@
           return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectBuyAsset('${sym}', '${logo}', '${asset.name}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
         }).join('');
       }
-      // Append static PAJ assets
+      // Append static PAJ assets (all supported Solana tokens except USDT/USDC)
       const pajItems = `
         <div class="asset-picker-divider">PAJ (Solana)</div>
         <div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectBuyAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
           <img src="/logos/solana.png" class="asset-picker-logo" alt="SOL">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">SOL</div>
-            <div class="asset-picker-name">Solana</div>
-          </div>
+          <div class="asset-picker-info"><div class="asset-picker-symbol">SOL</div><div class="asset-picker-name">Solana</div></div>
         </div>
         <div class="asset-picker-item" data-symbol="JUP" data-name="Jupiter" onclick="selectBuyAsset('JUP', '/logos/jup.png', 'Jupiter', 'paj')">
           <img src="/logos/jup.png" class="asset-picker-logo" alt="JUP">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">JUP</div>
-            <div class="asset-picker-name">Jupiter</div>
-          </div>
+          <div class="asset-picker-info"><div class="asset-picker-symbol">JUP</div><div class="asset-picker-name">Jupiter</div></div>
         </div>
-        <div class="asset-picker-item" data-symbol="USDG" data-name="Global Dollar" onclick="selectBuyAsset('USDG', '/logos/usdg.png', 'Global Dollar', 'paj')">
-          <img src="/logos/usdg.png" class="asset-picker-logo" alt="USDG">
-          <div class="asset-picker-info">
-            <div class="asset-picker-symbol">USDG</div>
-            <div class="asset-picker-name">Global Dollar</div>
-          </div>
-        </div>`;
+        <div class="asset-picker-item" data-symbol="BONK" data-name="Bonk" onclick="selectBuyAsset('BONK', 'https://assets.coingecko.com/coins/images/28600/small/bonk.jpg', 'Bonk', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/28600/small/bonk.jpg" class="asset-picker-logo" alt="BONK">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">BONK</div><div class="asset-picker-name">Bonk</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="WIF" data-name="dogwifhat" onclick="selectBuyAsset('WIF', 'https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg', 'dogwifhat', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg" class="asset-picker-logo" alt="WIF">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">WIF</div><div class="asset-picker-name">dogwifhat</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="PYTH" data-name="Pyth Network" onclick="selectBuyAsset('PYTH', 'https://assets.coingecko.com/coins/images/31924/small/pyth.png', 'Pyth Network', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/31924/small/pyth.png" class="asset-picker-logo" alt="PYTH">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">PYTH</div><div class="asset-picker-name">Pyth Network</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="RENDER" data-name="Render" onclick="selectBuyAsset('RENDER', 'https://assets.coingecko.com/coins/images/11636/small/rndr.png', 'Render', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/11636/small/rndr.png" class="asset-picker-logo" alt="RENDER">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">RENDER</div><div class="asset-picker-name">Render</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="RAY" data-name="Raydium" onclick="selectBuyAsset('RAY', 'https://assets.coingecko.com/coins/images/13928/small/PSigc4ie_400x400.jpg', 'Raydium', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/13928/small/PSigc4ie_400x400.jpg" class="asset-picker-logo" alt="RAY">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">RAY</div><div class="asset-picker-name">Raydium</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="W" data-name="Wormhole" onclick="selectBuyAsset('W', 'https://assets.coingecko.com/coins/images/35087/small/womrhole_logo_full_color_rgb_2000px_72ppi_fb766ac85a.png', 'Wormhole', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/35087/small/womrhole_logo_full_color_rgb_2000px_72ppi_fb766ac85a.png" class="asset-picker-logo" alt="W">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">W</div><div class="asset-picker-name">Wormhole</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="POPCAT" data-name="POPCAT" onclick="selectBuyAsset('POPCAT', 'https://assets.coingecko.com/coins/images/33760/small/image.jpg', 'POPCAT', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/33760/small/image.jpg" class="asset-picker-logo" alt="POPCAT">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">POPCAT</div><div class="asset-picker-name">POPCAT</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="MEW" data-name="cat in a dogs world" onclick="selectBuyAsset('MEW', 'https://assets.coingecko.com/coins/images/34658/small/MEW.png', 'cat in a dogs world', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/34658/small/MEW.png" class="asset-picker-logo" alt="MEW">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">MEW</div><div class="asset-picker-name">cat in a dogs world</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="MICHI" data-name="michi" onclick="selectBuyAsset('MICHI', 'https://assets.coingecko.com/coins/images/36791/small/michi.png', 'michi', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/36791/small/michi.png" class="asset-picker-logo" alt="MICHI">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">MICHI</div><div class="asset-picker-name">michi</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="SHDW" data-name="Shadow Token" onclick="selectBuyAsset('SHDW', 'https://assets.coingecko.com/coins/images/22271/small/Property_1_Color.png', 'Shadow Token', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/22271/small/Property_1_Color.png" class="asset-picker-logo" alt="SHDW">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">SHDW</div><div class="asset-picker-name">Shadow Token</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="ORCA" data-name="Orca" onclick="selectBuyAsset('ORCA', 'https://assets.coingecko.com/coins/images/17547/small/Orca_Logo.png', 'Orca', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/17547/small/Orca_Logo.png" class="asset-picker-logo" alt="ORCA">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">ORCA</div><div class="asset-picker-name">Orca</div></div>
+        </div>
+        <div class="asset-picker-item" data-symbol="SAMO" data-name="Samoyedcoin" onclick="selectBuyAsset('SAMO', 'https://assets.coingecko.com/coins/images/15051/small/IXeEj5e.png', 'Samoyedcoin', 'paj')">
+          <img src="https://assets.coingecko.com/coins/images/15051/small/IXeEj5e.png" class="asset-picker-logo" alt="SAMO">
+          <div class="asset-picker-info"><div class="asset-picker-symbol">SAMO</div><div class="asset-picker-name">Samoyedcoin</div></div>
+        </div>
+      `;
       container.innerHTML = switchItems + pajItems;
     }
 
@@ -2776,7 +2812,7 @@
           receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
           cryptoToSend = tokenUsd > 0 ? amount / tokenUsd : 0;
         } else {
-          // Input is in ASSET (SOL/JUP)
+          // Input is in ASSET (any PAJ token)
           const receiveBeforeFee = amount * (pajRate * tokenUsd);
           receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
           cryptoToSend = amount;
