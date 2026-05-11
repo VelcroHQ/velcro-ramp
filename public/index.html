@@ -842,6 +842,29 @@
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
 
+  <!-- Mobile Debug Panel -->
+  <div id="debug-panel" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;padding:6px 10px;display:none;white-space:pre-wrap;word-break:break-all;"></div>
+  <script>
+    (function(){
+      const panel = document.getElementById('debug-panel');
+      const logs = [];
+      const origLog = console.log;
+      const origErr = console.error;
+      const origWarn = console.warn;
+      function push(type, args) {
+        const msg = Array.from(args).join(' ');
+        logs.push('[' + type + '] ' + msg);
+        if (logs.length > 30) logs.shift();
+        panel.textContent = logs.join('\n');
+        panel.style.display = 'block';
+      }
+      console.log = function(){ push('LOG', arguments); origLog.apply(console, arguments); };
+      console.error = function(){ push('ERR', arguments); origErr.apply(console, arguments); };
+      console.warn = function(){ push('WRN', arguments); origWarn.apply(console, arguments); };
+      window.onerror = function(msg, url, line){ push('EXC', [msg, 'line:'+line]); };
+    })();
+  </script>
+
   <!-- Navigation -->
   <nav id="main-nav" class="bg-transparent border-none transition-all duration-300">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
