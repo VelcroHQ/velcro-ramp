@@ -400,6 +400,7 @@
       -webkit-user-select: none;
       user-select: none;
       -webkit-touch-callout: none;
+      touch-action: manipulation;
     }
 
     .custom-option:hover {
@@ -2409,9 +2410,9 @@
           topCount = 99;
         }
         if (isTop) topCount++;
-        const safeName = b.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        const sc = (b.switchCode || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        const pj = (b.pajId || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const safeName = b.name.replace(/"/g, '&quot;');
+        const sc = (b.switchCode || '').replace(/"/g, '&quot;');
+        const pj = (b.pajId || '').replace(/"/g, '&quot;');
         html += `<div class="custom-option" data-bank-code="${b.code}" data-bank-name="${safeName}" data-switch-code="${sc}" data-paj-id="${pj}">${b.name}</div>`;
       });
 
@@ -2503,17 +2504,26 @@
     setupNetworkDropdown('sell-network-options', selectSellNetwork);
     setupNetworkDropdown('buy-network-options', selectBuyNetwork);
 
-    // Mobile-friendly bank dropdown delegation
+    // Mobile-friendly bank dropdown delegation with tap-vs-scroll detection
     (function setupBankDropdown() {
       const container = document.getElementById('sell-bank-options');
       if (!container) return;
+      let touchStartY = 0;
+      let touchStartX = 0;
+      container.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+      container.addEventListener('touchmove', () => {
+        // mark that we moved (scroll gesture)
+      }, { passive: true });
       container.addEventListener('click', (e) => {
         const option = e.target.closest('.custom-option');
         if (!option) return;
         const name = option.dataset.bankName;
         const sc = option.dataset.switchCode;
         const pj = option.dataset.pajId;
-        if (!name) return; // skip non-bank items like dividers
+        if (!name) return; // skip non-bank items like dividers / loading text
         e.stopPropagation();
         e.preventDefault();
         selectSellBank(name, sc, pj, option);
@@ -2788,18 +2798,17 @@
       updateStepIndicators('OFFRAMP');
     }
 
-    function selectSellBank(name, switchCode, pajId, optionOrEvent) {
+    function selectSellBank(name, switchCode, pajId, optionEl) {
       currentBankSwitchCode = switchCode || '';
       currentBankPajId = pajId || '';
       currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
       document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${name}</span>`;
       
-      // Explicitly close all dropdowns
-      document.querySelectorAll('.custom-select-options').forEach(o => o.classList.remove('open'));
+      // Update highlights
       document.querySelectorAll('#sell-bank-options .custom-option').forEach(o => o.classList.remove('selected'));
-      const selectedEl = optionOrEvent instanceof Element ? optionOrEvent : (optionOrEvent && optionOrEvent.currentTarget);
-      if (selectedEl) selectedEl.classList.add('selected');
+      if (optionEl) optionEl.classList.add('selected');
       
+      setTimeout(closeAllDropdowns, 50);
       validateAccount();
       updateStepIndicators('OFFRAMP');
     }
