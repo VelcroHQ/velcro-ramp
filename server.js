@@ -1264,6 +1264,90 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ─── Background Status Poller ───
+const FINAL_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'];
+const POLLABLE_STATUSES = ['PENDING', 'AWAITING_DEPOSIT', 'DETECTED', 'PROCESSING', 'INITIATED', 'CONFIRMED', 'RECEIVED', 'VERIFIED'];
+
+async function pollTransactionStatus(tx) {
+  try {
+    if (tx.channel === 'PAJ') {
+      if (!pajModule) return;
+      const id = tx.reference || tx.switch_reference;
+      if (!id) return;
+      const result = await pajModule.getTransactionStatus(id);
+      const d = result || {};
+      const newStatus = String(d.status || tx.status).toUpperCase();
+      if (newStatus !== tx.status) {
+        await safeDbWrite(() => Transaction.findOneAndUpdate(
+          { reference: tx.reference },
+          { status: newStatus, meta: JSON.stringify(d), ...(d.signature || d.hash ? { hash: d.signature || d.hash } : {}) }
+        ));
+        console.log(`[Poller] PAJ ${tx.reference} → ${newStatus}`);
+      }
+    } else {
+      // Switch
+      const data = await switchApi(`/payment/status?reference=${encodeURIComponent(tx.reference)}`);
+      const d = data.data || {};
+      if (d.status) {
+        const newStatus = String(d.status).toUpperCase();
+        if (newStatus !== tx.status) {
+          await safeDbWrite(() => Transaction.findOneAndUpdate(
+            { reference: tx.reference },
+            {
+              status: newStatus,
+              hash: d.hash || d.tx_hash || tx.hash || null,
+              explorer_url: (d.meta && d.meta.explorer_url) || d.explorer_url || tx.explorer_url || null
+            }
+          ));
+          console.log(`[Poller] Switch ${tx.reference} → ${newStatus}`);
+        }
+      }
+    }
+  } catch (err) {
+    console.log(`[Poller] Failed ${tx.reference}:`, err.message);
+  }
+}
+
+async function runBackgroundPoller() {
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000); // last 24h
+    const txs = await safeDbRead(() => Transaction.find({
+      status: { $in: POLLABLE_STATUSES },
+      created_at: { $gte: since }
+    }).sort({ created_at: -1 }).limit(50));
+
+    if (txs.length) {
+      console.log(`[Poller] Checking ${txs.length} pending transaction(s)...`);
+      for (const tx of txs) {
+        await pollTransactionStatus(tx);
+        await new Promise(r => setTimeout(r, 1500)); // 1.5s delay between calls
+      }
+    }
+  } catch (err) {
+    console.error('[Poller] Error:', err.message);
+  }
+}
+
+// Run every 10 minutes
+setInterval(runBackgroundPoller, 10 * 60 * 1000);
+// Run once at startup (after a short delay to let DB connect)
+setTimeout(runBackgroundPoller, 30000);
+
+// ─── Admin: Manual Status Refresh ───
+app.post('/api/admin/refresh-status/:reference', adminRateLimiter, adminAuth, async (req, res, next) => {
+  try {
+    const { reference } = req.params;
+    const tx = await safeDbRead(() => Transaction.findOne({ reference }));
+    if (!tx) return res.status(404).json({ success: false, error: 'Transaction not found' });
+    if (FINAL_STATUSES.includes(tx.status)) {
+      return res.json({ success: true, message: 'Transaction already in final state', status: tx.status });
+    }
+    await pollTransactionStatus(tx);
+    const updated = await safeDbRead(() => Transaction.findOne({ reference }));
+    res.json({ success: true, status: updated.status, previousStatus: tx.status });
+  } catch (err) { next(err); }
+});
+
 app.listen(PORT, () => {
   console.log(`\n🚀 Velcro Backend v1.2.0 running at: http://localhost:${PORT}`);
   console.log(`🔌 Switch Base URL: ${SWITCH_BASE_URL}`);

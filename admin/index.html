@@ -1633,7 +1633,10 @@
             <div class="tx-modal-info">
                 <div>
                     <span>Status</span>
-                    <span id="modal-status" class="status-pill">PENDING</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="modal-status" class="status-pill">PENDING</span>
+                        <button id="modal-refresh-btn" onclick="refreshTransactionStatus()" class="btn-primary" style="padding: 4px 10px; font-size: 11px; height: auto; border-radius: 6px;">Refresh</button>
+                    </div>
                 </div>
                 <div>
                     <span>Amount</span>
@@ -2770,6 +2773,40 @@
                 document.getElementById(`nav-${navId}`).classList.add('active');
             }
             closeSidebar(); // Ensure sidebar closes on mobile
+        }
+
+        async function refreshTransactionStatus() {
+            if (!currentModalTx) return;
+            const btn = document.getElementById('modal-refresh-btn');
+            const originalText = btn.innerText;
+            btn.innerText = 'Refreshing...';
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/admin/refresh-status/${currentModalTx.reference}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Update modal status
+                    document.getElementById('modal-status').innerText = data.status;
+                    document.getElementById('modal-status').className = `status-pill ${data.status.toLowerCase()}`;
+                    if (data.status !== data.previousStatus) {
+                        showToast(`Status updated: ${data.previousStatus} → ${data.status}`, 'success');
+                        // Re-fetch transactions to update table
+                        await initDashboard();
+                    } else {
+                        showToast('Status unchanged: ' + data.status, 'info');
+                    }
+                } else {
+                    showToast(data.error || 'Refresh failed', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
 
         function closeTxModal() { document.getElementById('tx-modal').style.display = 'none'; }
