@@ -2419,24 +2419,10 @@
         html += `<div class="custom-option text-gray-400">No banks found</div>`;
       }
       listContainer.innerHTML = html;
-
-      // Attach direct touch handlers to each bank option for mobile reliability
-      listContainer.querySelectorAll('.custom-option[data-bank-name]').forEach(option => {
-        let startY = 0;
-        let startX = 0;
-        option.addEventListener('touchstart', (e) => {
-          startY = e.touches[0].clientY;
-          startX = e.touches[0].clientX;
-        }, { passive: true });
-        option.addEventListener('touchend', (e) => {
-          const dy = Math.abs(e.changedTouches[0].clientY - startY);
-          const dx = Math.abs(e.changedTouches[0].clientX - startX);
-          if (dy > 10 || dx > 10) return; // was a scroll, not a tap
-          e.preventDefault();
-          e.stopPropagation();
-          selectSellBank(option.dataset.bankName, option.dataset.switchCode, option.dataset.pajId, option);
-        }, { passive: false });
-      });
+      // Force iOS to recalculate clickable regions for dynamically added content
+      listContainer.style.display = 'none';
+      listContainer.offsetHeight;
+      listContainer.style.display = '';
     }
 
     async function selectCountry(code, currency, label, flag) {
@@ -2521,10 +2507,21 @@
     setupNetworkDropdown('sell-network-options', selectSellNetwork);
     setupNetworkDropdown('buy-network-options', selectBuyNetwork);
 
-    // Desktop click handler for bank dropdown (mobile uses direct per-option touchend)
+    // Bank dropdown event handling — matches network dropdown pattern exactly
     (function setupBankDropdown() {
       const container = document.getElementById('sell-bank-options');
       if (!container) return;
+      let touchStartY = 0;
+      let touchStartX = 0;
+
+      // iOS Safari needs these dummy touch listeners on the container for child elements to be clickable
+      container.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+
+      container.addEventListener('touchmove', () => {}, { passive: true });
+
       container.addEventListener('click', (e) => {
         const option = e.target.closest('.custom-option');
         if (!option) return;
