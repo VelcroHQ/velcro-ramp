@@ -843,7 +843,7 @@
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
 
   <!-- Mobile Debug Panel -->
-  <div id="debug-panel" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;padding:6px 10px;display:none;white-space:pre-wrap;word-break:break-all;"></div>
+  <div id="debug-panel" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,0.9);color:#0f0;font-family:monospace;font-size:12px;max-height:180px;overflow-y:auto;padding:8px 12px;display:block;white-space:pre-wrap;word-break:break-all;border-top:2px solid #0f0;"></div>
   <script>
     (function(){
       const panel = document.getElementById('debug-panel');
@@ -854,14 +854,15 @@
       function push(type, args) {
         const msg = Array.from(args).join(' ');
         logs.push('[' + type + '] ' + msg);
-        if (logs.length > 30) logs.shift();
+        if (logs.length > 40) logs.shift();
         panel.textContent = logs.join('\n');
-        panel.style.display = 'block';
+        panel.scrollTop = panel.scrollHeight;
       }
       console.log = function(){ push('LOG', arguments); origLog.apply(console, arguments); };
       console.error = function(){ push('ERR', arguments); origErr.apply(console, arguments); };
       console.warn = function(){ push('WRN', arguments); origWarn.apply(console, arguments); };
       window.onerror = function(msg, url, line){ push('EXC', [msg, 'line:'+line]); };
+      console.log('DEBUG PANEL ACTIVE - tap bank dropdown and watch here');
     })();
   </script>
 
@@ -1038,8 +1039,9 @@
                 <label class="block text-sm font-medium text-gray-500 mb-2">Choose bank</label>
                 <div class="custom-select w-full" id="sell-bank-wrap">
                   <div
+                    id="sell-bank-trigger"
                     class="custom-select-trigger w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm transition-all hover:border-velcro-green"
-                    onclick="toggleDropdown('sell-bank-options')">
+                    onclick="console.log('[BANK-TRIGGER] onclick fired'); toggleDropdown('sell-bank-options')">
                     <div class="flex items-center gap-2" id="sell-bank-display">
                       <span class="text-gray-400">Select your bank</span>
                     </div>
@@ -2586,6 +2588,18 @@
       });
     })();
 
+    // Fallback: direct touch handler on bank trigger (some mobile browsers don't fire click on div triggers)
+    (function setupBankTriggerTouch() {
+      const trigger = document.getElementById('sell-bank-trigger');
+      if (!trigger) { console.log('[BANK-TRIGGER] trigger element not found'); return; }
+      console.log('[BANK-TRIGGER] fallback touch handler attached');
+      trigger.addEventListener('touchend', (e) => {
+        console.log('[BANK-TRIGGER] touchend on trigger');
+        e.preventDefault();
+        toggleDropdown('sell-bank-options');
+      });
+    })();
+
     function safeSetText(id, text) {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
@@ -2597,18 +2611,23 @@
     }
 
     function toggleDropdown(id) {
-      if (Date.now() - lastModalClose < 300) return;
+      console.log('[TOGGLE] toggleDropdown called for', id);
+      if (Date.now() - lastModalClose < 300) { console.log('[TOGGLE] blocked by lastModalClose'); return; }
       const el = document.getElementById(id);
+      if (!el) { console.log('[TOGGLE] element not found:', id); return; }
       const isOpen = el.classList.contains('open');
+      console.log('[TOGGLE] current state open=', isOpen);
       closeAllDropdowns();
       if (!isOpen) {
         el.classList.add('open');
+        console.log('[TOGGLE] added .open to', id);
         const parent = el.closest('.custom-select');
         if (parent) parent.style.zIndex = '9999';
         // Show backdrop on mobile
         const backdrop = document.getElementById('dropdown-backdrop');
         if (backdrop && window.innerWidth <= 640) {
           backdrop.classList.add('active');
+          console.log('[TOGGLE] backdrop shown');
         }
       }
     }
