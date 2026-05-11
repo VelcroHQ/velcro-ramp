@@ -15,3 +15,4 @@ package-lock.json
 paj-session.json
 settings.json
 withdraw.js
+.env

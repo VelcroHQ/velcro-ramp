@@ -400,7 +400,6 @@
       -webkit-user-select: none;
       user-select: none;
       -webkit-touch-callout: none;
-      touch-action: manipulation;
     }
 
     .custom-option:hover {
@@ -842,30 +841,6 @@
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
 
-  <!-- Mobile Debug Panel -->
-  <div id="debug-panel" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,0.9);color:#0f0;font-family:monospace;font-size:12px;max-height:180px;overflow-y:auto;padding:8px 12px;display:block;white-space:pre-wrap;word-break:break-all;border-top:2px solid #0f0;"></div>
-  <script>
-    (function(){
-      const panel = document.getElementById('debug-panel');
-      const logs = [];
-      const origLog = console.log;
-      const origErr = console.error;
-      const origWarn = console.warn;
-      function push(type, args) {
-        const msg = Array.from(args).join(' ');
-        logs.push('[' + type + '] ' + msg);
-        if (logs.length > 40) logs.shift();
-        panel.textContent = logs.join('\n');
-        panel.scrollTop = panel.scrollHeight;
-      }
-      console.log = function(){ push('LOG', arguments); origLog.apply(console, arguments); };
-      console.error = function(){ push('ERR', arguments); origErr.apply(console, arguments); };
-      console.warn = function(){ push('WRN', arguments); origWarn.apply(console, arguments); };
-      window.onerror = function(msg, url, line){ push('EXC', [msg, 'line:'+line]); };
-      console.log('DEBUG PANEL ACTIVE - tap bank dropdown and watch here');
-    })();
-  </script>
-
   <!-- Navigation -->
   <nav id="main-nav" class="bg-transparent border-none transition-all duration-300">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1039,9 +1014,8 @@
                 <label class="block text-sm font-medium text-gray-500 mb-2">Choose bank</label>
                 <div class="custom-select w-full" id="sell-bank-wrap">
                   <div
-                    id="sell-bank-trigger"
                     class="custom-select-trigger w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm transition-all hover:border-velcro-green"
-                    onclick="console.log('[BANK-TRIGGER] onclick fired'); toggleDropdown('sell-bank-options')">
+                    onclick="toggleDropdown('sell-bank-options')">
                     <div class="flex items-center gap-2" id="sell-bank-display">
                       <span class="text-gray-400">Select your bank</span>
                     </div>
@@ -2435,18 +2409,16 @@
           topCount = 99;
         }
         if (isTop) topCount++;
-        const safeName = b.name.replace(/"/g, '&quot;');
-        const sc = (b.switchCode || '').replace(/"/g, '&quot;');
-        const pj = (b.pajId || '').replace(/"/g, '&quot;');
-        html += `<div class="custom-option" data-bank-code="${b.code}" data-bank-name="${safeName}" data-switch-code="${sc}" data-paj-id="${pj}">${b.name}</div>`;
+        const safeName = b.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const sc = (b.switchCode || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const pj = (b.pajId || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        html += `<div class="custom-option" data-bank-code="${b.code}" onclick="selectSellBank('${safeName}', '${sc}', '${pj}'); event.stopPropagation();">${b.name}</div>`;
       });
 
       if (banks.length === 0) {
         html += `<div class="custom-option text-gray-400">No banks found</div>`;
       }
       listContainer.innerHTML = html;
-      const firstOpt = listContainer.querySelector('.custom-option[data-bank-name]');
-      console.log('[BANK] populateBanks rendered:', banks.length, 'first:', firstOpt?.dataset.bankName || 'none');
     }
 
     async function selectCountry(code, currency, label, flag) {
@@ -2531,75 +2503,6 @@
     setupNetworkDropdown('sell-network-options', selectSellNetwork);
     setupNetworkDropdown('buy-network-options', selectBuyNetwork);
 
-    // Mobile-friendly bank dropdown delegation with tap-vs-scroll detection
-    (function setupBankDropdown() {
-      const container = document.getElementById('sell-bank-options');
-      if (!container) return;
-      let touchStartY = 0;
-      let touchStartX = 0;
-      let touchDidMove = false;
-
-      container.addEventListener('touchstart', (e) => {
-        touchDidMove = false;
-        touchStartY = e.touches[0].clientY;
-        touchStartX = e.touches[0].clientX;
-      }, { passive: true });
-
-      container.addEventListener('touchmove', () => {
-        touchDidMove = true;
-      }, { passive: true });
-
-      // Handle taps on mobile (iOS/Android often don't synthesize click inside scrollable fixed containers)
-      container.addEventListener('touchend', (e) => {
-        const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
-        const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
-        if (touchDidMove || dy > 10 || dx > 10) {
-          console.log('[BANK] touchend ignored — was a scroll');
-          return;
-        }
-        // It was a tap — find the element under the finger
-        const touch = e.changedTouches[0];
-        const el = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (!el) { console.log('[BANK] touchend — no element at point'); return; }
-        const option = el.closest('.custom-option');
-        if (!option) { console.log('[BANK] touchend — no .custom-option under finger'); return; }
-        const name = option.dataset.bankName;
-        const sc = option.dataset.switchCode;
-        const pj = option.dataset.pajId;
-        console.log('[BANK] touchend TAP on option:', name, sc, pj);
-        if (!name) { console.log('[BANK] touchend skipped — no data-bank-name'); return; }
-        e.preventDefault();
-        e.stopPropagation();
-        selectSellBank(name, sc, pj, option);
-      }, { passive: false });
-
-      // Keep click handler for desktop
-      container.addEventListener('click', (e) => {
-        const option = e.target.closest('.custom-option');
-        if (!option) { console.log('[BANK] click but no .custom-option'); return; }
-        const name = option.dataset.bankName;
-        const sc = option.dataset.switchCode;
-        const pj = option.dataset.pajId;
-        console.log('[BANK] click on option:', name, sc, pj);
-        if (!name) { console.log('[BANK] click skipped — no data-bank-name'); return; }
-        e.stopPropagation();
-        e.preventDefault();
-        selectSellBank(name, sc, pj, option);
-      });
-    })();
-
-    // Fallback: direct touch handler on bank trigger (some mobile browsers don't fire click on div triggers)
-    (function setupBankTriggerTouch() {
-      const trigger = document.getElementById('sell-bank-trigger');
-      if (!trigger) { console.log('[BANK-TRIGGER] trigger element not found'); return; }
-      console.log('[BANK-TRIGGER] fallback touch handler attached');
-      trigger.addEventListener('touchend', (e) => {
-        console.log('[BANK-TRIGGER] touchend on trigger');
-        e.preventDefault();
-        toggleDropdown('sell-bank-options');
-      });
-    })();
-
     function safeSetText(id, text) {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
@@ -2611,23 +2514,18 @@
     }
 
     function toggleDropdown(id) {
-      console.log('[TOGGLE] toggleDropdown called for', id);
-      if (Date.now() - lastModalClose < 300) { console.log('[TOGGLE] blocked by lastModalClose'); return; }
+      if (Date.now() - lastModalClose < 300) return;
       const el = document.getElementById(id);
-      if (!el) { console.log('[TOGGLE] element not found:', id); return; }
       const isOpen = el.classList.contains('open');
-      console.log('[TOGGLE] current state open=', isOpen);
       closeAllDropdowns();
       if (!isOpen) {
         el.classList.add('open');
-        console.log('[TOGGLE] added .open to', id);
         const parent = el.closest('.custom-select');
         if (parent) parent.style.zIndex = '9999';
         // Show backdrop on mobile
         const backdrop = document.getElementById('dropdown-backdrop');
         if (backdrop && window.innerWidth <= 640) {
           backdrop.classList.add('active');
-          console.log('[TOGGLE] backdrop shown');
         }
       }
     }
@@ -2873,18 +2771,18 @@
       updateStepIndicators('OFFRAMP');
     }
 
-    function selectSellBank(name, switchCode, pajId, optionEl) {
-      console.log('[BANK] selectSellBank:', name, switchCode, pajId);
+    function selectSellBank(name, switchCode, pajId, event) {
+      if (event && typeof event === 'object' && event.stopPropagation) event.stopPropagation();
       currentBankSwitchCode = switchCode || '';
       currentBankPajId = pajId || '';
       currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
       document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${name}</span>`;
       
-      // Update highlights
+      // Explicitly close all dropdowns
+      document.querySelectorAll('.custom-select-options').forEach(o => o.classList.remove('open'));
       document.querySelectorAll('#sell-bank-options .custom-option').forEach(o => o.classList.remove('selected'));
-      if (optionEl) optionEl.classList.add('selected');
+      if (event) event.currentTarget.classList.add('selected');
       
-      setTimeout(closeAllDropdowns, 50);
       validateAccount();
       updateStepIndicators('OFFRAMP');
     }
