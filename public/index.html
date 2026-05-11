@@ -2412,7 +2412,7 @@
         const safeName = b.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         const sc = (b.switchCode || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         const pj = (b.pajId || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        html += `<div class="custom-option" data-bank-code="${b.code}" onclick="selectSellBank('${safeName}', '${sc}', '${pj}'); event.stopPropagation();">${b.name}</div>`;
+        html += `<div class="custom-option" data-bank-code="${b.code}" data-bank-name="${safeName}" data-switch-code="${sc}" data-paj-id="${pj}">${b.name}</div>`;
       });
 
       if (banks.length === 0) {
@@ -2502,6 +2502,23 @@
     }
     setupNetworkDropdown('sell-network-options', selectSellNetwork);
     setupNetworkDropdown('buy-network-options', selectBuyNetwork);
+
+    // Mobile-friendly bank dropdown delegation
+    (function setupBankDropdown() {
+      const container = document.getElementById('sell-bank-options');
+      if (!container) return;
+      container.addEventListener('click', (e) => {
+        const option = e.target.closest('.custom-option');
+        if (!option) return;
+        const name = option.dataset.bankName;
+        const sc = option.dataset.switchCode;
+        const pj = option.dataset.pajId;
+        if (!name) return; // skip non-bank items like dividers
+        e.stopPropagation();
+        e.preventDefault();
+        selectSellBank(name, sc, pj, option);
+      });
+    })();
 
     function safeSetText(id, text) {
       const el = document.getElementById(id);
@@ -2771,8 +2788,7 @@
       updateStepIndicators('OFFRAMP');
     }
 
-    function selectSellBank(name, switchCode, pajId, event) {
-      if (event && typeof event === 'object' && event.stopPropagation) event.stopPropagation();
+    function selectSellBank(name, switchCode, pajId, optionOrEvent) {
       currentBankSwitchCode = switchCode || '';
       currentBankPajId = pajId || '';
       currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
@@ -2781,7 +2797,8 @@
       // Explicitly close all dropdowns
       document.querySelectorAll('.custom-select-options').forEach(o => o.classList.remove('open'));
       document.querySelectorAll('#sell-bank-options .custom-option').forEach(o => o.classList.remove('selected'));
-      if (event) event.currentTarget.classList.add('selected');
+      const selectedEl = optionOrEvent instanceof Element ? optionOrEvent : (optionOrEvent && optionOrEvent.currentTarget);
+      if (selectedEl) selectedEl.classList.add('selected');
       
       validateAccount();
       updateStepIndicators('OFFRAMP');
