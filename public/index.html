@@ -2419,6 +2419,24 @@
         html += `<div class="custom-option text-gray-400">No banks found</div>`;
       }
       listContainer.innerHTML = html;
+
+      // Attach direct touch handlers to each bank option for mobile reliability
+      listContainer.querySelectorAll('.custom-option[data-bank-name]').forEach(option => {
+        let startY = 0;
+        let startX = 0;
+        option.addEventListener('touchstart', (e) => {
+          startY = e.touches[0].clientY;
+          startX = e.touches[0].clientX;
+        }, { passive: true });
+        option.addEventListener('touchend', (e) => {
+          const dy = Math.abs(e.changedTouches[0].clientY - startY);
+          const dx = Math.abs(e.changedTouches[0].clientX - startX);
+          if (dy > 10 || dx > 10) return; // was a scroll, not a tap
+          e.preventDefault();
+          e.stopPropagation();
+          selectSellBank(option.dataset.bankName, option.dataset.switchCode, option.dataset.pajId, option);
+        }, { passive: false });
+      });
     }
 
     async function selectCountry(code, currency, label, flag) {
@@ -2503,42 +2521,10 @@
     setupNetworkDropdown('sell-network-options', selectSellNetwork);
     setupNetworkDropdown('buy-network-options', selectBuyNetwork);
 
-    // Mobile-friendly bank dropdown — handles taps inside scrollable fixed-position container
+    // Desktop click handler for bank dropdown (mobile uses direct per-option touchend)
     (function setupBankDropdown() {
       const container = document.getElementById('sell-bank-options');
       if (!container) return;
-      let touchStartY = 0;
-      let touchStartX = 0;
-      let touchDidMove = false;
-
-      container.addEventListener('touchstart', (e) => {
-        touchDidMove = false;
-        touchStartY = e.touches[0].clientY;
-        touchStartX = e.touches[0].clientX;
-      }, { passive: true });
-
-      container.addEventListener('touchmove', () => {
-        touchDidMove = true;
-      }, { passive: true });
-
-      container.addEventListener('touchend', (e) => {
-        const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
-        const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
-        if (touchDidMove || dy > 10 || dx > 10) return;
-        const touch = e.changedTouches[0];
-        const el = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (!el) return;
-        const option = el.closest('.custom-option');
-        if (!option) return;
-        const name = option.dataset.bankName;
-        const sc = option.dataset.switchCode;
-        const pj = option.dataset.pajId;
-        if (!name) return;
-        e.preventDefault();
-        e.stopPropagation();
-        selectSellBank(name, sc, pj, option);
-      }, { passive: false });
-
       container.addEventListener('click', (e) => {
         const option = e.target.closest('.custom-option');
         if (!option) return;
