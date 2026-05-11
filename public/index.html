@@ -371,14 +371,9 @@
       }
       .dropdown-backdrop {
         display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.15);
-        z-index: 9998;
-        pointer-events: none;
       }
       .dropdown-backdrop.active {
-        display: block;
+        display: none;
       }
     }
 
@@ -3171,7 +3166,13 @@
 
     function calculateBuyFromCrypto() {
       const crypto = getNum('buy-receive');
-      const ngn = crypto * currentRate.buy;
+      let ngn = 0;
+      if (currentProvider === 'paj') {
+        const approxRate = computePajTokenRate(currentBuyAsset);
+        ngn = crypto * approxRate;
+      } else {
+        ngn = crypto * currentRate.buy;
+      }
       setFmt('buy-amount', ngn, 2);
       validateBuyLimit(ngn);
     }
