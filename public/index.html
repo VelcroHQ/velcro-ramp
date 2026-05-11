@@ -194,6 +194,12 @@
       .sm\:hidden {
         display: flex !important;
       }
+      /* Mobile header cleanup */
+      #main-nav .h-16 { height: 3.5rem; }
+      #main-nav img { height: 1.75rem; }
+      #main-nav .bg-gradient-to-r { background: none; color: #0D0D59; -webkit-text-fill-color: #0D0D59; }
+      .dark #main-nav .bg-gradient-to-r { color: #e2e8f0; -webkit-text-fill-color: #e2e8f0; }
+      #history-btn .hidden-on-mobile { display: none; }
       .step-dot {
         width: 22px;
         height: 22px;
@@ -865,13 +871,14 @@
         </div>
         <div class="flex items-center gap-4">
           <button onclick="showHistoryModal()" id="history-btn"
-            class="text-sm text-gray-600 hover:text-velcro-navy transition-colors flex items-center gap-1.5">
+            class="text-sm text-gray-600 hover:text-velcro-navy transition-colors flex items-center gap-1.5"
+            title="History">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 3v5h5"/>
               <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
               <path d="M12 7v5l4 2"/>
             </svg>
-            History
+            <span class="hidden-on-mobile">History</span>
           </button>
           <button onclick="toggleDarkMode()" id="dark-mode-toggle"
             class="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-400"
