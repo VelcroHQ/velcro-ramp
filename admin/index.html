@@ -1706,6 +1706,20 @@
                     <b id="modal-channel">-</b>
                 </div>
             </div>
+            <!-- Amount Breakdown -->
+            <div style="margin-bottom: 20px; border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--bg-light);">
+                <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 12px;">Amount Breakdown</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                        <span style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">SENT</span>
+                        <b id="modal-sent" style="font-size: 16px; color: var(--text-main);">-</b>
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">RECEIVED</span>
+                        <b id="modal-received" style="font-size: 16px; color: var(--success);">-</b>
+                    </div>
+                </div>
+            </div>
             <div style="margin-bottom: 20px;">
                 <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">REFERENCE</label>
                 <code id="modal-ref" style="background: #f1f5f9; padding: 8px; border-radius: 6px; display: block; font-size: 13px;">-</code>
@@ -2466,6 +2480,19 @@
                 walletExplorerLink.style.display = 'none';
             }
             document.getElementById('modal-date').innerText = new Date(tx.created_at).toLocaleString();
+
+            // Amount Breakdown
+            const sentEl = document.getElementById('modal-sent');
+            const receivedEl = document.getElementById('modal-received');
+            if (tx.type === 'ONRAMP') {
+                sentEl.innerText = `₦${Number(tx.amount).toLocaleString()}`;
+                const dest = tx.destination_amount || 0;
+                receivedEl.innerText = dest > 0 ? `${Number(dest).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 6})} ${tx.asset || ''}` : '-';
+            } else {
+                sentEl.innerText = `$${Number(tx.amount).toLocaleString()} ${tx.asset || ''}`;
+                const dest = tx.destination_amount || 0;
+                receivedEl.innerText = dest > 0 ? `₦${Number(dest).toLocaleString()}` : '-';
+            }
 
             // Rate & Fees
             const rateEl = document.getElementById('modal-rate');
