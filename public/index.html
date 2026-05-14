@@ -87,11 +87,23 @@
     }
 
     .page-bg {
-      background: #ffffff;
+      background-color: #fafaf8;
+      background-image:
+        radial-gradient(circle at 15% 25%, rgba(168, 207, 69, 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 85% 75%, rgba(13, 13, 89, 0.04) 0%, transparent 45%),
+        linear-gradient(rgba(168, 207, 69, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(168, 207, 69, 0.025) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
     }
 
     .dark .page-bg {
-      background: #020617;
+      background-color: #020617;
+      background-image:
+        radial-gradient(circle at 15% 25%, rgba(168, 207, 69, 0.05) 0%, transparent 45%),
+        radial-gradient(circle at 85% 75%, rgba(100, 180, 255, 0.025) 0%, transparent 45%),
+        linear-gradient(rgba(168, 207, 69, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(168, 207, 69, 0.015) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
     }
 
     .card-glow {
@@ -100,18 +112,16 @@
     .card-glow::before {
       content: '';
       position: absolute;
-      inset: -2px;
+      inset: -1px;
       border-radius: 1.7rem;
-      background: linear-gradient(135deg, rgba(168, 207, 69, 0.45), rgba(13, 13, 89, 0.15), rgba(168, 207, 69, 0.35), rgba(100, 180, 255, 0.15));
-      background-size: 300% 300%;
-      animation: gradientShift 6s ease infinite;
+      background: linear-gradient(135deg, rgba(168, 207, 69, 0.18), rgba(13, 13, 89, 0.06), rgba(168, 207, 69, 0.12));
       z-index: -1;
-      filter: blur(16px);
-      opacity: 0.7;
+      filter: blur(20px);
+      opacity: 0.5;
       transition: opacity 0.5s ease;
     }
     .card-glow:hover::before {
-      opacity: 1;
+      opacity: 0.75;
     }
     @keyframes gradientShift {
       0% { background-position: 0% 50%; }
@@ -120,46 +130,56 @@
     }
 
     .premium-card {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(229, 231, 235, 0.6);
       box-shadow:
-        0 1px 2px rgba(13, 13, 89, 0.04),
-        0 4px 8px rgba(13, 13, 89, 0.04),
-        0 8px 24px rgba(13, 13, 89, 0.06),
-        0 24px 48px rgba(13, 13, 89, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        0 1px 3px rgba(13, 13, 89, 0.03),
+        0 4px 12px rgba(13, 13, 89, 0.04),
+        0 12px 32px rgba(13, 13, 89, 0.05);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
     .dark .premium-card {
-      background: #0f172a;
-      border: 1px solid #1e293b;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(30, 41, 59, 0.5);
       box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.2),
-        0 4px 8px rgba(0, 0, 0, 0.2),
-        0 8px 24px rgba(0, 0, 0, 0.25),
-        0 24px 48px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        0 1px 3px rgba(0, 0, 0, 0.15),
+        0 4px 12px rgba(0, 0, 0, 0.2),
+        0 12px 32px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
     .premium-tabs {
-      background: #f3f4f6;
+      background: rgba(243, 244, 246, 0.6);
       border: 1px solid rgba(0, 0, 0, 0.04);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
     .dark .premium-tabs {
-      background: #1e293b;
+      background: rgba(30, 41, 59, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
 
     .nav-scrolled {
-      background: #ffffff !important;
-      border-bottom: 1px solid #e5e7eb !important;
+      background: rgba(250, 250, 248, 0.75) !important;
+      border-bottom: 1px solid rgba(168, 207, 69, 0.12) !important;
+      backdrop-filter: blur(12px) saturate(1.2);
+      -webkit-backdrop-filter: blur(12px) saturate(1.2);
+      box-shadow: 0 1px 3px rgba(13, 13, 89, 0.04);
     }
     .dark .nav-scrolled {
-      background: #020617 !important;
-      border-bottom: 1px solid #1e293b !important;
+      background: rgba(2, 6, 23, 0.75) !important;
+      border-bottom: 1px solid rgba(168, 207, 69, 0.08) !important;
+      backdrop-filter: blur(12px) saturate(1.2);
+      -webkit-backdrop-filter: blur(12px) saturate(1.2);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     }
 
     .card-shadow {
-      box-shadow: 0 4px 24px rgba(13, 13, 89, 0.08);
+      box-shadow: 0 2px 8px rgba(13, 13, 89, 0.04), 0 8px 24px rgba(13, 13, 89, 0.06);
     }
 
     .btn-glow {
@@ -187,6 +207,16 @@
       #main-nav .h-16 { height: 3.5rem; }
       #main-nav img { height: 1.75rem; }
       #main-nav .bg-gradient-to-r { background: none; color: #0D0D59; -webkit-text-fill-color: #0D0D59; }
+      .nav-scrolled {
+        background: rgba(250, 250, 248, 0.85) !important;
+        backdrop-filter: blur(12px) saturate(1.2);
+        -webkit-backdrop-filter: blur(12px) saturate(1.2);
+      }
+      .dark .nav-scrolled {
+        background: rgba(2, 6, 23, 0.85) !important;
+        backdrop-filter: blur(12px) saturate(1.2);
+        -webkit-backdrop-filter: blur(12px) saturate(1.2);
+      }
       .dark #main-nav .bg-gradient-to-r { color: #e2e8f0; -webkit-text-fill-color: #e2e8f0; }
       #history-btn .hidden-on-mobile { display: none; }
       .step-dot {
@@ -223,21 +253,24 @@
     }
 
     .input-panel {
-      background: #ffffff;
-      border: 1.5px solid #e5e7eb;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1.5px solid rgba(229, 231, 235, 0.6);
       border-radius: 1rem;
       padding: 1.25rem;
       transition: all 0.2s ease;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
 
     .input-panel:focus-within {
       border-color: #A8CF45;
       box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.12);
+      background: rgba(255, 255, 255, 0.9);
     }
 
     .asset-pill {
-      background: #fff;
-      border: 1.5px solid #e5e7eb;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1.5px solid rgba(229, 231, 235, 0.6);
       border-radius: 0.75rem;
       padding: 0.5rem 0.75rem;
       display: inline-flex;
@@ -249,17 +282,19 @@
       width: fit-content;
       font-weight: 500;
       color: #374151;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
 
     .asset-pill:hover {
       border-color: #A8CF45;
-      background: #fafff0;
+      background: rgba(250, 255, 240, 0.85);
     }
 
     .network-pill {
-      background: #fff;
-      border: 1.5px solid #e5e7eb;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1.5px solid rgba(229, 231, 235, 0.6);
       border-radius: 0.75rem;
       padding: 0.4rem 0.75rem;
       display: inline-flex;
@@ -271,12 +306,14 @@
       width: fit-content;
       font-weight: 500;
       color: #4b5563;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
 
     .network-pill:hover {
       border-color: #A8CF45;
-      background: #fafff0;
+      background: rgba(250, 255, 240, 0.85);
     }
 
     .amount-input::placeholder {
@@ -730,14 +767,14 @@
     .dark .amount-input::placeholder { color: #475569; }
 
     /* Custom component overrides */
-    .dark .input-panel { background: #0f172a; border-color: #334155; }
-    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); }
+    .dark .input-panel { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); }
+    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); background: rgba(15, 23, 42, 0.8); }
 
-    .dark .asset-pill { background: #0f172a; border-color: #334155; color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-    .dark .asset-pill:hover { background: #1e293b; border-color: #A8CF45; }
+    .dark .asset-pill { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+    .dark .asset-pill:hover { background: rgba(30, 41, 59, 0.8); border-color: #A8CF45; }
 
-    .dark .network-pill { background: #0f172a; border-color: #334155; color: #94a3b8; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-    .dark .network-pill:hover { background: #1e293b; border-color: #A8CF45; }
+    .dark .network-pill { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); color: #94a3b8; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+    .dark .network-pill:hover { background: rgba(30, 41, 59, 0.8); border-color: #A8CF45; }
 
     .dark .swap-btn { border-color: #0f172a; }
 
@@ -834,13 +871,18 @@
     /* Dark mode toggle button */
     .dark #dark-mode-toggle { color: #94a3b8; }
     .dark #dark-mode-toggle:hover { background-color: #1e293b; }
+
+    /* Frosted glass elements in dark mode */
+    .dark .bg-white\/70,
+    .dark .bg-white\/80 { background-color: rgba(15, 23, 42, 0.6) !important; border-color: rgba(51, 65, 85, 0.5) !important; }
+    .dark .bg-gray-50\/60 { background-color: rgba(30, 41, 59, 0.4) !important; border-color: rgba(51, 65, 85, 0.5) !important; }
   </style>
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
 
   <!-- Navigation -->
-  <nav id="main-nav" class="bg-transparent border-none transition-all duration-300">
+  <nav id="main-nav" class="sticky top-0 z-50 bg-transparent border-none transition-all duration-300">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <div class="flex items-center gap-3">
@@ -1057,7 +1099,7 @@
           </div>
 
           <!-- Warning -->
-          <div class="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-xl"
+          <div class="flex items-start gap-3 p-4 bg-white/70 border border-gray-200/60 rounded-xl backdrop-blur-sm"
             style="border-left: 4px solid #fbbf24;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5">
@@ -1084,7 +1126,7 @@
 
           <!-- Generated Address -->
           <div id="sell-generated-address" class="hidden space-y-4">
-            <div class="p-4 bg-gray-50 border border-gray-200 rounded-xl text-center">
+            <div class="p-4 bg-gray-50/60 border border-gray-200/60 rounded-xl text-center backdrop-blur-sm">
               <div class="flex items-center justify-center gap-2 mb-3">
                 <span
                   class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-900">
@@ -1314,7 +1356,7 @@
 
           <!-- Generated Account -->
           <div id="buy-generated-account" class="hidden space-y-4">
-            <div class="p-4 bg-gray-50 border border-gray-200 rounded-xl text-center">
+            <div class="p-4 bg-gray-50/60 border border-gray-200/60 rounded-xl text-center backdrop-blur-sm">
               <div class="flex items-center justify-center gap-2 mb-3">
                 <span
                   class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-900">
@@ -1548,7 +1590,7 @@
   <div id="support-widget" class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
     <div id="support-menu" class="hidden mb-1 space-y-2">
       <a href="https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab" target="_blank"
-        class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-lg hover:shadow-xl transition-shadow text-sm text-gray-700">
+        class="flex items-center gap-2 bg-white/80 border border-gray-200/60 rounded-xl px-4 py-3 shadow-lg hover:shadow-xl transition-shadow text-sm text-gray-700 backdrop-blur-sm">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#25D366">
           <path
             d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
@@ -1556,7 +1598,7 @@
         WhatsApp
       </a>
       <a href="mailto:support@usevelcro.com"
-        class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-lg hover:shadow-xl transition-shadow text-sm text-gray-700">
+        class="flex items-center gap-2 bg-white/80 border border-gray-200/60 rounded-xl px-4 py-3 shadow-lg hover:shadow-xl transition-shadow text-sm text-gray-700 backdrop-blur-sm">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
           class="text-velcro-navy">
