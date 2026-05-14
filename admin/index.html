@@ -2516,9 +2516,9 @@
                 // Beneficiary
                 let ben = {};
                 try { if (tx.beneficiary) ben = JSON.parse(tx.beneficiary); } catch (e) {}
-                document.getElementById('modal-beneficiary-bank').innerText = ben.institution || ben.bankName || ben.bank || '-';
+                document.getElementById('modal-beneficiary-bank').innerText = ben.institution || ben.bankName || ben.bank || ben.bank_code || '-';
                 document.getElementById('modal-beneficiary-number').innerText = ben.accountNumber || ben.account_number || '-';
-                document.getElementById('modal-beneficiary-name').innerText = ben.accountName || ben.account_name || ben.name || '-';
+                document.getElementById('modal-beneficiary-name').innerText = ben.holder_name || ben.accountName || ben.account_name || ben.name || '-';
             }
 
             // Show confirm section only for pending/awaiting deposits
