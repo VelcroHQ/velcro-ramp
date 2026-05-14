@@ -490,6 +490,9 @@
             padding: 30px;
             border-radius: 20px;
             position: relative;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .tx-modal-info {
@@ -618,6 +621,58 @@
             .paj-otp-row input,
             .paj-otp-row button {
                 width: 100%;
+            }
+            /* Modal mobile fixes */
+            #tx-modal {
+                align-items: flex-start !important;
+                padding: 12px !important;
+            }
+            .tx-modal-content {
+                max-width: 100%;
+                padding: 20px;
+                border-radius: 16px;
+            }
+            #modal-hash-input {
+                font-size: 16px !important;
+                min-height: 48px;
+                padding: 12px;
+            }
+            .modal-btn-row {
+                flex-direction: column !important;
+            }
+            .modal-btn-row button {
+                width: 100%;
+                min-height: 48px;
+                font-size: 14px !important;
+            }
+            /* Cost calculator mobile */
+            .cost-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .cost-input {
+                width: 100%;
+                text-align: left;
+                font-size: 16px;
+            }
+            /* Filter inputs zoom fix */
+            #filter-search,
+            #filter-type,
+            #filter-status,
+            #filter-channel,
+            #filter-date-from,
+            #filter-date-to {
+                font-size: 16px;
+            }
+            /* Settings inputs zoom fix */
+            #fee-input,
+            #buy-max-input,
+            #sell-min-input,
+            #sell-max-input,
+            #paj-email-input {
+                font-size: 16px;
+                min-height: 48px;
             }
         }
 
@@ -1626,7 +1681,7 @@
     </main>
 
     <!-- Transaction Detail Modal -->
-    <div id="tx-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
+    <div id="tx-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px;">
         <div class="tx-modal-content">
             <button onclick="closeTxModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer;"><i data-lucide="x"></i></button>
             <h2 style="margin-bottom: 5px;">Transaction Details</h2>
@@ -1692,7 +1747,7 @@
                 <div style="margin-bottom: 12px;">
                     <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">DEPOSIT ADDRESS (User sent crypto here)</label>
                     <div id="modal-deposit-address" style="background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
-                    <a id="modal-deposit-explorer" href="#" target="_blank" style="display: none; margin-top: 6px; font-size: 11px; color: var(--sidebar-bg); align-items: center; gap: 4px;"
+                    <a id="modal-deposit-explorer" href="#" target="_blank" style="display: none; margin-top: 6px; font-size: 11px; color: var(--sidebar-bg); align-items: center; gap: 4px;">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                         View address on explorer
                     </a>
@@ -1725,9 +1780,9 @@
                 <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 8px;">Admin Actions</label>
                 <div id="modal-hash-input-wrap" style="margin-bottom: 12px; display: none;">
                     <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Transaction Hash (required for Sell)</label>
-                    <input type="text" id="modal-hash-input" placeholder="0x... or tx hash" style="margin-bottom: 0; font-family: monospace; font-size: 12px;">
+                    <input type="text" id="modal-hash-input" placeholder="0x... or tx hash" style="margin-bottom: 0; font-family: monospace;">
                 </div>
-                <div style="display: flex; gap: 10px;">
+                <div class="modal-btn-row" style="display: flex; gap: 10px;">
                     <button id="modal-confirm-btn" onclick="confirmTransactionFromModal()" class="btn-primary" style="padding: 12px; font-size: 13px;">
                         Confirm Transaction
                     </button>
@@ -1735,7 +1790,7 @@
                         Force Confirm
                     </button>
                 </div>
-                <p id="modal-confirm-status" style="font-size: 12px; margin-top: 8px; display: none;"></p>
+                <p id="modal-confirm-status" style="font-size: 12px; margin-top: 8px; display: none; word-break: break-word;"></p>
             </div>
         </div>
     </div>
