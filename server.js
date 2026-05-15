@@ -951,7 +951,7 @@ app.post('/api/admin/withdraw', adminRateLimiter, adminAuth, async (req, res) =>
   } catch (err) {
     console.error('[WITHDRAW] Error:', err.message);
     auditLog('WITHDRAW_ERROR', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, error: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -1082,7 +1082,7 @@ app.post('/api/paj/initiate', async (req, res, next) => {
     await safeDbWrite(() => Transaction.create({
       reference: d.id || `paj_${Date.now()}`,
       type: 'ONRAMP',
-      status: d.status || 'AWAITING_DEPOSIT',
+      status: mapPajStatus(d.status) || 'AWAITING_DEPOSIT',
       country: 'NG',
       currency: 'NGN',
       asset: assetInfo ? assetInfo.symbol : 'SOL',
@@ -1116,7 +1116,7 @@ app.post('/api/paj/sell', async (req, res, next) => {
     await safeDbWrite(() => Transaction.create({
       reference: d.id || `paj_${Date.now()}`,
       type: 'OFFRAMP',
-      status: d.status || 'AWAITING_DEPOSIT',
+      status: mapPajStatus(d.status) || 'AWAITING_DEPOSIT',
       country: 'NG',
       currency: 'NGN',
       asset: assetInfo ? assetInfo.symbol : 'SOL',
@@ -1163,7 +1163,7 @@ app.get('/api/paj/status', async (req, res, next) => {
     // Sync PAJ status back to local DB so admin dashboard shows correct status
     try {
       const d = tx || {};
-      const update = { status: String(d.status || 'AWAITING_DEPOSIT').toUpperCase(), meta: JSON.stringify(d) };
+      const update = { status: mapPajStatus(d.status) || 'AWAITING_DEPOSIT', meta: JSON.stringify(d) };
       if (d.signature || d.hash) update.hash = d.signature || d.hash;
       if (d.recipient) update.wallet_address = d.recipient;
       await safeDbWrite(() => Transaction.findOneAndUpdate(
@@ -1193,7 +1193,7 @@ app.post('/webhook/paj', async (req, res) => {
     const hash = payload.signature || payload.hash || (payload.data && (payload.data.signature || payload.data.hash));
     const recipient = payload.recipient || (payload.data && payload.data.recipient);
     if (txId && status) {
-      const update = { status: status.toUpperCase(), meta: JSON.stringify(payload) };
+      const update = { status: mapPajStatus(status), meta: JSON.stringify(payload) };
       if (hash) update.hash = hash;
       if (recipient) update.wallet_address = recipient;
       const result = await safeDbWrite(() => Transaction.findOneAndUpdate(
@@ -1268,6 +1268,20 @@ app.use((err, req, res, next) => {
 const FINAL_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'];
 const POLLABLE_STATUSES = ['PENDING', 'AWAITING_DEPOSIT', 'DETECTED', 'PROCESSING', 'INITIATED', 'CONFIRMED', 'RECEIVED', 'VERIFIED'];
 
+// PAJ status → Velcro generic status mapping
+const PAJ_STATUS_MAP = {
+  'INIT': 'AWAITING_DEPOSIT',
+  'PAID': 'DETECTED',
+  'PROCESSING': 'PROCESSING',
+  'COMPLETED': 'COMPLETED',
+  'FAILED': 'FAILED',
+  'CANCELLED': 'CANCELLED'
+};
+function mapPajStatus(raw) {
+  const s = String(raw || '').toUpperCase();
+  return PAJ_STATUS_MAP[s] || s;
+}
+
 async function pollTransactionStatus(tx) {
   try {
     if (tx.channel === 'PAJ') {
@@ -1276,7 +1290,8 @@ async function pollTransactionStatus(tx) {
       if (!id) return;
       const result = await pajModule.getTransactionStatus(id);
       const d = result || {};
-      const newStatus = String(d.status || tx.status).toUpperCase();
+      const rawStatus = String(d.status || tx.status).toUpperCase();
+      const newStatus = mapPajStatus(rawStatus);
       if (newStatus !== tx.status) {
         await safeDbWrite(() => Transaction.findOneAndUpdate(
           { reference: tx.reference },

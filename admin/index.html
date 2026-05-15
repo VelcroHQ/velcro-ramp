@@ -2811,7 +2811,10 @@
                 } else {
                     statusEl.style.display = 'block';
                     statusEl.style.color = '#dc2626';
-                    statusEl.innerText = data.error || 'Withdrawal failed';
+                    const errMsg = data.error || data.message || 'Withdrawal failed';
+                    statusEl.innerText = errMsg.includes('OTP') || errMsg.includes('otp') || errMsg.includes('code')
+                        ? '❌ ' + errMsg
+                        : '❌ Withdrawal failed: ' + errMsg;
                     btn.innerText = originalText;
                     btn.disabled = false;
                 }

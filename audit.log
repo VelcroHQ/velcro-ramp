@@ -2,3 +2,9 @@
 {"timestamp":"2026-05-11T06:30:59.338Z","action":"ADMIN_AUTH_FAIL","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.26100.8328"}
 {"timestamp":"2026-05-11T07:24:08.879Z","action":"SETTINGS_UPDATED","ip":"::1","userAgent":"unknown","changes":{"buy_max_limit":75000}}
 {"timestamp":"2026-05-11T08:52:58.887Z","action":"ADMIN_AUTH_FAIL","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.26100.8328"}
+{"timestamp":"2026-05-15T07:20:54.442Z","action":"ADMIN_AUTH_FAIL","ip":"::1","userAgent":"curl/8.18.0"}
+{"timestamp":"2026-05-15T07:21:24.561Z","action":"WITHDRAW_OTP_SENT","ip":"::1","userAgent":"unknown","recipient":"8hM6fCeFrBZAenN8HdQDZ6qN7G5Yv8qu34VJFy95mejh","emailSent":false}
+{"timestamp":"2026-05-15T07:22:38.672Z","action":"WITHDRAW_OTP_SENT","ip":"::1","userAgent":"unknown","recipient":"8hM6fCeFrBZAenN8HdQDZ6qN7G5Yv8qu34VJFy95mejh","emailSent":false}
+{"timestamp":"2026-05-15T07:24:35.608Z","action":"WITHDRAW_OTP_SENT","ip":"::1","userAgent":"unknown","recipient":"8hM6fCeFrBZAenN8HdQDZ6qN7G5Yv8qu34VJFy95mejh","emailSent":false}
+{"timestamp":"2026-05-15T07:25:03.403Z","action":"WITHDRAW_INITIATED","ip":"::1","userAgent":"unknown","recipient":"8hM6fCeFrBZAenN8HdQDZ6qN7G5Yv8qu34VJFy95mejh","asset":"solana:usdc"}
+{"timestamp":"2026-05-15T07:25:05.564Z","action":"WITHDRAW_ERROR","ip":"::1","userAgent":"unknown","recipient":"8hM6fCeFrBZAenN8HdQDZ6qN7G5Yv8qu34VJFy95mejh","error":"Insufficient liquidity for fees withdrawal"}
