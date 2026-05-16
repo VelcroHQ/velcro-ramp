@@ -1531,6 +1531,17 @@
                     </div>
                     <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="tags" style="width: 16px; height: 16px; color: #b45309;"></i>
+                            </div>
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Fix PAJ Statuses</div>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Map old raw PAJ statuses (INIT, PAID) to Velcro generic statuses (AWAITING_DEPOSIT, DETECTED).</p>
+                        <button class="btn-primary" onclick="fixPajStatuses()" id="fix-paj-status-btn" style="background: #b45309; width: 100%;">Fix PAJ Statuses</button>
+                        <p id="fix-paj-status-result" style="font-size: 12px; margin-top: 8px; display: none;"></p>
+                    </div>
+                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                             <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(13, 13, 89, 0.08); display: flex; align-items: center; justify-content: center;">
                                 <i data-lucide="refresh-cw" style="width: 16px; height: 16px; color: var(--velcro-navy);"></i>
                             </div>
@@ -2179,6 +2190,39 @@
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
+            }
+        }
+
+        async function fixPajStatuses() {
+            const btn = document.getElementById('fix-paj-status-btn');
+            const statusEl = document.getElementById('fix-paj-status-result');
+            btn.disabled = true;
+            btn.innerText = 'Fixing...';
+            statusEl.style.display = 'none';
+            try {
+                const res = await fetch('/api/admin/fix-paj-statuses', {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--success)';
+                    statusEl.innerText = `Fixed ${data.fixed} PAJ transactions. Refresh to see changes.`;
+                    btn.innerText = 'Fixed ✓';
+                } else {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--failed)';
+                    statusEl.innerText = data.error || 'Fix failed';
+                    btn.disabled = false;
+                    btn.innerText = 'Fix PAJ Statuses';
+                }
+            } catch (e) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--failed)';
+                statusEl.innerText = e.message || 'Network error';
+                btn.disabled = false;
+                btn.innerText = 'Fix PAJ Statuses';
             }
         }
 

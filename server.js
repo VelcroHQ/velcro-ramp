@@ -821,6 +821,29 @@ app.post('/api/admin/fix-paj-channels', adminRateLimiter, adminAuth, async (req,
   }
 });
 
+// One-time fix: retroactively map raw PAJ statuses to Velcro generic statuses
+app.post('/api/admin/fix-paj-statuses', adminRateLimiter, adminAuth, async (req, res) => {
+  try {
+    const allTxs = await safeDbRead(() => Transaction.find({}));
+    const fixed = [];
+    for (const tx of allTxs) {
+      const isPaj = tx.channel === 'PAJ' ||
+                    (tx.reference && tx.reference.startsWith('paj_')) ||
+                    (tx.deposit_bank_name && tx.deposit_bank_name.toLowerCase().includes('paj'));
+      if (isPaj) {
+        const mapped = mapPajStatus(tx.status);
+        if (mapped && mapped !== tx.status) {
+          await safeDbWrite(() => Transaction.updateOne({ _id: tx._id }, { status: mapped }));
+          fixed.push({ reference: tx.reference, before: tx.status, after: mapped });
+        }
+      }
+    }
+    res.json({ success: true, fixed: fixed.length, changes: fixed });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/admin/users', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const txs = await safeDbRead(() => Transaction.find({}));
