@@ -253,19 +253,17 @@
     }
 
     .input-panel {
-      background: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.85);
       border: 1.5px solid rgba(229, 231, 235, 0.6);
       border-radius: 1rem;
       padding: 1.25rem;
       transition: all 0.2s ease;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
     }
 
     .input-panel:focus-within {
       border-color: #A8CF45;
       box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.12);
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.95);
     }
 
     .asset-pill {
@@ -364,7 +362,7 @@
 
     .custom-select {
       position: relative;
-      z-index: 10;
+      z-index: 100;
     }
 
     .custom-select-options {
@@ -767,8 +765,8 @@
     .dark .amount-input::placeholder { color: #475569; }
 
     /* Custom component overrides */
-    .dark .input-panel { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); }
-    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); background: rgba(15, 23, 42, 0.8); }
+    .dark .input-panel { background: rgba(15, 23, 42, 0.75); border-color: rgba(51, 65, 85, 0.5); }
+    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); background: rgba(15, 23, 42, 0.9); }
 
     .dark .asset-pill { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
     .dark .asset-pill:hover { background: rgba(30, 41, 59, 0.8); border-color: #A8CF45; }
