@@ -253,17 +253,19 @@
     }
 
     .input-panel {
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.7);
       border: 1.5px solid rgba(229, 231, 235, 0.6);
       border-radius: 1rem;
       padding: 1.25rem;
       transition: all 0.2s ease;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
 
     .input-panel:focus-within {
       border-color: #A8CF45;
       box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.12);
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.9);
     }
 
     .asset-pill {
@@ -390,6 +392,20 @@
       display: block;
     }
 
+    /* Desktop dropdown backdrop */
+    .dropdown-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.15);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 9998;
+    }
+    .dropdown-backdrop.active {
+      display: block;
+    }
+
     /* Mobile dropdown overlay */
     @media (max-width: 640px) {
       .custom-select-options.open {
@@ -405,10 +421,7 @@
         animation: slideUp 0.25s ease-out;
       }
       .dropdown-backdrop {
-        display: none;
-      }
-      .dropdown-backdrop.active {
-        display: none;
+        background: rgba(0,0,0,0.35);
       }
     }
 
@@ -765,8 +778,8 @@
     .dark .amount-input::placeholder { color: #475569; }
 
     /* Custom component overrides */
-    .dark .input-panel { background: rgba(15, 23, 42, 0.75); border-color: rgba(51, 65, 85, 0.5); }
-    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); background: rgba(15, 23, 42, 0.9); }
+    .dark .input-panel { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); }
+    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); background: rgba(15, 23, 42, 0.8); }
 
     .dark .asset-pill { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
     .dark .asset-pill:hover { background: rgba(30, 41, 59, 0.8); border-color: #A8CF45; }
@@ -779,6 +792,7 @@
     .dark .custom-select-options { background: #1e293b; border-color: #475569; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
     .dark .custom-option:hover { background: #334155; }
     .dark .custom-option.selected { background: #064e3b; }
+    .dark .dropdown-backdrop { background: rgba(0,0,0,0.45); }
 
     /* Asset picker modal */
     .dark .asset-picker-sheet { background: #0f172a; box-shadow: 0 -10px 40px rgba(0,0,0,0.4); }
@@ -2504,9 +2518,20 @@
     document.addEventListener('click', (e) => {
       const isSelect = e.target.closest('.custom-select');
       const isOption = e.target.closest('.custom-option');
-      if (!isSelect || isOption) {
+      const isDropdown = e.target.closest('.custom-select-options');
+      if ((!isSelect && !isDropdown) || isOption) {
         closeAllDropdowns();
       }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeAllDropdowns();
+    });
+
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(closeAllDropdowns, 100);
     });
 
     // Mobile-friendly network dropdown delegation with tap-vs-scroll detection
@@ -2592,19 +2617,63 @@
         el.classList.add('open');
         const parent = el.closest('.custom-select');
         if (parent) parent.style.zIndex = '9999';
-        // Show backdrop on mobile
-        const backdrop = document.getElementById('dropdown-backdrop');
-        if (backdrop && window.innerWidth <= 640) {
-          backdrop.classList.add('active');
+
+        // Mobile: just show backdrop
+        if (window.innerWidth <= 640) {
+          const backdrop = document.getElementById('dropdown-backdrop');
+          if (backdrop) backdrop.classList.add('active');
+          return;
         }
+
+        // Desktop: move to portal so it escapes backdrop-filter containing block
+        if (parent && !el._originalParent) {
+          el._originalParent = parent;
+          document.getElementById('dropdown-portal').appendChild(el);
+        }
+
+        const trigger = parent?.querySelector('.custom-select-trigger, .asset-pill, .network-pill');
+        if (trigger && el) {
+          const rect = trigger.getBoundingClientRect();
+          el.style.position = 'fixed';
+          el.style.top = (rect.bottom + 4) + 'px';
+          el.style.left = rect.left + 'px';
+          el.style.right = 'auto';
+          el.style.width = rect.width + 'px';
+          el.style.minWidth = rect.width + 'px';
+          el.style.maxHeight = '300px';
+          el.style.zIndex = '9999';
+          el.style.borderRadius = '0.75rem';
+          el.style.marginTop = '0';
+          el.style.display = 'block';
+        }
+        const backdrop = document.getElementById('dropdown-backdrop');
+        if (backdrop) backdrop.classList.add('active');
       }
     }
 
     function closeAllDropdowns() {
       document.querySelectorAll('.custom-select-options').forEach(o => {
         o.classList.remove('open');
-        const p = o.closest('.custom-select');
-        if (p) p.style.zIndex = '';
+        // Reset inline desktop positioning styles
+        o.style.position = '';
+        o.style.top = '';
+        o.style.left = '';
+        o.style.right = '';
+        o.style.width = '';
+        o.style.minWidth = '';
+        o.style.maxHeight = '';
+        o.style.zIndex = '';
+        o.style.borderRadius = '';
+        o.style.marginTop = '';
+        o.style.display = '';
+        // Move back to original parent if ported
+        if (o._originalParent) {
+          o._originalParent.appendChild(o);
+          o._originalParent = null;
+        } else {
+          const p = o.closest('.custom-select');
+          if (p) p.style.zIndex = '';
+        }
       });
       document.querySelectorAll('.asset-picker-modal').forEach(o => o.classList.remove('open'));
       document.body.style.overflow = '';
@@ -4399,6 +4468,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Desktop dropdown portal (moves dropdowns outside cards to escape backdrop-filter containing block) -->
+  <div id="dropdown-portal" style="position:fixed; top:0; left:0; width:0; height:0; z-index:9999;"></div>
 
 </body>
 
