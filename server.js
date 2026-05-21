@@ -30,6 +30,8 @@ let pajModule = null;
 try { pajModule = require('./paj'); } catch (err) { console.log('⚠️  PAJ module not loaded:', err.message); }
 const SWITCH_BASE_URL = process.env.SWITCH_BASE_URL || 'https://api.onswitch.xyz';
 const SWITCH_SERVICE_KEY = process.env.SWITCH_SERVICE_KEY;
+const SWITCH_WEBHOOK_SECRET = process.env.SWITCH_WEBHOOK_SECRET;
+const PAJ_WEBHOOK_SECRET = process.env.PAJ_WEBHOOK_SECRET;
 const DEVELOPER_FEE = parseFloat(process.env.DEVELOPER_FEE) || 0.5;
 
 // SECURITY: No hardcoded fallback for sensitive addresses. Crash if missing.
@@ -96,10 +98,39 @@ async function sendMail(subject, html, text) {
   }
 }
 
-// ─── OTP Storage ───
+// ─── OTP Storage (file-backed for restart survival) ───
+const OTP_FILE_PATH = path.join(__dirname, 'otp-store.json');
 const otpStore = new Map(); // key: 'withdraw', value: { code, expiry, attempts }
 const OTP_VALID_MS = 5 * 60 * 1000; // 5 minutes
 const OTP_MAX_ATTEMPTS = 3;
+
+// Load OTPs from file on startup
+(function loadOtpStore() {
+  try {
+    if (fs.existsSync(OTP_FILE_PATH)) {
+      const raw = fs.readFileSync(OTP_FILE_PATH, 'utf8');
+      const data = JSON.parse(raw);
+      if (data && typeof data === 'object') {
+        const now = Date.now();
+        Object.entries(data).forEach(([key, val]) => {
+          if (val && val.expiry > now) otpStore.set(key, val);
+        });
+        if (otpStore.size) console.log(`🔐 Restored ${otpStore.size} active OTP(s) from disk`);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load OTP store:', err.message);
+  }
+})();
+
+function persistOtpStore() {
+  try {
+    const obj = Object.fromEntries(otpStore.entries());
+    fs.writeFileSync(OTP_FILE_PATH, JSON.stringify(obj));
+  } catch (err) {
+    console.error('Failed to persist OTP store:', err.message);
+  }
+}
 
 function generateOTP() {
   return String(randomInt(100000, 999999));
@@ -107,6 +138,7 @@ function generateOTP() {
 
 function storeOTP(key, code) {
   otpStore.set(key, { code, expiry: Date.now() + OTP_VALID_MS, attempts: 0 });
+  persistOtpStore();
 }
 
 function verifyOTP(key, input) {
@@ -114,23 +146,45 @@ function verifyOTP(key, input) {
   if (!record) return { valid: false, reason: 'No OTP requested. Click "Get OTP" first.' };
   if (Date.now() > record.expiry) {
     otpStore.delete(key);
+    persistOtpStore();
     return { valid: false, reason: 'OTP expired. Request a new one.' };
   }
   if (record.attempts >= OTP_MAX_ATTEMPTS) {
     otpStore.delete(key);
+    persistOtpStore();
     return { valid: false, reason: 'Too many failed attempts. Request a new OTP.' };
   }
   if (record.code !== String(input).trim()) {
     record.attempts++;
+    persistOtpStore();
     return { valid: false, reason: 'Invalid OTP. ' + (OTP_MAX_ATTEMPTS - record.attempts) + ' attempts remaining.' };
   }
   otpStore.delete(key);
+  persistOtpStore();
   return { valid: true };
 }
 
-// ─── Security Audit Logger ───
+// ─── Security Audit Logger (with rotation) ───
 const AUDIT_LOG_PATH = path.join(__dirname, 'audit.log');
+const AUDIT_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
+function rotateAuditLog() {
+  try {
+    if (fs.existsSync(AUDIT_LOG_PATH)) {
+      const stats = fs.statSync(AUDIT_LOG_PATH);
+      if (stats.size >= AUDIT_MAX_BYTES) {
+        const rotated = AUDIT_LOG_PATH + '.' + Date.now() + '.old';
+        fs.renameSync(AUDIT_LOG_PATH, rotated);
+        console.log(`📋 Audit log rotated: ${rotated}`);
+      }
+    }
+  } catch (err) {
+    console.error('Audit log rotation failed:', err.message);
+  }
+}
+
 function auditLog(action, details = {}) {
+  rotateAuditLog();
   const entry = {
     timestamp: new Date().toISOString(),
     action,
@@ -151,6 +205,9 @@ function verifyAdminPassword(input) {
 }
 
 // ─── Persistent Settings ───
+let __cachedSettings = null;
+let __settingsMtime = 0;
+
 function loadSettings() {
   const defaults = { 
     platform_fee: DEVELOPER_FEE, 
@@ -162,17 +219,24 @@ function loadSettings() {
     paj_usdc_enabled: false
   };
   try {
-    if (fs.existsSync(SETTINGS_PATH)) {
+    const stats = fs.statSync(SETTINGS_PATH);
+    if (__cachedSettings && stats.mtimeMs === __settingsMtime) {
+      return __cachedSettings;
+    }
+    if (stats.isFile()) {
       const content = fs.readFileSync(SETTINGS_PATH, 'utf8');
       if (content) {
         const data = JSON.parse(content);
-        return { ...defaults, ...data };
+        __cachedSettings = { ...defaults, ...data };
+        __settingsMtime = stats.mtimeMs;
+        return __cachedSettings;
       }
     }
   } catch (err) {
     console.error('Failed to load settings:', err.message);
   }
-  return defaults;
+  __cachedSettings = defaults;
+  return __cachedSettings;
 }
 
 function saveSettings(settings) {
@@ -253,10 +317,7 @@ mongoose.connection.on('reconnected', () => {
   console.log('✅ MongoDB reconnected');
 });
 
-// Prevent unhandled promise rejections from crashing the server
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
+// Note: unhandledRejection handler already registered at startup
 
 // Safe DB operation wrapper — silently skips writes when DB is down
 async function safeDbWrite(operation) {
@@ -322,7 +383,10 @@ async function switchApi(endpoint, options = {}, retries = 2) {
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, { ...options, headers });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      const res = await fetch(url, { ...options, headers, signal: controller.signal });
+      clearTimeout(timeout);
       const text = await res.text();
       let data;
       try { data = JSON.parse(text); } catch { data = { raw: text }; }
@@ -699,10 +763,40 @@ app.get('/api/history', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+const webhookLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ─── Webhook Signature Verification ───
+function verifyWebhookSignature(secret, payload, signatureHeader, algorithm = 'sha256') {
+  if (!secret || !signatureHeader) return false;
+  try {
+    const hmac = createHash(algorithm).update(secret + JSON.stringify(payload)).digest('hex');
+    return hmac === signatureHeader;
+  } catch (err) {
+    console.error('Webhook signature verification error:', err.message);
+    return false;
+  }
+}
+
 // Improved Webhook
-app.post('/webhook/switch', express.json(), async (req, res) => {
+app.post('/webhook/switch', webhookLimiter, async (req, res) => {
   try {
     const payload = req.body;
+
+    // SECURITY: Verify webhook signature if secret is configured
+    if (SWITCH_WEBHOOK_SECRET) {
+      const sig = req.headers['x-webhook-signature'] || req.headers['x-switch-signature'];
+      if (!verifyWebhookSignature(SWITCH_WEBHOOK_SECRET, payload, sig)) {
+        console.error('[Webhook] Invalid signature rejected');
+        auditLog('WEBHOOK_REJECTED', { ip: req.ip, reason: 'invalid_signature', provider: 'switch' });
+        return res.status(401).json({ success: false, error: 'Invalid signature' });
+      }
+    }
+
     console.log('[Webhook Received]', JSON.stringify(payload));
     
     // Switch often sends: { event, reference, status, data: { ... } }
@@ -749,8 +843,28 @@ const adminAuth = (req, res, next) => {
   res.status(401).json({ error: 'Unauthorized' });
 };
 
-// Withdrawal cooldown: last withdrawal timestamp
+// Withdrawal cooldown: last withdrawal timestamp (file-backed)
+const WITHDRAWAL_STATE_PATH = path.join(__dirname, 'withdrawal-state.json');
 let lastWithdrawalTime = 0;
+(function loadWithdrawalState() {
+  try {
+    if (fs.existsSync(WITHDRAWAL_STATE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(WITHDRAWAL_STATE_PATH, 'utf8'));
+      if (data && typeof data.lastWithdrawalTime === 'number') {
+        lastWithdrawalTime = data.lastWithdrawalTime;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load withdrawal state:', err.message);
+  }
+})();
+function saveWithdrawalState() {
+  try {
+    fs.writeFileSync(WITHDRAWAL_STATE_PATH, JSON.stringify({ lastWithdrawalTime }));
+  } catch (err) {
+    console.error('Failed to save withdrawal state:', err.message);
+  }
+}
 const WITHDRAWAL_COOLDOWN_MS = 60 * 1000; // 1 minute between withdrawals
 
 app.get('/api/admin/stats', adminRateLimiter, adminAuth, async (req, res) => {
@@ -879,7 +993,6 @@ app.get('/api/admin/users', adminRateLimiter, adminAuth, async (req, res) => {
 app.post('/api/admin/withdraw/otp', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const otp = generateOTP();
-    console.log(`[OTP] Withdrawal code generated: ${otp}`); 
     storeOTP('withdraw', otp);
     const maskedRecipient = DEVELOPER_RECIPIENT.slice(0, 6) + '...' + DEVELOPER_RECIPIENT.slice(-6);
 
@@ -1223,9 +1336,20 @@ app.get('/api/paj/session', (req, res) => {
 });
 
 // PAJ Webhook handler
-app.post('/webhook/paj', async (req, res) => {
+app.post('/webhook/paj', webhookLimiter, async (req, res) => {
   try {
     const payload = req.body;
+
+    // SECURITY: Verify webhook signature if secret is configured
+    if (PAJ_WEBHOOK_SECRET) {
+      const sig = req.headers['x-webhook-signature'] || req.headers['x-paj-signature'];
+      if (!verifyWebhookSignature(PAJ_WEBHOOK_SECRET, payload, sig)) {
+        console.error('[PAJ Webhook] Invalid signature rejected');
+        auditLog('WEBHOOK_REJECTED', { ip: req.ip, reason: 'invalid_signature', provider: 'paj' });
+        return res.status(401).json({ success: false, error: 'Invalid signature' });
+      }
+    }
+
     console.log('[PAJ Webhook]', JSON.stringify(payload));
     const txId = payload.id || (payload.data && payload.data.id) || payload.reference || payload.orderId;
     const status = payload.status || (payload.data && payload.data.status) || payload.state;
@@ -1285,6 +1409,10 @@ const staticPath = path.join(__dirname, 'public');
 if (fs.existsSync(staticPath)) {
   app.use(express.static(staticPath));
   app.get('*', (req, res) => {
+    // Don't serve index.html for API routes — let them 404 properly
+    if (req.path.startsWith('/api/') || req.path.startsWith('/webhook/')) {
+      return res.status(404).json({ success: false, error: 'Not found' });
+    }
     // If it starts with /admin, don't redirect to public index
     if (req.path.startsWith('/admin')) {
       return res.sendFile(path.join(adminPath, 'index.html'));
@@ -1382,10 +1510,25 @@ async function runBackgroundPoller() {
   }
 }
 
+let isPolling = false;
+
+async function runBackgroundPollerSafe() {
+  if (isPolling) {
+    console.log('[Poller] Skipped — previous poll still running');
+    return;
+  }
+  isPolling = true;
+  try {
+    await runBackgroundPoller();
+  } finally {
+    isPolling = false;
+  }
+}
+
 // Run every 10 minutes
-setInterval(runBackgroundPoller, 10 * 60 * 1000);
+setInterval(runBackgroundPollerSafe, 10 * 60 * 1000);
 // Run once at startup (after a short delay to let DB connect)
-setTimeout(runBackgroundPoller, 30000);
+setTimeout(runBackgroundPollerSafe, 30000);
 
 // ─── Auto-Withdrawal Cron Job ───
 if (AUTO_WITHDRAWAL_ENABLED) {
@@ -1438,6 +1581,28 @@ app.post('/api/admin/refresh-status/:reference', adminRateLimiter, adminAuth, as
     res.json({ success: true, status: updated.status, previousStatus: tx.status });
   } catch (err) { next(err); }
 });
+
+// ─── Startup Checks ───
+(function startupChecks() {
+  try {
+    const envContent = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+    const lines = envContent.split('\n');
+    const seen = new Map();
+    const dups = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const key = trimmed.split('=')[0];
+      if (seen.has(key)) dups.push(key);
+      seen.set(key, true);
+    }
+    if (dups.length) {
+      console.warn(`⚠️  Duplicate keys detected in .env: ${dups.join(', ')} — only the last value is used.`);
+    }
+  } catch (err) {
+    // .env file may not exist in some deployments
+  }
+})();
 
 app.listen(PORT, () => {
   console.log(`\n🚀 Velcro Backend v1.2.0 running at: http://localhost:${PORT}`);
