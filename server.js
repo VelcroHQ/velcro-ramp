@@ -18,6 +18,7 @@ const mongoose = require('mongoose');
 const { randomUUID, createHash, randomInt } = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const cron = require('node-cron');
 
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Nginx)
@@ -38,6 +39,11 @@ if (!DEVELOPER_RECIPIENT) {
   process.exit(1);
 }
 const DEVELOPER_WITHDRAW_ASSET = process.env.DEVELOPER_WITHDRAW_ASSET || 'solana:usdc';
+
+// ─── Auto-Withdrawal Configuration ───
+const AUTO_WITHDRAWAL_ENABLED = process.env.AUTO_WITHDRAWAL_ENABLED === 'true';
+const AUTO_WITHDRAWAL_SCHEDULE = process.env.AUTO_WITHDRAWAL_SCHEDULE || '0 0 * * *'; // daily at midnight
+const AUTO_WITHDRAWAL_MIN_BALANCE = parseFloat(process.env.AUTO_WITHDRAWAL_MIN_BALANCE) || 1;
 
 // SECURITY: Admin password — support plain text OR bcrypt-style hash (sha256)
 const ADMIN_PASSWORD_RAW = process.env.ADMIN_PASSWORD;
@@ -896,6 +902,77 @@ app.post('/api/admin/withdraw/otp', adminRateLimiter, adminAuth, async (req, res
   }
 });
 
+// ─── Shared Withdrawal Logic ───
+async function executeWithdrawal(asset, context = {}) {
+  const { ip = 'unknown', source = 'unknown' } = context;
+
+  // SECURITY: Cooldown between withdrawals
+  const now = Date.now();
+  if (now - lastWithdrawalTime < WITHDRAWAL_COOLDOWN_MS) {
+    const waitSec = Math.ceil((WITHDRAWAL_COOLDOWN_MS - (now - lastWithdrawalTime)) / 1000);
+    auditLog('WITHDRAW_BLOCKED_COOLDOWN', { ip, recipient: DEVELOPER_RECIPIENT, source });
+    return { success: false, error: `Please wait ${waitSec}s before another withdrawal.`, statusCode: 429 };
+  }
+
+  // SECURITY: Block withdrawal if recipient is not whitelisted
+  if (!isWithdrawalAllowed(DEVELOPER_RECIPIENT)) {
+    console.error('[WITHDRAW] BLOCKED — Recipient not in whitelist:', DEVELOPER_RECIPIENT);
+    auditLog('WITHDRAW_BLOCKED_WHITELIST', { ip, recipient: DEVELOPER_RECIPIENT, source });
+    return {
+      success: false,
+      error: 'Withdrawal blocked — recipient address is not in the allowed whitelist.',
+      recipient: DEVELOPER_RECIPIENT,
+      allowed: WITHDRAWAL_ALLOWED_RECIPIENTS,
+      statusCode: 403
+    };
+  }
+
+  const payload = {
+    asset: asset || DEVELOPER_WITHDRAW_ASSET,
+    beneficiary: { wallet_address: DEVELOPER_RECIPIENT }
+  };
+  console.log(`[WITHDRAW] [${source}] Request payload:`, JSON.stringify(payload));
+  auditLog('WITHDRAW_INITIATED', { ip, recipient: DEVELOPER_RECIPIENT, asset: payload.asset, source });
+
+  // Email notification: withdrawal initiated
+  await sendMail(
+    `Velcro — Withdrawal Initiated (${source})`,
+    `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px;"><h2 style="color:#0D0D59;">Withdrawal Initiated</h2><p>A fee withdrawal has been initiated (${source}) to:</p><code>${DEVELOPER_RECIPIENT}</code><p style="color:#64748b;font-size:12px;margin-top:12px;">Time: ${new Date().toISOString()}</p></div>`,
+    `Velcro Admin — Withdrawal Initiated (${source})\n\nRecipient: ${DEVELOPER_RECIPIENT}\nTime: ${new Date().toISOString()}\n\nIf this was not you, change your password immediately.`
+  );
+
+  const data = await switchApi('/developer/withdraw', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  console.log(`[WITHDRAW] [${source}] Switch response:`, JSON.stringify(data));
+
+  if (data.success) {
+    lastWithdrawalTime = Date.now();
+    auditLog('WITHDRAW_SUCCESS', { ip, recipient: DEVELOPER_RECIPIENT, hash: data.data?.hash, source });
+
+    // Email notification: withdrawal success
+    await sendMail(
+      `Velcro — Withdrawal Successful (${source})`,
+      `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;"><h2 style="color:#166534;">Withdrawal Successful</h2><p>Your fees have been withdrawn.</p><p><b>Hash:</b> <code>${data.data?.hash || 'N/A'}</code></p><p><b>Recipient:</b> <code>${DEVELOPER_RECIPIENT}</code></p></div>`,
+      `Velcro Admin — Withdrawal Successful (${source})\n\nHash: ${data.data?.hash || 'N/A'}\nRecipient: ${DEVELOPER_RECIPIENT}\nTime: ${new Date().toISOString()}`
+    );
+
+    return { success: true, data: data.data };
+  } else {
+    auditLog('WITHDRAW_FAILED', { ip, recipient: DEVELOPER_RECIPIENT, error: data.message, source });
+
+    // Email notification: withdrawal failed
+    await sendMail(
+      `Velcro — Withdrawal Failed (${source})`,
+      `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #fecaca;border-radius:12px;background:#fef2f2;"><h2 style="color:#dc2626;">Withdrawal Failed</h2><p>Error: ${data.message || 'Unknown error'}</p><p><b>Recipient:</b> <code>${DEVELOPER_RECIPIENT}</code></p></div>`,
+      `Velcro Admin — Withdrawal Failed (${source})\n\nError: ${data.message || 'Unknown error'}\nRecipient: ${DEVELOPER_RECIPIENT}\nTime: ${new Date().toISOString()}`
+    );
+
+    return { success: false, error: data.message, raw: data, statusCode: 400 };
+  }
+}
+
 app.post('/api/admin/withdraw', adminRateLimiter, adminAuth, async (req, res) => {
   try {
     const { asset, otp } = req.body;
@@ -907,73 +984,12 @@ app.post('/api/admin/withdraw', adminRateLimiter, adminAuth, async (req, res) =>
       return res.status(403).json({ success: false, error: otpCheck.reason });
     }
 
-    // SECURITY: Cooldown between withdrawals
-    const now = Date.now();
-    if (now - lastWithdrawalTime < WITHDRAWAL_COOLDOWN_MS) {
-      const waitSec = Math.ceil((WITHDRAWAL_COOLDOWN_MS - (now - lastWithdrawalTime)) / 1000);
-      auditLog('WITHDRAW_BLOCKED_COOLDOWN', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT });
-      return res.status(429).json({ success: false, error: `Please wait ${waitSec}s before another withdrawal.` });
-    }
-
-    // SECURITY: Block withdrawal if recipient is not whitelisted
-    if (!isWithdrawalAllowed(DEVELOPER_RECIPIENT)) {
-      console.error('[WITHDRAW] BLOCKED — Recipient not in whitelist:', DEVELOPER_RECIPIENT);
-      auditLog('WITHDRAW_BLOCKED_WHITELIST', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT });
-      return res.status(403).json({
-        success: false,
-        error: 'Withdrawal blocked — recipient address is not in the allowed whitelist.',
-        recipient: DEVELOPER_RECIPIENT,
-        allowed: WITHDRAWAL_ALLOWED_RECIPIENTS
-      });
-    }
-
-    const payload = {
-      asset: asset || DEVELOPER_WITHDRAW_ASSET,
-      beneficiary: { wallet_address: DEVELOPER_RECIPIENT }
-    };
-    console.log('[WITHDRAW] Request payload:', JSON.stringify(payload));
-    auditLog('WITHDRAW_INITIATED', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, asset: payload.asset });
-
-    // Email notification: withdrawal initiated
-    await sendMail(
-      'Velcro — Withdrawal Initiated',
-      `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px;"><h2 style="color:#0D0D59;">Withdrawal Initiated</h2><p>A fee withdrawal has been initiated to:</p><code>${DEVELOPER_RECIPIENT}</code><p style="color:#64748b;font-size:12px;margin-top:12px;">Time: ${new Date().toISOString()}</p></div>`,
-      `Velcro Admin — Withdrawal Initiated\n\nRecipient: ${DEVELOPER_RECIPIENT}\nTime: ${new Date().toISOString()}\n\nIf this was not you, change your password immediately.`
-    );
-
-    const data = await switchApi('/developer/withdraw', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-    console.log('[WITHDRAW] Switch response:', JSON.stringify(data));
-
-    if (data.success) {
-      lastWithdrawalTime = Date.now();
-      auditLog('WITHDRAW_SUCCESS', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, hash: data.data?.hash });
-
-      // Email notification: withdrawal success
-      await sendMail(
-        'Velcro — Withdrawal Successful',
-        `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;"><h2 style="color:#166534;">Withdrawal Successful</h2><p>Your fees have been withdrawn.</p><p><b>Hash:</b> <code>${data.data?.hash || 'N/A'}</code></p><p><b>Recipient:</b> <code>${DEVELOPER_RECIPIENT}</code></p></div>`,
-        `Velcro Admin — Withdrawal Successful\n\nHash: ${data.data?.hash || 'N/A'}\nRecipient: ${DEVELOPER_RECIPIENT}\nTime: ${new Date().toISOString()}`
-      );
-
-      res.json({ success: true, data: data.data });
-    } else {
-      auditLog('WITHDRAW_FAILED', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, error: data.message });
-
-      // Email notification: withdrawal failed
-      await sendMail(
-        'Velcro — Withdrawal Failed',
-        `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #fecaca;border-radius:12px;background:#fef2f2;"><h2 style="color:#dc2626;">Withdrawal Failed</h2><p>Error: ${data.message || 'Unknown error'}</p><p><b>Recipient:</b> <code>${DEVELOPER_RECIPIENT}</code></p></div>`,
-        `Velcro Admin — Withdrawal Failed\n\nError: ${data.message || 'Unknown error'}\nRecipient: ${DEVELOPER_RECIPIENT}\nTime: ${new Date().toISOString()}`
-      );
-
-      res.status(400).json({ success: false, error: data.message, raw: data });
-    }
+    const result = await executeWithdrawal(asset, { ip: req.adminClientIp, source: 'manual' });
+    const statusCode = result.statusCode || (result.success ? 200 : 400);
+    res.status(statusCode).json(result);
   } catch (err) {
     console.error('[WITHDRAW] Error:', err.message);
-    auditLog('WITHDRAW_ERROR', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, error: err.message });
+    auditLog('WITHDRAW_ERROR', { ip: req.adminClientIp, recipient: DEVELOPER_RECIPIENT, error: err.message, source: 'manual' });
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -1370,6 +1386,43 @@ async function runBackgroundPoller() {
 setInterval(runBackgroundPoller, 10 * 60 * 1000);
 // Run once at startup (after a short delay to let DB connect)
 setTimeout(runBackgroundPoller, 30000);
+
+// ─── Auto-Withdrawal Cron Job ───
+if (AUTO_WITHDRAWAL_ENABLED) {
+  if (cron.validate(AUTO_WITHDRAWAL_SCHEDULE)) {
+    console.log(`⏰ Auto-withdrawal enabled. Schedule: "${AUTO_WITHDRAWAL_SCHEDULE}"`);
+    console.log(`⏰ Auto-withdrawal min balance: ${AUTO_WITHDRAWAL_MIN_BALANCE}`);
+
+    cron.schedule(AUTO_WITHDRAWAL_SCHEDULE, async () => {
+      console.log('[CRON] Running scheduled fee withdrawal...');
+      try {
+        // Check current balance before attempting withdrawal
+        const feesData = await switchApi('/developer/fees').catch(() => ({ data: { amount: 0, currency: 'USD' } }));
+        const balance = parseFloat(feesData.data?.amount) || 0;
+        console.log(`[CRON] Current developer fee balance: ${balance} ${feesData.data?.currency || 'USD'}`);
+
+        if (balance < AUTO_WITHDRAWAL_MIN_BALANCE) {
+          console.log(`[CRON] Balance ${balance} below minimum ${AUTO_WITHDRAWAL_MIN_BALANCE}. Skipping withdrawal.`);
+          return;
+        }
+
+        const result = await executeWithdrawal(null, { ip: 'cron', source: 'cron' });
+        if (result.success) {
+          console.log('[CRON] Withdrawal succeeded:', result.data);
+        } else {
+          console.error('[CRON] Withdrawal failed:', result.error);
+        }
+      } catch (err) {
+        console.error('[CRON] Unexpected error during auto-withdrawal:', err.message);
+        auditLog('WITHDRAW_ERROR', { ip: 'cron', recipient: DEVELOPER_RECIPIENT, error: err.message, source: 'cron' });
+      }
+    });
+  } else {
+    console.error(`❌ Invalid AUTO_WITHDRAWAL_SCHEDULE: "${AUTO_WITHDRAWAL_SCHEDULE}". Auto-withdrawal disabled.`);
+  }
+} else {
+  console.log('⏰ Auto-withdrawal disabled. Set AUTO_WITHDRAWAL_ENABLED=true to enable.');
+}
 
 // ─── Admin: Manual Status Refresh ───
 app.post('/api/admin/refresh-status/:reference', adminRateLimiter, adminAuth, async (req, res, next) => {

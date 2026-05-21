@@ -372,7 +372,6 @@
       position: absolute;
       top: 100%;
       left: 0;
-      right: 0;
       z-index: 50;
       background: white;
       border: 1px solid #e5e7eb;
@@ -385,7 +384,8 @@
       touch-action: pan-y;
       overscroll-behavior: contain;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-      min-width: 180px;
+      min-width: 220px;
+      width: max-content;
     }
 
     .custom-select-options.open {
@@ -437,6 +437,7 @@
       padding: 10px 14px;
       cursor: pointer;
       transition: background 0.15s;
+      white-space: nowrap;
       -webkit-user-select: none;
       user-select: none;
       -webkit-touch-callout: none;
