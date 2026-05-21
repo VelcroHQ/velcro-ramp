@@ -385,7 +385,6 @@
       overscroll-behavior: contain;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
       min-width: 220px;
-      width: max-content;
     }
 
     .custom-select-options.open {
@@ -2634,8 +2633,8 @@
             el.style.top = (rect.bottom + 4) + 'px';
             el.style.left = rect.left + 'px';
             el.style.right = 'auto';
-            el.style.width = rect.width + 'px';
-            el.style.minWidth = rect.width + 'px';
+            el.style.minWidth = Math.max(rect.width, 260) + 'px';
+            el.style.width = Math.max(rect.width, 260) + 'px';
             el.style.maxHeight = '300px';
             el.style.zIndex = '9999';
             el.style.borderRadius = '0.75rem';
