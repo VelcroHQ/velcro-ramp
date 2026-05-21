@@ -2618,34 +2618,31 @@
         const parent = el.closest('.custom-select');
         if (parent) parent.style.zIndex = '9999';
 
-        // Mobile: just show backdrop
-        if (window.innerWidth <= 640) {
-          const backdrop = document.getElementById('dropdown-backdrop');
-          if (backdrop) backdrop.classList.add('active');
-          return;
-        }
-
-        // Desktop: move to portal so it escapes backdrop-filter containing block
+        // Move to portal on ALL screen sizes to escape backdrop-filter containing block
         if (parent && !el._originalParent) {
           el._originalParent = parent;
           document.getElementById('dropdown-portal').appendChild(el);
         }
 
-        const trigger = parent?.querySelector('.custom-select-trigger, .asset-pill, .network-pill');
-        if (trigger && el) {
-          const rect = trigger.getBoundingClientRect();
-          el.style.position = 'fixed';
-          el.style.top = (rect.bottom + 4) + 'px';
-          el.style.left = rect.left + 'px';
-          el.style.right = 'auto';
-          el.style.width = rect.width + 'px';
-          el.style.minWidth = rect.width + 'px';
-          el.style.maxHeight = '300px';
-          el.style.zIndex = '9999';
-          el.style.borderRadius = '0.75rem';
-          el.style.marginTop = '0';
-          el.style.display = 'block';
+        // Desktop: position below trigger
+        if (window.innerWidth > 640) {
+          const trigger = parent?.querySelector('.custom-select-trigger, .asset-pill, .network-pill');
+          if (trigger && el) {
+            const rect = trigger.getBoundingClientRect();
+            el.style.position = 'fixed';
+            el.style.top = (rect.bottom + 4) + 'px';
+            el.style.left = rect.left + 'px';
+            el.style.right = 'auto';
+            el.style.width = rect.width + 'px';
+            el.style.minWidth = rect.width + 'px';
+            el.style.maxHeight = '300px';
+            el.style.zIndex = '9999';
+            el.style.borderRadius = '0.75rem';
+            el.style.marginTop = '0';
+            el.style.display = 'block';
+          }
         }
+
         const backdrop = document.getElementById('dropdown-backdrop');
         if (backdrop) backdrop.classList.add('active');
       }
