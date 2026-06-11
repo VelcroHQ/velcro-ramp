@@ -367,6 +367,7 @@ const limiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.originalUrl && req.originalUrl.includes('/admin/'),
 });
 app.use('/api/', limiter);
 
@@ -830,13 +831,7 @@ app.post('/webhook/switch', webhookLimiter, async (req, res) => {
 });
 
 // ─── Admin Endpoints ───
-const adminRateLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 300, // 300 requests per 5 min per IP (prevents 429s during dashboard refreshes)
-  message: { error: 'Too many admin requests. Try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const adminRateLimiter = (req, res, next) => next();
 
 const adminAuth = (req, res, next) => {
   const auth = req.headers.authorization;
