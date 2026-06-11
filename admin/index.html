@@ -1867,6 +1867,7 @@
             try {
                 // 1. Stats
                 const statsRes = await fetch('/api/admin/stats', { headers });
+                if (!statsRes.ok) throw new Error('Status: ' + statsRes.status);
                 const stats = await statsRes.json();
                 document.getElementById('stat-total-users').innerText = stats.totalUsers;
                 document.getElementById('stat-total-txs').innerText = stats.allTransactions;
@@ -1875,6 +1876,7 @@
 
                 // 2. Config (recipient address, etc.)
                 const configRes = await fetch('/api/admin/config', { headers });
+                if (!configRes.ok) throw new Error('Status: ' + configRes.status);
                 currentConfig = await configRes.json();
                 const recipientEl = document.getElementById('withdraw-recipient-display');
                 if (recipientEl && currentConfig.developer_recipient) {
@@ -1901,17 +1903,20 @@
 
                 // 3. Transactions
                 const txRes = await fetch('/api/admin/transactions', { headers });
+                if (!txRes.ok) throw new Error('Status: ' + txRes.status);
                 currentTxs = await txRes.json();
                 renderTransactions(currentTxs);
                 computeStats(currentTxs);
 
                 // 4. Users (Wallets)
                 const userRes = await fetch('/api/admin/users', { headers });
+                if (!userRes.ok) throw new Error('Status: ' + userRes.status);
                 const users = await userRes.json();
                 renderUsers(users);
 
                 // 5. Settings
                 const settingsRes = await fetch('/api/admin/settings', { headers });
+                if (!settingsRes.ok) throw new Error('Status: ' + settingsRes.status);
                 const settings = await settingsRes.json();
                 document.getElementById('fee-input').value = settings.platform_fee;
                 document.getElementById('buy-max-input').value = settings.buy_max_limit;
