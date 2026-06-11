@@ -1046,7 +1046,7 @@
                     <i data-lucide="layout-dashboard"></i> Dashboard
                 </li>
                 <li onclick="switchSection('users')" id="nav-users">
-                    <i data-lucide="wallet"></i> Wallets
+                    <i data-lucide="users"></i> Users
                 </li>
                 <li onclick="switchSection('transactions')" id="nav-transactions">
                     <i data-lucide="refresh-ccw"></i> Transactions
@@ -1252,8 +1252,8 @@
         <div id="section-users" class="view-content">
             <header>
                 <div class="header-title">
-                    <h1>Wallet Directory</h1>
-                    <p id="user-count-label">0 wallets found.</p>
+                    <h1>User Directory</h1>
+                    <p id="user-count-label">0 users found.</p>
                 </div>
             </header>
 
@@ -1261,7 +1261,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Wallet Address</th>
+                            <th>User / Wallet</th>
                             <th>First Seen</th>
                             <th>Total Volume</th>
                             <th>TXs</th>
@@ -1280,7 +1280,7 @@
                     <button class="btn-view" onclick="switchSection('users')" style="margin-bottom: 15px;">
                         <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to list
                     </button>
-                    <h1>Wallet Insights</h1>
+                    <h1 id="detail-header-title">Wallet Insights</h1>
                 </div>
             </header>
 
@@ -1308,7 +1308,7 @@
             </div>
 
             <div class="table-card">
-                <h3>Wallet Activity</h3>
+                <h3 id="detail-activity-title">Wallet Activity</h3>
                 <table style="margin-top: 20px;">
                     <thead>
                         <tr>
@@ -2349,9 +2349,10 @@
             };
             const summaryRows = txs.map(tx => {
                 const user = getDisplayUser(tx);
+                const userVal = tx.email || tx.wallet_address || '';
                 return `
                 <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
-                    <td data-label="User"><div class="user-cell"><div class="avatar" title="${user.display}">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${user.display}">${user.display}</b></div></td>
+                    <td data-label="User" onclick="event.stopPropagation(); viewWalletDetails('${userVal}')" title="Click to view user profile"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sidebar-bg);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
                     <td data-label="Amount"><b>${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}</b></td>
@@ -2363,9 +2364,10 @@
 
             const allRows = txs.map(tx => {
                 const user = getDisplayUser(tx);
+                const userVal = tx.email || tx.wallet_address || '';
                 return `
                 <tr>
-                    <td data-label="User"><div class="user-cell"><div class="avatar" title="${user.display}">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${user.display}">${user.display}</b></div></td>
+                    <td data-label="User" onclick="event.stopPropagation(); viewWalletDetails('${userVal}')" title="Click to view user profile"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sidebar-bg);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
                     <td data-label="Reference" class="hide-mobile">${tx.reference.slice(0, 10)}...</td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
@@ -2382,11 +2384,11 @@
         }
 
         function renderUsers(users) {
-            document.getElementById('user-count-label').innerText = `${users.length} wallets found.`;
+            document.getElementById('user-count-label').innerText = `${users.length} users found.`;
             const body = document.getElementById('user-body');
             body.innerHTML = users.map(u => `
                 <tr>
-                    <td data-label="Wallet Address"><b style="font-size: 12px;">${u.id}</b></td>
+                    <td data-label="User"><b style="font-size: 12px;">${u.id}</b></td>
                     <td data-label="First Seen">${new Date(u.created_at).toLocaleDateString()}</td>
                     <td data-label="Total Volume"><b>$${Number(u.total_volume).toLocaleString()}</b></td>
                     <td data-label="TXs">${u.tx_count}</td>
@@ -2821,16 +2823,30 @@
         }
 
         async function viewWalletDetails(wallet) {
-            const userTxs = currentTxs.filter(t => t.wallet_address === wallet);
+            if (!wallet) return;
+            const userTxs = currentTxs.filter(t => t.email === wallet || t.wallet_address === wallet);
             const totalVol = userTxs.reduce((s, t) => s + (t.status === 'COMPLETED' ? (t.type === 'OFFRAMP' ? t.amount : (t.destination_amount || 0)) : 0), 0);
             
+            const isEmail = wallet.includes('@');
+            const headerTitle = document.getElementById('detail-header-title');
+            const activityTitle = document.getElementById('detail-activity-title');
+            if (headerTitle) headerTitle.innerText = isEmail ? 'User Insights' : 'Wallet Insights';
+            if (activityTitle) activityTitle.innerText = isEmail ? 'User Activity' : 'Wallet Activity';
+            
+            const profileIconEl = document.querySelector('.user-profile-lg');
+            if (profileIconEl) {
+                profileIconEl.innerHTML = isEmail 
+                    ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' 
+                    : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="12" y1="4" x2="12" y2="20"/></svg>';
+            }
+
             document.getElementById('detail-username').innerText = wallet;
             document.getElementById('detail-vol').innerText = `$${totalVol.toLocaleString()}`;
             document.getElementById('detail-success').innerText = userTxs.filter(t => t.status === 'COMPLETED').length;
             document.getElementById('detail-tx-count').innerText = userTxs.length;
 
             document.getElementById('detail-tx-body').innerHTML = userTxs.map(tx => `
-                <tr>
+                <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
                     <td data-label="Reference"><code>${tx.reference.slice(0, 8)}...</code></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Amount">${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}</td>

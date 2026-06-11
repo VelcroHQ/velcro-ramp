@@ -958,7 +958,7 @@ app.get('/api/admin/users', adminRateLimiter, adminAuth, async (req, res) => {
     const userMap = {};
     
     txs.forEach(t => {
-      const id = t.wallet_address || 'unknown';
+      const id = (t.email ? t.email.toLowerCase().trim() : '') || t.wallet_address || 'unknown';
       if (!userMap[id]) {
         userMap[id] = { id, total_volume: 0, total_volume_ngn: 0, tx_count: 0, created_at: t.created_at };
       }
