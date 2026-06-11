@@ -1153,7 +1153,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Wallet</th>
+                            <th>User</th>
                             <th>Type</th>
                             <th>Channel</th>
                             <th>Amount</th>
@@ -1233,7 +1233,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Wallet</th>
+                            <th>User</th>
                             <th class="hide-mobile">Reference</th>
                             <th class="hide-mobile">Type</th>
                             <th>Channel</th>
@@ -1734,6 +1734,10 @@
             <div style="margin-bottom: 20px;">
                 <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">REFERENCE</label>
                 <code id="modal-ref" style="background: #f1f5f9; padding: 8px; border-radius: 6px; display: block; font-size: 13px;">-</code>
+            </div>
+            <div style="margin-bottom: 20px; display: none;" id="modal-email-wrap">
+                <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">USER EMAIL</label>
+                <div id="modal-email" style="background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: 600;">-</div>
             </div>
             <div style="margin-bottom: 20px;">
                 <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">TX HASH</label>
@@ -2304,6 +2308,35 @@
             return false;
         }
 
+        function getDisplayUser(tx) {
+            if (tx.email) {
+                const avatarVal = tx.email.slice(0, 2).toUpperCase();
+                return {
+                    avatar: avatarVal,
+                    display: tx.email
+                };
+            }
+            let wallet = tx.wallet_address || '';
+            if (!wallet && tx.beneficiary) {
+                try {
+                    const ben = typeof tx.beneficiary === 'string' ? JSON.parse(tx.beneficiary) : tx.beneficiary;
+                    if (ben && ben.wallet_address) {
+                        wallet = ben.wallet_address;
+                    }
+                } catch (e) {}
+            }
+            if (wallet) {
+                return {
+                    avatar: wallet.slice(-4),
+                    display: wallet.slice(0, 8) + '...'
+                };
+            }
+            return {
+                avatar: '??',
+                display: 'unknown'
+            };
+        }
+
         function renderTransactions(txs) {
             const summaryBody = document.getElementById('tx-summary-body');
             const allBody = document.getElementById('all-tx-body');
@@ -2314,20 +2347,25 @@
                 const color = paj ? 'background: rgba(124, 58, 237, 0.1); color: #7c3aed;' : 'background: rgba(13, 13, 89, 0.1); color: var(--velcro-navy);';
                 return `<span style="${color} padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">${label}</span>`;
             };
-            const summaryRows = txs.map(tx => `
+            const summaryRows = txs.map(tx => {
+                const user = getDisplayUser(tx);
+                return `
                 <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
-                    <td data-label="Wallet"><div class="user-cell"><div class="avatar">${(tx.wallet_address || '??').slice(-4)}</div><b style="font-size: 11px;">${(tx.wallet_address || 'unknown').slice(0, 8)}${tx.wallet_address ? '...' : ''}</b></div></td>
+                    <td data-label="User"><div class="user-cell"><div class="avatar" title="${user.display}">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${user.display}">${user.display}</b></div></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
                     <td data-label="Amount"><b>${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}</b></td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Time">${new Date(tx.created_at).toLocaleDateString()}</td>
                 </tr>
-            `);
+                `;
+            });
 
-            const allRows = txs.map(tx => `
+            const allRows = txs.map(tx => {
+                const user = getDisplayUser(tx);
+                return `
                 <tr>
-                    <td data-label="Wallet"><div class="user-cell"><div class="avatar">${(tx.wallet_address || '??').slice(-4)}</div><b style="font-size: 11px;">${(tx.wallet_address || 'unknown').slice(0, 8)}${tx.wallet_address ? '...' : ''}</b></div></td>
+                    <td data-label="User"><div class="user-cell"><div class="avatar" title="${user.display}">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${user.display}">${user.display}</b></div></td>
                     <td data-label="Reference" class="hide-mobile">${tx.reference.slice(0, 10)}...</td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
@@ -2336,7 +2374,8 @@
                     <td data-label="Date" class="hide-mobile">${new Date(tx.created_at).toLocaleDateString()}</td>
                     <td data-label="Action"><button class="btn-view" onclick="viewTransaction('${tx.reference}')">Details</button></td>
                 </tr>
-            `);
+                `;
+            });
 
             summaryBody.innerHTML = summaryRows.slice(0, 8).join('');
             allBody.innerHTML = allRows.join('');
@@ -2510,6 +2549,18 @@
             if (!tx) return;
             currentModalTx = tx;
             document.getElementById('modal-ref').innerText = tx.reference;
+            
+            const emailWrap = document.getElementById('modal-email-wrap');
+            const emailEl = document.getElementById('modal-email');
+            if (emailWrap && emailEl) {
+                if (tx.email) {
+                    emailWrap.style.display = 'block';
+                    emailEl.innerText = tx.email;
+                } else {
+                    emailWrap.style.display = 'none';
+                }
+            }
+
             document.getElementById('modal-status').innerText = tx.status;
             document.getElementById('modal-status').className = `status-pill ${tx.status.toLowerCase()}`;
             document.getElementById('modal-amount').innerText = `${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}`;
