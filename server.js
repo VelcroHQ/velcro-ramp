@@ -292,12 +292,8 @@ const Transaction = mongoose.model('Transaction', transactionSchema);
 
 // ─── Database Connection ───
 let dbConnected = false;
-mongoose.set('bufferCommands', false); // Don't buffer ops when disconnected
-mongoose.connect(MONGODB_URI, {
-  serverSelectionTimeoutMS: 5000,
-  connectTimeoutMS: 5000,
-  socketTimeoutMS: 10000,
-})
+mongoose.set('bufferCommands', true); // Allow buffering during transient disconnects
+mongoose.connect(MONGODB_URI)
   .then(() => {
     dbConnected = true;
     console.log('✅ Connected to MongoDB');
@@ -320,12 +316,8 @@ mongoose.connection.on('reconnected', () => {
 
 // Note: unhandledRejection handler already registered at startup
 
-// Safe DB operation wrapper — silently skips writes when DB is down
+// Safe DB operation wrapper — handles errors gracefully
 async function safeDbWrite(operation) {
-  if (!dbConnected) {
-    console.log('⏭️  DB write skipped (MongoDB unavailable)');
-    return null;
-  }
   try {
     return await operation();
   } catch (err) {
@@ -335,10 +327,6 @@ async function safeDbWrite(operation) {
 }
 
 async function safeDbRead(operation, defaultValue = []) {
-  if (!dbConnected) {
-    console.log('⏭️  DB read skipped (MongoDB unavailable)');
-    return defaultValue;
-  }
   try {
     return await operation();
   } catch (err) {
