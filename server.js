@@ -48,7 +48,7 @@ const AUTO_WITHDRAWAL_SCHEDULE = process.env.AUTO_WITHDRAWAL_SCHEDULE || '0 0 * 
 const AUTO_WITHDRAWAL_MIN_BALANCE = parseFloat(process.env.AUTO_WITHDRAWAL_MIN_BALANCE) || 1;
 
 // SECURITY: Admin password — support plain text OR bcrypt-style hash (sha256)
-const ADMIN_PASSWORD_RAW = process.env.ADMIN_PASSWORD;
+const ADMIN_PASSWORD_RAW = process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.trim() : undefined;
 if (!ADMIN_PASSWORD_RAW) {
   console.error('FATAL: ADMIN_PASSWORD env var is required.');
   process.exit(1);
@@ -199,7 +199,7 @@ function auditLog(action, details = {}) {
 
 // ─── Admin Auth Helpers ───
 function verifyAdminPassword(input) {
-  const clean = input.replace(/^Bearer\s+/i, '');
+  const clean = input.replace(/^Bearer\s+/i, '').trim();
   const inputHash = createHash('sha256').update(clean).digest('hex');
   return inputHash === ADMIN_PASSWORD_HASH;
 }
@@ -832,7 +832,7 @@ app.post('/webhook/switch', webhookLimiter, async (req, res) => {
 // ─── Admin Endpoints ───
 const adminRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 20, // 20 requests per 5 min per IP
+  max: 300, // 300 requests per 5 min per IP (prevents 429s during dashboard refreshes)
   message: { error: 'Too many admin requests. Try again later.' },
   standardHeaders: true,
   legacyHeaders: false,

@@ -1933,10 +1933,13 @@
             } catch (e) {
                 console.error(e);
                 if (e.message.includes('401')) { logout(); return; }
+                const isRateLimit = e.message.includes('429');
+                const errMsg = isRateLimit ? 'Rate limit exceeded. Please wait a minute before retrying.' : 'Unable to connect to server.';
+                
                 // Show connection error in stats area
                 document.getElementById('stat-total-users').innerText = '—';
                 document.getElementById('stat-total-txs').innerText = '—';
-                document.getElementById('stat-total-volume').innerText = 'Server unreachable';
+                document.getElementById('stat-total-volume').innerText = isRateLimit ? 'Rate limit exceeded' : 'Server unreachable';
                 document.getElementById('stat-total-earned').innerText = '—';
                 document.getElementById('stat-completed').innerText = '—';
                 document.getElementById('stat-success-rate').innerText = '';
@@ -1944,8 +1947,8 @@
                 document.getElementById('stat-onramp-vol').innerText = '—';
                 document.getElementById('stat-offramp-vol').innerText = '—';
                 const retryBtn = `<button onclick="fetchData()" class="btn-primary" style="margin-top:10px;">Retry</button>`;
-                document.getElementById('tx-summary-body').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--failed);padding:20px;">Unable to connect to server.<br>${retryBtn}</td></tr>`;
-                document.getElementById('all-tx-body').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--failed);padding:20px;">Unable to connect to server.<br>${retryBtn}</td></tr>`;
+                document.getElementById('tx-summary-body').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--failed);padding:20px;">${errMsg}<br>${retryBtn}</td></tr>`;
+                document.getElementById('all-tx-body').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--failed);padding:20px;">${errMsg}<br>${retryBtn}</td></tr>`;
             } finally {
                 if (btn) btn.classList.remove('spinning');
             }
