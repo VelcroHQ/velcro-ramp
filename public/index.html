@@ -902,22 +902,69 @@
       background-color: rgba(2, 6, 23, 0.55) !important;
     }
     .login-card {
-      max-width: 580px !important;
+      max-width: 480px !important;
       width: 100% !important;
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
-      padding: 2.5rem !important;
+      padding: 1.5rem !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+    }
+    .login-logo-container {
+      margin-bottom: 2rem !important;
+    }
+    .login-logo {
+      height: 4.5rem !important;
+      width: auto !important;
+      margin: 0 auto !important;
+    }
+    .login-desc-container {
+      margin-bottom: 2rem !important;
+      max-width: 360px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
+    .login-description {
+      font-size: 1.125rem !important;
+      line-height: 1.6 !important;
+      color: #64748b !important;
+      margin: 0 !important;
+      font-weight: 500 !important;
+    }
+    .dark .login-description {
+      color: #94a3b8 !important;
+    }
+    #login-form {
+      width: 100% !important;
+    }
+    .login-input-group {
+      text-align: left !important;
+      margin-bottom: 1.5rem !important;
+    }
+    .login-label {
+      font-size: 0.8125rem !important;
+      font-weight: 700 !important;
+      color: #4b5563 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      display: block !important;
+      margin-bottom: 0.625rem !important;
+    }
+    .dark .login-label {
+      color: #94a3b8 !important;
     }
     .login-input {
-      font-size: 1.25rem !important;
-      padding: 1.25rem 1.5rem !important;
-      border-radius: 1.25rem !important;
+      font-size: 1.125rem !important;
+      padding: 1.125rem 1.375rem !important;
+      border-radius: 1rem !important;
       border: 1.5px solid rgba(13, 13, 89, 0.1) !important;
       background: rgba(255, 255, 255, 0.4) !important;
       color: #0d0d59 !important;
       width: 100% !important;
       transition: all 0.3s ease !important;
+      box-sizing: border-box !important;
     }
     .dark .login-input {
       border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
@@ -935,19 +982,32 @@
       border-color: #a8cf45 !important;
     }
     .login-button {
-      margin-top: 1.75rem !important;
-      padding: 1.25rem 2.5rem !important;
-      font-size: 1.125rem !important;
+      width: 100% !important;
+      padding: 1.125rem 2rem !important;
+      font-size: 1.0625rem !important;
       font-weight: 700 !important;
-      border-radius: 1.25rem !important;
+      border-radius: 1rem !important;
+      background-color: #a8cf45 !important;
+      color: #0d0d59 !important;
+      border: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.5rem !important;
+      cursor: pointer !important;
       transition: all 0.3s ease !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
     }
     .login-button:hover {
       box-shadow: 0 10px 25px rgba(168, 207, 69, 0.25) !important;
-      transform: translateY(-1px);
+      transform: translateY(-1px) !important;
     }
     .login-button:active {
-      transform: translateY(1px);
+      transform: translateY(1px) !important;
+    }
+    .login-btn-icon {
+      width: 1.25rem !important;
+      height: 1.25rem !important;
     }
     .user-email-nav {
       max-width: 150px;
@@ -957,18 +1017,40 @@
       display: inline-block;
       vertical-align: middle;
     }
+    
+    /* Mobile Spacing Optimizations */
     @media (max-width: 640px) {
       .login-card {
-        padding: 1.5rem !important;
+        padding: 1rem !important;
+      }
+      .login-logo-container {
+        margin-bottom: 1.5rem !important;
+      }
+      .login-logo {
+        height: 3.5rem !important;
+      }
+      .login-desc-container {
+        margin-bottom: 1.5rem !important;
+        max-width: 300px !important;
+      }
+      .login-description {
+        font-size: 0.95rem !important;
+        line-height: 1.5 !important;
+      }
+      .login-input-group {
+        margin-bottom: 1.25rem !important;
+      }
+      .login-label {
+        font-size: 0.75rem !important;
+        margin-bottom: 0.5rem !important;
       }
       .login-input {
-        font-size: 1.1rem !important;
-        padding: 1rem 1.25rem !important;
+        font-size: 1rem !important;
+        padding: 0.95rem 1.2rem !important;
       }
       .login-button {
-        margin-top: 1.25rem !important;
-        padding: 1rem 2rem !important;
-        font-size: 1rem !important;
+        padding: 0.95rem 2rem !important;
+        font-size: 0.95rem !important;
       }
       .user-email-nav {
         max-width: 90px;
@@ -991,23 +1073,22 @@
 
   <!-- Login Gatekeeper Modal/Overlay -->
   <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md hidden">
-    <div class="login-card text-center space-y-8">
-      <div class="flex justify-center">
-        <img src="/velcro_logo.png" alt="Velcro" class="h-16 w-auto mb-4">
+    <div class="login-card text-center">
+      <div class="login-logo-container">
+        <img src="/velcro_logo.png" alt="Velcro" class="login-logo">
       </div>
-      <div class="space-y-3">
-        <p class="text-lg text-gray-500 dark:text-gray-400">Enter your email address to get in and manage your transactions.</p>
+      <div class="login-desc-container">
+        <p class="login-description">Enter your email address to get in and manage your transactions.</p>
       </div>
-      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-6">
-        <div class="text-left space-y-2">
-          <label for="login-email" class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Email Address</label>
+      <form id="login-form" onsubmit="handleLoginSubmit(event)">
+        <div class="login-input-group">
+          <label for="login-email" class="login-label">Email Address</label>
           <input type="email" id="login-email" required placeholder="you@example.com"
             class="login-input placeholder-gray-400">
         </div>
-        <button type="submit" id="login-submit-btn"
-          class="w-full bg-velcro-green text-velcro-navy login-button flex items-center justify-center gap-2.5">
+        <button type="submit" id="login-submit-btn" class="login-button">
           <span>Get In</span>
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="login-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
