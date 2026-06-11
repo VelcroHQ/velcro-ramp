@@ -285,6 +285,7 @@ const transactionSchema = new mongoose.Schema({
   explorer_url: String,
   callback_url: String,
   meta: String, // Stringified JSON
+  email: { type: String, index: true, lowercase: true, trim: true },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 const Transaction = mongoose.model('Transaction', transactionSchema);
@@ -579,7 +580,7 @@ app.post('/api/initiate', async (req, res, next) => {
     const {
       direction, amount, country, asset, currency, channel,
       beneficiary, callback_url, reference, reason, exact_output,
-      wallet_address
+      wallet_address, email
     } = req.body;
 
     if (!direction || !amount || !country || !asset) {
@@ -648,6 +649,7 @@ app.post('/api/initiate', async (req, res, next) => {
       beneficiary: beneficiary ? JSON.stringify(beneficiary) : null,
       wallet_address: wallet_address || null,
       callback_url: callback_url || null,
+      email: email || null,
       meta: JSON.stringify(d)
     }));
 
@@ -723,8 +725,11 @@ app.post('/api/confirm', async (req, res, next) => {
 
 app.get('/api/transactions', async (req, res) => {
   try {
-    const { type, country, status, limit = 50, offset = 0 } = req.query;
-    const query = {};
+    const { type, country, status, limit = 50, offset = 0, email } = req.query;
+    if (!email) {
+      return res.json(successResponse([]));
+    }
+    const query = { email: String(email).toLowerCase().trim() };
     if (type) query.type = type;
     if (country) query.country = country;
     if (status) query.status = status;
@@ -1220,7 +1225,7 @@ app.post('/api/paj/value', async (req, res, next) => {
 app.post('/api/paj/initiate', async (req, res, next) => {
   try {
     if (!pajModule) return res.status(503).json(errorResponse('PAJ module not available'));
-    const { fiatAmount, recipient, mint } = req.body;
+    const { fiatAmount, recipient, mint, email } = req.body;
     if (!fiatAmount || !recipient || !mint) {
       return res.status(400).json(errorResponse('fiatAmount, recipient, and mint are required'));
     }
@@ -1244,6 +1249,7 @@ app.post('/api/paj/initiate', async (req, res, next) => {
       deposit_account_number: d.accountNumber || null,
       deposit_account_name: d.accountName || null,
       wallet_address: recipient,
+      email: email || null,
       meta: JSON.stringify(d)
     }));
     res.json(successResponse(order));
@@ -1253,7 +1259,7 @@ app.post('/api/paj/initiate', async (req, res, next) => {
 app.post('/api/paj/sell', async (req, res, next) => {
   try {
     if (!pajModule) return res.status(503).json(errorResponse('PAJ module not available'));
-    const { fiatAmount, mint, bank, accountNumber } = req.body;
+    const { fiatAmount, mint, bank, accountNumber, email } = req.body;
     if (!fiatAmount || !mint || !bank || !accountNumber) {
       return res.status(400).json(errorResponse('fiatAmount, mint, bank, and accountNumber are required'));
     }
@@ -1276,6 +1282,7 @@ app.post('/api/paj/sell', async (req, res, next) => {
       amount: fiatAmount,
       deposit_address: d.address || null,
       beneficiary: JSON.stringify({ bank, accountNumber, holder_name: d.accountName || 'Customer' }),
+      email: email || null,
       meta: JSON.stringify(d)
     }));
     res.json(successResponse(order));

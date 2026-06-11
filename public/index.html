@@ -891,10 +891,130 @@
     .dark .bg-white\/70,
     .dark .bg-white\/80 { background-color: rgba(15, 23, 42, 0.6) !important; border-color: rgba(51, 65, 85, 0.5) !important; }
     .dark .bg-gray-50\/60 { background-color: rgba(30, 41, 59, 0.4) !important; border-color: rgba(51, 65, 85, 0.5) !important; }
+
+    /* ─── Custom Authentication Overlay & User Display Styles ─── */
+    #login-overlay {
+      background-color: rgba(250, 250, 248, 0.5) !important;
+      backdrop-filter: blur(28px) !important;
+      -webkit-backdrop-filter: blur(28px) !important;
+    }
+    .dark #login-overlay {
+      background-color: rgba(2, 6, 23, 0.55) !important;
+    }
+    .login-card {
+      max-width: 580px !important;
+      width: 100% !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 2.5rem !important;
+    }
+    .login-input {
+      font-size: 1.25rem !important;
+      padding: 1.25rem 1.5rem !important;
+      border-radius: 1.25rem !important;
+      border: 1.5px solid rgba(13, 13, 89, 0.1) !important;
+      background: rgba(255, 255, 255, 0.4) !important;
+      color: #0d0d59 !important;
+      width: 100% !important;
+      transition: all 0.3s ease !important;
+    }
+    .dark .login-input {
+      border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+      background: rgba(15, 23, 42, 0.35) !important;
+      color: #f1f5f9 !important;
+    }
+    .login-input:focus {
+      border-color: #a8cf45 !important;
+      background: rgba(255, 255, 255, 0.8) !important;
+      box-shadow: 0 0 0 5px rgba(168, 207, 69, 0.15) !important;
+      outline: none !important;
+    }
+    .dark .login-input:focus {
+      background: rgba(15, 23, 42, 0.7) !important;
+      border-color: #a8cf45 !important;
+    }
+    .login-button {
+      margin-top: 1.75rem !important;
+      padding: 1.25rem 2.5rem !important;
+      font-size: 1.125rem !important;
+      font-weight: 700 !important;
+      border-radius: 1.25rem !important;
+      transition: all 0.3s ease !important;
+    }
+    .login-button:hover {
+      box-shadow: 0 10px 25px rgba(168, 207, 69, 0.25) !important;
+      transform: translateY(-1px);
+    }
+    .login-button:active {
+      transform: translateY(1px);
+    }
+    .user-email-nav {
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    @media (max-width: 640px) {
+      .login-card {
+        padding: 1.5rem !important;
+      }
+      .login-input {
+        font-size: 1.1rem !important;
+        padding: 1rem 1.25rem !important;
+      }
+      .login-button {
+        margin-top: 1.25rem !important;
+        padding: 1rem 2rem !important;
+        font-size: 1rem !important;
+      }
+      .user-email-nav {
+        max-width: 90px;
+      }
+    }
+    @media (max-width: 480px) {
+      #user-nav-section {
+        border-right: none !important;
+        padding-right: 0 !important;
+        gap: 0.25rem !important;
+      }
+      .user-email-nav {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
+
+  <!-- Login Gatekeeper Modal/Overlay -->
+  <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md hidden">
+    <div class="login-card text-center space-y-8">
+      <div class="flex justify-center">
+        <img src="/velcro_logo.png" alt="Velcro" class="h-16 w-auto mb-4">
+      </div>
+      <div class="space-y-3">
+        <p class="text-lg text-gray-500 dark:text-gray-400">Enter your email address to get in and manage your transactions.</p>
+      </div>
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-6">
+        <div class="text-left space-y-2">
+          <label for="login-email" class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Email Address</label>
+          <input type="email" id="login-email" required placeholder="you@example.com"
+            class="login-input placeholder-gray-400">
+        </div>
+        <button type="submit" id="login-submit-btn"
+          class="w-full bg-velcro-green text-velcro-navy login-button flex items-center justify-center gap-2.5">
+          <span>Get In</span>
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
 
   <!-- Navigation -->
   <nav id="main-nav" class="sticky top-0 z-50 bg-transparent border-none transition-all duration-300">
@@ -907,6 +1027,11 @@
             class="text-lg font-bold bg-gradient-to-r from-velcro-green to-lime-400 bg-clip-text text-transparent tracking-tight">Convert</span>
         </div>
         <div class="flex items-center gap-4">
+          <!-- User display panel -->
+          <div id="user-nav-section" class="hidden items-center gap-2 border-r border-gray-200 dark:border-slate-800 pr-4">
+            <span id="user-email-display" class="text-xs text-gray-500 dark:text-gray-400 font-medium font-mono user-email-nav"></span>
+            <button onclick="logoutUser()" class="text-xs text-red-500 hover:text-red-700 hover:underline transition-colors ml-1 font-medium">Logout</button>
+          </div>
           <button onclick="showHistoryModal()" id="history-btn"
             class="text-sm text-gray-600 hover:text-velcro-navy transition-colors flex items-center gap-1.5"
             title="History">
@@ -3529,7 +3654,13 @@
           const res = await fetch(`${API_BASE}/api/paj/sell`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fiatAmount: receive, mint, bank: bankId, accountNumber: bankNum })
+            body: JSON.stringify({ 
+              fiatAmount: receive, 
+              mint, 
+              bank: bankId, 
+              accountNumber: bankNum,
+              email: localStorage.getItem('velcro_user_email') || ''
+            })
           });
           const responseBody = await res.text();
           if (!res.ok) {
@@ -3603,7 +3734,8 @@
               holder_name: accountName,
               account_number: bankNum,
               bank_code: currentBankSwitchCode || currentBankCode
-            }
+            },
+            email: localStorage.getItem('velcro_user_email') || ''
           })
         });
         if (!res.ok) {
@@ -3715,7 +3847,12 @@
           const res = await fetch(`${API_BASE}/api/paj/initiate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fiatAmount: amount, recipient: wallet, mint })
+            body: JSON.stringify({ 
+              fiatAmount: amount, 
+              recipient: wallet, 
+              mint,
+              email: localStorage.getItem('velcro_user_email') || ''
+            })
           });
           const responseBody = await res.text();
           if (!res.ok) {
@@ -3780,7 +3917,8 @@
               holder_type: 'INDIVIDUAL',
               holder_name: 'Customer',
               wallet_address: wallet
-            }
+            },
+            email: localStorage.getItem('velcro_user_email') || ''
           })
         });
         const responseBody = await res.text();
@@ -4250,7 +4388,57 @@
       toast.addEventListener('mouseenter', () => clearTimeout(timer));
     }
 
+    function checkLoginState() {
+      const email = localStorage.getItem('velcro_user_email');
+      const overlay = document.getElementById('login-overlay');
+      const navSection = document.getElementById('user-nav-section');
+      const navDisplay = document.getElementById('user-email-display');
+      
+      if (!email) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        if (navSection) navSection.classList.add('hidden');
+        if (navSection) navSection.classList.remove('flex');
+        document.getElementById('convert').classList.add('hidden');
+      } else {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        document.getElementById('convert').classList.remove('hidden');
+        if (navSection) {
+          navSection.classList.remove('hidden');
+          navSection.classList.add('flex');
+        }
+        if (navDisplay) {
+          navDisplay.textContent = email;
+        }
+      }
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const emailInput = document.getElementById('login-email');
+      const email = emailInput.value.trim().toLowerCase();
+      if (!email) return;
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showToast('Please enter a valid email address', 'warning');
+        return;
+      }
+      
+      localStorage.setItem('velcro_user_email', email);
+      showToast('Logged in successfully!', 'success');
+      checkLoginState();
+    }
+
+    function logoutUser() {
+      localStorage.removeItem('velcro_user_email');
+      showToast('Logged out successfully', 'success');
+      checkLoginState();
+    }
+
     (async function init() {
+      checkLoginState();
       await fetchRequirements();
       fetchInstitutions();
     })();
@@ -4274,7 +4462,8 @@
       list.innerHTML = '<div class="text-center py-8 text-gray-400">Loading transactions...</div>';
 
       try {
-        const res = await fetch(`${API_BASE}/api/transactions`);
+        const email = localStorage.getItem('velcro_user_email') || '';
+        const res = await fetch(`${API_BASE}/api/transactions?email=${encodeURIComponent(email)}`);
         const payload = await res.json();
         const txs = payload.data || [];
 
