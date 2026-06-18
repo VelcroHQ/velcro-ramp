@@ -1,0 +1,18 @@
+# Secrets
+.env
+
+# Runtime data (logs, locks, settings)
+data/
+
+# Local tooling
+tools/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Composer if ever added
+vendor/
+composer.lock
