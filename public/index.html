@@ -3,7 +3,7 @@
 
 <head>
   <script>
-    (function() {
+    (function () {
       const theme = localStorage.getItem('velcro-theme');
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -13,7 +13,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sell & Buy Crypto in Nigeria | Velcro Convert — Crypto to Naira Instantly</title>
-  <meta name="description" content="Sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens. Receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
+  <meta name="description"
+    content="Sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens. Receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="EPBy3CyMZBGr0nYRYqH8G1YjTCr3rGUxMWOQIPrl68I">
   <link rel="canonical" href="https://usevelcro.xyz/">
@@ -57,7 +58,8 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://usevelcro.xyz">
   <meta property="og:title" content="Sell & Buy USDT in Nigeria | Velcro Convert">
-  <meta property="og:description" content="Sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens. Receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
+  <meta property="og:description"
+    content="Sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens. Receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
   <meta property="og:image" content="https://usevelcro.xyz/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -67,7 +69,8 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://usevelcro.xyz">
   <meta name="twitter:title" content="Sell & Buy USDT in Nigeria | Velcro Convert">
-  <meta name="twitter:description" content="Sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens. Receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
+  <meta name="twitter:description"
+    content="Sell USDT, USDC, SOL, BONK, WIF, PYTH and 10+ tokens. Receive Naira instantly in your bank account. Buy crypto with Naira on Velcro Convert — Nigeria's fastest crypto onramp & offramp.">
   <meta name="twitter:image" content="https://usevelcro.xyz/og-image.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -109,6 +112,7 @@
     .card-glow {
       position: relative;
     }
+
     .card-glow::before {
       content: '';
       position: absolute;
@@ -120,13 +124,23 @@
       opacity: 0.5;
       transition: opacity 0.5s ease;
     }
+
     .card-glow:hover::before {
       opacity: 0.75;
     }
+
     @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
     }
 
     .premium-card {
@@ -139,6 +153,7 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
+
     .dark .premium-card {
       background: rgba(15, 23, 42, 0.75);
       border: 1px solid rgba(30, 41, 59, 0.5);
@@ -156,6 +171,7 @@
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
     }
+
     .dark .premium-tabs {
       background: rgba(30, 41, 59, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
@@ -170,6 +186,7 @@
       -webkit-backdrop-filter: blur(12px) saturate(1.2);
       box-shadow: 0 1px 3px rgba(13, 13, 89, 0.04);
     }
+
     .dark .nav-scrolled {
       background: rgba(2, 6, 23, 0.75) !important;
       border-bottom: 1px solid rgba(168, 207, 69, 0.08) !important;
@@ -203,50 +220,79 @@
       .sm\:hidden {
         display: flex !important;
       }
+
       /* Mobile header cleanup */
-      #main-nav .h-16 { height: 3.5rem; }
-      #main-nav img { height: 1.75rem; }
-      #main-nav .bg-gradient-to-r { background: none; color: #0D0D59; -webkit-text-fill-color: #0D0D59; }
+      #main-nav .h-16 {
+        height: 3.5rem;
+      }
+
+      #main-nav img {
+        height: 1.75rem;
+      }
+
+      #main-nav .bg-gradient-to-r {
+        background: none;
+        color: #0D0D59;
+        -webkit-text-fill-color: #0D0D59;
+      }
+
       .nav-scrolled {
         background: rgba(250, 250, 248, 0.85) !important;
         backdrop-filter: blur(12px) saturate(1.2);
         -webkit-backdrop-filter: blur(12px) saturate(1.2);
       }
+
       .dark .nav-scrolled {
         background: rgba(2, 6, 23, 0.85) !important;
         backdrop-filter: blur(12px) saturate(1.2);
         -webkit-backdrop-filter: blur(12px) saturate(1.2);
       }
-      .dark #main-nav .bg-gradient-to-r { color: #e2e8f0; -webkit-text-fill-color: #e2e8f0; }
-      #history-btn .hidden-on-mobile { display: none; }
+
+      .dark #main-nav .bg-gradient-to-r {
+        color: #e2e8f0;
+        -webkit-text-fill-color: #e2e8f0;
+      }
+
+      #history-btn .hidden-on-mobile {
+        display: none;
+      }
+
       .step-dot {
         width: 22px;
         height: 22px;
         font-size: 10px;
       }
+
       .step-indicator {
         gap: 4px;
       }
+
       .step-line {
         height: 1.5px;
       }
+
       .premium-card {
         padding: 1rem !important;
         border-radius: 1.25rem !important;
       }
+
       .card-glow::before {
         border-radius: 1.4rem !important;
       }
+
       .swap-btn {
         width: 38px;
         height: 38px;
         border-width: 3px;
       }
+
       .input-panel {
         padding: 0.875rem;
         border-radius: 0.875rem;
       }
-      .asset-pill, .network-pill {
+
+      .asset-pill,
+      .network-pill {
         padding: 0.4rem 0.6rem;
         font-size: 0.8125rem;
       }
@@ -355,12 +401,29 @@
       }
     }
 
-    .mt-2 { margin-top: 0.5rem !important; }
-    .mt-4 { margin-top: 1rem !important; }
-    .block { display: block !important; }
-    .pb-1 { padding-bottom: 0.25rem !important; }
-    .pb-4 { padding-bottom: 1rem !important; }
-    .gap-4 { gap: 1rem !important; }
+    .mt-2 {
+      margin-top: 0.5rem !important;
+    }
+
+    .mt-4 {
+      margin-top: 1rem !important;
+    }
+
+    .block {
+      display: block !important;
+    }
+
+    .pb-1 {
+      padding-bottom: 0.25rem !important;
+    }
+
+    .pb-4 {
+      padding-bottom: 1rem !important;
+    }
+
+    .gap-4 {
+      gap: 1rem !important;
+    }
 
     .custom-select {
       position: relative;
@@ -396,11 +459,12 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.15);
+      background: rgba(0, 0, 0, 0.15);
       backdrop-filter: blur(2px);
       -webkit-backdrop-filter: blur(2px);
       z-index: 9998;
     }
+
     .dropdown-backdrop.active {
       display: block;
     }
@@ -419,14 +483,20 @@
         z-index: 9999;
         animation: slideUp 0.25s ease-out;
       }
+
       .dropdown-backdrop {
-        background: rgba(0,0,0,0.35);
+        background: rgba(0, 0, 0, 0.35);
       }
     }
 
     @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
+      from {
+        transform: translateY(100%);
+      }
+
+      to {
+        transform: translateY(0);
+      }
     }
 
     .custom-option {
@@ -443,6 +513,7 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
+
     .custom-option span {
       flex-shrink: 0;
     }
@@ -495,16 +566,19 @@
       justify-content: flex-end;
       flex-direction: column;
     }
+
     .asset-picker-modal.open {
       display: flex;
     }
+
     .asset-picker-backdrop {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.45);
+      background: rgba(0, 0, 0, 0.45);
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
     }
+
     .asset-picker-sheet {
       position: relative;
       background: #fff;
@@ -513,8 +587,9 @@
       display: flex;
       flex-direction: column;
       animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
     }
+
     .asset-picker-header {
       display: flex;
       align-items: center;
@@ -524,12 +599,14 @@
       border-bottom: 1px solid #f3f4f6;
       flex-shrink: 0;
     }
+
     .asset-picker-header h3 {
       font-size: 16px;
       font-weight: 600;
       color: #111827;
       margin: 0;
     }
+
     .asset-picker-back {
       position: absolute;
       left: 12px;
@@ -546,13 +623,16 @@
       cursor: pointer;
       color: #374151;
     }
+
     .asset-picker-back:hover {
       background: #e5e7eb;
     }
+
     .asset-picker-search {
       padding: 12px 20px 4px;
       flex-shrink: 0;
     }
+
     .asset-picker-search-wrap {
       display: flex;
       align-items: center;
@@ -561,6 +641,7 @@
       border-radius: 12px;
       padding: 10px 14px;
     }
+
     .asset-picker-search-wrap input {
       border: none;
       background: transparent;
@@ -571,14 +652,17 @@
       margin: 0;
       color: #111827;
     }
+
     .asset-picker-search-wrap input::placeholder {
       color: #9ca3af;
     }
+
     .asset-picker-list {
       overflow-y: auto;
       padding: 8px 0 24px;
       flex: 1;
     }
+
     .asset-picker-item {
       display: flex;
       align-items: center;
@@ -588,15 +672,19 @@
       transition: background 0.12s;
       border-bottom: 1px solid #f9fafb;
     }
+
     .asset-picker-item:hover {
       background: #f9fafb;
     }
+
     .asset-picker-item.selected {
       background: #f0fdf4;
     }
+
     .asset-picker-item:last-child {
       border-bottom: none;
     }
+
     .asset-picker-logo {
       width: 40px;
       height: 40px;
@@ -604,21 +692,25 @@
       object-fit: cover;
       flex-shrink: 0;
     }
+
     .asset-picker-info {
       flex: 1;
       min-width: 0;
     }
+
     .asset-picker-symbol {
       font-size: 15px;
       font-weight: 600;
       color: #111827;
       line-height: 1.3;
     }
+
     .asset-picker-name {
       font-size: 13px;
       color: #9ca3af;
       line-height: 1.3;
     }
+
     .asset-picker-divider {
       padding: 6px 20px;
       font-size: 11px;
@@ -635,17 +727,26 @@
         align-items: center;
         justify-content: center;
       }
+
       .asset-picker-sheet {
         width: 100%;
         max-width: 420px;
         border-radius: 20px;
         max-height: 600px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
         animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       }
+
       @keyframes scaleIn {
-        from { opacity: 0; transform: scale(0.96); }
-        to { opacity: 1; transform: scale(1); }
+        from {
+          opacity: 0;
+          transform: scale(0.96);
+        }
+
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
       }
     }
 
@@ -717,6 +818,7 @@
     }
 
     @keyframes livePulse {
+
       0%,
       100% {
         opacity: 1;
@@ -726,171 +828,433 @@
         opacity: 0.4;
       }
     }
-
   </style>
 
   <style>
     /* ─── Dark Mode Overrides ─── */
 
     /* Page background */
-    .dark body { background-color: #020617; }
+    .dark body {
+      background-color: #020617;
+    }
 
     /* Tailwind utility overrides */
-    .dark .bg-white { background-color: #0f172a !important; }
-    .dark .bg-gray-50 { background-color: #020617 !important; }
-    .dark .bg-gray-100 { background-color: #1e293b !important; }
-    .dark .bg-gray-200 { background-color: #334155 !important; }
+    .dark .bg-white {
+      background-color: #0f172a !important;
+    }
 
-    .dark .text-gray-900 { color: #e2e8f0 !important; }
-    .dark .text-gray-800 { color: #cbd5e1 !important; }
-    .dark .text-gray-700 { color: #94a3b8 !important; }
-    .dark .text-gray-600 { color: #94a3b8 !important; }
-    .dark .text-gray-500 { color: #94a3b8 !important; }
-    .dark .text-gray-400 { color: #64748b !important; }
-    .dark .text-gray-300 { color: #475569 !important; }
+    .dark .bg-gray-50 {
+      background-color: #020617 !important;
+    }
 
-    .dark .border-gray-100 { border-color: #1e293b !important; }
-    .dark .border-gray-200 { border-color: #334155 !important; }
-    .dark .border-gray-300 { border-color: #475569 !important; }
-    .dark .border-white { border-color: #1e293b !important; }
+    .dark .bg-gray-100 {
+      background-color: #1e293b !important;
+    }
+
+    .dark .bg-gray-200 {
+      background-color: #334155 !important;
+    }
+
+    .dark .text-gray-900 {
+      color: #e2e8f0 !important;
+    }
+
+    .dark .text-gray-800 {
+      color: #cbd5e1 !important;
+    }
+
+    .dark .text-gray-700 {
+      color: #94a3b8 !important;
+    }
+
+    .dark .text-gray-600 {
+      color: #94a3b8 !important;
+    }
+
+    .dark .text-gray-500 {
+      color: #94a3b8 !important;
+    }
+
+    .dark .text-gray-400 {
+      color: #64748b !important;
+    }
+
+    .dark .text-gray-300 {
+      color: #475569 !important;
+    }
+
+    .dark .border-gray-100 {
+      border-color: #1e293b !important;
+    }
+
+    .dark .border-gray-200 {
+      border-color: #334155 !important;
+    }
+
+    .dark .border-gray-300 {
+      border-color: #475569 !important;
+    }
+
+    .dark .border-white {
+      border-color: #1e293b !important;
+    }
 
     /* Velcro brand colors in dark mode */
-    .dark .text-velcro-navy { color: #a8cf45 !important; }
-    .dark .hover\:text-velcro-navy:hover { color: #a8cf45 !important; }
+    .dark .text-velcro-navy {
+      color: #a8cf45 !important;
+    }
+
+    .dark .hover\:text-velcro-navy:hover {
+      color: #a8cf45 !important;
+    }
+
     /* Keep text dark on green button backgrounds */
-    .dark .bg-velcro-green.text-velcro-navy { color: #0D0D59 !important; }
+    .dark .bg-velcro-green.text-velcro-navy {
+      color: #0D0D59 !important;
+    }
+
     /* Keep tab text dark on green indicator background */
     .dark #tab-sell.text-velcro-navy,
-    .dark #tab-buy.text-velcro-navy { color: #a8cf45 !important; }
-    .dark .bg-velcro-navy\/5 { background-color: rgba(168, 207, 69, 0.08) !important; }
-    .dark .border-velcro-navy\/10 { border-color: rgba(168, 207, 69, 0.15) !important; }
+    .dark #tab-buy.text-velcro-navy {
+      color: #a8cf45 !important;
+    }
+
+    .dark .bg-velcro-navy\/5 {
+      background-color: rgba(168, 207, 69, 0.08) !important;
+    }
+
+    .dark .border-velcro-navy\/10 {
+      border-color: rgba(168, 207, 69, 0.15) !important;
+    }
 
     /* Hover state overrides */
-    .dark .hover\:bg-gray-50:hover { background-color: #0f172a !important; }
-    .dark .hover\:bg-gray-100:hover { background-color: #1e293b !important; }
-    .dark .hover\:bg-gray-200:hover { background-color: #334155 !important; }
-    .dark .hover\:bg-amber-100:hover { background-color: #78350f !important; }
-    .dark .hover\:text-gray-600:hover { color: #94a3b8 !important; }
-    .dark .group:hover .group-hover\:text-velcro-green { color: #a8cf45 !important; }
+    .dark .hover\:bg-gray-50:hover {
+      background-color: #0f172a !important;
+    }
+
+    .dark .hover\:bg-gray-100:hover {
+      background-color: #1e293b !important;
+    }
+
+    .dark .hover\:bg-gray-200:hover {
+      background-color: #334155 !important;
+    }
+
+    .dark .hover\:bg-amber-100:hover {
+      background-color: #78350f !important;
+    }
+
+    .dark .hover\:text-gray-600:hover {
+      color: #94a3b8 !important;
+    }
+
+    .dark .group:hover .group-hover\:text-velcro-green {
+      color: #a8cf45 !important;
+    }
 
     /* Focus overrides */
-    .dark .focus\:bg-white:focus { background-color: #0f172a !important; }
+    .dark .focus\:bg-white:focus {
+      background-color: #0f172a !important;
+    }
 
     /* Placeholder */
-    .dark .placeholder-gray-400::placeholder { color: #475569 !important; }
-    .dark .amount-input::placeholder { color: #475569; }
+    .dark .placeholder-gray-400::placeholder {
+      color: #475569 !important;
+    }
+
+    .dark .amount-input::placeholder {
+      color: #475569;
+    }
 
     /* Custom component overrides */
-    .dark .input-panel { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); }
-    .dark .input-panel:focus-within { box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08); background: rgba(15, 23, 42, 0.8); }
+    .dark .input-panel {
+      background: rgba(15, 23, 42, 0.6);
+      border-color: rgba(51, 65, 85, 0.5);
+    }
 
-    .dark .asset-pill { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); color: #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
-    .dark .asset-pill:hover { background: rgba(30, 41, 59, 0.8); border-color: #A8CF45; }
+    .dark .input-panel:focus-within {
+      box-shadow: 0 0 0 3px rgba(168, 207, 69, 0.08);
+      background: rgba(15, 23, 42, 0.8);
+    }
 
-    .dark .network-pill { background: rgba(15, 23, 42, 0.6); border-color: rgba(51, 65, 85, 0.5); color: #94a3b8; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
-    .dark .network-pill:hover { background: rgba(30, 41, 59, 0.8); border-color: #A8CF45; }
+    .dark .asset-pill {
+      background: rgba(15, 23, 42, 0.6);
+      border-color: rgba(51, 65, 85, 0.5);
+      color: #cbd5e1;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
 
-    .dark .swap-btn { border-color: #0f172a; }
+    .dark .asset-pill:hover {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: #A8CF45;
+    }
 
-    .dark .custom-select-options { background: #1e293b; border-color: #475569; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
-    .dark .custom-option:hover { background: #334155; }
-    .dark .custom-option.selected { background: #064e3b; }
-    .dark .dropdown-backdrop { background: rgba(0,0,0,0.45); }
+    .dark .network-pill {
+      background: rgba(15, 23, 42, 0.6);
+      border-color: rgba(51, 65, 85, 0.5);
+      color: #94a3b8;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+
+    .dark .network-pill:hover {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: #A8CF45;
+    }
+
+    .dark .swap-btn {
+      border-color: #0f172a;
+    }
+
+    .dark .custom-select-options {
+      background: #1e293b;
+      border-color: #475569;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .dark .custom-option:hover {
+      background: #334155;
+    }
+
+    .dark .custom-option.selected {
+      background: #064e3b;
+    }
+
+    .dark .dropdown-backdrop {
+      background: rgba(0, 0, 0, 0.45);
+    }
 
     /* Asset picker modal */
-    .dark .asset-picker-sheet { background: #0f172a; box-shadow: 0 -10px 40px rgba(0,0,0,0.4); }
-    .dark .asset-picker-header { border-color: #334155; }
-    .dark .asset-picker-back { background: #334155; color: #cbd5e1; }
-    .dark .asset-picker-back:hover { background: #475569; }
-    .dark .asset-picker-search-wrap { background: #1e293b; }
-    .dark .asset-picker-search-wrap input { color: #e2e8f0; }
-    .dark .asset-picker-search-wrap input::placeholder { color: #64748b; }
-    .dark .asset-picker-item { border-color: #1e293b; }
-    .dark .asset-picker-item:hover { background: #1e293b; }
-    .dark .asset-picker-item.selected { background: #064e3b; }
-    .dark .asset-picker-divider { background: #020617; color: #64748b; }
-    .dark .asset-picker-symbol { color: #e2e8f0; }
+    .dark .asset-picker-sheet {
+      background: #0f172a;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .dark .asset-picker-header {
+      border-color: #334155;
+    }
+
+    .dark .asset-picker-back {
+      background: #334155;
+      color: #cbd5e1;
+    }
+
+    .dark .asset-picker-back:hover {
+      background: #475569;
+    }
+
+    .dark .asset-picker-search-wrap {
+      background: #1e293b;
+    }
+
+    .dark .asset-picker-search-wrap input {
+      color: #e2e8f0;
+    }
+
+    .dark .asset-picker-search-wrap input::placeholder {
+      color: #64748b;
+    }
+
+    .dark .asset-picker-item {
+      border-color: #1e293b;
+    }
+
+    .dark .asset-picker-item:hover {
+      background: #1e293b;
+    }
+
+    .dark .asset-picker-item.selected {
+      background: #064e3b;
+    }
+
+    .dark .asset-picker-divider {
+      background: #020617;
+      color: #64748b;
+    }
+
+    .dark .asset-picker-symbol {
+      color: #e2e8f0;
+    }
 
     /* Step indicators */
-    .dark .step-dot.inactive { background: #334155; color: #64748b; }
-    .dark .step-line { background: #334155; }
+    .dark .step-dot.inactive {
+      background: #334155;
+      color: #64748b;
+    }
+
+    .dark .step-line {
+      background: #334155;
+    }
 
     /* Copy flash animation */
-    .dark .copy-flash { animation: copyFlashDark 0.6s ease; }
+    .dark .copy-flash {
+      animation: copyFlashDark 0.6s ease;
+    }
+
     @keyframes copyFlashDark {
-      0% { background: #A8CF45; }
-      100% { background: #0f172a; }
+      0% {
+        background: #A8CF45;
+      }
+
+      100% {
+        background: #0f172a;
+      }
     }
 
     /* Semantic colors - dark variants */
-    .dark .bg-amber-50 { background-color: #451a03 !important; }
-    .dark .bg-amber-100 { background-color: #78350f !important; }
-    .dark .text-amber-500 { color: #fbbf24 !important; }
-    .dark .text-amber-600 { color: #fbbf24 !important; }
-    .dark .text-amber-700 { color: #fbbf24 !important; }
-    .dark .border-amber-200 { border-color: #78350f !important; }
-    .dark .border-amber-300 { border-color: #92400e !important; }
+    .dark .bg-amber-50 {
+      background-color: #451a03 !important;
+    }
 
-    .dark .bg-green-50 { background-color: #022c22 !important; }
-    .dark .bg-green-100 { background-color: #064e3b !important; }
-    .dark .text-green-600 { color: #34d399 !important; }
-    .dark .text-green-700 { color: #34d399 !important; }
-    .dark .border-green-200 { border-color: #065f46 !important; }
+    .dark .bg-amber-100 {
+      background-color: #78350f !important;
+    }
 
-    .dark .bg-red-100 { background-color: #450a0a !important; }
-    .dark .text-red-400 { color: #f87171 !important; }
-    .dark .text-red-500 { color: #f87171 !important; }
-    .dark .text-red-700 { color: #f87171 !important; }
-    .dark .border-red-200 { border-color: #7f1d1d !important; }
+    .dark .text-amber-500 {
+      color: #fbbf24 !important;
+    }
 
-    .dark .bg-blue-100 { background-color: #172554 !important; }
-    .dark .text-blue-600 { color: #60a5fa !important; }
-    .dark .text-blue-700 { color: #60a5fa !important; }
+    .dark .text-amber-600 {
+      color: #fbbf24 !important;
+    }
+
+    .dark .text-amber-700 {
+      color: #fbbf24 !important;
+    }
+
+    .dark .border-amber-200 {
+      border-color: #78350f !important;
+    }
+
+    .dark .border-amber-300 {
+      border-color: #92400e !important;
+    }
+
+    .dark .bg-green-50 {
+      background-color: #022c22 !important;
+    }
+
+    .dark .bg-green-100 {
+      background-color: #064e3b !important;
+    }
+
+    .dark .text-green-600 {
+      color: #34d399 !important;
+    }
+
+    .dark .text-green-700 {
+      color: #34d399 !important;
+    }
+
+    .dark .border-green-200 {
+      border-color: #065f46 !important;
+    }
+
+    .dark .bg-red-100 {
+      background-color: #450a0a !important;
+    }
+
+    .dark .text-red-400 {
+      color: #f87171 !important;
+    }
+
+    .dark .text-red-500 {
+      color: #f87171 !important;
+    }
+
+    .dark .text-red-700 {
+      color: #f87171 !important;
+    }
+
+    .dark .border-red-200 {
+      border-color: #7f1d1d !important;
+    }
+
+    .dark .bg-blue-100 {
+      background-color: #172554 !important;
+    }
+
+    .dark .text-blue-600 {
+      color: #60a5fa !important;
+    }
+
+    .dark .text-blue-700 {
+      color: #60a5fa !important;
+    }
 
     /* Modal backdrops */
-    .dark #history-modal > div.absolute.inset-0,
-    .dark #success-modal > div.absolute.inset-0 {
+    .dark #history-modal>div.absolute.inset-0,
+    .dark #success-modal>div.absolute.inset-0 {
       background-color: rgba(0, 0, 0, 0.65) !important;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
 
     /* Support widget buttons */
-    .dark #support-widget .bg-white\/80 { background-color: rgba(15, 23, 42, 0.8) !important; }
+    .dark #support-widget .bg-white\/80 {
+      background-color: rgba(15, 23, 42, 0.8) !important;
+    }
 
     /* Footer */
-    .dark footer { background-color: rgba(15, 23, 42, 0.6) !important; }
+    .dark footer {
+      background-color: rgba(15, 23, 42, 0.6) !important;
+    }
 
     /* Card shadow in dark mode */
-    .dark .card-shadow { box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25); }
+    .dark .card-shadow {
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+    }
 
     /* QR code - keep white for scannability */
     .dark #sell-qr-code,
-    .dark #buy-qr-code { background-color: #ffffff !important; }
+    .dark #buy-qr-code {
+      background-color: #ffffff !important;
+    }
 
     /* Bank filter sticky header in dropdown */
-    .dark .custom-select-options .sticky { background: #1e293b; }
+    .dark .custom-select-options .sticky {
+      background: #1e293b;
+    }
 
     /* Toast close button */
-    .dark .toast-close:hover { color: #e2e8f0; }
+    .dark .toast-close:hover {
+      color: #e2e8f0;
+    }
 
     /* Glow button less intense in dark */
-    .dark .btn-glow:hover { box-shadow: 0 8px 30px rgba(168, 207, 69, 0.2); }
+    .dark .btn-glow:hover {
+      box-shadow: 0 8px 30px rgba(168, 207, 69, 0.2);
+    }
 
     /* History item hover */
-    .dark .history-item-hover:hover { background-color: #1e293b !important; }
+    .dark .history-item-hover:hover {
+      background-color: #1e293b !important;
+    }
 
     /* Nav separator */
-    .dark #main-nav .text-gray-400 { color: #64748b !important; }
+    .dark #main-nav .text-gray-400 {
+      color: #64748b !important;
+    }
 
     /* Dark mode toggle button */
-    .dark #dark-mode-toggle { color: #94a3b8; }
-    .dark #dark-mode-toggle:hover { background-color: #1e293b; }
+    .dark #dark-mode-toggle {
+      color: #94a3b8;
+    }
+
+    .dark #dark-mode-toggle:hover {
+      background-color: #1e293b;
+    }
 
     /* Frosted glass elements in dark mode */
     .dark .bg-white\/70,
-    .dark .bg-white\/80 { background-color: rgba(15, 23, 42, 0.6) !important; border-color: rgba(51, 65, 85, 0.5) !important; }
-    .dark .bg-gray-50\/60 { background-color: rgba(30, 41, 59, 0.4) !important; border-color: rgba(51, 65, 85, 0.5) !important; }
+    .dark .bg-white\/80 {
+      background-color: rgba(15, 23, 42, 0.6) !important;
+      border-color: rgba(51, 65, 85, 0.5) !important;
+    }
+
+    .dark .bg-gray-50\/60 {
+      background-color: rgba(30, 41, 59, 0.4) !important;
+      border-color: rgba(51, 65, 85, 0.5) !important;
+    }
 
     /* ─── Custom Authentication Overlay & User Display Styles ─── */
     #login-overlay {
@@ -898,9 +1262,11 @@
       backdrop-filter: blur(28px) !important;
       -webkit-backdrop-filter: blur(28px) !important;
     }
+
     .dark #login-overlay {
       background-color: rgba(2, 6, 23, 0.55) !important;
     }
+
     .login-card {
       max-width: 480px !important;
       width: 100% !important;
@@ -912,20 +1278,24 @@
       flex-direction: column !important;
       align-items: center !important;
     }
+
     .login-logo-container {
       margin-bottom: 2rem !important;
     }
+
     .login-logo {
       height: 4.5rem !important;
       width: auto !important;
       margin: 0 auto !important;
     }
+
     .login-desc-container {
       margin-bottom: 2rem !important;
       max-width: 360px !important;
       margin-left: auto !important;
       margin-right: auto !important;
     }
+
     .login-description {
       font-size: 1.125rem !important;
       line-height: 1.6 !important;
@@ -933,16 +1303,20 @@
       margin: 0 !important;
       font-weight: 500 !important;
     }
+
     .dark .login-description {
       color: #94a3b8 !important;
     }
+
     #login-form {
       width: 100% !important;
     }
+
     .login-input-group {
       text-align: left !important;
       margin-bottom: 1.5rem !important;
     }
+
     .login-label {
       font-size: 0.8125rem !important;
       font-weight: 700 !important;
@@ -952,9 +1326,11 @@
       display: block !important;
       margin-bottom: 0.625rem !important;
     }
+
     .dark .login-label {
       color: #94a3b8 !important;
     }
+
     .login-input {
       font-size: 1.125rem !important;
       padding: 1.125rem 1.375rem !important;
@@ -966,21 +1342,25 @@
       transition: all 0.3s ease !important;
       box-sizing: border-box !important;
     }
+
     .dark .login-input {
       border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
       background: rgba(15, 23, 42, 0.35) !important;
       color: #f1f5f9 !important;
     }
+
     .login-input:focus {
       border-color: #a8cf45 !important;
       background: rgba(255, 255, 255, 0.8) !important;
       box-shadow: 0 0 0 5px rgba(168, 207, 69, 0.15) !important;
       outline: none !important;
     }
+
     .dark .login-input:focus {
       background: rgba(15, 23, 42, 0.7) !important;
       border-color: #a8cf45 !important;
     }
+
     .login-button {
       width: 100% !important;
       padding: 1.125rem 2rem !important;
@@ -998,17 +1378,21 @@
       transition: all 0.3s ease !important;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
     }
+
     .login-button:hover {
       box-shadow: 0 10px 25px rgba(168, 207, 69, 0.25) !important;
       transform: translateY(-1px) !important;
     }
+
     .login-button:active {
       transform: translateY(1px) !important;
     }
+
     .login-btn-icon {
       width: 1.25rem !important;
       height: 1.25rem !important;
     }
+
     .user-email-nav {
       max-width: 150px;
       overflow: hidden;
@@ -1017,51 +1401,62 @@
       display: inline-block;
       vertical-align: middle;
     }
-    
+
     /* Mobile Spacing Optimizations */
     @media (max-width: 640px) {
       .login-card {
         padding: 1rem !important;
       }
+
       .login-logo-container {
         margin-bottom: 1.5rem !important;
       }
+
       .login-logo {
         height: 3.5rem !important;
       }
+
       .login-desc-container {
         margin-bottom: 1.5rem !important;
         max-width: 300px !important;
       }
+
       .login-description {
         font-size: 0.95rem !important;
         line-height: 1.5 !important;
       }
+
       .login-input-group {
         margin-bottom: 1.25rem !important;
       }
+
       .login-label {
         font-size: 0.75rem !important;
         margin-bottom: 0.5rem !important;
       }
+
       .login-input {
         font-size: 1rem !important;
         padding: 0.95rem 1.2rem !important;
       }
+
       .login-button {
         padding: 0.95rem 2rem !important;
         font-size: 0.95rem !important;
       }
+
       .user-email-nav {
         max-width: 90px;
       }
     }
+
     @media (max-width: 480px) {
       #user-nav-section {
         border-right: none !important;
         padding-right: 0 !important;
         gap: 0.25rem !important;
       }
+
       .user-email-nav {
         display: none !important;
       }
@@ -1072,7 +1467,8 @@
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
 
   <!-- Login Gatekeeper Modal/Overlay -->
-  <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md hidden">
+  <div id="login-overlay"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md hidden">
     <div class="login-card text-center">
       <div class="login-logo-container">
         <img src="/velcro_logo.png" alt="Velcro" class="login-logo">
@@ -1088,7 +1484,8 @@
         </div>
         <button type="submit" id="login-submit-btn" class="login-button">
           <span>Get In</span>
-          <svg class="login-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="login-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
@@ -1109,25 +1506,29 @@
         </div>
         <div class="flex items-center gap-4">
           <!-- User display panel -->
-          <div id="user-nav-section" class="hidden items-center gap-2 border-r border-gray-200 dark:border-slate-800 pr-4">
-            <span id="user-email-display" class="text-xs text-gray-500 dark:text-gray-400 font-medium font-mono user-email-nav"></span>
-            <button onclick="logoutUser()" class="text-xs text-red-500 hover:text-red-700 hover:underline transition-colors ml-1 font-medium">Logout</button>
+          <div id="user-nav-section"
+            class="hidden items-center gap-2 border-r border-gray-200 dark:border-slate-800 pr-4">
+            <span id="user-email-display"
+              class="text-xs text-gray-500 dark:text-gray-400 font-medium font-mono user-email-nav"></span>
+            <button onclick="logoutUser()"
+              class="text-xs text-red-500 hover:text-red-700 hover:underline transition-colors ml-1 font-medium">Logout</button>
           </div>
           <button onclick="showHistoryModal()" id="history-btn"
             class="text-sm text-gray-600 hover:text-velcro-navy transition-colors flex items-center gap-1.5"
             title="History">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3v5h5"/>
-              <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
-              <path d="M12 7v5l4 2"/>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v5h5" />
+              <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
+              <path d="M12 7v5l4 2" />
             </svg>
             <span class="hidden-on-mobile">History</span>
           </button>
           <button onclick="toggleDarkMode()" id="dark-mode-toggle"
-            class="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-400"
-            title="Toggle dark mode">
-            <svg id="dark-mode-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            class="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-400" title="Toggle dark mode">
+            <svg id="dark-mode-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
             </svg>
           </button>
         </div>
@@ -1139,8 +1540,7 @@
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
 
       <!-- Conversion Card -->
-      <div
-        class="premium-card rounded-3xl card-glow p-6 lg:p-8 transition-all duration-500">
+      <div class="premium-card rounded-3xl card-glow p-6 lg:p-8 transition-all duration-500">
 
         <!-- Tabs -->
         <div class="flex gap-1 mb-8 p-1 premium-tabs rounded-xl relative">
@@ -1186,34 +1586,39 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div class="flex items-center gap-2 flex-1 min-w-0 opacity-50 pointer-events-none transition-opacity"
                 id="sell-amount-step">
-                <button id="sell-currency-prefix" onclick="toggleSellInputMode()" class="text-2xl sm:text-3xl font-bold text-gray-300 hover:text-velcro-green transition-colors cursor-pointer">$</button>
-                <input type="text" inputmode="decimal" id="sell-amount" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
+                <button id="sell-currency-prefix" onclick="toggleSellInputMode()"
+                  class="text-2xl sm:text-3xl font-bold text-gray-300 hover:text-velcro-green transition-colors cursor-pointer">$</button>
+                <input type="text" inputmode="decimal" id="sell-amount" placeholder="0.00"
+                  oninput="handleAmountInput(this, 4); calculateSell();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
                 <div class="flex flex-col items-start sm:items-end gap-1.5">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-left sm:text-right uppercase">Choose Asset</span>
+                  <span
+                    class="text-[10px] text-gray-400 font-medium tracking-wide block text-left sm:text-right uppercase">Choose
+                    Asset</span>
                   <div class="custom-select" id="sell-asset-wrap">
                     <div class="asset-pill" onclick="openSellAssetPicker()">
                       <div class="flex items-center gap-1.5" id="sell-asset-display">
                         <span class="text-gray-400 text-sm">Select</span>
                       </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
                         <path d="m6 9 6 6 6-6" />
                       </svg>
                     </div>
                   </div>
                 </div>
                 <div class="flex flex-col items-center sm:items-end gap-1.5">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-right uppercase">Choose Blockchain</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-right uppercase">Choose
+                    Blockchain</span>
                   <div class="custom-select">
                     <div class="network-pill opacity-50 pointer-events-none" id="sell-network-wrap"
                       onclick="toggleDropdown('sell-network-options')">
                       <span id="sell-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select
                         Network</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
                         <path d="m6 9 6 6 6-6" />
                       </svg>
                     </div>
@@ -1244,7 +1649,8 @@
               <div class="flex items-center gap-2 flex-wrap">
                 <span
                   class="text-[10px] sm:text-xs font-semibold text-gray-700 flex items-center gap-1.5 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-full"
-                  id="sell-rate-display"><span class="w-2 h-2 rounded-full bg-green-500 live-pulse"></span>Rate: --</span>
+                  id="sell-rate-display"><span class="w-2 h-2 rounded-full bg-green-500 live-pulse"></span>Rate:
+                  --</span>
                 <span id="sell-rate-timer" class="hidden text-[10px] text-amber-600 font-medium"></span>
                 <span id="sell-fee-badge" class="text-[10px] text-gray-400 font-medium">0.5% fee</span>
               </div>
@@ -1334,7 +1740,9 @@
 
           <!-- Preview -->
           <div id="sell-preview" class="hidden text-center">
-            <p class="text-xs text-gray-500">You'll send <span id="sell-preview-crypto" class="font-bold text-gray-900">--</span> and receive <span id="sell-preview-fiat" class="font-bold text-gray-900">--</span></p>
+            <p class="text-xs text-gray-500">You'll send <span id="sell-preview-crypto"
+                class="font-bold text-gray-900">--</span> and receive <span id="sell-preview-fiat"
+                class="font-bold text-gray-900">--</span></p>
 
           </div>
 
@@ -1372,7 +1780,12 @@
                   <code class="text-sm font-mono text-gray-900 break-all flex-1" id="sell-wallet-address">-</code>
                   <button onclick="copyAddress('sell-wallet-address')" title="Copy address"
                     class="shrink-0 p-2 bg-gray-100 hover:bg-velcro-green/20 border border-gray-200 rounded-lg transition-colors text-gray-500 hover:text-velcro-navy">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="w-4 h-4">
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -1383,7 +1796,8 @@
               <!-- QR Code for Wallet Address -->
               <div class="bg-white rounded-xl border border-gray-200 p-4 mb-3 text-center">
                 <p class="text-xs text-gray-500 mb-2">Scan to Pay</p>
-                <div id="sell-qr-code" class="w-40 h-40 mx-auto rounded-lg flex items-center justify-center bg-white"></div>
+                <div id="sell-qr-code" class="w-40 h-40 mx-auto rounded-lg flex items-center justify-center bg-white">
+                </div>
                 <p class="text-[10px] text-gray-400 mt-1">Scan with your crypto wallet app</p>
               </div>
               <button onclick="resetSellTransaction()"
@@ -1402,14 +1816,21 @@
                   <div class="flex-1 min-w-0">
                     <a id="sell-status-explorer-link" href="#" target="_blank" rel="noopener noreferrer"
                       class="inline-flex items-center gap-1 mb-1 text-xs font-medium text-velcro-navy hover:text-velcro-green transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" x2="21" y1="14" y2="3" />
+                      </svg>
                       Check transaction on explorer
                     </a>
                     <p class="text-sm font-medium text-amber-700">Waiting for payment</p>
-                    <p class="text-xs text-gray-500 leading-relaxed">Auto-detection usually takes ~30 seconds. If not credited, paste your transaction hash below.</p>
+                    <p class="text-xs text-gray-500 leading-relaxed">Auto-detection usually takes ~30 seconds. If not
+                      credited, paste your transaction hash below.</p>
                   </div>
                   <button onclick="showManualConfirm('sell')"
-                    class="text-xs bg-white border border-amber-300 text-amber-700 px-2.5 py-1.5 rounded-lg hover:bg-amber-100 transition-colors font-medium shrink-0">Paste tx hash</button>
+                    class="text-xs bg-white border border-amber-300 text-amber-700 px-2.5 py-1.5 rounded-lg hover:bg-amber-100 transition-colors font-medium shrink-0">Paste
+                    tx hash</button>
                 </div>
                 <div id="sell-manual-confirm" class="hidden p-3 bg-amber-50/50 rounded-xl border border-amber-200">
                   <p class="text-[11px] text-gray-500 mb-2">Paste your transaction hash to confirm manually</p>
@@ -1420,7 +1841,14 @@
                       class="bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy px-4 py-2.5 rounded-lg text-sm font-bold transition-colors shrink-0 sm:w-auto w-full flex items-center justify-center gap-2 min-w-[100px]">
                       <span class="submit-text">Submit</span>
                       <span class="submit-spinner hidden">
-                        <svg class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <svg class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                          viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                          </circle>
+                          <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                          </path>
+                        </svg>
                       </span>
                     </button>
                   </div>
@@ -1438,9 +1866,17 @@
                   <div class="flex-1">
                     <p class="text-sm font-medium text-gray-500">Processing payout</p>
                   </div>
-                  <button id="status-3-confirm" onclick="confirmProcessing('sell')" class="hidden text-xs bg-white border border-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors font-medium shrink-0 inline-flex items-center gap-1">
+                  <button id="status-3-confirm" onclick="confirmProcessing('sell')"
+                    class="hidden text-xs bg-white border border-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors font-medium shrink-0 inline-flex items-center gap-1">
                     <span class="confirm-text">Confirm</span>
-                    <span class="confirm-loader hidden"><svg class="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></span>
+                    <span class="confirm-loader hidden"><svg class="animate-spin w-3 h-3"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                      </svg></span>
                   </button>
                 </div>
                 <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-50" id="status-4">
@@ -1466,7 +1902,8 @@
               <div class="flex items-center gap-2 flex-wrap">
                 <span
                   class="text-[10px] sm:text-xs font-semibold text-gray-700 flex items-center gap-1.5 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-full"
-                  id="buy-rate-display"><span class="w-2 h-2 rounded-full bg-green-500 live-pulse"></span>Rate: --</span>
+                  id="buy-rate-display"><span class="w-2 h-2 rounded-full bg-green-500 live-pulse"></span>Rate:
+                  --</span>
                 <span id="buy-rate-timer" class="hidden text-[10px] text-amber-600 font-medium"></span>
               </div>
             </div>
@@ -1478,28 +1915,31 @@
               </div>
               <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
                 <div class="flex flex-col items-start sm:items-end gap-1.5">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-left sm:text-right uppercase">Choose Asset</span>
+                  <span
+                    class="text-[10px] text-gray-400 font-medium tracking-wide block text-left sm:text-right uppercase">Choose
+                    Asset</span>
                   <div class="custom-select" id="buy-asset-wrap">
                     <div class="asset-pill" onclick="openBuyAssetPicker()">
                       <div class="flex items-center gap-1.5" id="buy-asset-display">
                         <span class="text-gray-400 text-sm">Select</span>
                       </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
                         <path d="m6 9 6 6 6-6" />
                       </svg>
                     </div>
                   </div>
                 </div>
                 <div class="flex flex-col items-center sm:items-end gap-1.5" id="buy-network-col">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-right uppercase">Choose Blockchain</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-right uppercase">Choose
+                    Blockchain</span>
                   <div class="custom-select">
                     <div class="network-pill opacity-50 pointer-events-none" id="buy-network-wrap"
                       onclick="toggleDropdown('buy-network-options')">
                       <span id="buy-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select
                         Network</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
                         <path d="m6 9 6 6 6-6" />
                       </svg>
                     </div>
@@ -1532,7 +1972,8 @@
               <div class="flex items-center gap-2 flex-1 min-w-0 opacity-50 pointer-events-none transition-opacity"
                 id="buy-amount-step">
                 <span class="text-2xl sm:text-3xl font-bold text-gray-300" id="buy-send-currency">&#8358;</span>
-                <input type="text" inputmode="decimal" id="buy-amount" placeholder="0.00" oninput="handleAmountInput(this, 2); calculateBuy();"
+                <input type="text" inputmode="decimal" id="buy-amount" placeholder="0.00"
+                  oninput="handleAmountInput(this, 2); calculateBuy();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="shrink-0 w-full sm:w-auto flex justify-end">
@@ -1547,7 +1988,8 @@
             <span class="text-xs text-gray-400 font-medium">Min: &#8358;2,000</span>
             <span id="buy-max-label" class="text-xs text-gray-400 font-medium">Max: &#8358;50,000</span>
           </div>
-          <p id="buy-limit-error" class="hidden text-xs text-red-500 mt-1 font-medium">Maximum buy amount is &#8358;50,000 per transaction.</p>
+          <p id="buy-limit-error" class="hidden text-xs text-red-500 mt-1 font-medium">Maximum buy amount is
+            &#8358;500,000 per transaction.</p>
 
           <!-- Wallet Address -->
           <div class="input-panel space-y-4">
@@ -1564,7 +2006,9 @@
 
           <!-- Preview -->
           <div id="buy-preview" class="hidden text-center">
-            <p class="text-xs text-gray-500">You'll pay <span id="buy-preview-fiat" class="font-bold text-gray-900">--</span> <span id="buy-preview-usd" class="text-gray-400"></span> and receive <span id="buy-preview-crypto" class="font-bold text-gray-900">--</span></p>
+            <p class="text-xs text-gray-500">You'll pay <span id="buy-preview-fiat"
+                class="font-bold text-gray-900">--</span> <span id="buy-preview-usd" class="text-gray-400"></span> and
+              receive <span id="buy-preview-crypto" class="font-bold text-gray-900">--</span></p>
 
           </div>
 
@@ -1602,7 +2046,12 @@
                   onclick="copyAddress('buy-account-number')" title="Click to copy account number">
                   <div class="flex items-center justify-between mb-1">
                     <p class="text-xs text-gray-500">Account Number</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-gray-400 group-hover:text-velcro-green transition-colors"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="w-3.5 h-3.5 text-gray-400 group-hover:text-velcro-green transition-colors">
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                    </svg>
                   </div>
                   <p class="text-lg font-bold text-gray-900 tracking-wider" id="buy-account-number">-</p>
                 </div>
@@ -1611,7 +2060,7 @@
                   <p class="text-xs text-gray-500 mb-1">Bank Name</p>
                   <p class="text-sm font-semibold text-gray-900" id="buy-bank-name">-</p>
                 </div>
-                
+
                 <div class="bg-white rounded-xl border border-gray-200 p-3 text-left">
                   <p class="text-xs text-gray-500 mb-1">Account Name</p>
                   <p class="text-sm font-semibold text-gray-900" id="buy-account-name">-</p>
@@ -1624,7 +2073,11 @@
               </div>
               <button onclick="copyAddress('buy-account-number')"
                 class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium transition-colors inline-flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                </svg>
                 Copy Account Number
               </button>
               <button onclick="resetBuyTransaction()"
@@ -1666,13 +2119,21 @@
                   <!-- Loading state after confirmation -->
                   <div id="buy-confirm-loading" class="hidden">
                     <div class="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <svg class="animate-spin w-5 h-5 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      <svg class="animate-spin w-5 h-5 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                      </svg>
                     </div>
                     <p class="text-sm font-medium text-gray-800 mb-1">Verifying your payment...</p>
                     <p class="text-xs text-gray-500 mb-3">This may take a few minutes</p>
                     <!-- Horizontal loader -->
                     <div class="w-full bg-gray-100 rounded-full h-2 mb-4 overflow-hidden">
-                      <div id="buy-confirm-progress" class="bg-velcro-green h-2 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                      <div id="buy-confirm-progress"
+                        class="bg-velcro-green h-2 rounded-full transition-all duration-1000" style="width: 0%"></div>
                     </div>
                     <button onclick="forceConfirm('buy')"
                       class="text-xs text-velcro-navy hover:text-velcro-green-dark underline font-medium">
@@ -1693,9 +2154,17 @@
                   <div class="flex-1">
                     <p class="text-sm font-medium text-gray-500">Processing crypto</p>
                   </div>
-                  <button id="bstatus-3-confirm" onclick="confirmProcessing('buy')" class="hidden text-xs bg-white border border-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors font-medium shrink-0 inline-flex items-center gap-1">
+                  <button id="bstatus-3-confirm" onclick="confirmProcessing('buy')"
+                    class="hidden text-xs bg-white border border-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors font-medium shrink-0 inline-flex items-center gap-1">
                     <span class="confirm-text">Confirm</span>
-                    <span class="confirm-loader hidden"><svg class="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></span>
+                    <span class="confirm-loader hidden"><svg class="animate-spin w-3 h-3"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                      </svg></span>
                   </button>
                 </div>
                 <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-50" id="bstatus-4">
@@ -1732,12 +2201,14 @@
       class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden animate-fade-in flex flex-col">
       <div class="p-6 border-b border-gray-100 flex items-center justify-between">
         <h2 class="text-lg font-bold text-velcro-navy flex items-center gap-2">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 3v5h5"/>
-            <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
-            <path d="M12 7v5l4 2"/>
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v5h5" />
+            <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
+            <path d="M12 7v5l4 2" />
           </svg>
-          Transaction History</h2>
+          Transaction History
+        </h2>
         <button onclick="hideHistoryModal()" class="p-2 hover:bg-gray-100 rounded-lg"><i data-lucide="x"
             class="w-5 h-5 text-gray-500"></i></button>
       </div>
@@ -1754,14 +2225,15 @@
     <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in flex flex-col">
       <div class="p-6 text-center">
         <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
+          <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
         </div>
         <h2 class="text-xl font-bold text-gray-900 mb-1" id="success-title">Transaction Successful!</h2>
         <p class="text-sm text-gray-500 mb-6" id="success-subtitle">Your transaction has been completed.</p>
-        
+
         <div class="bg-gray-50 rounded-xl p-4 text-left space-y-4 mb-6">
           <!-- Amount -->
           <div>
@@ -1770,12 +2242,14 @@
           </div>
           <!-- Destination -->
           <div id="success-destination-row">
-            <p class="text-[10px] uppercase tracking-wider text-gray-400 font-medium mb-1" id="success-destination-label">Credited To</p>
+            <p class="text-[10px] uppercase tracking-wider text-gray-400 font-medium mb-1"
+              id="success-destination-label">Credited To</p>
             <p class="text-sm font-semibold text-gray-900" id="success-destination">-</p>
           </div>
           <!-- Detail -->
           <div id="success-detail-row">
-            <p class="text-[10px] uppercase tracking-wider text-gray-400 font-medium mb-1" id="success-detail-label">Detail</p>
+            <p class="text-[10px] uppercase tracking-wider text-gray-400 font-medium mb-1" id="success-detail-label">
+              Detail</p>
             <p class="text-sm font-mono text-gray-700" id="success-detail">-</p>
           </div>
           <!-- Reference with copy -->
@@ -1785,15 +2259,16 @@
               <p class="text-sm font-mono text-gray-700 break-all flex-1" id="success-reference">-</p>
               <button onclick="copySuccessReference()" title="Copy reference"
                 class="shrink-0 p-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 hover:text-velcro-navy">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
                 </svg>
               </button>
             </div>
           </div>
         </div>
-        
+
         <a id="success-explorer-link" href="#" target="_blank" rel="noopener noreferrer"
           class="hidden w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 mb-3">
           <i data-lucide="external-link" class="w-4 h-4"></i>
@@ -1850,7 +2325,9 @@
   <footer class="bg-white/60 backdrop-blur-sm border-t-4 border-velcro-green pt-20 pb-10 mt-auto">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <img src="/velcro_logo.png" alt="Velcro" class="h-8 w-auto mx-auto mb-4" style="margin-top: 60px;">
-      <p class="text-sm text-gray-500 mb-2">Powered by <a href="https://usevelcro.com" target="_blank" rel="noopener noreferrer" class="font-semibold text-velcro-navy hover:underline">Velcro</a> (usevelcro.com)</p>
+      <p class="text-sm text-gray-500 mb-2">Powered by <a href="https://usevelcro.com" target="_blank"
+          rel="noopener noreferrer" class="font-semibold text-velcro-navy hover:underline">Velcro</a> (usevelcro.com)
+      </p>
       <p class="text-xs text-gray-400 mb-6">© 2026 Velcro Technologies. All rights reserved.</p>
       <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500">
         <a href="/terms.html" class="hover:text-velcro-navy transition-colors">Terms</a>
@@ -1896,7 +2373,7 @@
     var currentReference = '';
     var statusPollInterval = null;
     var currentTxDetails = {}; // Stores details for success modal
-    let BUY_MAX_LIMIT = 50000; // Maximum buy amount per transaction (fetched from /api/settings)
+    let BUY_MAX_LIMIT = 500000; // Maximum buy amount per transaction (fetched from /api/settings)
     let SELL_MIN_LIMIT = 1; // Minimum sell amount per transaction (fetched from /api/settings)
     let SELL_MAX_LIMIT = 10000; // Maximum sell amount per transaction (fetched from /api/settings)
     let currentFee = 0.5; // Platform fee percentage (fetched from /api/settings)
@@ -2042,7 +2519,7 @@
     function renderSellAssetList() {
       const container = document.getElementById('sell-asset-list');
       if (!container) return;
-      
+
       let switchItems = '';
       if (switchAssetsData) {
         const assets = switchAssetsData.offramp || {};
@@ -2328,7 +2805,7 @@
             calculateBuy();
           }
           if (typeof data.data.buy_max_limit === 'number') {
-            BUY_MAX_LIMIT = data.data.buy_max_limit;
+            BUY_MAX_LIMIT = 500000;
             const maxLabel = document.getElementById('buy-max-label');
             const errMsg = document.getElementById('buy-limit-error');
             if (maxLabel) maxLabel.textContent = `Max: ₦${BUY_MAX_LIMIT.toLocaleString()}`;
@@ -2338,9 +2815,9 @@
             SELL_MIN_LIMIT = data.data.sell_min_limit;
           }
           if (typeof data.data.sell_max_limit === 'number') {
-            SELL_MAX_LIMIT = data.data.sell_max_limit;
+            SELL_MAX_LIMIT = 100000000;
             const maxLabel = document.getElementById('sell-max-label');
-            if (maxLabel) maxLabel.textContent = `Max: $${SELL_MAX_LIMIT.toLocaleString()}`;
+            if (maxLabel) maxLabel.textContent = `Max: No Limit`;
           }
           if (typeof data.data.paj_usdt_enabled === 'boolean') {
             pajUsdtEnabled = data.data.paj_usdt_enabled;
@@ -2450,7 +2927,7 @@
         if (!res.ok) throw new Error('Failed to fetch PAJ rate');
         const payload = await res.json();
         const data = payload.data || {};
-        
+
         // Use onramp or offramp rate depending on context
         const direction = document.getElementById('form-sell').classList.contains('hidden') ? 'ONRAMP' : 'OFFRAMP';
         const rawRate = direction === 'ONRAMP' ? (data.onramp?.rate ?? data.onramp) : (data.offramp?.rate ?? data.offramp);
@@ -2461,7 +2938,7 @@
 
         // Fetch token prices and compute approximate token rates
         await fetchPajTokenPrices();
-        
+
         const currentAsset = direction === 'OFFRAMP' ? currentSellAsset : currentBuyAsset;
         if (currentAsset && currentProvider === 'paj') {
           const approxRate = computePajTokenRate(currentAsset);
@@ -2600,7 +3077,7 @@
     function populateBanks(filter = '') {
       const container = document.getElementById('sell-bank-options');
       if (!container) return;
-      
+
       // Initialize header if not present
       if (!container.querySelector('.dropdown-header')) {
         container.innerHTML = `
@@ -2694,12 +3171,12 @@
       document.querySelectorAll('#country-options .custom-option').forEach(o => o.classList.remove('selected'));
       event.currentTarget.classList.add('selected');
       document.getElementById('country-options').classList.remove('open');
-      
+
       // Reset state for new country
       cachedBanks = [];
       countryRequirements = {};
       populateBanks();
-      
+
       // Only fetch rates/requirements for Nigeria for now
       if (code !== 'NG') {
         showToast(`${label} support is coming soon!`, 'info');
@@ -2711,13 +3188,13 @@
       cachedBanks = [];
       countryRequirements = {};
       populateBanks();
-      
+
       updateCurrencySymbols();
-      
+
       // Force rate refresh for both directions
       fetchRate('OFFRAMP');
       fetchRate('ONRAMP');
-      
+
       await fetchRequirements();
       fetchInstitutions();
     }
@@ -2763,7 +3240,7 @@
         if (!option) return;
         e.stopPropagation();
         e.preventDefault();
-        
+
         const id = option.dataset.network;
         const logo = option.dataset.logo;
         const name = option.dataset.name;
@@ -2792,7 +3269,7 @@
         touchStartX = e.touches[0].clientX;
       }, { passive: true });
 
-      container.addEventListener('touchmove', () => {}, { passive: true });
+      container.addEventListener('touchmove', () => { }, { passive: true });
 
       container.addEventListener('click', (e) => {
         const option = e.target.closest('.custom-option');
@@ -3039,7 +3516,7 @@
       document.getElementById('sell-network-display').innerHTML = '<span class="text-gray-400 text-sm">Select Network</span>';
       document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
       document.getElementById('sell-amount-step').classList.add('opacity-50', 'pointer-events-none');
-      
+
       if (currentProvider === 'paj') {
         currentSellNetwork = 'solana';
         currentRate.sell = 0;
@@ -3103,11 +3580,11 @@
       safeSetText('sell-network-name', name);
       safeSetText('sell-confirm-network', name);
       safeSetSrc('sell-confirm-network-img', logo);
-      
+
       // Update highlights
       document.querySelectorAll('#sell-network-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
-      
+
       setTimeout(closeAllDropdowns, 50);
       document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
@@ -3121,11 +3598,11 @@
       currentBankPajId = pajId || '';
       currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
       document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${name}</span>`;
-      
+
       // Update highlights
       document.querySelectorAll('#sell-bank-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
-      
+
       setTimeout(closeAllDropdowns, 50);
       validateAccount();
       updateStepIndicators('OFFRAMP');
@@ -3281,11 +3758,11 @@
       `;
       safeSetText('buy-confirm-network', name);
       safeSetSrc('buy-confirm-network-img', logo);
-      
+
       // Update highlights
       document.querySelectorAll('#buy-network-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
-      
+
       setTimeout(closeAllDropdowns, 50);
       document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentBuyAsset, currentBuyNetwork);
@@ -3306,7 +3783,7 @@
       const pajRate = Number(currentRate.paj);
       const tokenUsd = Number(PAJ_TOKEN_PRICES[currentSellAsset] || 0);
       const switchRate = Number(currentRate.sell);
-      
+
       let receiveAfterFee = 0;
       let cryptoToSend = 0;
 
@@ -3340,7 +3817,7 @@
       const previewCrypto = document.getElementById('sell-preview-crypto');
       const previewFiat = document.getElementById('sell-preview-fiat');
       if (amount > 0 && cryptoToSend > 0) {
-        previewCrypto.textContent = `${Number(cryptoToSend).toLocaleString(undefined, {maximumFractionDigits: 4})} ${currentSellAsset}`;
+        previewCrypto.textContent = `${Number(cryptoToSend).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${currentSellAsset}`;
         previewFiat.textContent = `₦${receiveAfterFee.toLocaleString()}`;
         preview.classList.remove('hidden');
       } else {
@@ -3356,7 +3833,7 @@
       const switchRate = Number(currentRate.sell);
 
       const ngnBeforeFee = ngn / (1 - currentFee / 100);
-      
+
       if (currentProvider === 'paj') {
         if (currentSellInputMode === 'USD') {
           const usd = ngnBeforeFee / pajRate;
@@ -3374,16 +3851,15 @@
 
     function validateBuyLimit(amount) {
       const errorEl = document.getElementById('buy-limit-error');
-      if (amount > BUY_MAX_LIMIT) {
-        errorEl.classList.remove('hidden');
+      if (amount > 500000) {
+        if (errorEl) errorEl.classList.remove('hidden');
         return false;
       }
-      errorEl.classList.add('hidden');
+      if (errorEl) errorEl.classList.add('hidden');
       return true;
     }
 
     function validateSellLimit(amount) {
-      if (amount > SELL_MAX_LIMIT) return false;
       return true;
     }
 
@@ -3714,7 +4190,7 @@
       const receive = getNum('sell-receive');
       if (!amount || amount <= 0) { showToast('Please enter a valid amount', 'warning'); return; }
       if (!validateSellLimit(amount)) { showToast(`Maximum sell amount is $${SELL_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
-      
+
       const bankNum = document.getElementById('sell-bank-number').value.trim();
       const accountName = document.getElementById('sell-account-name').value.trim();
       if (!currentBankCode) { showToast('Please select your bank', 'warning'); return; }
@@ -3722,7 +4198,7 @@
       if (!accountName) { showToast('Please wait for account name verification', 'warning'); return; }
 
       const btn = document.getElementById('sell-btn');
-      document.getElementById('sell-confirm-amount').textContent = Number(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
+      document.getElementById('sell-confirm-amount').textContent = Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
       btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
 
       // PAJ Provider flow
@@ -3735,10 +4211,10 @@
           const res = await fetch(`${API_BASE}/api/paj/sell`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              fiatAmount: receive, 
-              mint, 
-              bank: bankId, 
+            body: JSON.stringify({
+              fiatAmount: receive,
+              mint,
+              bank: bankId,
               accountNumber: bankNum,
               email: localStorage.getItem('velcro_user_email') || ''
             })
@@ -3754,12 +4230,12 @@
           document.getElementById('sell-wallet-address').textContent = data.address || '-';
           document.getElementById('sell-reference').textContent = data.id || '-';
           currentReference = data.id || '';
-          
+
           // Use exact crypto amount from PAJ response if available
           if (data.amount) {
-            document.getElementById('sell-confirm-amount').textContent = Number(data.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6});
+            document.getElementById('sell-confirm-amount').textContent = Number(data.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
           }
-          
+
           // Generate QR Code
           document.getElementById('sell-qr-code').innerHTML = '';
           new QRCode(document.getElementById('sell-qr-code'), {
@@ -3917,7 +4393,7 @@
       if (!wallet) { showToast('Please enter your wallet address', 'warning'); return; }
 
       const btn = document.getElementById('buy-btn');
-      document.getElementById('buy-confirm-ngn').textContent = Number(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      document.getElementById('buy-confirm-ngn').textContent = Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
 
       // PAJ Provider flow
@@ -3928,9 +4404,9 @@
           const res = await fetch(`${API_BASE}/api/paj/initiate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              fiatAmount: amount, 
-              recipient: wallet, 
+            body: JSON.stringify({
+              fiatAmount: amount,
+              recipient: wallet,
               mint,
               email: localStorage.getItem('velcro_user_email') || ''
             })
@@ -4133,7 +4609,7 @@
             const txHash = data.signature || data.hash || '';
             const explorerLink = document.getElementById((type === 'sell' ? '' : 'buy') + '-explorer-link');
             const statusDetail = document.getElementById((type === 'sell' ? '' : 'buy') + '-status-detail');
-            
+
             // For sell, also update status-1 explorer link
             if (type === 'sell') {
               const sellExpLink = document.getElementById('sell-status-explorer-link');
@@ -4474,7 +4950,7 @@
       const overlay = document.getElementById('login-overlay');
       const navSection = document.getElementById('user-nav-section');
       const navDisplay = document.getElementById('user-email-display');
-      
+
       if (!email) {
         overlay.classList.remove('hidden');
         overlay.classList.add('flex');
@@ -4500,13 +4976,13 @@
       const emailInput = document.getElementById('login-email');
       const email = emailInput.value.trim().toLowerCase();
       if (!email) return;
-      
+
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         showToast('Please enter a valid email address', 'warning');
         return;
       }
-      
+
       localStorage.setItem('velcro_user_email', email);
       showToast('Logged in successfully!', 'success');
       checkLoginState();
@@ -4679,7 +5155,7 @@
         }
         explorerLink.classList.remove('hidden');
       }
-      
+
       refEl.textContent = data.reference || '-';
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -4700,14 +5176,22 @@
     <div class="asset-picker-sheet">
       <div class="asset-picker-header">
         <button class="asset-picker-back" onclick="closeSellAssetPicker()" aria-label="Back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
         <h3>Select Crypto Currency</h3>
       </div>
       <div class="asset-picker-search">
         <div class="asset-picker-search-wrap">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="sell-asset-search" placeholder="Search Crypto" oninput="filterSellAssets()" autocomplete="off">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input type="text" id="sell-asset-search" placeholder="Search Crypto" oninput="filterSellAssets()"
+            autocomplete="off">
         </div>
       </div>
       <div class="asset-picker-list" id="sell-asset-list">
@@ -4722,14 +5206,22 @@
     <div class="asset-picker-sheet">
       <div class="asset-picker-header">
         <button class="asset-picker-back" onclick="closeBuyAssetPicker()" aria-label="Back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
         <h3>Select Crypto Currency</h3>
       </div>
       <div class="asset-picker-search">
         <div class="asset-picker-search-wrap">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="buy-asset-search" placeholder="Search Crypto" oninput="filterBuyAssets()" autocomplete="off">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input type="text" id="buy-asset-search" placeholder="Search Crypto" oninput="filterBuyAssets()"
+            autocomplete="off">
         </div>
       </div>
       <div class="asset-picker-list" id="buy-asset-list">
