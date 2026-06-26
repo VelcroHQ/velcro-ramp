@@ -2327,8 +2327,8 @@
             calculateSell();
             calculateBuy();
           }
-          if (typeof data.data.buy_max_limit === 'number') {
-            BUY_MAX_LIMIT = Math.max(data.data.buy_max_limit, 1000000);
+          if (data.data.buy_max_limit !== undefined) {
+            BUY_MAX_LIMIT = Math.max(parseInt(data.data.buy_max_limit) || 1000000, 1000000);
             const maxLabel = document.getElementById('buy-max-label');
             const errMsg = document.getElementById('buy-limit-error');
             if (maxLabel) maxLabel.textContent = `Max: ₦${BUY_MAX_LIMIT.toLocaleString()}`;
