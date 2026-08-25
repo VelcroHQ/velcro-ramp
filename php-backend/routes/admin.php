@@ -10,28 +10,19 @@ function registerAdminRoutes(Router $router): void
 {
     $router->get('/api/admin/stats', function () {
         requireAdminAuth();
-        $ip = clientIp();
         try {
-            $allTxs = Database::safeSelect('SELECT * FROM `transactions`', [], []);
-            $wallets = [];
-            $completed = 0;
-            $volumeUSD = 0.0;
-            $volumeNGN = 0.0;
-            foreach ($allTxs as $t) {
-                if (!empty($t['wallet_address'])) {
-                    $wallets[$t['wallet_address']] = true;
-                }
-                if ($t['status'] === 'COMPLETED') {
-                    $completed++;
-                    if ($t['type'] === 'OFFRAMP') {
-                        $volumeUSD += (float) $t['amount'];
-                        $volumeNGN += (float) ($t['destination_amount'] ?? 0);
-                    } else {
-                        $volumeNGN += (float) $t['amount'];
-                        $volumeUSD += (float) ($t['destination_amount'] ?? 0);
-                    }
-                }
-            }
+            $totals = Database::selectOne("SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN `status` = 'COMPLETED' THEN 1 ELSE 0 END) AS completed,
+                COUNT(DISTINCT CASE WHEN `wallet_address` IS NOT NULL AND `wallet_address` != '' THEN `wallet_address` END) AS wallets
+            FROM `transactions`");
+
+            $volumes = Database::selectOne("SELECT
+                SUM(CASE WHEN `status` = 'COMPLETED' AND `type` = 'OFFRAMP' THEN `amount` ELSE 0 END) AS offramp_usd,
+                SUM(CASE WHEN `status` = 'COMPLETED' AND `type` = 'OFFRAMP' THEN `destination_amount` ELSE 0 END) AS offramp_ngn,
+                SUM(CASE WHEN `status` = 'COMPLETED' AND `type` = 'ONRAMP' THEN `amount` ELSE 0 END) AS onramp_ngn,
+                SUM(CASE WHEN `status` = 'COMPLETED' AND `type` = 'ONRAMP' THEN `destination_amount` ELSE 0 END) AS onramp_usd
+            FROM `transactions`");
 
             try {
                 $feesData = switchApi()->getDeveloperFees();
@@ -40,15 +31,15 @@ function registerAdminRoutes(Router $router): void
             }
 
             jsonResponse([
-                'totalUsers' => count($wallets),
-                'allTransactions' => count($allTxs),
-                'completedTransactions' => $completed,
-                'totalVolumeUSD' => $volumeUSD,
-                'totalVolumeNGN' => $volumeNGN,
+                'totalUsers' => (int) ($totals['wallets'] ?? 0),
+                'allTransactions' => (int) ($totals['total'] ?? 0),
+                'completedTransactions' => (int) ($totals['completed'] ?? 0),
+                'totalVolumeUSD' => (float) (($volumes['offramp_usd'] ?? 0) + ($volumes['onramp_usd'] ?? 0)),
+                'totalVolumeNGN' => (float) (($volumes['offramp_ngn'] ?? 0) + ($volumes['onramp_ngn'] ?? 0)),
                 'developerFees' => $feesData['data'] ?? ['amount' => 0, 'currency' => 'USD'],
             ]);
         } catch (Throwable $e) {
-            jsonResponse(['error' => $e->getMessage()], 500);
+            jsonResponse(['error' => clientErrorMessage($e)], 500);
         }
     });
 
@@ -58,8 +49,6 @@ function registerAdminRoutes(Router $router): void
             'developer_recipient' => DEVELOPER_RECIPIENT,
             'developer_asset' => DEVELOPER_WITHDRAW_ASSET,
             'developer_fee' => DEVELOPER_FEE,
-            'switch_base_url' => SWITCH_BASE_URL,
-            'withdrawal_allowed_recipients' => WITHDRAWAL_ALLOWED_RECIPIENTS,
             'withdrawal_allowed' => isWithdrawalAllowed(DEVELOPER_RECIPIENT),
         ]);
     });
@@ -73,7 +62,7 @@ function registerAdminRoutes(Router $router): void
             }
             jsonResponse($rows);
         } catch (Throwable $e) {
-            jsonResponse(['error' => $e->getMessage()], 500);
+            jsonResponse(['error' => clientErrorMessage($e)], 500);
         }
     });
 
@@ -93,7 +82,7 @@ function registerAdminRoutes(Router $router): void
             }
             jsonResponse(['success' => true, 'fixed' => count($fixed), 'references' => $fixed]);
         } catch (Throwable $e) {
-            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+            jsonResponse(['success' => false, 'error' => clientErrorMessage($e)], 500);
         }
     });
 
@@ -116,51 +105,46 @@ function registerAdminRoutes(Router $router): void
             }
             jsonResponse(['success' => true, 'fixed' => count($fixed), 'changes' => $fixed]);
         } catch (Throwable $e) {
-            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+            jsonResponse(['success' => false, 'error' => clientErrorMessage($e)], 500);
         }
     });
 
     $router->get('/api/admin/users', function () {
         requireAdminAuth();
         try {
-            $rows = Database::safeSelect('SELECT * FROM `transactions`', [], []);
-            $userMap = [];
-            foreach ($rows as $t) {
-                $id = (!empty($t['email']) ? strtolower(trim($t['email'])) : '') ?: ($t['wallet_address'] ?? 'unknown');
-                if (!isset($userMap[$id])) {
-                    $userMap[$id] = [
-                        'id' => $id,
-                        'total_volume' => 0.0,
-                        'total_volume_ngn' => 0.0,
-                        'tx_count' => 0,
-                        'created_at' => $t['created_at'],
-                    ];
-                }
-                if ($t['status'] === 'COMPLETED') {
-                    if ($t['type'] === 'OFFRAMP') {
-                        $userMap[$id]['total_volume'] += (float) $t['amount'];
-                        $userMap[$id]['total_volume_ngn'] += (float) ($t['destination_amount'] ?? 0);
-                    } else {
-                        $userMap[$id]['total_volume_ngn'] += (float) $t['amount'];
-                        $userMap[$id]['total_volume'] += (float) ($t['destination_amount'] ?? 0);
-                    }
-                }
-                $userMap[$id]['tx_count']++;
-                if ($t['created_at'] < $userMap[$id]['created_at']) {
-                    $userMap[$id]['created_at'] = $t['created_at'];
-                }
-            }
-            $users = array_values($userMap);
-            usort($users, static fn ($a, $b) => $b['total_volume'] <=> $a['total_volume']);
+            $rows = Database::safeSelect("SELECT
+                COALESCE(NULLIF(LOWER(TRIM(`email`)), ''), `wallet_address`, 'unknown') AS `id`,
+                MIN(`created_at`) AS `created_at`,
+                COUNT(*) AS `tx_count`,
+                SUM(CASE WHEN `status` = 'COMPLETED' AND `type` = 'OFFRAMP' THEN `amount` ELSE 0 END) AS `total_volume`,
+                SUM(CASE WHEN `status` = 'COMPLETED' AND `type` = 'OFFRAMP' THEN `destination_amount` ELSE 0 END) AS `total_volume_ngn_offramp`,
+                SUM(CASE WHEN `status` = 'COMPLETED' AND `type` = 'ONRAMP' THEN `amount` ELSE 0 END) AS `total_volume_ngn_onramp`,
+                SUM(CASE WHEN `status` = 'COMPLETED' AND `type` = 'ONRAMP' THEN `destination_amount` ELSE 0 END) AS `total_volume_usd_onramp`
+            FROM `transactions`
+            GROUP BY `id`
+            ORDER BY `total_volume` DESC
+            LIMIT 200", [], []);
+
+            $users = array_map(static function ($r) {
+                return [
+                    'id' => $r['id'],
+                    'created_at' => $r['created_at'],
+                    'tx_count' => (int) $r['tx_count'],
+                    'total_volume' => (float) $r['total_volume'] + (float) ($r['total_volume_usd_onramp'] ?? 0),
+                    'total_volume_ngn' => (float) ($r['total_volume_ngn_offramp'] ?? 0) + (float) ($r['total_volume_ngn_onramp'] ?? 0),
+                ];
+            }, $rows);
+
             jsonResponse($users);
         } catch (Throwable $e) {
-            jsonResponse(['error' => $e->getMessage()], 500);
+            jsonResponse(['error' => clientErrorMessage($e)], 500);
         }
     });
 
     $router->post('/api/admin/withdraw/otp', function () {
         requireAdminAuth();
         $ip = clientIp();
+        rateLimitOrFail('withdraw_otp:' . $ip, 3, 60);
         try {
             $otp = generateOTP();
             storeOTP('withdraw', $otp);
@@ -180,13 +164,14 @@ function registerAdminRoutes(Router $router): void
                 'emailConfigured' => $mailResult['sent'],
             ]);
         } catch (Throwable $e) {
-            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+            jsonResponse(['success' => false, 'error' => clientErrorMessage($e)], 500);
         }
     });
 
     $router->post('/api/admin/withdraw', function () {
         requireAdminAuth();
         $ip = clientIp();
+        rateLimitOrFail('withdraw:' . $ip, 3, 60);
         $body = getJsonBody();
         $asset = body($body, 'asset');
         $otp = (string) body($body, 'otp', '');
@@ -205,20 +190,6 @@ function registerAdminRoutes(Router $router): void
     $router->get('/api/admin/settings', function () {
         requireAdminAuth();
         jsonResponse(loadSettings());
-    });
-
-    $router->get('/api/admin/debug/last-payload', function () {
-        requireAdminAuth();
-        try {
-            $last = Database::selectOne('SELECT * FROM `transactions` ORDER BY `created_at` DESC LIMIT 1');
-            if ($last === null) {
-                jsonResponse(['error' => 'No transactions found'], 404);
-            }
-            $last = decodeJsonColumns($last, ['beneficiary', 'meta']);
-            jsonResponse($last);
-        } catch (Throwable $e) {
-            jsonResponse(['error' => $e->getMessage()], 500);
-        }
     });
 
     $router->post('/api/admin/settings', function () {
@@ -290,7 +261,7 @@ function registerAdminRoutes(Router $router): void
             $updated = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :reference', ['reference' => $reference]);
             jsonResponse(['success' => true, 'status' => $updated['status'], 'previousStatus' => $tx['status']]);
         } catch (Throwable $e) {
-            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+            jsonResponse(['success' => false, 'error' => clientErrorMessage($e)], 500);
         }
     });
 
@@ -304,7 +275,7 @@ function registerAdminRoutes(Router $router): void
             }
             jsonResponse($rows);
         } catch (Throwable $e) {
-            jsonResponse(['error' => $e->getMessage()], 500);
+            jsonResponse(['error' => clientErrorMessage($e)], 500);
         }
     });
 }
@@ -343,7 +314,7 @@ function executeWithdrawal(string $asset, string $ip, string $source): array
         $data = switchApi()->withdraw($asset, DEVELOPER_RECIPIENT);
     } catch (Throwable $e) {
         auditLog('WITHDRAW_FAILED', ['ip' => $ip, 'recipient' => DEVELOPER_RECIPIENT, 'error' => $e->getMessage(), 'source' => $source]);
-        return ['success' => false, 'error' => $e->getMessage(), 'statusCode' => 400];
+        return ['success' => false, 'error' => clientErrorMessage($e), 'statusCode' => 400];
     }
 
     if (!empty($data['success'])) {

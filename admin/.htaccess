@@ -1,0 +1,45 @@
+# Velcro Ramp — Admin dashboard protection
+#
+# If this directory is placed inside the web root, this file adds a password
+# prompt in addition to the application-level admin auth. Configure the user
+# and password with your hosting control panel or use the htpasswd tool:
+#
+#   htpasswd -cb /path/to/.htpasswd velcro-admin YourStrongPassword
+#
+# Force Apache to prioritize index.html (the UI dashboard) over index.php (the API gateway)
+DirectoryIndex index.html index.php
+
+# Enable passing Authorization header to PHP CGI
+CGIPassAuth On
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+AuthType Basic
+AuthName "Velcro Admin"
+# AuthUserFile /path/to/.htpasswd
+# Require valid-user
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-XSS-Protection "0"
+</IfModule>
+
+# Block hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Route API and webhook requests to index.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Pass Authorization header to CGI/PHP environment
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(api|webhook)/.*$ index.php [L]
+</IfModule>

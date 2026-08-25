@@ -1,0 +1,37 @@
+# Velcro Ramp — project-root fallback rules
+#
+# Use this ONLY if your host does not let you set the document root to public/.
+# The recommended setup is document root = public/ (see DEPLOY.md).
+
+Options -Indexes -ExecCGI
+ServerSignature Off
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-XSS-Protection "0"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Serve existing files/directories under public/ directly
+    RewriteCond %{REQUEST_URI} ^/public/
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Route API and webhook requests to the PHP backend
+    RewriteRule ^(api|webhook)/.*$ php-backend/index.php [L]
+
+    # Map root requests to public/
+    RewriteRule ^$ public/index.html [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

@@ -1428,7 +1428,7 @@
                                 <i data-lucide="mail" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-secondary);"></i>
                                 <input type="email" id="paj-email-input" placeholder="your@email.com" style="margin-bottom: 0; padding-left: 40px; font-size: 13px; width: 100%;">
                             </div>
-                            <button class="btn-primary" id="paj-save-email-btn" onclick="savePajEmail()" style="height: 50px; padding: 0 18px; white-space: nowrap; font-size: 13px;">Save</button>
+                            <button class="btn-primary" id="paj-save-email-btn" onclick="savePajEmail()" style="height: 50px; padding: 0 18px; white-space: nowrap; font-size: 13px; width: auto;">Save</button>
                         </div>
                         <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">OTP will be sent to this email address.</p>
                     </div>
@@ -1442,10 +1442,10 @@
                             <i data-lucide="key-round" style="width: 16px; height: 16px; color: #a16207;"></i>
                             <span style="font-size: 12px; font-weight: 600; color: #854d0e;">OTP Verification</span>
                         </div>
-                        <p style="font-size: 12px; color: #a16207; margin-bottom: 12px;">Enter the 6-digit code sent to your email.</p>
+                        <p style="font-size: 12px; color: #a16207; margin-bottom: 12px;">Enter the 4-digit code sent to your email.</p>
                         <div class="paj-otp-row" style="display: flex; gap: 8px;">
-                            <input type="text" id="paj-otp-input" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 20px; font-weight: 600; letter-spacing: 6px; font-family: monospace; min-height: 52px; padding: 10px 8px;">
-                            <button class="btn-primary" id="paj-verify-btn" onclick="verifyPajOtp()" style="padding: 0 20px; white-space: nowrap; min-height: 52px;">Verify</button>
+                            <input type="text" id="paj-otp-input" placeholder="0000" maxlength="4" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 20px; font-weight: 600; letter-spacing: 8px; font-family: monospace; min-height: 52px; padding: 10px 8px;">
+                            <button class="btn-primary" id="paj-verify-btn" onclick="verifyPajOtp()" style="padding: 0 20px; white-space: nowrap; min-height: 52px; width: auto;">Verify</button>
                         </div>
                     </div>
 
@@ -1549,16 +1549,6 @@
                         </div>
                         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Pull the latest transactions, users, stats, and settings from the server.</p>
                         <button class="btn-primary" onclick="fetchData()" style="width: 100%;">Refresh Data</button>
-                    </div>
-                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(100, 116, 139, 0.1); display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="bug" style="width: 16px; height: 16px; color: #64748b;"></i>
-                            </div>
-                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Debug Tools</div>
-                        </div>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Inspect the last transaction payload for troubleshooting.</p>
-                        <button class="btn-primary" onclick="viewLastPayload()" style="width: 100%; background: #64748b; border: none;">View Last Transaction Payload</button>
                     </div>
                     <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -1843,15 +1833,22 @@
         }
         document.addEventListener('DOMContentLoaded', updateDarkModeIcon);
 
-        let adminKey = localStorage.getItem('velcro_admin_key') || '';
+        // API Base URL config. All API requests are relative paths so that the panel
+        // remains origin-agnostic. Subdomain requests (e.g. goat.usevelcro.xyz) are routed
+        // to the shared backend locally via rewrite rules.
+        const API_BASE = '';
+
+        let savedKey = localStorage.getItem('velcro_admin_key') || '';
+        let adminKey = (savedKey && !savedKey.startsWith('Bearer ')) ? `Bearer ${savedKey}` : savedKey;
         let currentTxs = [];
 
         function authenticate() {
-            const pass = document.getElementById('admin-pass').value;
-            fetch('/api/admin/stats', { headers: { 'Authorization': pass } })
+            const pass = document.getElementById('admin-pass').value.trim();
+            const bearerToken = pass.startsWith('Bearer ') ? pass : `Bearer ${pass}`;
+            fetch(`${API_BASE}/api/admin/stats`, { headers: { 'Authorization': bearerToken } })
                 .then(res => {
                     if (res.ok) {
-                        adminKey = pass;
+                        adminKey = bearerToken;
                         localStorage.setItem('velcro_admin_key', adminKey);
                         document.getElementById('auth-overlay').style.display = 'none';
                         fetchData();
@@ -1870,7 +1867,7 @@
 
             try {
                 // 1. Stats
-                const statsRes = await fetch('/api/admin/stats', { headers });
+                const statsRes = await fetch(`${API_BASE}/api/admin/stats`, { headers });
                 if (!statsRes.ok) throw new Error('Status: ' + statsRes.status);
                 const stats = await statsRes.json();
                 document.getElementById('stat-total-users').innerText = stats.totalUsers;
@@ -1879,7 +1876,7 @@
                 document.getElementById('stat-total-earned').innerText = `${Number(stats.developerFees.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${stats.developerFees.currency || 'USDC'}`;
 
                 // 2. Config (recipient address, etc.)
-                const configRes = await fetch('/api/admin/config', { headers });
+                const configRes = await fetch(`${API_BASE}/api/admin/config`, { headers });
                 if (!configRes.ok) throw new Error('Status: ' + configRes.status);
                 currentConfig = await configRes.json();
                 const recipientEl = document.getElementById('withdraw-recipient-display');
@@ -1906,20 +1903,20 @@
                 }
 
                 // 3. Transactions
-                const txRes = await fetch('/api/admin/transactions', { headers });
+                const txRes = await fetch(`${API_BASE}/api/admin/transactions`, { headers });
                 if (!txRes.ok) throw new Error('Status: ' + txRes.status);
                 currentTxs = await txRes.json();
                 renderTransactions(currentTxs);
                 computeStats(currentTxs);
 
                 // 4. Users (Wallets)
-                const userRes = await fetch('/api/admin/users', { headers });
+                const userRes = await fetch(`${API_BASE}/api/admin/users`, { headers });
                 if (!userRes.ok) throw new Error('Status: ' + userRes.status);
                 const users = await userRes.json();
                 renderUsers(users);
 
                 // 5. Settings
-                const settingsRes = await fetch('/api/admin/settings', { headers });
+                const settingsRes = await fetch(`${API_BASE}/api/admin/settings`, { headers });
                 if (!settingsRes.ok) throw new Error('Status: ' + settingsRes.status);
                 const settings = await settingsRes.json();
                 document.getElementById('fee-input').value = settings.platform_fee;
@@ -2021,7 +2018,7 @@
 
         async function fetchPajSession() {
             try {
-                const res = await fetch('/api/paj/session', { headers: { 'Authorization': adminKey } });
+                const res = await fetch(`${API_BASE}/api/paj/session`, { headers: { 'Authorization': adminKey } });
                 const data = await res.json();
                 const status = data.data || {};
                 const otpSection = document.getElementById('paj-otp-section');
@@ -2029,16 +2026,16 @@
 
                 if (status.isValid) {
                     setPajStatus('active', 'Session Active', `Email: ${status.email || '-'}`, 'check', status.expiresAt);
-                    otpSection.classList.add('hidden');
-                    initiateBtn.innerHTML = '<i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i><span>Re-initiate</span>';
+                    if (otpSection) otpSection.classList.add('hidden');
+                    if (initiateBtn) initiateBtn.innerHTML = '<i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i><span>Re-initiate</span>';
                 } else if (status.hasSession) {
                     setPajStatus('expired', 'Session Expired', `Email: ${status.email || '-'} — Re-verify to continue`, 'clock', status.expiresAt);
-                    otpSection.classList.remove('hidden');
-                    initiateBtn.innerHTML = '<i data-lucide="send" style="width: 16px; height: 16px;"></i><span>Initiate Session</span>';
+                    if (otpSection) otpSection.classList.remove('hidden');
+                    if (initiateBtn) initiateBtn.innerHTML = '<i data-lucide="send" style="width: 16px; height: 16px;"></i><span>Initiate Session</span>';
                 } else {
-                    setPajStatus('inactive', 'No Active Session', 'Click Initiate to receive an OTP', 'shield-alert');
-                    otpSection.classList.add('hidden');
-                    initiateBtn.innerHTML = '<i data-lucide="send" style="width: 16px; height: 16px;"></i><span>Initiate Session</span>';
+                    setPajStatus('inactive', 'No Active Session', 'Launch session manager to activate', 'shield-alert');
+                    if (otpSection) otpSection.classList.add('hidden');
+                    if (initiateBtn) initiateBtn.innerHTML = '<i data-lucide="send" style="width: 16px; height: 16px;"></i><span>Initiate Session</span>';
                 }
                 if (window.lucide) lucide.createIcons();
             } catch (e) {
@@ -2053,7 +2050,7 @@
             btn.innerHTML = '<i data-lucide="loader-2" style="width: 16px; height: 16px;" class="spinning"></i><span>Sending...</span>';
             btn.disabled = true;
             try {
-                const res = await fetch('/api/admin/paj/initiate', {
+                const res = await fetch(`${API_BASE}/api/admin/paj/initiate`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' }
                 });
@@ -2082,7 +2079,7 @@
             btn.innerText = 'Verifying...';
             btn.disabled = true;
             try {
-                const res = await fetch('/api/admin/paj/verify', {
+                const res = await fetch(`${API_BASE}/api/admin/paj/verify`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ otp })
@@ -2157,7 +2154,7 @@
             try {
                 const pajUsdt = document.getElementById('paj-usdt-toggle').checked;
                 const pajUsdc = document.getElementById('paj-usdc-toggle').checked;
-                const res = await fetch('/api/admin/settings', {
+                const res = await fetch(`${API_BASE}/api/admin/settings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
                     body: JSON.stringify({ platform_fee: fee, buy_max_limit: buyMax, sell_min_limit: sellMin, sell_max_limit: sellMax, paj_usdt_enabled: pajUsdt, paj_usdc_enabled: pajUsdc })
@@ -2185,7 +2182,7 @@
             btn.innerText = 'Saving...';
             btn.disabled = true;
             try {
-                const res = await fetch('/api/admin/settings', {
+                const res = await fetch(`${API_BASE}/api/admin/settings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
                     body: JSON.stringify({ paj_email: email })
@@ -2212,7 +2209,7 @@
             btn.innerText = 'Fixing...';
             statusEl.style.display = 'none';
             try {
-                const res = await fetch('/api/admin/fix-paj-statuses', {
+                const res = await fetch(`${API_BASE}/api/admin/fix-paj-statuses`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey }
                 });
@@ -2245,7 +2242,7 @@
             btn.innerText = 'Fixing...';
             statusEl.style.display = 'none';
             try {
-                const res = await fetch('/api/admin/fix-paj-channels', {
+                const res = await fetch(`${API_BASE}/api/admin/fix-paj-channels`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey }
                 });
@@ -2702,7 +2699,7 @@
                 const body = { reference: currentModalTx.reference };
                 if (hash) body.hash = hash;
 
-                const res = await fetch('/api/confirm', {
+                const res = await fetch(`${API_BASE}/api/confirm`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -2739,7 +2736,7 @@
 
             btn.innerText = 'Retrying...';
             try {
-                const res = await fetch('/api/confirm', {
+                const res = await fetch(`${API_BASE}/api/confirm`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reference: currentModalTx.reference })
@@ -2871,7 +2868,7 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch('/api/admin/withdraw/otp', {
+                const res = await fetch(`${API_BASE}/api/admin/withdraw/otp`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' }
                 });
@@ -2916,7 +2913,7 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch('/api/admin/withdraw', {
+                const res = await fetch(`${API_BASE}/api/admin/withdraw`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ asset: 'solana:usdc', otp })
@@ -2951,7 +2948,7 @@
             container.style.display = 'block';
             container.innerHTML = '<p style="color:var(--text-secondary)">Loading...</p>';
             try {
-                const res = await fetch('/api/admin/audit', { headers: { 'Authorization': adminKey } });
+                const res = await fetch(`${API_BASE}/api/admin/audit`, { headers: { 'Authorization': adminKey } });
                 const data = await res.json();
                 if (!data.success || !data.logs.length) {
                     container.innerHTML = '<p style="color:var(--text-secondary)">No audit events found.</p>';
@@ -2986,7 +2983,7 @@
             btn.innerText = 'Refreshing...';
             btn.disabled = true;
             try {
-                const res = await fetch(`/api/admin/refresh-status/${currentModalTx.reference}`, {
+                const res = await fetch(`${API_BASE}/api/admin/refresh-status/${currentModalTx.reference}`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey }
                 });
@@ -3029,22 +3026,6 @@
             }
         };
 
-        async function viewLastPayload() {
-            try {
-                const headers = { 'Authorization': adminKey };
-                const res = await fetch('/api/admin/debug/last-payload', { headers });
-                const data = await res.json();
-                if (data.error) {
-                    alert(data.error);
-                } else {
-                    const win = window.open("", "_blank");
-                    win.document.write("<html><head><title>Last Transaction Payload</title></head><body style='font-family:sans-serif;'><h2 style='color:#0D0D59;'>Last Transaction Payload</h2><pre style='background:#f4f4f4;padding:20px;border-radius:8px;border:1px solid #ddd;overflow-x:auto;'>" + JSON.stringify(data, null, 2) + "</pre></body></html>");
-                    win.document.close();
-                }
-            } catch (e) {
-                alert('Failed to fetch payload: ' + e.message);
-            }
-        }
     </script>
 </body>
 </html>

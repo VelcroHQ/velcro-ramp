@@ -1,18 +1,42 @@
+# Dependencies
 node_modules/
+vendor/
+composer.lock
+
+# Secrets / environment
+.env
+.env.test
+.env*.local
+
+# Runtime data
+data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+# Logs and archives
+*.log
 *.zip
 *.tar.gz
-.env
+
+# Local tooling
+php-backend/tools/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Legacy / local directories
 all_in_one/
 deploy/
 staging/
 backend/
 ramp/
 v16/
-package-lock.json
+
+# Old Node state files (kept here in case they reappear)
 paj-session.json
 settings.json
 withdraw.js
-.env

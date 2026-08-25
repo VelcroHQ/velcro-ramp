@@ -35,6 +35,7 @@ if (!$handle) {
 $inserted = 0;
 $skipped = 0;
 $errors = 0;
+$errorMessages = [];
 
 while (($line = fgets($handle)) !== false) {
     $line = trim($line);
@@ -117,7 +118,11 @@ while (($line = fgets($handle)) !== false) {
             Database::update('transactions', $data, ['reference' => $reference]);
             $inserted++;
         } else {
-            error_log('Migration error for ' . $reference . ': ' . $e->getMessage());
+            $msg = $e->getMessage();
+            if (count($errorMessages) < 5) {
+                $errorMessages[] = "[{$reference}] {$msg}";
+            }
+            error_log('Migration error for ' . $reference . ': ' . $msg);
             $errors++;
         }
     }
@@ -129,3 +134,9 @@ echo "Migration complete:\n";
 echo "  Inserted/updated: {$inserted}\n";
 echo "  Skipped: {$skipped}\n";
 echo "  Errors: {$errors}\n";
+if (!empty($errorMessages)) {
+    echo "\nFirst errors:\n";
+    foreach ($errorMessages as $m) {
+        echo "  - {$m}\n";
+    }
+}

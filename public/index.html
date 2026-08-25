@@ -2267,6 +2267,15 @@
           await fetchRate('ONRAMP');
           updateRateDisplays();
         }
+
+        // Load bank list initially on page startup
+        try {
+          await fetchRequirements();
+          await fetchInstitutions();
+          await fetchPajBanks();
+        } catch (err) {
+          console.error('Failed to load initial banks:', err);
+        }
       } catch (e) {
         console.error('setDefaults error:', e);
       }
@@ -4580,7 +4589,7 @@
                   </div>
                   <div class="flex justify-between items-end">
                     <div>
-                      <p class="text-xs text-gray-600">${isBuy ? `₦${tx.amount.toLocaleString()} → ${tx.destination_amount?.toFixed(4) || ''} ${assetName}` : `${Number(tx.amount).toLocaleString()} ${assetName} → ₦${tx.destination_amount?.toLocaleString() || ''}`}</p>
+                      <p class="text-xs text-gray-600">${isBuy ? `₦${Number(tx.amount || 0).toLocaleString()} → ${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : ''} ${assetName}` : `${Number(tx.amount || 0).toLocaleString()} ${assetName} → ₦${tx.destination_amount ? Number(tx.destination_amount).toLocaleString() : ''}`}</p>
                       <p class="text-[10px] text-gray-400 mt-1">${date}</p>
                     </div>
                     <div class="text-right">
@@ -4594,11 +4603,11 @@
                     <div><span class="text-gray-400 text-[10px] uppercase">Status</span><p class="font-medium text-gray-700">${tx.status}</p></div>
                   </div>
                   <div class="grid grid-cols-2 gap-2">
-                    <div><span class="text-gray-400 text-[10px] uppercase">You Sent</span><p class="font-medium text-gray-700">${isBuy ? `₦${tx.amount.toLocaleString()}` : `${Number(tx.amount).toLocaleString()} ${assetName}`}</p></div>
-                    <div><span class="text-gray-400 text-[10px] uppercase">You Received</span><p class="font-medium text-gray-700">${isBuy ? `${tx.destination_amount?.toFixed(4) || '-'} ${assetName}` : `₦${tx.destination_amount?.toLocaleString() || '-'}`}</p></div>
+                    <div><span class="text-gray-400 text-[10px] uppercase">You Sent</span><p class="font-medium text-gray-700">${isBuy ? `₦${Number(tx.amount || 0).toLocaleString()}` : `${Number(tx.amount || 0).toLocaleString()} ${assetName}`}</p></div>
+                    <div><span class="text-gray-400 text-[10px] uppercase">You Received</span><p class="font-medium text-gray-700">${isBuy ? `${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : '-'} ${assetName}` : `₦${tx.destination_amount ? Number(tx.destination_amount).toLocaleString() : '-'}`}</p></div>
                   </div>
                   <div class="grid grid-cols-2 gap-2">
-                    <div><span class="text-gray-400 text-[10px] uppercase">Rate</span><p class="font-medium text-gray-700">${tx.rate ? `₦${tx.rate.toLocaleString()}` : '-'}</p></div>
+                    <div><span class="text-gray-400 text-[10px] uppercase">Rate</span><p class="font-medium text-gray-700">${tx.rate ? `₦${Number(tx.rate).toLocaleString()}` : '-'}</p></div>
                     <div><span class="text-gray-400 text-[10px] uppercase">Network</span><p class="font-medium text-gray-700">${network || '-'}</p></div>
                   </div>
                   ${!isBuy ? `

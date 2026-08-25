@@ -80,7 +80,14 @@ function envFloat(string $key, float $default = 0.0): float
 // ─── Core Application ───
 define('APP_NAME', 'velcro-backend');
 define('APP_VERSION', '1.2.0-php');
+define('APP_ENV', env('APP_ENV', 'production'));
+define('APP_DEBUG', envBool('APP_DEBUG', false));
 define('PORT', envInt('PORT', 3000));
+
+function isProduction(): bool
+{
+    return APP_ENV === 'production' && !APP_DEBUG;
+}
 
 // ─── Database ───
 define('DB_HOST', env('DB_HOST', '127.0.0.1'));
@@ -100,7 +107,7 @@ define('PAJ_API_KEY', env('PAJ_API_KEY', ''));
 define('PAJ_ENV', env('PAJ_ENV', 'production'));
 define('PAJ_WEBHOOK_SECRET', env('PAJ_WEBHOOK_SECRET', ''));
 define('PAJ_EMAIL', env('PAJ_EMAIL', 'paj@usevelcro.com'));
-define('PAJ_BASE_URL', env('PAJ_BASE_URL', 'https://api.paj.ramp')); // update when actual URL is known
+define('PAJ_BASE_URL', env('PAJ_BASE_URL', 'https://api.paj.cash'));
 
 // ─── Developer Fee / Withdrawal ───
 define('DEVELOPER_FEE', envFloat('DEVELOPER_FEE', 0.5));
@@ -131,8 +138,10 @@ if ($adminPasswordRaw === '') {
 }
 
 // ─── CORS ───
-$corsOrigins = env('CORS_ORIGINS', '*');
-define('CORS_ORIGINS', $corsOrigins === '*' ? ['*'] : array_map('trim', explode(',', $corsOrigins)));
+// Explicit comma-separated origins only. Wildcard '*' is intentionally not the
+// default for a financial API. Leave unset to allow same-origin requests only.
+$corsOrigins = env('CORS_ORIGINS', '');
+define('CORS_ORIGINS', $corsOrigins === '' ? [] : array_map('trim', explode(',', $corsOrigins)));
 
 // ─── SMTP / Notifications ───
 define('SMTP_HOST', env('SMTP_HOST', ''));

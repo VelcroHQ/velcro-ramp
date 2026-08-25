@@ -21,7 +21,7 @@ function registerPajRoutes(Router $router): void
             $rate = pajApi()->getPajRate();
             jsonResponse(successResponse($rate));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(clientErrorMessage($e)), 500);
         }
     });
 
@@ -39,7 +39,7 @@ function registerPajRoutes(Router $router): void
             $value = pajApi()->getTokenValue((float) $fiatAmount, $mint);
             jsonResponse(successResponse($value));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(clientErrorMessage($e)), 500);
         }
     });
 
@@ -83,7 +83,7 @@ function registerPajRoutes(Router $router): void
             ]);
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(clientErrorMessage($e)), 500);
         }
     });
 
@@ -126,7 +126,7 @@ function registerPajRoutes(Router $router): void
             ]);
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(clientErrorMessage($e)), 500);
         }
     });
 
@@ -138,7 +138,7 @@ function registerPajRoutes(Router $router): void
             $banks = pajApi()->getBanks();
             jsonResponse(successResponse($banks));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(clientErrorMessage($e)), 500);
         }
     });
 
@@ -156,7 +156,7 @@ function registerPajRoutes(Router $router): void
             $resolved = pajApi()->resolveBankAccount($bank, $accountNumber);
             jsonResponse(successResponse($resolved));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(clientErrorMessage($e)), 500);
         }
     });
 
@@ -193,7 +193,7 @@ function registerPajRoutes(Router $router): void
             );
             jsonResponse(successResponse($tx));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(clientErrorMessage($e)), 500);
         }
     });
 
@@ -216,7 +216,7 @@ function registerPajRoutes(Router $router): void
             $result = pajApi()->initiateSession();
             jsonResponse($result);
         } catch (Throwable $e) {
-            jsonResponse(['error' => $e->getMessage()], 500);
+            jsonResponse(['error' => clientErrorMessage($e)], 500);
         }
     });
 
@@ -235,7 +235,7 @@ function registerPajRoutes(Router $router): void
             $result = pajApi()->verifySession($otp);
             jsonResponse($result);
         } catch (Throwable $e) {
-            jsonResponse(['error' => $e->getMessage()], 500);
+            jsonResponse(['error' => clientErrorMessage($e)], 500);
         }
     });
 }

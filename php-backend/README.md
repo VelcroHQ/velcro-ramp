@@ -25,7 +25,7 @@ Plain-PHP port of the Node.js/Express backend, designed for shared hosting
 ```
 php-backend/
 ├── .env.example          # Copy to .env and fill in
-├── .htaccess             # Apache rewrite rules
+├── .htaccess             # Backend directory protection
 ├── index.php             # Entry point / router
 ├── config.php            # Environment loader
 ├── db.php                # PDO wrapper
@@ -44,53 +44,43 @@ php-backend/
 │   ├── auto_withdraw.php
 │   └── cleanup_otps.php
 ├── sql/
-│   └── schema.sql
-└── data/                 # Runtime writable directory
+│   ├── schema.sql
+│   └── migrate.php       # MongoDB -> MySQL migration helper
+└── data/                 # Runtime writable directory (gitignored)
     ├── settings.json
     ├── audit.log
     └── ratelimit/
 ```
 
-## Deployment steps
+## Deployment
 
-1. **Create the MySQL database and user.**
-2. **Import the schema:**
-   ```bash
-   mysql -u your_user -p your_db < sql/schema.sql
-   ```
-3. **Copy environment file:**
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` with your real credentials.
-4. **Upload the `php-backend/` folder** to your web host.
-   - For shared hosting, upload the contents of `php-backend/` to `public_html/`.
-   - Ensure `.htaccess` is uploaded.
-5. **Make `data/` writable** by PHP (chmod 755 or 775).
-6. **Set up cron jobs** in your hosting control panel:
-   ```
-   */10 * * * * /usr/bin/php /home/youruser/public_html/cron/poll.php >> /home/youruser/public_html/data/poll.log 2>&1
-   0 0 * * *  /usr/bin/php /home/youruser/public_html/cron/auto_withdraw.php >> /home/youruser/public_html/data/withdraw.log 2>&1
-   */5 * * * * /usr/bin/php /home/youruser/public_html/cron/cleanup_otps.php >> /home/youruser/public_html/data/cleanup.log 2>&1
-   ```
-   Adjust the PHP binary path and folder paths to match your host.
+See the root `DEPLOY.md` for the full production deployment guide.
+
+Quick summary:
+
+1. Set the web server document root to `public/`.
+2. Create the MySQL database and user.
+3. Import `sql/schema.sql`.
+4. Copy `.env.example` to `.env` and fill in real values.
+5. Make `data/` writable by PHP.
+6. Set up cron jobs for `cron/poll.php`, `cron/auto_withdraw.php`, and
+   `cron/cleanup_otps.php`.
 
 ## Frontend integration
 
 The existing frontend (`public/index.html`) expects the API at the same origin.
-If you deploy the PHP backend to the same domain and upload the frontend files
-alongside it, no code changes are needed.
+`public/.htaccess` routes `/api/*` and `/webhook/*` to `php-backend/index.php`
+and serves all other requests as static files.
 
-If the frontend and backend are on different domains, update the frontend's
-`API_BASE` variable to point to the PHP backend URL and set `CORS_ORIGINS`
-accordingly in `.env`.
+If the frontend and backend must be on different domains, update the frontend's
+`API_BASE` variable and set `CORS_ORIGINS` in `.env` to the frontend origin.
+Do not use `CORS_ORIGINS=*` in production.
 
 ## Migrating data from MongoDB
 
 1. Export the `transactions` collection from MongoDB to JSON.
-2. Transform the export so stringified JSON fields (`beneficiary`, `meta`) are
-   stored as JSON objects in MySQL JSON columns.
-3. Import into the `transactions` table.
+2. Save it as `sql/transactions.json`.
+3. Run `php sql/migrate.php`.
 4. Verify counts with:
    ```sql
    SELECT COUNT(*) FROM transactions;
@@ -99,11 +89,11 @@ accordingly in `.env`.
 ## Important notes
 
 - **PAJ SDK:** The original Node backend used the proprietary `paj_ramp` npm
-  package. This PHP port calls the PAJ HTTP API directly. You **must** set the
-  correct `PAJ_BASE_URL` and verify the endpoint paths against the SDK's actual
-  network traffic or PAJ documentation.
+  package. This PHP port calls the PAJ HTTP API directly. Production base URL is
+  `https://api.paj.cash`.
 - **Webhook signatures** use the same algorithm as the Node backend:
-  `hash('sha256', secret + json_encode(payload))`.
+  `hash('sha256', secret + json_encode(payload))`. Webhooks are rejected if the
+  secret is not configured.
 - **Never commit `.env`.** It contains secrets.
 - On first deploy, test `/api/health` to confirm the database connection.
 
@@ -114,6 +104,7 @@ Two test files are included.
 ### Unit tests (no database required)
 
 ```bash
+cd php-backend
 php tests/unit_test.php
 ```
 
@@ -122,19 +113,16 @@ PAJ status mapping, and settings defaults.
 
 ### Integration tests (requires MySQL/MariaDB)
 
-A sample test environment is provided in `.env.test`. To run integration tests:
-
-```bash
-# 1. Create a local database and import the schema
-mysql -u root -p -e "CREATE DATABASE velcro_test;"
-mysql -u root -p velcro_test < sql/schema.sql
-
-# 2. Copy the test environment file
-cp .env.test .env
-
-# 3. Run integration tests
-php tests/integration_test.php
-```
+1. Create a local database and import the schema:
+   ```bash
+   mysql -u root -p -e "CREATE DATABASE velcro_test;"
+   mysql -u root -p velcro_test < sql/schema.sql
+   ```
+2. Copy `.env.example` to `.env` and set the test database credentials.
+3. Run integration tests:
+   ```bash
+   php tests/integration_test.php
+   ```
 
 Integration tests cover transaction CRUD, OTP flow, settings persistence,
 withdrawal state, audit logging, PAJ session persistence, and webhook updates.
@@ -142,24 +130,16 @@ withdrawal state, audit logging, PAJ session persistence, and webhook updates.
 ### Manual smoke test
 
 ```bash
-# Start the PHP dev server
-php -S localhost:8000 index.php
+# Same-origin frontend + API
+php -S localhost:3000 -t public public/index.php
 
-# In another terminal:
-curl http://localhost:8000/api/health
-curl http://localhost:8000/api/settings
-curl -H "Authorization: Bearer your_admin_password" http://localhost:8000/api/admin/config
+# Backend only
+php -S localhost:8002 -t php-backend php-backend/index.php
 ```
 
-## Nginx config (if not using Apache)
+In another terminal:
 
-```nginx
-location / {
-    try_files $uri $uri/ /index.php?$query_string;
-}
-location ~ \.php$ {
-    fastcgi_pass 127.0.0.1:9000;
-    fastcgi_index index.php;
-    include fastcgi_params;
-}
+```bash
+curl http://localhost:8002/api/health
+curl http://localhost:8002/api/settings
 ```

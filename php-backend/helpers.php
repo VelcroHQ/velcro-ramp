@@ -8,6 +8,20 @@ require_once __DIR__ . '/db.php';
 // ─── Response Helpers ───
 
 /**
+ * Add common security headers. Called automatically by jsonResponse().
+ */
+function securityHeaders(): void
+{
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('X-XSS-Protection: 0');
+    if (isProduction() && !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+}
+
+/**
  * Send a JSON response and exit.
  *
  * @param array<string,mixed> $data
@@ -15,6 +29,7 @@ require_once __DIR__ . '/db.php';
 function jsonResponse(array $data, int $statusCode = 200): never
 {
     http_response_code($statusCode);
+    securityHeaders();
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     exit;
@@ -52,11 +67,10 @@ function errorResponse(string $message, int $status = 400): array
 function handleCors(): void
 {
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    if (in_array('*', CORS_ORIGINS, true)) {
-        header('Access-Control-Allow-Origin: *');
-    } elseif ($origin !== '' && in_array($origin, CORS_ORIGINS, true)) {
+    if ($origin !== '' && in_array($origin, CORS_ORIGINS, true)) {
         header("Access-Control-Allow-Origin: {$origin}");
         header('Access-Control-Allow-Credentials: true');
+        header('Vary: Origin');
     }
     header('Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -64,6 +78,33 @@ function handleCors(): void
         http_response_code(204);
         exit;
     }
+}
+
+/**
+ * Return a client-safe error message. In production, hide internal details.
+ */
+function clientErrorMessage(Throwable $e, string $fallback = 'Internal server error'): string
+{
+    if (!isProduction()) {
+        return $e->getMessage();
+    }
+    $msg = strtolower($e->getMessage());
+    // Whitelist safe, user-actionable messages
+    $safe = [
+        'required',
+        'invalid',
+        'not found',
+        'unauthorized',
+        'too many requests',
+        'not configured',
+        'expired',
+    ];
+    foreach ($safe as $word) {
+        if (str_contains($msg, $word)) {
+            return $e->getMessage();
+        }
+    }
+    return $fallback;
 }
 
 // ─── Request Helpers ───
@@ -130,13 +171,16 @@ function verifyAdminPassword(string $input): bool
 
 function requireAdminAuth(): void
 {
-    $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    $ip = clientIp();
+    rateLimitOrFail('admin_auth:' . $ip, 10, 60);
+
+    $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_AUTHORIZATION'] ?? $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
     if ($auth === '' && function_exists('apache_request_headers')) {
         $headers = apache_request_headers();
-        $auth = $headers['Authorization'] ?? '';
+        $auth = $headers['Authorization'] ?? $headers['REDIRECT_HTTP_AUTHORIZATION'] ?? $headers['X-Authorization'] ?? $headers['X-Admin-Token'] ?? '';
     }
     if (!verifyAdminPassword($auth)) {
-        auditLog('ADMIN_AUTH_FAIL', ['ip' => clientIp(), 'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown']);
+        auditLog('ADMIN_AUTH_FAIL', ['ip' => $ip, 'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown']);
         jsonResponse(['error' => 'Unauthorized'], 401);
     }
 }
@@ -301,6 +345,9 @@ function isWithdrawalAllowed(string $address): bool
 
 function rateLimitCheck(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $window = RATE_LIMIT_WINDOW_SECONDS): bool
 {
+    if ($max <= 0) {
+        return true;
+    }
     // Prefer APCu for shared-hosting persistence across requests
     if (extension_loaded('apcu') && ini_get('apc.enabled')) {
         $cacheKey = 'velcro_rl_' . $key;
@@ -329,6 +376,17 @@ function rateLimitCheck(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $wi
     }
     @file_put_contents($file, (string) ($count + 1), LOCK_EX);
     return true;
+}
+
+/**
+ * Rate-limit helper that immediately responds with 429 when exceeded.
+ */
+function rateLimitOrFail(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $window = RATE_LIMIT_WINDOW_SECONDS): void
+{
+    if (!rateLimitCheck($key, $max, $window)) {
+        auditLog('RATE_LIMITED', ['ip' => clientIp(), 'key' => $key]);
+        jsonResponse(['success' => false, 'error' => 'Too many requests. Please slow down.'], 429);
+    }
 }
 
 // ─── Mail ───
@@ -509,6 +567,12 @@ function httpRequest(string $method, string $url, array $options = []): array
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        
+        $caPath = __DIR__ . '/cacert.pem';
+        if (file_exists($caPath)) {
+            curl_setopt($ch, CURLOPT_CAINFO, $caPath);
+        }
+
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
 
         if ($body !== null) {

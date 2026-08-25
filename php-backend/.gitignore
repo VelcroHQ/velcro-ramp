@@ -1,5 +1,7 @@
 # Secrets
 .env
+.env.test
+.env*.local
 
 # Runtime data (logs, locks, settings)
 data/

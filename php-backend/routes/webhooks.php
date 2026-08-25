@@ -7,16 +7,21 @@ require_once __DIR__ . '/../paj_api.php';
 function registerWebhookRoutes(Router $router): void
 {
     $router->post('/webhook/switch', function () {
+        rateLimitOrFail('webhook:switch:' . clientIp(), 120, 60);
         $payload = getJsonBody();
         $ip = clientIp();
 
-        if (SWITCH_WEBHOOK_SECRET !== '') {
-            $sig = $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? $_SERVER['HTTP_X_SWITCH_SIGNATURE'] ?? '';
-            if (!verifyWebhookSignature(SWITCH_WEBHOOK_SECRET, $payload, $sig)) {
-                error_log('[Webhook] Invalid signature rejected');
-                auditLog('WEBHOOK_REJECTED', ['ip' => $ip, 'reason' => 'invalid_signature', 'provider' => 'switch']);
-                jsonResponse(['success' => false, 'error' => 'Invalid signature'], 401);
-            }
+        if (SWITCH_WEBHOOK_SECRET === '') {
+            error_log('[Webhook] Switch webhook secret not configured');
+            auditLog('WEBHOOK_REJECTED', ['ip' => $ip, 'reason' => 'secret_not_configured', 'provider' => 'switch']);
+            jsonResponse(['success' => false, 'error' => 'Webhook secret not configured'], 500);
+        }
+
+        $sig = $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? $_SERVER['HTTP_X_SWITCH_SIGNATURE'] ?? '';
+        if (!verifyWebhookSignature(SWITCH_WEBHOOK_SECRET, $payload, $sig)) {
+            error_log('[Webhook] Invalid signature rejected');
+            auditLog('WEBHOOK_REJECTED', ['ip' => $ip, 'reason' => 'invalid_signature', 'provider' => 'switch']);
+            jsonResponse(['success' => false, 'error' => 'Invalid signature'], 401);
         }
 
         error_log('[Webhook Received] ' . json_encode($payload));
@@ -44,16 +49,21 @@ function registerWebhookRoutes(Router $router): void
     });
 
     $router->post('/webhook/paj', function () {
+        rateLimitOrFail('webhook:paj:' . clientIp(), 120, 60);
         $payload = getJsonBody();
         $ip = clientIp();
 
-        if (PAJ_WEBHOOK_SECRET !== '') {
-            $sig = $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? $_SERVER['HTTP_X_PAJ_SIGNATURE'] ?? '';
-            if (!verifyWebhookSignature(PAJ_WEBHOOK_SECRET, $payload, $sig)) {
-                error_log('[PAJ Webhook] Invalid signature rejected');
-                auditLog('WEBHOOK_REJECTED', ['ip' => $ip, 'reason' => 'invalid_signature', 'provider' => 'paj']);
-                jsonResponse(['success' => false, 'error' => 'Invalid signature'], 401);
-            }
+        if (PAJ_WEBHOOK_SECRET === '') {
+            error_log('[PAJ Webhook] PAJ webhook secret not configured');
+            auditLog('WEBHOOK_REJECTED', ['ip' => $ip, 'reason' => 'secret_not_configured', 'provider' => 'paj']);
+            jsonResponse(['received' => true, 'error' => 'Webhook secret not configured'], 500);
+        }
+
+        $sig = $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? $_SERVER['HTTP_X_PAJ_SIGNATURE'] ?? '';
+        if (!verifyWebhookSignature(PAJ_WEBHOOK_SECRET, $payload, $sig)) {
+            error_log('[PAJ Webhook] Invalid signature rejected');
+            auditLog('WEBHOOK_REJECTED', ['ip' => $ip, 'reason' => 'invalid_signature', 'provider' => 'paj']);
+            jsonResponse(['success' => false, 'error' => 'Invalid signature'], 401);
         }
 
         error_log('[PAJ Webhook] ' . json_encode($payload));

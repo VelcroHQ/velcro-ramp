@@ -45,6 +45,11 @@ if (preg_match('/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|html|txt|
     exit;
 }
 
+// General API rate limiting (webhooks have their own stricter/looser limits)
+if (!str_starts_with($path, '/webhook/')) {
+    rateLimitOrFail('api:' . clientIp(), RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_SECONDS);
+}
+
 $router = new Router();
 
 require_once __DIR__ . '/routes/public.php';

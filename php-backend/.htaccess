@@ -1,46 +1,24 @@
-# Velcro Ramp PHP Backend — Apache Rewrite Rules
+# Velcro Ramp — backend directory protection
 #
-# Place this file in the same directory as index.php (e.g., public_html/).
-# Static files are served directly; everything else goes to index.php.
+# This directory should NOT be the document root. It is normally reached only
+# through the rewrite rules in public/.htaccess (or the root fallback .htaccess).
+# These rules add defense-in-depth in case the directory is ever exposed.
 
+Options -Indexes -ExecCGI
+ServerSignature Off
+
+# Allow only the front controller to execute
+<FilesMatch "^(?!index\.php$).*\.php$">
+    Require all denied
+</FilesMatch>
+
+# Deny access to runtime data, tests, SQL, cron, and tools
 <IfModule mod_rewrite.c>
     RewriteEngine On
-
-    # Some shared hosts need this line uncommented:
-    # RewriteBase /
-
-    # Pass Authorization header through to PHP (required for admin auth)
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [e=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
-    # Serve existing files and directories directly
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-
-    # Route API and webhook requests to index.php
-    RewriteRule ^(api|webhook)/ index.php [QSA,L]
-
-    # If you want the PHP backend to also serve the frontend SPA from public/,
-    # uncomment the line below and copy public/index.html + style.css here.
-    # RewriteRule ^ index.html [L]
+    RewriteRule ^(data|tests|sql|cron|tools)/ - [F,L]
 </IfModule>
 
-# Protect sensitive files
-<FilesMatch "^\.">
-    Order allow,deny
-    Deny from all
+# Deny access to hidden and sensitive files
+<FilesMatch "^\.|\.(env|log|sql|json|md|zip|tar|gz)$">
+    Require all denied
 </FilesMatch>
-
-<FilesMatch "\.(env|log|json|lock|md)$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
-
-# PHP settings (adjust if your host allows)
-<IfModule mod_php.c>
-    php_value max_execution_time 120
-    php_value memory_limit 256M
-    php_value upload_max_filesize 10M
-    php_value post_max_size 10M
-</IfModule>

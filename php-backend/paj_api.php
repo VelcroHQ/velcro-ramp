@@ -40,7 +40,7 @@ class PajApiClient
 
     public function isConfigured(): bool
     {
-        return $this->apiKey !== '' && $this->baseUrl !== '' && $this->baseUrl !== 'https://api.paj.ramp';
+        return $this->apiKey !== '' && $this->baseUrl !== '' && str_starts_with($this->baseUrl, 'http');
     }
 
     private function getPajEmail(): string
@@ -229,7 +229,19 @@ class PajApiClient
 
     public function getBanks(): array
     {
-        return $this->request('GET', '/pub/bank', [], $this->getSessionToken());
+        $cacheFile = BASE_PATH . '/data/paj_banks_cache.json';
+        $cacheLifetime = 86400; // 24 hours
+
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheLifetime) {
+            $cachedData = json_decode(file_get_contents($cacheFile), true);
+            if (is_array($cachedData)) {
+                return $cachedData;
+            }
+        }
+
+        $banks = $this->request('GET', '/pub/bank', [], $this->getSessionToken());
+        @file_put_contents($cacheFile, json_encode($banks));
+        return $banks;
     }
 
     public function resolveBankAccount(string $bankId, string $accountNumber): array

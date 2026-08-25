@@ -23,9 +23,16 @@ read the referenced `SKILL.md` file before proceeding.
 
 ## Project Stack
 
-- **Backend:** Node.js + Express + MongoDB (Mongoose) + `paj_ramp` + Switch API
-- **Frontend:** Vanilla HTML/CSS/JS (`public/index.html`, `public/style.css`)
-- **Infra:** Static files served from `public/`, API served from `server.js`
+- **Backend:** Plain PHP 8.1+ + PDO MySQL (no framework). Entry point is
+  `php-backend/index.php`. Static assets are served from `public/`.
+- **Frontend:** Vanilla HTML/CSS/JS (`public/index.html`, `public/style.css`).
+- **Infra:** Shared-hosting-friendly. Web server document root points to
+  `public/`; API requests are routed through `php-backend/index.php` via
+  rewrite rules (see `php-backend/.htaccess`).
+- **External APIs:** Switch (`https://api.onswitch.xyz`) and PAJ
+  (`https://api.paj.cash`) are called directly over HTTP.
+- **Legacy:** The Node.js + Express + MongoDB backend (`server.js`, `paj.js`,
+  `package.json`) and the old VPS deployment scripts have been removed.
 
 ---
 
@@ -36,41 +43,37 @@ Reference: `engineering-team/skills/senior-backend/SKILL.md` and
 
 ### Security hardening (always-on)
 
-- Secrets must come from environment variables. No hardcoded keys, passwords, or
+- Secrets must come from `php-backend/.env`. No hardcoded keys, passwords, or
   fallback values for sensitive data.
-- Use Helmet with a strict CSP; keep `contentSecurityPolicy` tuned for the
-  frontend origin and any third-party CDNs used by `public/index.html`.
-- Rate-limit all `/api/*` routes, especially auth, withdrawal, and webhook
+- Set security headers in PHP (`jsonResponse()`) and in the web server config.
+- Rate-limit all `/api/*` routes, especially auth, withdrawal, OTP, and webhook
   endpoints. Use separate stricter limits for sensitive operations.
-- Validate every request body, query, and param with a schema (Zod is preferred
-  if available; otherwise rigorous manual checks).
+- Validate every request body, query, and param explicitly.
 - Return generic error messages in production; log full errors server-side with a
   request ID.
-- Prevent NoSQL injection: never pass raw `req.body` into Mongoose queries.
-  Always cast IDs and use explicit query objects.
+- Prevent SQL injection: use PDO prepared statements everywhere.
 - Verify ownership on every resource endpoint (broken access control / OWASP A01).
 
 ### API design
 
-- Use RESTful resource naming (`/api/orders`, `/api/users/:id`).
-- Return consistent error shapes: `{ error: { code: 'SNAKE_CASE', message: '...' } }`.
+- Keep the existing route contract stable (`/api/*`, `/webhook/*`).
+- Return consistent envelope shapes: `{ success: bool, message?: string, data?: mixed }`
+  or `{ error: string }` for failures.
 - Paginate list endpoints; default `limit` should be small (e.g., 20).
-- Version externally-facing routes if contract stability matters.
 
-### Database / MongoDB
+### Database / MySQL
 
 - Index fields used in filters, sorts, and unique constraints.
-- Avoid N+1 queries; use `.populate()` or aggregation deliberately.
+- Avoid N+1 queries; join or aggregate deliberately.
 - Run `EXPLAIN` on slow queries before adding indexes.
-- Keep migrations idempotent where possible.
+- Keep migrations idempotent where possible (`sql/schema.sql`).
 
 ### Webhooks
 
 - Verify webhook signatures (`PAJ_WEBHOOK_SECRET`, `SWITCH_WEBHOOK_SECRET`)
-  before processing.
+  before processing. Refuse webhooks if the secret is not configured.
 - Return 200 quickly and process work asynchronously when possible.
-- Idempotency: guard against duplicate events using an idempotency key or
-  composite unique index.
+- Idempotency: guard against duplicate events using `reference` as a unique key.
 
 ---
 
@@ -109,8 +112,9 @@ Reference: `engineering-team/skills/senior-frontend/SKILL.md`
 
 - Make minimal changes to achieve the goal. Preserve existing logic unless
   security or correctness demands a fix.
-- Follow the existing code style in `server.js` and `public/`.
-- Test changes locally (`npm run dev` or `node server.js`) when safe.
+- Follow the existing code style in `php-backend/` and `public/`.
+- Test changes locally (`php -S localhost:8002 -t php-backend php-backend/index.php`
+  or the user's chosen port) when safe.
 - Do not commit git mutations unless explicitly asked.
 - Before large refactors, run the relevant skill scripts if applicable
   (e.g., decision engines in `engineering-team/skills/*/scripts/`).

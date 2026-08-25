@@ -275,10 +275,21 @@ function registerPublicRoutes(Router $router): void
         if (!$reference) {
             jsonResponse(errorResponse('reference is required'), 400);
         }
+        $tx = Database::selectOne(
+            'SELECT `status` FROM `transactions` WHERE `reference` = :reference',
+            ['reference' => $reference]
+        );
+        if ($tx === null) {
+            jsonResponse(errorResponse('transaction not found', 404), 404);
+        }
+        if (in_array(strtoupper($tx['status']), FINAL_STATUSES, true)) {
+            jsonResponse(errorResponse('transaction cannot be cancelled in its current state', 409), 409);
+        }
         Database::safeExecute(
             'UPDATE `transactions` SET `status` = :status WHERE `reference` = :reference',
             ['status' => 'CANCELLED', 'reference' => $reference]
         );
+        auditLog('CANCEL_TX', ['reference' => $reference, 'ip' => clientIp()]);
         jsonResponse(['success' => true, 'message' => 'Transaction cancelled']);
     });
 
@@ -333,18 +344,13 @@ function registerPublicRoutes(Router $router): void
         }
 
         $sql = 'SELECT * FROM `transactions` WHERE ' . implode(' AND ', $where) .
-               ' ORDER BY `created_at` DESC LIMIT :limit OFFSET :offset';
-        $params['limit'] = $limit;
-        $params['offset'] = $offset;
+               " ORDER BY `created_at` DESC LIMIT {$limit} OFFSET {$offset}";
 
         try {
             $rows = Database::select($sql, $params);
-            foreach ($rows as &$row) {
-                $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
-            }
             jsonResponse(successResponse($rows));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(clientErrorMessage($e)), 500);
         }
     });
 
@@ -354,7 +360,6 @@ function registerPublicRoutes(Router $router): void
             if ($row === null) {
                 jsonResponse(errorResponse('Transaction not found', 404), 404);
             }
-            $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
             jsonResponse(successResponse($row));
         } catch (Throwable $e) {
             $status = $e->getCode() >= 400 ? $e->getCode() : 500;
