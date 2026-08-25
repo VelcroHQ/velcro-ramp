@@ -1545,9 +1545,9 @@
           </div>
           <div class="flex items-center justify-between -mt-3">
             <span class="text-xs text-gray-400 font-medium">Min: &#8358;2,000</span>
-            <span id="buy-max-label" class="text-xs text-gray-400 font-medium">Max: &#8358;50,000</span>
+            <span id="buy-max-label" class="text-xs text-gray-400 font-medium">Max: &#8358;1,000,000</span>
           </div>
-          <p id="buy-limit-error" class="hidden text-xs text-red-500 mt-1 font-medium">Maximum buy amount is &#8358;50,000 per transaction.</p>
+          <p id="buy-limit-error" class="hidden text-xs text-red-500 mt-1 font-medium">Maximum buy amount is &#8358;1,000,000 per transaction.</p>
 
           <!-- Wallet Address -->
           <div class="input-panel space-y-4">
@@ -1896,7 +1896,7 @@
     var currentReference = '';
     var statusPollInterval = null;
     var currentTxDetails = {}; // Stores details for success modal
-    let BUY_MAX_LIMIT = 50000; // Maximum buy amount per transaction (fetched from /api/settings)
+    let BUY_MAX_LIMIT = 1000000; // Maximum buy amount per transaction (fetched from /api/settings)
     let SELL_MIN_LIMIT = 1; // Minimum sell amount per transaction (fetched from /api/settings)
     let SELL_MAX_LIMIT = 10000; // Maximum sell amount per transaction (fetched from /api/settings)
     let currentFee = 0.5; // Platform fee percentage (fetched from /api/settings)
@@ -2336,8 +2336,8 @@
             calculateSell();
             calculateBuy();
           }
-          if (typeof data.data.buy_max_limit === 'number') {
-            BUY_MAX_LIMIT = data.data.buy_max_limit;
+          if (data.data.buy_max_limit !== undefined) {
+            BUY_MAX_LIMIT = Math.max(parseInt(data.data.buy_max_limit) || 1000000, 1000000);
             const maxLabel = document.getElementById('buy-max-label');
             const errMsg = document.getElementById('buy-limit-error');
             if (maxLabel) maxLabel.textContent = `Max: ₦${BUY_MAX_LIMIT.toLocaleString()}`;
@@ -4568,8 +4568,8 @@
                   'bg-amber-100 text-amber-700';
             const date = new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             const assetName = tx.asset.includes(':') ? tx.asset.split(':')[1].toUpperCase() : tx.asset.toUpperCase();
-            const ben = tx.beneficiary ? JSON.parse(tx.beneficiary) : {};
-            const meta = tx.meta ? JSON.parse(tx.meta) : {};
+            const ben = tx.beneficiary ? (typeof tx.beneficiary === 'string' ? JSON.parse(tx.beneficiary) : tx.beneficiary) : {};
+            const meta = tx.meta ? (typeof tx.meta === 'string' ? JSON.parse(tx.meta) : tx.meta) : {};
             const network = meta.network || meta.chain || (tx.asset.includes(':') ? tx.asset.split(':')[0] : '');
 
             const typeLabel = (tx.type || '').toUpperCase();

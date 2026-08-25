@@ -392,7 +392,7 @@ function registerPublicRoutes(Router $router): void
         $settings = loadSettings();
         jsonResponse(successResponse([
             'platform_fee' => (float) ($settings['platform_fee'] ?? DEVELOPER_FEE),
-            'buy_max_limit' => (int) ($settings['buy_max_limit'] ?? 50000),
+            'buy_max_limit' => (int) ($settings['buy_max_limit'] ?? 1000000),
             'sell_min_limit' => (float) ($settings['sell_min_limit'] ?? 1),
             'sell_max_limit' => (float) ($settings['sell_max_limit'] ?? 10000),
             'paj_usdt_enabled' => (bool) ($settings['paj_usdt_enabled'] ?? false),
