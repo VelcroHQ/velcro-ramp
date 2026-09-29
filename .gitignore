@@ -1,0 +1,22 @@
+# Environment variables & secrets (CRITICAL: Do NOT commit)
+**/.env
+**/.env.local
+**/.env.*.local
+*.sql
+
+# Editor & Deployment credentials
+.vscode/sftp.json
+
+# Large Archives & backups
+*.zip
+*.tar.gz
+*.bak
+
+# Runtime data & logs
+**/php-backend/data/
+**/error_log
+
+# OS metadata
+.DS_Store
+Thumbs.db
+**/__MACOSX/

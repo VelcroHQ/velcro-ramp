@@ -1,0 +1,55 @@
+VELOCO RAMP — DEPLOYMENT SETUP
+================================
+
+1. EXTRACT
+   Extract the contents of this zip into your hosting account's public_html/
+   folder. The result should look like:
+
+   public_html/
+   ├── index.html
+   ├── index.php
+   ├── .htaccess
+   ├── admin/
+   ├── php-backend/
+   │   ├── .env.example
+   │   ├── index.php
+   │   ├── config.php
+   │   ├── ...
+   │   └── data/   (will be created automatically)
+   └── ...
+
+2. DATABASE
+   - Create a MySQL database and user in your hosting control panel.
+   - Import php-backend/sql/schema.sql into that database.
+
+3. ENVIRONMENT FILE
+   - Rename php-backend/.env.example to php-backend/.env
+   - Fill in ALL real values (database, Switch key, PAJ key, admin password,
+     webhook secrets, callback URL, etc.).
+   - NEVER commit or share this .env file.
+
+4. PERMISSIONS
+   Make php-backend/data/ writable by PHP (chmod 755 or 775).
+
+5. ADMIN DASHBOARD
+   The admin dashboard is in public_html/admin/. Protect it with an additional
+   password via your hosting panel, or configure admin/.htaccess with HTTP
+   Basic Auth before going live.
+
+6. WEBHOOKS
+   In your Switch and PAJ dashboards set:
+     Switch webhook URL: https://yourdomain.com/webhook/switch
+     PAJ webhook URL:    https://yourdomain.com/webhook/paj
+   The webhook secrets must match the values in php-backend/.env.
+
+7. CRON JOBS
+   Set up these cron jobs in your hosting panel (adjust PHP path and folders):
+
+   */2 * * * * /usr/bin/php /home/YOURUSER/public_html/php-backend/cron/poll.php >> /home/YOURUSER/public_html/php-backend/data/poll.log 2>&1
+   0 0 * * * /usr/bin/php /home/YOURUSER/public_html/php-backend/cron/auto_withdraw.php >> /home/YOURUSER/public_html/php-backend/data/withdraw.log 2>&1
+   0 * * * * /usr/bin/php /home/YOURUSER/public_html/php-backend/cron/cleanup_otps.php >> /home/YOURUSER/public_html/php-backend/data/cleanup.log 2>&1
+
+8. TEST
+   Visit https://yourdomain.com/api/health — it should return dbConnected:true.
+
+For the full guide see DEPLOY.md in the source repository.

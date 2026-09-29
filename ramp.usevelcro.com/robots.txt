@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /goat/
+Disallow: /php-backend/
+
+Sitemap: https://ramp.usevelcro.com/sitemap.xml
