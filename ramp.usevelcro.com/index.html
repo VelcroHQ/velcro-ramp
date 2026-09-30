@@ -4381,10 +4381,7 @@
           };
           const mappedStatus = statusMap[status] || status;
           updateStatusUI(mappedStatus, type);
-          // Show blockchain explorer link for completed transactions
-          if (status === 'COMPLETED') {
-            const txHash = data.signature || data.hash || '';
-            const explorerLink = document.getElementById((type === 'sell' ? '' : 'buy') + '-explorer-link');
+
           // For sell, also update status-1 explorer link
           if (type === 'sell') {
             const sellExpLink = document.getElementById('sell-status-explorer-link');
