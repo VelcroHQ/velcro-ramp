@@ -294,6 +294,7 @@
       min-height: 0 !important;
       max-height: calc(85vh - 125px) !important;
       max-height: calc(85dvh - 125px) !important;
+      overflow-x: hidden !important;
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch !important;
       touch-action: pan-y !important;
@@ -301,6 +302,7 @@
     }
     #history-list::-webkit-scrollbar {
       width: 5px;
+      height: 0px;
     }
     #history-list::-webkit-scrollbar-track {
       background: transparent;
@@ -1877,7 +1879,7 @@
         <button onclick="filterHistory('completed')" id="hist-filter-completed" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap">Completed</button>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-3 overscroll-contain" id="history-list" style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
+      <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 pb-8 sm:pb-8 space-y-3 overscroll-contain" id="history-list" style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
         <div class="text-center py-8 text-gray-400">Loading transactions...</div>
       </div>
     </div>
