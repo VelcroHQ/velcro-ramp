@@ -43,8 +43,8 @@ function registerAdminRoutes(Router $router): void
             }
 
             jsonResponse([
-                'totalUsers' => count($wallets),
-                'allTransactions' => count($allTxs),
+                'totalUsers' => $totalUsers,
+                'allTransactions' => $allTransactions,
                 'completedTransactions' => $completed,
                 'totalVolumeUSD' => $volumeUSD,
                 'totalVolumeNGN' => $volumeNGN,
@@ -73,6 +73,14 @@ function registerAdminRoutes(Router $router): void
             $rows = Database::safeSelect('SELECT * FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
             foreach ($rows as &$row) {
                 $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
+                if (empty($row['wallet_address'])) {
+                    $ben = $row['beneficiary'] ?? [];
+                    $meta = $row['meta'] ?? [];
+                    $row['wallet_address'] = $ben['wallet_address']
+                        ?? ($meta['beneficiary']['wallet_address']
+                        ?? ($meta['recipient']
+                        ?? ($meta['destination']['address'] ?? null)));
+                }
             }
             jsonResponse($rows);
         } catch (Throwable $e) {
@@ -126,10 +134,16 @@ function registerAdminRoutes(Router $router): void
     $router->get('/api/admin/users', function () {
         requireAdminAuth();
         try {
-            $rows = Database::safeSelect('SELECT `email`, `wallet_address`, `status`, `type`, `amount`, `destination_amount`, `created_at` FROM `transactions` ORDER BY `created_at` DESC LIMIT 2000', [], []);
+            $rows = Database::safeSelect('SELECT `email`, `wallet_address`, `beneficiary`, `meta`, `status`, `type`, `amount`, `destination_amount`, `created_at` FROM `transactions` ORDER BY `created_at` DESC LIMIT 2000', [], []);
             $userMap = [];
             foreach ($rows as $t) {
-                $id = (!empty($t['email']) ? strtolower(trim($t['email'])) : '') ?: ($t['wallet_address'] ?? 'unknown');
+                $wallet = $t['wallet_address'] ?? '';
+                if (empty($wallet)) {
+                    $ben = !empty($t['beneficiary']) ? (is_array($t['beneficiary']) ? $t['beneficiary'] : json_decode((string)$t['beneficiary'], true)) : [];
+                    $meta = !empty($t['meta']) ? (is_array($t['meta']) ? $t['meta'] : json_decode((string)$t['meta'], true)) : [];
+                    $wallet = $ben['wallet_address'] ?? ($meta['beneficiary']['wallet_address'] ?? ($meta['recipient'] ?? ($meta['destination']['address'] ?? '')));
+                }
+                $id = (!empty($t['email']) ? strtolower(trim($t['email'])) : '') ?: ($wallet ?: 'unknown');
                 if (!isset($userMap[$id])) {
                     $userMap[$id] = [
                         'id' => $id,
@@ -308,6 +322,161 @@ function registerAdminRoutes(Router $router): void
             jsonResponse($rows);
         } catch (Throwable $e) {
             jsonResponse(['error' => $e->getMessage()], 500);
+        }
+    });
+
+    // ─── Direct API Tools Endpoints ───
+
+    $router->post('/api/admin/tools/aml-lookup', function () {
+        requireAdminAuth();
+        $ip = clientIp();
+        $body = getJsonBody();
+        $type = strtoupper((string) body($body, 'type', 'CRYPTO_WALLET'));
+
+        $payload = ['type' => $type];
+        if ($type === 'CRYPTO_WALLET') {
+            $wallet = trim((string) body($body, 'wallet_address', ''));
+            if ($wallet === '') {
+                jsonResponse(['success' => false, 'error' => 'wallet_address is required for CRYPTO_WALLET screening'], 400);
+            }
+            $payload['wallet_address'] = $wallet;
+        } elseif ($type === 'INDIVIDUAL') {
+            $name = trim((string) body($body, 'name', ''));
+            $country = strtoupper(trim((string) body($body, 'country', 'NG')));
+            if ($name === '') {
+                jsonResponse(['success' => false, 'error' => 'name is required for INDIVIDUAL screening'], 400);
+            }
+            $payload['name'] = $name;
+            $payload['country'] = $country;
+            if (!empty($body['date_of_birth'])) {
+                $payload['date_of_birth'] = trim((string) $body['date_of_birth']);
+            }
+        } elseif ($type === 'BUSINESS') {
+            $name = trim((string) body($body, 'name', ''));
+            $country = strtoupper(trim((string) body($body, 'country', 'NG')));
+            if ($name === '') {
+                jsonResponse(['success' => false, 'error' => 'name is required for BUSINESS screening'], 400);
+            }
+            $payload['name'] = $name;
+            $payload['country'] = $country;
+            if (!empty($body['registration_number'])) {
+                $payload['registration_number'] = trim((string) $body['registration_number']);
+            }
+        } else {
+            jsonResponse(['success' => false, 'error' => 'Invalid screening type. Allowed: CRYPTO_WALLET, INDIVIDUAL, BUSINESS'], 400);
+        }
+
+        try {
+            $result = switchApi()->amlLookup($payload);
+            auditLog('AML_LOOKUP', ['ip' => $ip, 'type' => $type, 'subject' => $payload]);
+            jsonResponse($result);
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 400);
+        }
+    });
+
+    $router->post('/api/admin/tools/resolve-bank', function () {
+        requireAdminAuth();
+        $body = getJsonBody();
+        $provider = strtolower((string) body($body, 'provider', 'switch'));
+        $country = strtoupper((string) body($body, 'country', 'NG'));
+        $bankCode = trim((string) body($body, 'bank_code', ''));
+        $accountNumber = trim((string) body($body, 'account_number', ''));
+
+        if ($accountNumber === '' || $bankCode === '') {
+            jsonResponse(['success' => false, 'error' => 'bank_code and account_number are required'], 400);
+        }
+
+        try {
+            if ($provider === 'paj') {
+                $res = pajApi()->resolveBankAccount($bankCode, $accountNumber);
+                jsonResponse(['success' => true, 'data' => $res, 'provider' => 'paj']);
+            } else {
+                $res = switchApi()->lookupBeneficiary($country, [
+                    'bank_code' => $bankCode,
+                    'account_number' => $accountNumber,
+                ]);
+                jsonResponse($res);
+            }
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 400);
+        }
+    });
+
+    $router->post('/api/admin/tools/check-status', function () {
+        requireAdminAuth();
+        $body = getJsonBody();
+        $reference = trim((string) body($body, 'reference', ''));
+        $provider = strtolower((string) body($body, 'provider', 'auto'));
+
+        if ($reference === '') {
+            jsonResponse(['success' => false, 'error' => 'reference is required'], 400);
+        }
+
+        $isPaj = ($provider === 'paj') || str_starts_with($reference, 'paj_');
+
+        try {
+            if ($isPaj) {
+                $data = pajApi()->getTransactionStatus($reference);
+                jsonResponse(['success' => true, 'provider' => 'paj', 'data' => $data]);
+            } else {
+                $data = switchApi()->getPaymentStatus($reference);
+                jsonResponse($data);
+            }
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 400);
+        }
+    });
+
+    $router->post('/api/admin/tools/quote', function () {
+        requireAdminAuth();
+        $body = getJsonBody();
+        $provider = strtolower((string) body($body, 'provider', 'switch'));
+        $direction = strtoupper((string) body($body, 'direction', 'OFFRAMP'));
+        $amount = (float) body($body, 'amount', 100);
+        $asset = (string) body($body, 'asset', 'base:usdc');
+        $country = (string) body($body, 'country', 'NG');
+        $currency = (string) body($body, 'currency', 'NGN');
+
+        try {
+            if ($provider === 'paj') {
+                $rate = pajApi()->getRate($amount);
+                jsonResponse(['success' => true, 'provider' => 'paj', 'data' => $rate]);
+            } else {
+                $res = switchApi()->getRate([
+                    'direction' => $direction,
+                    'asset' => $asset,
+                    'country' => $country,
+                    'currency' => $currency,
+                    'channel' => ($country === 'GH' || $country === 'KE') ? 'MOBILEMONEY' : 'BANK',
+                ]);
+                jsonResponse($res);
+            }
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 400);
+        }
+    });
+
+    $router->post('/api/admin/tools/fix-wallet-addresses', function () {
+        requireAdminAuth();
+        try {
+            $rows = Database::safeSelect("SELECT `id`, `reference`, `wallet_address`, `beneficiary`, `meta` FROM `transactions` WHERE `wallet_address` IS NULL OR `wallet_address` = ''", [], []);
+            $fixed = 0;
+            foreach ($rows as $row) {
+                $ben = !empty($row['beneficiary']) ? json_decode((string)$row['beneficiary'], true) : [];
+                $meta = !empty($row['meta']) ? json_decode((string)$row['meta'], true) : [];
+                $wallet = $ben['wallet_address'] ?? ($meta['beneficiary']['wallet_address'] ?? ($meta['recipient'] ?? ($meta['destination']['address'] ?? null)));
+                if (!empty($wallet)) {
+                    Database::safeExecute("UPDATE `transactions` SET `wallet_address` = :wallet WHERE `id` = :id", [
+                        'wallet' => $wallet,
+                        'id' => $row['id']
+                    ]);
+                    $fixed++;
+                }
+            }
+            jsonResponse(['success' => true, 'fixed' => $fixed]);
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
         }
     });
 }

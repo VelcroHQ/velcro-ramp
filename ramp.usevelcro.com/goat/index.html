@@ -1064,6 +1064,9 @@
                 <li onclick="switchSection('settings')" id="nav-settings">
                     <i data-lucide="settings"></i> Settings
                 </li>
+                <li onclick="switchSection('api-tools')" id="nav-api-tools">
+                    <i data-lucide="shield-check"></i> API Tools
+                </li>
                 <li onclick="logout()" style="margin-top: auto; color: #ff8a8a;">
                     <i data-lucide="log-out"></i> Logout
                 </li>
@@ -1690,6 +1693,349 @@
                 </div>
             </div>
         </div>
+
+        <!-- API Tools & Compliance Hub -->
+        <div id="section-api-tools" class="view-content">
+            <header>
+                <div class="header-title">
+                    <h1>API Tools & Compliance Hub</h1>
+                    <p>Direct testing & screening utilities for Switch API and PAJ Ramp endpoints.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="runFixWalletAddresses()" id="btn-fix-wallets" style="background:#0D0D59; font-size:12px; display:inline-flex; align-items:center; gap:6px; padding: 8px 14px;">
+                        <i data-lucide="wrench" style="width:14px; height:14px;"></i> Sync Missing Wallets
+                    </button>
+                    <button class="refresh-btn" onclick="fetchData()"><i data-lucide="rotate-cw"></i></button>
+                </div>
+            </header>
+
+            <!-- Navigation Tabs for the 4 Tools -->
+            <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; overflow-x: auto;">
+                <button class="api-tab active" onclick="switchApiTool('aml')" id="tab-tool-aml" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: var(--velcro-navy); color: #fff; display: inline-flex; align-items: center; gap: 8px;">
+                    <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i> AML Screening
+                </button>
+                <button class="api-tab" onclick="switchApiTool('bank')" id="tab-tool-bank" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); display: inline-flex; align-items: center; gap: 8px;">
+                    <i data-lucide="landmark" style="width: 16px; height: 16px;"></i> Account Resolver
+                </button>
+                <button class="api-tab" onclick="switchApiTool('status')" id="tab-tool-status" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); display: inline-flex; align-items: center; gap: 8px;">
+                    <i data-lucide="activity" style="width: 16px; height: 16px;"></i> Live Status Lookup
+                </button>
+                <button class="api-tab" onclick="switchApiTool('quote')" id="tab-tool-quote" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); display: inline-flex; align-items: center; gap: 8px;">
+                    <i data-lucide="calculator" style="width: 16px; height: 16px;"></i> Live Rate & Quote
+                </button>
+            </div>
+
+            <!-- TOOL 1: AML COMPLIANCE SCREENING -->
+            <div id="tool-view-aml" class="api-tool-panel">
+                <div class="settings-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="table-card" style="margin-bottom: 0;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div class="stat-icon-sm blue"><i data-lucide="shield-alert"></i></div>
+                            <div>
+                                <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Screen Subject</h3>
+                                <p style="font-size: 12px; color: var(--text-secondary);">Verify wallet or entity against global sanctions and PEP lists</p>
+                            </div>
+                        </div>
+
+                        <!-- Type Select -->
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">SCREENING TYPE</label>
+                            <div style="display: flex; gap: 14px;">
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main);">
+                                    <input type="radio" name="aml_type" value="CRYPTO_WALLET" checked onchange="toggleAmlFields()"> Crypto Wallet
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main);">
+                                    <input type="radio" name="aml_type" value="INDIVIDUAL" onchange="toggleAmlFields()"> Individual
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main);">
+                                    <input type="radio" name="aml_type" value="BUSINESS" onchange="toggleAmlFields()"> Business
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Wallet field -->
+                        <div id="aml-field-wallet" style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">WALLET ADDRESS</label>
+                            <input type="text" id="aml-wallet-input" class="cost-input" style="width: 100%; text-align: left; font-family: monospace;" placeholder="0x... or Solana Base58 address">
+                        </div>
+
+                        <!-- Entity Name field -->
+                        <div id="aml-field-name" style="margin-bottom: 16px; display: none;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">LEGAL NAME</label>
+                            <input type="text" id="aml-name-input" class="cost-input" style="width: 100%; text-align: left;" placeholder="Full legal name">
+                        </div>
+
+                        <!-- Country Code -->
+                        <div id="aml-field-country" style="margin-bottom: 16px; display: none;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">COUNTRY CODE</label>
+                            <select id="aml-country-input" class="cost-input" style="width: 100%; text-align: left;">
+                                <option value="NG">Nigeria (NG)</option>
+                                <option value="GH">Ghana (GH)</option>
+                                <option value="KE">Kenya (KE)</option>
+                                <option value="ZA">South Africa (ZA)</option>
+                                <option value="UG">Uganda (UG)</option>
+                                <option value="RW">Rwanda (RW)</option>
+                            </select>
+                        </div>
+
+                        <!-- Extra (DOB or Reg Number) -->
+                        <div id="aml-field-extra" style="margin-bottom: 20px; display: none;">
+                            <label id="aml-extra-label" style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">DATE OF BIRTH (YYYY-MM-DD)</label>
+                            <input type="text" id="aml-extra-input" class="cost-input" style="width: 100%; text-align: left;" placeholder="1990-01-15">
+                        </div>
+
+                        <button class="btn-primary" onclick="runAmlLookup()" id="btn-run-aml" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i data-lucide="search" style="width: 16px; height: 16px;"></i> Run AML Screening
+                        </button>
+                    </div>
+
+                    <!-- AML Results Card -->
+                    <div class="table-card" style="margin-bottom: 0;">
+                        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Screening Result</h3>
+                        <div id="aml-result-empty" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                            <i data-lucide="shield" style="width: 40px; height: 40px; margin: 0 auto 12px; opacity: 0.3;"></i>
+                            <p style="font-size: 13px;">Enter screening details on the left and run screening to view compliance checks.</p>
+                        </div>
+                        <div id="aml-result-content" style="display: none;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px; background: var(--bg-light); border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border);">
+                                <div>
+                                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">COMPLIANCE STATUS</div>
+                                    <div id="aml-badge-status" style="font-size: 18px; font-weight: 800; margin-top: 2px;">-</div>
+                                </div>
+                                <div id="aml-matches-count" style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">-</div>
+                            </div>
+                            <div id="aml-matches-list" style="margin-bottom: 16px; max-height: 250px; overflow-y: auto;">
+                                <!-- Filled by JS -->
+                            </div>
+                            <details style="font-size: 11px; color: var(--text-secondary);">
+                                <summary style="cursor: pointer; font-weight: 600; margin-bottom: 6px;">Raw JSON Response</summary>
+                                <pre id="aml-raw-json" style="background: var(--code-bg); color: var(--text-main); padding: 10px; border-radius: 8px; overflow-x: auto; max-height: 200px; font-family: monospace;"></pre>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOOL 2: BANK ACCOUNT RESOLVER -->
+            <div id="tool-view-bank" class="api-tool-panel" style="display: none;">
+                <div class="settings-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="table-card" style="margin-bottom: 0;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div class="stat-icon-sm green"><i data-lucide="landmark"></i></div>
+                            <div>
+                                <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Resolve Bank Account</h3>
+                                <p style="font-size: 12px; color: var(--text-secondary);">Verify recipient account holder name directly via Switch or PAJ</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">PROVIDER</label>
+                            <select id="resolve-provider" class="cost-input" style="width: 100%; text-align: left;" onchange="updateResolverProvider()">
+                                <option value="switch">Switch API (Multi-country: NG, GH, KE)</option>
+                                <option value="paj">PAJ Ramp (Nigeria Bank ID)</option>
+                            </select>
+                        </div>
+
+                        <div id="resolve-country-wrap" style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">COUNTRY</label>
+                            <select id="resolve-country" class="cost-input" style="width: 100%; text-align: left;">
+                                <option value="NG">Nigeria (NG)</option>
+                                <option value="GH">Ghana (GH)</option>
+                                <option value="KE">Kenya (KE)</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <label id="resolve-bank-label" style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">BANK CODE / ID</label>
+                            <input type="text" id="resolve-bank-code" class="cost-input" style="width: 100%; text-align: left;" placeholder="e.g. 044, 058, 057, 033 or PAJ bankId">
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">ACCOUNT NUMBER</label>
+                            <input type="text" id="resolve-account-number" class="cost-input" style="width: 100%; text-align: left; font-family: monospace;" placeholder="10-digit account number" maxlength="12">
+                        </div>
+
+                        <button class="btn-primary" onclick="runAccountResolve()" id="btn-run-resolve" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i> Resolve Account Name
+                        </button>
+                    </div>
+
+                    <!-- Resolver Result -->
+                    <div class="table-card" style="margin-bottom: 0;">
+                        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Resolution Result</h3>
+                        <div id="resolve-result-empty" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                            <i data-lucide="user-check" style="width: 40px; height: 40px; margin: 0 auto 12px; opacity: 0.3;"></i>
+                            <p style="font-size: 13px;">Enter bank details and click Resolve to verify recipient account name.</p>
+                        </div>
+                        <div id="resolve-result-content" style="display: none;">
+                            <div style="padding: 16px; background: var(--bg-light); border-radius: 10px; border: 1px solid var(--border); margin-bottom: 16px;">
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">VERIFIED ACCOUNT NAME</div>
+                                <div id="resolve-res-name" style="font-size: 18px; font-weight: 700; color: var(--success); margin-bottom: 12px;">-</div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+                                    <div><span style="color: var(--text-secondary);">Account #:</span> <b id="resolve-res-account">-</b></div>
+                                    <div><span style="color: var(--text-secondary);">Bank:</span> <b id="resolve-res-bank">-</b></div>
+                                </div>
+                            </div>
+                            <details style="font-size: 11px; color: var(--text-secondary);">
+                                <summary style="cursor: pointer; font-weight: 600; margin-bottom: 6px;">Raw Provider Payload</summary>
+                                <pre id="resolve-raw-json" style="background: var(--code-bg); color: var(--text-main); padding: 10px; border-radius: 8px; overflow-x: auto; max-height: 200px; font-family: monospace;"></pre>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOOL 3: LIVE STATUS CHECKER -->
+            <div id="tool-view-status" class="api-tool-panel" style="display: none;">
+                <div class="settings-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="table-card" style="margin-bottom: 0;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div class="stat-icon-sm purple"><i data-lucide="refresh-cw"></i></div>
+                            <div>
+                                <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Live Provider Lookup</h3>
+                                <p style="font-size: 12px; color: var(--text-secondary);">Directly query Switch or PAJ servers by reference or transaction ID</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">PROVIDER</label>
+                            <select id="lookup-provider" class="cost-input" style="width: 100%; text-align: left;">
+                                <option value="auto">Auto-detect (from Reference)</option>
+                                <option value="switch">Switch API (/payment/status)</option>
+                                <option value="paj">PAJ Ramp (/pub/transactions/:id)</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">TRANSACTION REFERENCE / ID</label>
+                            <input type="text" id="lookup-reference" class="cost-input" style="width: 100%; text-align: left; font-family: monospace;" placeholder="UUID or paj_... ID">
+                        </div>
+
+                        <button class="btn-primary" onclick="runLiveStatusCheck()" id="btn-run-status" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i data-lucide="search" style="width: 16px; height: 16px;"></i> Check Live Status
+                        </button>
+                    </div>
+
+                    <!-- Status Result -->
+                    <div class="table-card" style="margin-bottom: 0;">
+                        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Provider Response</h3>
+                        <div id="status-result-empty" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                            <i data-lucide="activity" style="width: 40px; height: 40px; margin: 0 auto 12px; opacity: 0.3;"></i>
+                            <p style="font-size: 13px;">Enter a transaction reference to view current state on provider rails.</p>
+                        </div>
+                        <div id="status-result-content" style="display: none;">
+                            <div style="padding: 16px; background: var(--bg-light); border-radius: 10px; border: 1px solid var(--border); margin-bottom: 16px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">STATUS</span>
+                                    <span id="lookup-res-badge" class="status-pill">-</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; margin-bottom: 10px;">
+                                    <div><span style="color: var(--text-secondary);">Provider:</span> <b id="lookup-res-provider">-</b></div>
+                                    <div><span style="color: var(--text-secondary);">Type:</span> <b id="lookup-res-type">-</b></div>
+                                </div>
+                                <div style="font-size: 12px; margin-top: 6px;">
+                                    <span style="color: var(--text-secondary);">On-Chain Hash:</span>
+                                    <p id="lookup-res-hash" style="font-family: monospace; word-break: break-all; margin-top: 2px;">-</p>
+                                </div>
+                            </div>
+                            <details open style="font-size: 11px; color: var(--text-secondary);">
+                                <summary style="cursor: pointer; font-weight: 600; margin-bottom: 6px;">Full JSON Payload</summary>
+                                <pre id="lookup-raw-json" style="background: var(--code-bg); color: var(--text-main); padding: 10px; border-radius: 8px; overflow-x: auto; max-height: 250px; font-family: monospace;"></pre>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOOL 4: REAL-TIME QUOTE & RATE INSPECTOR -->
+            <div id="tool-view-quote" class="api-tool-panel" style="display: none;">
+                <div class="settings-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="table-card" style="margin-bottom: 0;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div class="stat-icon-sm teal"><i data-lucide="calculator"></i></div>
+                            <div>
+                                <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Query Live Rates</h3>
+                                <p style="font-size: 12px; color: var(--text-secondary);">Calculate real-time exchange rate quotes from Switch or PAJ</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">PROVIDER</label>
+                            <select id="quote-provider" class="cost-input" style="width: 100%; text-align: left;">
+                                <option value="switch">Switch API</option>
+                                <option value="paj">PAJ Ramp (NGN)</option>
+                            </select>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">DIRECTION</label>
+                                <select id="quote-direction" class="cost-input" style="width: 100%; text-align: left;">
+                                    <option value="OFFRAMP">Sell Crypto (Offramp)</option>
+                                    <option value="ONRAMP">Buy Crypto (Onramp)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">AMOUNT</label>
+                                <input type="number" id="quote-amount" class="cost-input" style="width: 100%; text-align: left;" value="100">
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">ASSET</label>
+                                <select id="quote-asset" class="cost-input" style="width: 100%; text-align: left;">
+                                    <option value="base:usdc">USDC (Base)</option>
+                                    <option value="solana:usdc">USDC (Solana)</option>
+                                    <option value="solana:usdt">USDT (Solana)</option>
+                                    <option value="ethereum:usdc">USDC (Ethereum)</option>
+                                    <option value="polygon:usdc">USDC (Polygon)</option>
+                                    <option value="tron:usdt">USDT (Tron)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">FIAT CURRENCY</label>
+                                <select id="quote-currency" class="cost-input" style="width: 100%; text-align: left;">
+                                    <option value="NGN">NGN (Nigeria)</option>
+                                    <option value="GHS">GHS (Ghana)</option>
+                                    <option value="KES">KES (Kenya)</option>
+                                    <option value="ZAR">ZAR (South Africa)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button class="btn-primary" onclick="runQuoteFetch()" id="btn-run-quote" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i data-lucide="trending-up" style="width: 16px; height: 16px;"></i> Fetch Live Rate
+                        </button>
+                    </div>
+
+                    <!-- Quote Result -->
+                    <div class="table-card" style="margin-bottom: 0;">
+                        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Live Quote Details</h3>
+                        <div id="quote-result-empty" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                            <i data-lucide="banknote" style="width: 40px; height: 40px; margin: 0 auto 12px; opacity: 0.3;"></i>
+                            <p style="font-size: 13px;">Select corridor and click Fetch to get real-time price rates.</p>
+                        </div>
+                        <div id="quote-result-content" style="display: none;">
+                            <div style="padding: 16px; background: var(--bg-light); border-radius: 10px; border: 1px solid var(--border); margin-bottom: 16px;">
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">INDICATIVE EXCHANGE RATE</div>
+                                <div id="quote-res-rate" style="font-size: 20px; font-weight: 800; color: var(--velcro-navy); margin-bottom: 12px;">-</div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+                                    <div><span style="color: var(--text-secondary);">Source Amount:</span> <b id="quote-res-src">-</b></div>
+                                    <div><span style="color: var(--text-secondary);">Destination Amount:</span> <b id="quote-res-dst">-</b></div>
+                                </div>
+                            </div>
+                            <details style="font-size: 11px; color: var(--text-secondary);">
+                                <summary style="cursor: pointer; font-weight: 600; margin-bottom: 6px;">Raw Quote Payload</summary>
+                                <pre id="quote-raw-json" style="background: var(--code-bg); color: var(--text-main); padding: 10px; border-radius: 8px; overflow-x: auto; max-height: 200px; font-family: monospace;"></pre>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- Transaction Detail Modal -->
@@ -1733,7 +2079,10 @@
                 </div>
             </div>
             <div style="margin-bottom: 20px;">
-                <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">REFERENCE</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary); margin: 0;">REFERENCE</label>
+                    <button onclick="copyElementText('modal-ref')" class="btn-view" style="padding: 2px 8px; font-size: 11px;">Copy</button>
+                </div>
                 <code id="modal-ref" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; display: block; font-size: 13px;">-</code>
             </div>
             <div style="margin-bottom: 20px; display: none;" id="modal-email-wrap">
@@ -1741,7 +2090,10 @@
                 <div id="modal-email" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; font-size: 13px; font-weight: 600;">-</div>
             </div>
             <div style="margin-bottom: 20px;">
-                <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">TX HASH</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label style="font-size: 12px; color: var(--text-secondary); margin: 0;">TX HASH</label>
+                    <button id="modal-copy-hash-btn" onclick="copyElementText('modal-hash-link')" class="btn-view" style="padding: 2px 8px; font-size: 11px;">Copy</button>
+                </div>
                 <a id="modal-hash-link" href="#" target="_blank" style="color: var(--primary-link); font-size: 12px; word-break: break-all; display: block; margin-bottom: 4px;">-</a>
                 <a id="modal-wallet-explorer-link" href="#" target="_blank" style="color: var(--primary-link); font-size: 11px; word-break: break-all; display: none;">
                   <span style="display: inline-flex; align-items: center; gap: 4px;">
@@ -1760,7 +2112,13 @@
                     <div style="font-size: 12px; color: var(--text-secondary);">at <span id="modal-rate-display">-</span></div>
                 </div>
                 <div style="margin-bottom: 12px;">
-                    <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">DESTINATION WALLET</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <label style="font-size: 12px; color: var(--text-secondary); margin: 0;">DESTINATION WALLET</label>
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick="copyElementText('modal-wallet-address')" class="btn-view" style="padding: 2px 8px; font-size: 11px;">Copy</button>
+                            <button id="modal-aml-screen-btn" onclick="openAmlForWallet()" class="btn-view" style="padding: 2px 8px; font-size: 11px; background: rgba(13,13,89,0.08); color: var(--velcro-navy); border: 1px solid rgba(13,13,89,0.2);">🛡️ Screen AML</button>
+                        </div>
+                    </div>
                     <div id="modal-wallet-address" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
                 </div>
                 <div style="border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
@@ -1775,7 +2133,10 @@
             <!-- OFFRAMP Details -->
             <div id="modal-offramp-details" style="display: none; margin-bottom: 20px;">
                 <div style="margin-bottom: 12px;">
-                    <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">DEPOSIT ADDRESS (User sent crypto here)</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <label style="font-size: 12px; color: var(--text-secondary); margin: 0;">DEPOSIT ADDRESS (User sent crypto here)</label>
+                        <button onclick="copyElementText('modal-deposit-address')" class="btn-view" style="padding: 2px 8px; font-size: 11px;">Copy</button>
+                    </div>
                     <div id="modal-deposit-address" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
                     <a id="modal-deposit-explorer" href="#" target="_blank" style="display: none; margin-top: 6px; font-size: 11px; color: var(--primary-link); align-items: center; gap: 4px;">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -2695,6 +3056,17 @@
             // Type-specific details
             const onrampSection = document.getElementById('modal-onramp-details');
             const offrampSection = document.getElementById('modal-offramp-details');
+            let benObj = {};
+            try { if (tx.beneficiary) benObj = typeof tx.beneficiary === 'string' ? JSON.parse(tx.beneficiary) : tx.beneficiary; } catch (e) {}
+            let metaObj = {};
+            try { if (tx.meta) metaObj = typeof tx.meta === 'string' ? JSON.parse(tx.meta) : tx.meta; } catch (e) {}
+            const resolvedWallet = tx.wallet_address
+                || benObj.wallet_address
+                || (metaObj.beneficiary && metaObj.beneficiary.wallet_address)
+                || metaObj.recipient
+                || (metaObj.destination && metaObj.destination.address)
+                || '';
+
             if (tx.type === 'ONRAMP') {
                 onrampSection.style.display = 'block';
                 offrampSection.style.display = 'none';
@@ -2704,7 +3076,7 @@
                 document.getElementById('modal-crypto-asset').innerText = tx.asset || '-';
                 document.getElementById('modal-rate-display').innerText = tx.rate ? `1 ${tx.asset} = ₦${Number(tx.rate).toLocaleString()}` : '-';
                 // Wallet
-                document.getElementById('modal-wallet-address').innerText = tx.wallet_address || 'Not provided';
+                document.getElementById('modal-wallet-address').innerText = resolvedWallet || 'Not provided';
                 // Deposit bank
                 document.getElementById('modal-deposit-bank').innerText = tx.deposit_bank_name || '-';
                 document.getElementById('modal-deposit-number').innerText = tx.deposit_account_number || '-';
@@ -3050,12 +3422,14 @@
 
         function switchSection(id) {
             document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
-            document.getElementById(`section-${id}`).classList.add('active');
+            const targetSection = document.getElementById(`section-${id}`);
+            if (targetSection) targetSection.classList.add('active');
             document.querySelectorAll('nav li').forEach(l => l.classList.remove('active'));
             const navId = id === 'user-detail' ? 'users' : id;
             if (document.getElementById(`nav-${navId}`)) {
                 document.getElementById(`nav-${navId}`).classList.add('active');
             }
+            if (window.lucide) lucide.createIcons();
             closeSidebar(); // Ensure sidebar closes on mobile
         }
 
@@ -3089,6 +3463,364 @@
                 showToast('Error: ' + e.message, 'error');
             } finally {
                 btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ─── API Tools & Compliance Hub Logic ───
+
+        function copyElementText(elId) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            const text = (el.innerText || el.textContent || '').trim();
+            if (!text || text === '-' || text === 'Not provided') return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!', 'success'));
+            } else {
+                const t = document.createElement('textarea');
+                t.value = text;
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand('copy');
+                document.body.removeChild(t);
+                showToast('Copied to clipboard!', 'success');
+            }
+        }
+
+        function openAmlForWallet() {
+            const wallet = document.getElementById('modal-wallet-address').innerText.trim();
+            if (!wallet || wallet === '-' || wallet === 'Not provided') {
+                showToast('No wallet address recorded for this transaction', 'warning');
+                return;
+            }
+            closeTxModal();
+            switchSection('api-tools');
+            switchApiTool('aml');
+            const rad = document.querySelector('input[name="aml_type"][value="CRYPTO_WALLET"]');
+            if (rad) rad.checked = true;
+            toggleAmlFields();
+            document.getElementById('aml-wallet-input').value = wallet;
+            runAmlLookup();
+        }
+
+        function switchApiTool(toolId) {
+            document.querySelectorAll('.api-tab').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'var(--card-bg)';
+                b.style.color = 'var(--text-main)';
+            });
+            document.querySelectorAll('.api-tool-panel').forEach(p => p.style.display = 'none');
+
+            const activeTab = document.getElementById(`tab-tool-${toolId}`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+                activeTab.style.background = 'var(--velcro-navy)';
+                activeTab.style.color = '#fff';
+            }
+            const activePanel = document.getElementById(`tool-view-${toolId}`);
+            if (activePanel) {
+                activePanel.style.display = 'block';
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function toggleAmlFields() {
+            const checkedRad = document.querySelector('input[name="aml_type"]:checked');
+            const type = checkedRad ? checkedRad.value : 'CRYPTO_WALLET';
+            const walletWrap = document.getElementById('aml-field-wallet');
+            const nameWrap = document.getElementById('aml-field-name');
+            const countryWrap = document.getElementById('aml-field-country');
+            const extraWrap = document.getElementById('aml-field-extra');
+            const extraLabel = document.getElementById('aml-extra-label');
+            const extraInput = document.getElementById('aml-extra-input');
+
+            if (type === 'CRYPTO_WALLET') {
+                walletWrap.style.display = 'block';
+                nameWrap.style.display = 'none';
+                countryWrap.style.display = 'none';
+                extraWrap.style.display = 'none';
+            } else if (type === 'INDIVIDUAL') {
+                walletWrap.style.display = 'none';
+                nameWrap.style.display = 'block';
+                countryWrap.style.display = 'block';
+                extraWrap.style.display = 'block';
+                extraLabel.innerText = 'DATE OF BIRTH (YYYY-MM-DD)';
+                extraInput.placeholder = '1990-01-15';
+            } else if (type === 'BUSINESS') {
+                walletWrap.style.display = 'none';
+                nameWrap.style.display = 'block';
+                countryWrap.style.display = 'block';
+                extraWrap.style.display = 'block';
+                extraLabel.innerText = 'REGISTRATION NUMBER (RC/BN)';
+                extraInput.placeholder = '12345678';
+            }
+        }
+
+        async function runAmlLookup() {
+            const btn = document.getElementById('btn-run-aml');
+            const originalText = btn.innerHTML;
+            const checkedRad = document.querySelector('input[name="aml_type"]:checked');
+            const type = checkedRad ? checkedRad.value : 'CRYPTO_WALLET';
+
+            const payload = { type };
+            if (type === 'CRYPTO_WALLET') {
+                const w = document.getElementById('aml-wallet-input').value.trim();
+                if (!w) { showToast('Please enter a wallet address', 'warning'); return; }
+                payload.wallet_address = w;
+            } else if (type === 'INDIVIDUAL') {
+                const name = document.getElementById('aml-name-input').value.trim();
+                if (!name) { showToast('Please enter individual name', 'warning'); return; }
+                payload.name = name;
+                payload.country = document.getElementById('aml-country-input').value;
+                const dob = document.getElementById('aml-extra-input').value.trim();
+                if (dob) payload.date_of_birth = dob;
+            } else if (type === 'BUSINESS') {
+                const name = document.getElementById('aml-name-input').value.trim();
+                if (!name) { showToast('Please enter business name', 'warning'); return; }
+                payload.name = name;
+                payload.country = document.getElementById('aml-country-input').value;
+                const reg = document.getElementById('aml-extra-input').value.trim();
+                if (reg) payload.registration_number = reg;
+            }
+
+            btn.innerHTML = 'Screening...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/tools/aml-lookup`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (!res.ok || (data.success === false && !data.data)) {
+                    showToast(data.error || 'AML Lookup failed', 'error');
+                    return;
+                }
+
+                document.getElementById('aml-result-empty').style.display = 'none';
+                document.getElementById('aml-result-content').style.display = 'block';
+                document.getElementById('aml-raw-json').textContent = JSON.stringify(data, null, 2);
+
+                const d = data.data || data;
+                const status = (d.status || 'REVIEW').toUpperCase();
+                const badge = document.getElementById('aml-badge-status');
+                badge.innerText = status;
+                if (status === 'APPROVED') {
+                    badge.style.color = '#16a34a';
+                } else if (status === 'REJECTED') {
+                    badge.style.color = '#dc2626';
+                } else {
+                    badge.style.color = '#d97706';
+                }
+
+                const matches = (d.details && d.details.matches) ? d.details.matches : [];
+                document.getElementById('aml-matches-count').innerText = `${matches.length} Match Flag(s)`;
+
+                const listEl = document.getElementById('aml-matches-list');
+                if (matches.length === 0) {
+                    listEl.innerHTML = '<div style="padding:10px; background:rgba(22,163,74,0.1); color:#16a34a; border-radius:8px; font-size:12px; font-weight:600;">✅ Clean: No sanctions or PEP matches found.</div>';
+                } else {
+                    listEl.innerHTML = matches.map(m => `
+                        <div style="padding:10px; background:rgba(220,38,38,0.08); border:1px solid rgba(220,38,38,0.2); border-radius:8px; margin-bottom:8px; font-size:12px;">
+                            <div style="display:flex; justify-content:space-between; font-weight:700; color:#dc2626;">
+                                <span>${m.name || 'Identified Subject'}</span>
+                                <span>${m.certainty || 0}% Certainty</span>
+                            </div>
+                            <div style="margin-top:4px; font-size:11px; color:var(--text-secondary);">
+                                Flags: <b>${(m.flags || []).join(', ') || 'N/A'}</b>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                showToast(`Screening complete: ${status}`, 'success');
+            } catch (e) {
+                showToast('Network error: ' + e.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        function updateResolverProvider() {
+            const provider = document.getElementById('resolve-provider').value;
+            const countryWrap = document.getElementById('resolve-country-wrap');
+            const bankLabel = document.getElementById('resolve-bank-label');
+            const bankInput = document.getElementById('resolve-bank-code');
+
+            if (provider === 'paj') {
+                countryWrap.style.display = 'none';
+                bankLabel.innerText = 'PAJ BANK ID';
+                bankInput.placeholder = 'e.g. 044 or PAJ bank UUID';
+            } else {
+                countryWrap.style.display = 'block';
+                bankLabel.innerText = 'BANK CODE / CBN CODE';
+                bankInput.placeholder = 'e.g. 044 (Access), 058 (GTB), 057 (Zenith)';
+            }
+        }
+
+        async function runAccountResolve() {
+            const btn = document.getElementById('btn-run-resolve');
+            const originalText = btn.innerHTML;
+            const provider = document.getElementById('resolve-provider').value;
+            const country = document.getElementById('resolve-country').value;
+            const bankCode = document.getElementById('resolve-bank-code').value.trim();
+            const accountNumber = document.getElementById('resolve-account-number').value.trim();
+
+            if (!bankCode || !accountNumber) {
+                showToast('Please enter both bank code and account number', 'warning');
+                return;
+            }
+
+            btn.innerHTML = 'Resolving...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/tools/resolve-bank`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, country, bank_code: bankCode, account_number: accountNumber })
+                });
+                const data = await res.json();
+
+                if (!res.ok || data.success === false) {
+                    showToast(data.error || data.message || 'Account resolution failed', 'error');
+                    return;
+                }
+
+                document.getElementById('resolve-result-empty').style.display = 'none';
+                document.getElementById('resolve-result-content').style.display = 'block';
+                document.getElementById('resolve-raw-json').textContent = JSON.stringify(data, null, 2);
+
+                const d = data.data || data;
+                const name = d.account_name || d.accountName || d.name || d.holder_name || (d.beneficiary && d.beneficiary.account_name) || 'Resolved';
+                document.getElementById('resolve-res-name').innerText = name;
+                document.getElementById('resolve-res-account').innerText = accountNumber;
+                document.getElementById('resolve-res-bank').innerText = d.bank_name || d.bankName || bankCode;
+                showToast('Account name resolved successfully!', 'success');
+            } catch (e) {
+                showToast('Network error: ' + e.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function runLiveStatusCheck() {
+            const btn = document.getElementById('btn-run-status');
+            const originalText = btn.innerHTML;
+            const reference = document.getElementById('lookup-reference').value.trim();
+            const provider = document.getElementById('lookup-provider').value;
+
+            if (!reference) {
+                showToast('Please enter a transaction reference', 'warning');
+                return;
+            }
+
+            btn.innerHTML = 'Querying...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/tools/check-status`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reference, provider })
+                });
+                const data = await res.json();
+
+                if (!res.ok || data.success === false) {
+                    showToast(data.error || data.message || 'Status check failed', 'error');
+                    return;
+                }
+
+                document.getElementById('status-result-empty').style.display = 'none';
+                document.getElementById('status-result-content').style.display = 'block';
+                document.getElementById('lookup-raw-json').textContent = JSON.stringify(data, null, 2);
+
+                const d = data.data || data;
+                const status = (d.status || d.state || 'UNKNOWN').toUpperCase();
+                const badge = document.getElementById('lookup-res-badge');
+                badge.innerText = status;
+                badge.className = `status-pill ${status.toLowerCase()}`;
+                document.getElementById('lookup-res-provider').innerText = data.provider ? data.provider.toUpperCase() : (reference.startsWith('paj_') ? 'PAJ' : 'SWITCH');
+                document.getElementById('lookup-res-type').innerText = (d.type || d.transactionType || '-').toUpperCase();
+                document.getElementById('lookup-res-hash').innerText = d.signature || d.hash || (d.meta && d.meta.hash) || 'None';
+                showToast(`Live status: ${status}`, 'success');
+            } catch (e) {
+                showToast('Network error: ' + e.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function runQuoteFetch() {
+            const btn = document.getElementById('btn-run-quote');
+            const originalText = btn.innerHTML;
+            const provider = document.getElementById('quote-provider').value;
+            const direction = document.getElementById('quote-direction').value;
+            const amount = parseFloat(document.getElementById('quote-amount').value) || 100;
+            const asset = document.getElementById('quote-asset').value;
+            const currency = document.getElementById('quote-currency').value;
+
+            btn.innerHTML = 'Fetching...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/tools/quote`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, direction, amount, asset, currency })
+                });
+                const data = await res.json();
+
+                if (!res.ok || data.success === false) {
+                    showToast(data.error || data.message || 'Quote query failed', 'error');
+                    return;
+                }
+
+                document.getElementById('quote-result-empty').style.display = 'none';
+                document.getElementById('quote-result-content').style.display = 'block';
+                document.getElementById('quote-raw-json').textContent = JSON.stringify(data, null, 2);
+
+                const d = data.data || data;
+                const rate = d.rate?.rate || d.rate || (d.onRampRate && d.onRampRate.rate) || (d.offRampRate && d.offRampRate.rate) || 0;
+                document.getElementById('quote-res-rate').innerText = rate ? `1 USD / Token = ${Number(rate).toLocaleString()} ${currency}` : 'Calculated';
+                document.getElementById('quote-res-src').innerText = `${amount} ${direction === 'ONRAMP' ? currency : asset}`;
+                document.getElementById('quote-res-dst').innerText = d.destination?.amount ? `${Number(d.destination.amount).toLocaleString()} ${currency}` : (rate ? `${Number(amount * rate).toLocaleString()} ${currency}` : '-');
+                showToast('Live rate fetched!', 'success');
+            } catch (e) {
+                showToast('Network error: ' + e.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function runFixWalletAddresses() {
+            const btn = document.getElementById('btn-fix-wallets');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Syncing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/tools/fix-wallet-addresses`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Successfully synced ${data.fixed} transaction wallet addresses!`, 'success');
+                    await fetchData();
+                } else {
+                    showToast(data.error || 'Failed to sync wallet addresses', 'error');
+                }
+            } catch (e) {
+                showToast('Network error: ' + e.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }

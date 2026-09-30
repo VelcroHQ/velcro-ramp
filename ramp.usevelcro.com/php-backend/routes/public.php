@@ -168,6 +168,11 @@ function registerPublicRoutes(Router $router): void
         $email = body($body, 'email');
         $beneficiary = body($body, 'beneficiary');
 
+        // If wallet_address wasn't at root, extract from beneficiary (used by onramp)
+        if (empty($walletAddress) && is_array($beneficiary) && !empty($beneficiary['wallet_address'])) {
+            $walletAddress = $beneficiary['wallet_address'];
+        }
+
         try {
             $data = switchApi()->initiateOrder([
                 'direction' => $direction,
@@ -196,6 +201,13 @@ function registerPublicRoutes(Router $router): void
         $fee = $d['fee'] ?? [];
         $src = $d['source'] ?? [];
         $dst = $d['destination'] ?? [];
+
+        // Final fallback if Switch returned beneficiary wallet address
+        if (empty($walletAddress) && $direction === 'ONRAMP') {
+            $walletAddress = $d['beneficiary']['wallet_address']
+                ?? ($d['destination']['address']
+                ?? ($beneficiary['wallet_address'] ?? null));
+        }
 
         $depositNote = $dep['note'] ?? null;
         if (is_array($depositNote)) {
@@ -345,6 +357,14 @@ function registerPublicRoutes(Router $router): void
             $rows = Database::select($sql, $params);
             foreach ($rows as &$row) {
                 $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
+                if (empty($row['wallet_address'])) {
+                    $ben = $row['beneficiary'] ?? [];
+                    $meta = $row['meta'] ?? [];
+                    $row['wallet_address'] = $ben['wallet_address']
+                        ?? ($meta['beneficiary']['wallet_address']
+                        ?? ($meta['recipient']
+                        ?? ($meta['destination']['address'] ?? null)));
+                }
             }
             jsonResponse(successResponse($rows));
         } catch (Throwable $e) {
@@ -359,6 +379,14 @@ function registerPublicRoutes(Router $router): void
                 jsonResponse(errorResponse('Transaction not found', 404), 404);
             }
             $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
+            if (empty($row['wallet_address'])) {
+                $ben = $row['beneficiary'] ?? [];
+                $meta = $row['meta'] ?? [];
+                $row['wallet_address'] = $ben['wallet_address']
+                    ?? ($meta['beneficiary']['wallet_address']
+                    ?? ($meta['recipient']
+                    ?? ($meta['destination']['address'] ?? null)));
+            }
             jsonResponse(successResponse($row));
         } catch (Throwable $e) {
             $status = $e->getCode() >= 400 ? $e->getCode() : 500;

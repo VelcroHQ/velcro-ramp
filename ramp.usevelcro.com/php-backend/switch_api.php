@@ -72,6 +72,20 @@ class SwitchApiClient
         ]);
     }
 
+    public function amlLookup(array $payload): array
+    {
+        return $this->request('/compliance/aml/lookup', [
+            'method' => 'POST',
+            'body' => $payload,
+        ]);
+    }
+
+    public function getAmlHistories(array $query = []): array
+    {
+        $qs = http_build_query($query);
+        return $this->request('/compliance/aml' . ($qs ? '?' . $qs : ''));
+    }
+
     public function getRequirements(array $query): array
     {
         $qs = http_build_query($query);
