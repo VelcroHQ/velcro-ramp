@@ -203,6 +203,13 @@
       .sm\:hidden {
         display: flex !important;
       }
+      /* Prevent iOS Safari auto-zoom on input focus */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+      .display-input {
+        font-size: 1.5rem !important;
+      }
       /* Mobile header cleanup */
       #main-nav .h-16 { height: 3.5rem; }
       #main-nav img { height: 1.75rem; }
@@ -249,6 +256,15 @@
       .asset-pill, .network-pill {
         padding: 0.4rem 0.6rem;
         font-size: 0.8125rem;
+      }
+      /* Modal optimizations on mobile */
+      #history-modal .p-6,
+      #success-modal .p-6 {
+        padding: 1.25rem 1rem !important;
+      }
+      #support-widget {
+        bottom: 1rem !important;
+        right: 1rem !important;
       }
     }
 
@@ -413,11 +429,12 @@
         bottom: 0;
         left: 0;
         right: 0;
-        max-height: 60vh;
-        border-radius: 1rem 1rem 0 0;
+        max-height: 75vh;
+        border-radius: 1.25rem 1.25rem 0 0;
         margin-top: 0;
         z-index: 9999;
         animation: slideUp 0.25s ease-out;
+        padding-bottom: env(safe-area-inset-bottom, 20px);
       }
       .dropdown-backdrop {
         background: rgba(0,0,0,0.35);
@@ -514,6 +531,7 @@
       flex-direction: column;
       animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+      padding-bottom: env(safe-area-inset-bottom, 16px);
     }
     .asset-picker-header {
       display: flex;
@@ -1065,6 +1083,9 @@
       .user-email-nav {
         display: none !important;
       }
+      #support-widget button:first-child {
+        display: none !important;
+      }
     }
   </style>
 </head>
@@ -1072,7 +1093,7 @@
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
 
   <!-- Login Gatekeeper Modal/Overlay -->
-  <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md hidden">
+  <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md overflow-y-auto hidden">
     <div class="login-card text-center">
       <div class="login-logo-container">
         <img src="/velcro_logo.png" alt="Velcro" class="login-logo">
@@ -1184,16 +1205,16 @@
             <div class="flex items-center justify-between mb-3">
               <span class="text-sm text-gray-500 font-medium">You'll send</span>
             </div>
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div class="flex items-center gap-2 flex-1 min-w-0 opacity-50 pointer-events-none transition-opacity"
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+              <div class="flex items-center gap-2 flex-1 min-w-0 w-full sm:w-auto opacity-50 pointer-events-none transition-opacity"
                 id="sell-amount-step">
-                <button id="sell-currency-prefix" onclick="toggleSellInputMode()" class="text-2xl sm:text-3xl font-bold text-gray-300 hover:text-velcro-green transition-colors cursor-pointer">$</button>
+                <button id="sell-currency-prefix" onclick="toggleSellInputMode()" class="text-2xl sm:text-3xl font-bold text-gray-300 hover:text-velcro-green transition-colors cursor-pointer shrink-0">$</button>
                 <input type="text" inputmode="decimal" id="sell-amount" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
+              <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2.5 shrink-0 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-gray-100 sm:border-0 dark:border-slate-800">
                 <div class="flex flex-col items-start sm:items-end gap-1.5">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-left sm:text-right uppercase">Choose Asset</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Choose Asset</span>
                   <div class="custom-select" id="sell-asset-wrap">
                     <div class="asset-pill" onclick="openSellAssetPicker()">
                       <div class="flex items-center gap-1.5" id="sell-asset-display">
@@ -1206,8 +1227,8 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex flex-col items-center sm:items-end gap-1.5">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-right uppercase">Choose Blockchain</span>
+                <div class="flex flex-col items-end gap-1.5">
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Choose Blockchain</span>
                   <div class="custom-select">
                     <div class="network-pill opacity-50 pointer-events-none" id="sell-network-wrap"
                       onclick="toggleDropdown('sell-network-options')">
@@ -1250,14 +1271,14 @@
                 <span id="sell-fee-badge" class="text-[10px] text-gray-400 font-medium">0.5% fee</span>
               </div>
             </div>
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex flex-row items-center justify-between gap-3">
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <span class="text-2xl sm:text-3xl font-bold text-gray-300" id="sell-receive-currency">&#8358;</span>
                 <input type="text" inputmode="decimal" id="sell-receive" placeholder="0.00"
                   oninput="handleAmountInput(this, 2); calculateSellFromNgn();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="shrink-0 w-full sm:w-auto flex justify-end">
+              <div class="shrink-0 flex items-center">
                 <div class="bg-gray-100 border border-gray-200 rounded-lg px-3 py-1.5 flex items-center gap-2">
                   <img id="sell-receive-flag" src="/flags/ng.png" class="w-4 h-auto rounded-sm" alt="">
                   <span class="text-gray-700 font-semibold text-sm" id="sell-receive-currency-code">NGN</span>
@@ -1471,15 +1492,15 @@
                 <span id="buy-rate-timer" class="hidden text-[10px] text-amber-600 font-medium"></span>
               </div>
             </div>
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div class="flex items-center gap-2 flex-1 min-w-0">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+              <div class="flex items-center gap-2 flex-1 min-w-0 w-full sm:w-auto">
                 <input type="text" inputmode="decimal" id="buy-receive" placeholder="0.00"
                   oninput="handleAmountInput(this, 4); calculateBuyFromCrypto();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
+              <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2.5 shrink-0 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-gray-100 sm:border-0 dark:border-slate-800">
                 <div class="flex flex-col items-start sm:items-end gap-1.5">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-left sm:text-right uppercase">Choose Asset</span>
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Choose Asset</span>
                   <div class="custom-select" id="buy-asset-wrap">
                     <div class="asset-pill" onclick="openBuyAssetPicker()">
                       <div class="flex items-center gap-1.5" id="buy-asset-display">
@@ -1492,8 +1513,8 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex flex-col items-center sm:items-end gap-1.5" id="buy-network-col">
-                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block text-right uppercase">Choose Blockchain</span>
+                <div class="flex flex-col items-end gap-1.5" id="buy-network-col">
+                  <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Choose Blockchain</span>
                   <div class="custom-select">
                     <div class="network-pill opacity-50 pointer-events-none" id="buy-network-wrap"
                       onclick="toggleDropdown('buy-network-options')">
@@ -1529,14 +1550,14 @@
             <div class="flex items-center justify-between mb-3">
               <span class="text-sm text-gray-500 font-medium">You'll send</span>
             </div>
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex flex-row items-center justify-between gap-3">
               <div class="flex items-center gap-2 flex-1 min-w-0 opacity-50 pointer-events-none transition-opacity"
                 id="buy-amount-step">
                 <span class="text-2xl sm:text-3xl font-bold text-gray-300" id="buy-send-currency">&#8358;</span>
                 <input type="text" inputmode="decimal" id="buy-amount" placeholder="0.00" oninput="handleAmountInput(this, 2); calculateBuy();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="shrink-0 w-full sm:w-auto flex justify-end">
+              <div class="shrink-0 flex items-center">
                 <div class="bg-gray-100 border border-gray-200 rounded-lg px-3 py-1.5 flex items-center gap-2">
                   <img id="buy-send-flag" src="/flags/ng.png" class="w-4 h-auto rounded-sm" alt="">
                   <span class="text-gray-700 font-semibold text-sm" id="buy-send-currency-code">NGN</span>
@@ -1727,11 +1748,11 @@
   <div id="dropdown-backdrop" class="dropdown-backdrop" onclick="closeAllDropdowns()"></div>
 
   <!-- History Modal -->
-  <div id="history-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div id="history-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4">
     <div class="absolute inset-0 bg-white/80 backdrop-blur-sm" onclick="hideHistoryModal()"></div>
     <div
-      class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden animate-fade-in flex flex-col">
-      <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+      class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[88vh] overflow-hidden animate-fade-in flex flex-col">
+      <div class="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
         <h2 class="text-lg font-bold text-velcro-navy flex items-center gap-2">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 3v5h5"/>
@@ -1742,7 +1763,7 @@
         <button onclick="hideHistoryModal()" class="p-2 hover:bg-gray-100 rounded-lg"><i data-lucide="x"
             class="w-5 h-5 text-gray-500"></i></button>
       </div>
-      <div class="overflow-y-auto p-6 space-y-3" id="history-list">
+      <div class="overflow-y-auto p-4 sm:p-6 space-y-3" id="history-list">
         <div class="text-center py-8 text-gray-400">Loading transactions...</div>
       </div>
     </div>
@@ -1750,10 +1771,10 @@
 
 
   <!-- Success Modal -->
-  <div id="success-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div id="success-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4">
     <div class="absolute inset-0 bg-white/80 backdrop-blur-sm" onclick="hideSuccessModal()"></div>
-    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in flex flex-col">
-      <div class="p-6 text-center">
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in flex flex-col">
+      <div class="p-5 sm:p-6 text-center">
         <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
