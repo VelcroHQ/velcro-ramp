@@ -142,24 +142,20 @@
     }
 
     .premium-card {
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.95);
       border: 1px solid rgba(229, 231, 235, 0.6);
       box-shadow:
         0 1px 3px rgba(13, 13, 89, 0.03),
         0 4px 12px rgba(13, 13, 89, 0.04),
         0 12px 32px rgba(13, 13, 89, 0.05);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
     }
     .dark .premium-card {
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.95);
       border: 1px solid rgba(30, 41, 59, 0.5);
       box-shadow:
         0 1px 3px rgba(0, 0, 0, 0.15),
         0 4px 12px rgba(0, 0, 0, 0.2),
         0 12px 32px rgba(0, 0, 0, 0.25);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
     }
 
     .premium-tabs {
@@ -214,13 +210,6 @@
     @media (max-width: 640px) {
       .sm\:hidden {
         display: flex !important;
-      }
-      /* Prevent iOS Safari auto-zoom on input focus */
-      input, select, textarea {
-        font-size: 16px !important;
-      }
-      .display-input {
-        font-size: 1.5rem !important;
       }
       /* Mobile header cleanup */
       #main-nav .h-16 { height: 3.5rem; }
@@ -325,13 +314,11 @@
     }
 
     .input-panel {
-      background: rgba(255, 255, 255, 0.7);
-      border: 1.5px solid rgba(229, 231, 235, 0.6);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1.5px solid rgba(229, 231, 235, 0.7);
       border-radius: 1rem;
       padding: 1.25rem;
       transition: all 0.2s ease;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
     }
 
     .input-panel:focus-within {
@@ -355,8 +342,6 @@
       font-weight: 500;
       color: #374151;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
     }
 
     .asset-pill:hover {
@@ -379,8 +364,6 @@
       font-weight: 500;
       color: #4b5563;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
     }
 
     .network-pill:hover {
@@ -480,20 +463,40 @@
     /* Mobile dropdown overlay */
     @media (max-width: 640px) {
       .custom-select-options.open {
-        position: fixed;
-        top: auto;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        max-height: 75vh;
-        border-radius: 1.25rem 1.25rem 0 0;
-        margin-top: 0;
-        z-index: 9999;
-        animation: slideUp 0.25s ease-out;
-        padding-bottom: env(safe-area-inset-bottom, 20px);
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-height: 75vh !important;
+        max-height: 75dvh !important;
+        border-radius: 1.25rem 1.25rem 0 0 !important;
+        margin-top: 0 !important;
+        z-index: 99999 !important;
+        animation: slideUp 0.25s ease-out !important;
+        padding-bottom: env(safe-area-inset-bottom, 20px) !important;
+        background: white !important;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.2) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
       }
-      .dropdown-backdrop {
-        background: rgba(0,0,0,0.35);
+      .dark .custom-select-options.open {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+      }
+      .custom-select-options.open .custom-option {
+        padding: 13px 18px !important;
+        font-size: 15px !important;
+      }
+      .dropdown-backdrop.active {
+        display: block !important;
+        position: fixed !important;
+        inset: 0 !important;
+        background: rgba(0,0,0,0.45) !important;
+        z-index: 99998 !important;
       }
     }
 
@@ -564,7 +567,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      z-index: 9999;
+      z-index: 100000;
       justify-content: flex-end;
       flex-direction: column;
     }
@@ -649,9 +652,13 @@
       color: #9ca3af;
     }
     .asset-picker-list {
-      overflow-y: auto;
+      overflow-y: auto !important;
       padding: 8px 0 24px;
-      flex: 1;
+      flex: 1 1 0% !important;
+      min-height: 0 !important;
+      -webkit-overflow-scrolling: touch !important;
+      touch-action: pan-y !important;
+      overscroll-behavior: contain !important;
     }
     .asset-picker-item {
       display: flex;
@@ -1268,8 +1275,8 @@
                 <input type="text" inputmode="decimal" id="sell-amount" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2.5 shrink-0 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-gray-100 sm:border-0 dark:border-slate-800">
-                <div class="flex flex-col items-start sm:items-end gap-1.5">
+              <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
+                <div class="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Choose Asset</span>
                   <div class="custom-select" id="sell-asset-wrap">
                     <div class="asset-pill" onclick="openSellAssetPicker()">
@@ -1283,13 +1290,12 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex flex-col items-end gap-1.5">
+                <div class="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Choose Blockchain</span>
                   <div class="custom-select">
-                    <div class="network-pill opacity-50 pointer-events-none" id="sell-network-wrap"
-                      onclick="toggleDropdown('sell-network-options')">
-                      <span id="sell-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select
-                        Network</span>
+                    <div class="network-pill" id="sell-network-wrap"
+                      onclick="handleNetworkClick('sell')">
+                      <span id="sell-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select Network</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
                         <path d="m6 9 6 6 6-6" />
@@ -1554,8 +1560,8 @@
                   oninput="handleAmountInput(this, 4); calculateBuyFromCrypto();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2.5 shrink-0 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-gray-100 sm:border-0 dark:border-slate-800">
-                <div class="flex flex-col items-start sm:items-end gap-1.5">
+              <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
+                <div class="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Choose Asset</span>
                   <div class="custom-select" id="buy-asset-wrap">
                     <div class="asset-pill" onclick="openBuyAssetPicker()">
@@ -1569,13 +1575,12 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex flex-col items-end gap-1.5" id="buy-network-col">
+                <div class="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto" id="buy-network-col">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Choose Blockchain</span>
                   <div class="custom-select">
-                    <div class="network-pill opacity-50 pointer-events-none" id="buy-network-wrap"
-                      onclick="toggleDropdown('buy-network-options')">
-                      <span id="buy-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select
-                        Network</span>
+                    <div class="network-pill" id="buy-network-wrap"
+                      onclick="handleNetworkClick('buy')">
+                      <span id="buy-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Select Network</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
                         <path d="m6 9 6 6 6-6" />
@@ -2360,8 +2365,15 @@
           safeSetText('buy-confirm-asset', buySym);
           safeSetSrc('buy-confirm-asset-img', buyLogo);
           document.getElementById('buy-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
+          safeSetText('buy-confirm-network', 'Solana');
+          safeSetSrc('buy-confirm-network-img', '/logos/solana.png');
           const netCol = document.getElementById('buy-network-col');
-          if (netCol) netCol.style.display = 'none';
+          if (netCol) netCol.style.display = '';
+          const netOptions = document.getElementById('buy-network-options');
+          if (netOptions) {
+            netOptions.innerHTML = '<div class="custom-option selected" data-network="solana" data-logo="/logos/solana.png" data-name="Solana"><img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana (Native)</span></div>';
+          }
+          document.getElementById('buy-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
           document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
           fetchPajRate();
         }
@@ -2892,26 +2904,14 @@
       resizeTimeout = setTimeout(closeAllDropdowns, 100);
     });
 
-    // Mobile-friendly network dropdown delegation with tap-vs-scroll detection
+    // Mobile-friendly network dropdown delegation
     function setupNetworkDropdown(containerId, selectFn) {
       const container = document.getElementById(containerId);
       if (!container) return;
-      let touchStartY = 0;
-      let touchStartX = 0;
-      let isTouch = false;
-      container.addEventListener('touchstart', (e) => {
-        isTouch = true;
-        touchStartY = e.touches[0].clientY;
-        touchStartX = e.touches[0].clientX;
-      }, { passive: true });
-      container.addEventListener('touchmove', () => {
-        // mark that we moved (scroll gesture)
-      }, { passive: true });
       container.addEventListener('click', (e) => {
         const option = e.target.closest('.custom-option');
         if (!option) return;
         e.stopPropagation();
-        e.preventDefault();
         
         const id = option.dataset.network;
         const logo = option.dataset.logo;
@@ -2920,29 +2920,14 @@
           selectFn(id, logo, name, option);
         }
       });
-      // Reset touch flag after a short delay so desktop clicks still work
-      container.addEventListener('touchend', () => {
-        setTimeout(() => { isTouch = false; }, 100);
-      }, { passive: true });
     }
     setupNetworkDropdown('sell-network-options', selectSellNetwork);
     setupNetworkDropdown('buy-network-options', selectBuyNetwork);
 
-    // Bank dropdown event handling — matches network dropdown pattern exactly
+    // Bank dropdown event handling
     (function setupBankDropdown() {
       const container = document.getElementById('sell-bank-options');
       if (!container) return;
-      let touchStartY = 0;
-      let touchStartX = 0;
-
-      // iOS Safari needs these dummy touch listeners on the container for child elements to be clickable
-      container.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-        touchStartX = e.touches[0].clientX;
-      }, { passive: true });
-
-      container.addEventListener('touchmove', () => {}, { passive: true });
-
       container.addEventListener('click', (e) => {
         const option = e.target.closest('.custom-option');
         if (!option) return;
@@ -2951,7 +2936,6 @@
         const pj = option.dataset.pajId;
         if (!name) return;
         e.stopPropagation();
-        e.preventDefault();
         selectSellBank(name, sc, pj, option);
       });
     })();
@@ -2966,9 +2950,26 @@
       if (el) el.src = src;
     }
 
+    function handleNetworkClick(tab) {
+      const isSell = tab === 'sell';
+      const currentAsset = isSell ? currentSellAsset : currentBuyAsset;
+      if (!currentAsset) {
+        showToast('Please choose an asset first', 'info');
+        if (isSell) openSellAssetPicker();
+        else openBuyAssetPicker();
+        return;
+      }
+      if (currentProvider === 'paj') {
+        showToast(`${currentAsset} operates exclusively on Solana`, 'info');
+        return;
+      }
+      const dropdownId = isSell ? 'sell-network-options' : 'buy-network-options';
+      toggleDropdown(dropdownId);
+    }
+
     function toggleDropdown(id) {
-      if (Date.now() - lastModalClose < 300) return;
       const el = document.getElementById(id);
+      if (!el) return;
       const isOpen = el.classList.contains('open');
       closeAllDropdowns();
       if (!isOpen) {
@@ -2976,58 +2977,19 @@
         const parent = el.closest('.custom-select');
         if (parent) parent.style.zIndex = '9999';
 
-        // Move to portal on ALL screen sizes to escape backdrop-filter containing block
-        if (parent && !el._originalParent) {
-          el._originalParent = parent;
-          document.getElementById('dropdown-portal').appendChild(el);
-        }
-
-        // Desktop: position below trigger
-        if (window.innerWidth > 640) {
-          const trigger = parent?.querySelector('.custom-select-trigger, .asset-pill, .network-pill');
-          if (trigger && el) {
-            const rect = trigger.getBoundingClientRect();
-            el.style.position = 'fixed';
-            el.style.top = (rect.bottom + 4) + 'px';
-            el.style.left = rect.left + 'px';
-            el.style.right = 'auto';
-            // Width is controlled by CSS min-width
-            el.style.maxHeight = '300px';
-            el.style.zIndex = '9999';
-            el.style.borderRadius = '0.75rem';
-            el.style.marginTop = '0';
-            el.style.display = 'block';
-          }
-        }
-
         const backdrop = document.getElementById('dropdown-backdrop');
         if (backdrop) backdrop.classList.add('active');
+        if (window.innerWidth <= 640) {
+          document.body.style.overflow = 'hidden';
+        }
       }
     }
 
     function closeAllDropdowns() {
       document.querySelectorAll('.custom-select-options').forEach(o => {
         o.classList.remove('open');
-        // Reset inline desktop positioning styles
-        o.style.position = '';
-        o.style.top = '';
-        o.style.left = '';
-        o.style.right = '';
-        o.style.width = '';
-        o.style.minWidth = '';
-        o.style.maxHeight = '';
-        o.style.zIndex = '';
-        o.style.borderRadius = '';
-        o.style.marginTop = '';
-        o.style.display = '';
-        // Move back to original parent if ported
-        if (o._originalParent) {
-          o._originalParent.appendChild(o);
-          o._originalParent = null;
-        } else {
-          const p = o.closest('.custom-select');
-          if (p) p.style.zIndex = '';
-        }
+        const p = o.closest('.custom-select');
+        if (p) p.style.zIndex = '';
       });
       document.querySelectorAll('.asset-picker-modal').forEach(o => o.classList.remove('open'));
       document.body.style.overflow = '';
@@ -3036,6 +2998,7 @@
     }
 
     function openBuyAssetPicker() {
+      closeAllDropdowns();
       const modal = document.getElementById('buy-asset-options');
       const searchInput = document.getElementById('buy-asset-search');
       if (searchInput) { searchInput.value = ''; filterBuyAssets(); }
@@ -3053,7 +3016,6 @@
       const modal = document.getElementById('buy-asset-options');
       if (modal) modal.classList.remove('open');
       document.body.style.overflow = '';
-      lastModalClose = Date.now();
     }
 
     function filterBuyAssets() {
@@ -3080,6 +3042,7 @@
     }
 
     function openSellAssetPicker() {
+      closeAllDropdowns();
       const modal = document.getElementById('sell-asset-options');
       const searchInput = document.getElementById('sell-asset-search');
       if (searchInput) { searchInput.value = ''; filterSellAssets(); }
@@ -3097,7 +3060,6 @@
       const modal = document.getElementById('sell-asset-options');
       if (modal) modal.classList.remove('open');
       document.body.style.overflow = '';
-      lastModalClose = Date.now();
     }
 
     function filterSellAssets() {
@@ -3193,7 +3155,14 @@
         currentSellNetwork = 'solana';
         currentRate.sell = 0;
         document.getElementById('sell-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
-        document.getElementById('sell-network-wrap').classList.add('pointer-events-none');
+        safeSetText('sell-network-name', 'Solana');
+        safeSetText('sell-confirm-network', 'Solana');
+        safeSetSrc('sell-confirm-network-img', '/logos/solana.png');
+        const netOptions = document.getElementById('sell-network-options');
+        if (netOptions) {
+          netOptions.innerHTML = '<div class="custom-option selected" data-network="solana" data-logo="/logos/solana.png" data-name="Solana"><img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana (Native)</span></div>';
+        }
+        document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
         document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
         fetchPajRate();
         fetchPajBanks();
@@ -3401,10 +3370,16 @@
       if (currentProvider === 'paj') {
         currentBuyNetwork = 'solana';
         currentRate.buy = 0;
-        // Hide network selector column for PAJ (always Solana)
         const netCol = document.getElementById('buy-network-col');
-        if (netCol) netCol.style.display = 'none';
+        if (netCol) netCol.style.display = '';
         document.getElementById('buy-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
+        safeSetText('buy-confirm-network', 'Solana');
+        safeSetSrc('buy-confirm-network-img', '/logos/solana.png');
+        const netOptions = document.getElementById('buy-network-options');
+        if (netOptions) {
+          netOptions.innerHTML = '<div class="custom-option selected" data-network="solana" data-logo="/logos/solana.png" data-name="Solana"><img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana (Native)</span></div>';
+        }
+        document.getElementById('buy-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
         document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
         await fetchPajRate();
       } else {
@@ -5045,8 +5020,7 @@
     </div>
   </div>
 
-  <!-- Desktop dropdown portal (moves dropdowns outside cards to escape backdrop-filter containing block) -->
-  <div id="dropdown-portal" style="position:fixed; top:0; left:0; width:0; height:0; z-index:9999;"></div>
+
 
 </body>
 
