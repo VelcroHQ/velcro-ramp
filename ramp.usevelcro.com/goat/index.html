@@ -2986,22 +2986,25 @@
             let offrampUSD = 0, offrampNGN = 0;
 
             completed.forEach(t => {
-                const isPajOrNgn = isPajTx(t) || t.currency === 'NGN';
+                const isPaj = isPajTx(t);
                 const rate = safeNum(t.rate, 1500) || 1500;
                 if (t.type === 'ONRAMP') {
                     const ngn = safeNum(t.amount || t.fiat_amount);
-                    const usd = safeNum(t.destination_amount) || (ngn / rate);
+                    const destUsd = safeNum(t.destination_amount);
+                    const usd = (destUsd > 0 && destUsd < ngn) ? destUsd : (ngn / rate);
                     onrampNGN += ngn;
                     onrampUSD += usd;
                 } else if (t.type === 'OFFRAMP') {
-                    if (isPajOrNgn) {
+                    if (isPaj) {
                         const ngn = safeNum(t.amount || t.fiat_amount);
-                        const usd = safeNum(t.destination_amount) || (ngn / rate);
+                        const destUsd = safeNum(t.destination_amount);
+                        const usd = (destUsd > 0 && destUsd < ngn) ? destUsd : (ngn / rate);
                         offrampNGN += ngn;
                         offrampUSD += usd;
                     } else {
                         const usd = safeNum(t.amount || t.fiat_amount);
-                        const ngn = safeNum(t.destination_amount) || (usd * rate);
+                        const destNgn = safeNum(t.destination_amount);
+                        const ngn = (destNgn > 0 && destNgn > usd) ? destNgn : (usd * rate);
                         offrampUSD += usd;
                         offrampNGN += ngn;
                     }
