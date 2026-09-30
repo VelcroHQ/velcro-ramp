@@ -241,6 +241,35 @@ class PajApiClient
 
     // ─── Banks & Accounts ───
 
+    public function resolvePajBankId(string $bankCodeOrId): string
+    {
+        $clean = trim($bankCodeOrId);
+        if ($clean === '') {
+            return '';
+        }
+        // If already a 24-character hexadecimal MongoDB ID, return it directly
+        if (preg_match('/^[a-f0-9]{24}$/i', $clean)) {
+            return $clean;
+        }
+
+        // Look up in the banks directory to find matching MongoDB ID
+        $banks = $this->getBanks();
+        foreach ($banks as $b) {
+            $bCode = trim((string)($b['code'] ?? ''));
+            $bId = trim((string)($b['id'] ?? ''));
+            if (
+                ($bCode !== '' && ($bCode === $clean || ltrim($bCode, '0') === ltrim($clean, '0'))) ||
+                ($bId !== '' && $bId === $clean)
+            ) {
+                if (preg_match('/^[a-f0-9]{24}$/i', $bId)) {
+                    return $bId;
+                }
+            }
+        }
+
+        return $clean;
+    }
+
     public function getBanks(): array
     {
         $cacheFile = __DIR__ . '/data/paj_banks_cache.json';
@@ -250,8 +279,23 @@ class PajApiClient
             try {
                 $banks = $this->request('GET', '/pub/bank', [], $this->getSessionToken());
                 if (!empty($banks) && is_array($banks)) {
-                    @file_put_contents($cacheFile, json_encode($banks, JSON_PRETTY_PRINT));
-                    return $banks;
+                    $cleanBanks = [];
+                    foreach ($banks as $b) {
+                        if (!is_array($b) || empty($b['name']) || trim((string)$b['name']) === '') {
+                            continue;
+                        }
+                        $cleanBanks[] = [
+                            'id' => trim((string)($b['id'] ?? $b['code'] ?? '')),
+                            'code' => trim((string)($b['code'] ?? $b['id'] ?? '')),
+                            'name' => trim((string)$b['name']),
+                            'country' => trim((string)($b['country'] ?? 'NG')),
+                            'logo' => trim((string)($b['logo'] ?? ''))
+                        ];
+                    }
+                    if (!empty($cleanBanks)) {
+                        @file_put_contents($cacheFile, json_encode($cleanBanks, JSON_PRETTY_PRINT));
+                        return $cleanBanks;
+                    }
                 }
             } catch (Throwable $e) {
                 error_log('PAJ getBanks live fetch failed: ' . $e->getMessage());
@@ -262,7 +306,22 @@ class PajApiClient
         if (file_exists($cacheFile)) {
             $cached = json_decode((string) file_get_contents($cacheFile), true);
             if (is_array($cached) && !empty($cached)) {
-                return $cached;
+                $cleanCached = [];
+                foreach ($cached as $b) {
+                    if (!is_array($b) || empty($b['name']) || trim((string)$b['name']) === '') {
+                        continue;
+                    }
+                    $cleanCached[] = [
+                        'id' => trim((string)($b['id'] ?? $b['code'] ?? '')),
+                        'code' => trim((string)($b['code'] ?? $b['id'] ?? '')),
+                        'name' => trim((string)$b['name']),
+                        'country' => trim((string)($b['country'] ?? 'NG')),
+                        'logo' => trim((string)($b['logo'] ?? ''))
+                    ];
+                }
+                if (!empty($cleanCached)) {
+                    return $cleanCached;
+                }
             }
         }
 
@@ -316,7 +375,8 @@ class PajApiClient
 
     public function resolveBankAccount(string $bankId, string $accountNumber): array
     {
-        $qs = http_build_query(['bankId' => $bankId, 'accountNumber' => $accountNumber]);
+        $realBankId = $this->resolvePajBankId($bankId);
+        $qs = http_build_query(['bankId' => $realBankId, 'accountNumber' => trim($accountNumber)]);
         return $this->request('GET', '/pub/bank-account/confirm?' . $qs, [], $this->getSessionToken());
     }
 
@@ -341,9 +401,10 @@ class PajApiClient
 
     public function createOfframpOrder(float $fiatAmount, string $mint, string $bank, string $accountNumber, ?float $businessUSDCFee = null, ?string $webhookUrl = null): array
     {
+        $realBank = $this->resolvePajBankId($bank);
         $payload = [
-            'bank' => $bank,
-            'accountNumber' => $accountNumber,
+            'bank' => $realBank,
+            'accountNumber' => trim($accountNumber),
             'currency' => 'NGN',
             'fiatAmount' => $fiatAmount,
             'mint' => $mint,

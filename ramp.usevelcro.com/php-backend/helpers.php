@@ -593,7 +593,11 @@ function httpRequest(string $method, string $url, array $options = []): array
         }
 
         if ($status >= 400) {
-            $lastErr = new Exception($data['message'] ?? "HTTP error: {$status}", $status);
+            $errMsg = $data['message'] ?? $data['error'] ?? "HTTP error: {$status}";
+            if (is_array($errMsg)) {
+                $errMsg = json_encode($errMsg);
+            }
+            $lastErr = new Exception((string) $errMsg, $status);
             $isRetryable = $status >= 500 || $status === 0;
             if ($isRetryable && $attempt < $retries) {
                 usleep((int) (pow(2, $attempt) * 1000000));

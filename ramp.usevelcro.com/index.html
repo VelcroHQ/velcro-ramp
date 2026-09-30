@@ -2748,14 +2748,17 @@
       // Seed with DEFAULT_NIGERIAN_BANKS when country is Nigeria
       if (currentCountry === 'NG') {
         for (const b of DEFAULT_NIGERIAN_BANKS) {
+          if (!b || !b.name) continue;
           const norm = normalizeBankName(b.name);
-          byNorm[norm] = { ...b };
+          if (norm) byNorm[norm] = { ...b, switchCode: b.code || '', pajId: b.id || b.pajId || b.code || '' };
         }
       }
 
       // Merge Switch banks
       for (const b of switchBanks) {
+        if (!b || !b.name) continue;
         const norm = normalizeBankName(b.name);
+        if (!norm) continue;
         if (byNorm[norm]) {
           byNorm[norm].switchCode = b.code;
           if (!byNorm[norm].code) byNorm[norm].code = b.code;
@@ -2771,16 +2774,19 @@
 
       // Merge PAJ banks
       for (const b of pajBanks) {
+        if (!b || !b.name) continue;
         const norm = normalizeBankName(b.name);
+        if (!norm) continue;
+        const targetPajId = b.id || b.code || '';
         if (byNorm[norm]) {
-          byNorm[norm].pajId = b.code;
+          byNorm[norm].pajId = targetPajId;
           if (!byNorm[norm].code) byNorm[norm].code = b.code;
         } else {
           // Try fuzzy match
           let matched = false;
           for (const key of Object.keys(byNorm)) {
             if (norm.includes(key) || key.includes(norm)) {
-              byNorm[key].pajId = b.code;
+              byNorm[key].pajId = targetPajId;
               matched = true;
               break;
             }
@@ -2790,14 +2796,14 @@
               name: b.name,
               code: b.code,
               switchCode: '',
-              pajId: b.code
+              pajId: targetPajId
             };
           }
         }
       }
 
-      const merged = Object.values(byNorm);
-      cachedBanks = (merged.length > 0 ? merged : [...DEFAULT_NIGERIAN_BANKS]).sort((a, b) => a.name.localeCompare(b.name));
+      const merged = Object.values(byNorm).filter(b => b && b.name);
+      cachedBanks = (merged.length > 0 ? merged : [...DEFAULT_NIGERIAN_BANKS]).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       populateBanks();
     }
 
@@ -2829,6 +2835,7 @@
 
       const listContainer = document.getElementById('bank-list-items');
       let banks = (cachedBanks && cachedBanks.length > 0) ? cachedBanks : (currentCountry === 'NG' ? DEFAULT_NIGERIAN_BANKS : []);
+      banks = banks.filter(b => b && b.name);
       if (banks.length === 0) {
         listContainer.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs flex flex-col items-center gap-2">
           <i data-lucide="alert-circle" class="w-5 h-5 opacity-50"></i>
@@ -2844,12 +2851,12 @@
         if (aTop !== -1 && bTop !== -1) return aTop - bTop;
         if (aTop !== -1) return -1;
         if (bTop !== -1) return 1;
-        return a.name.localeCompare(b.name);
+        return (a.name || '').localeCompare(b.name || '');
       });
 
       const term = filter.trim().toLowerCase();
       if (term) {
-        banks = banks.filter(b => b.name.toLowerCase().includes(term));
+        banks = banks.filter(b => (b.name || '').toLowerCase().includes(term));
       }
 
       // Deduplicate banks by code
@@ -2872,7 +2879,7 @@
           topCount = 99;
         }
         if (isTop) topCount++;
-        const safeName = escapeHtml(b.name);
+        const safeName = escapeHtml(b.name || '');
         const sc = escapeHtml(b.switchCode || '');
         const pj = escapeHtml(b.pajId || '');
         const safeCode = escapeHtml(b.code || '');
@@ -3250,11 +3257,13 @@
         const payload = await res.json();
         const rawBanks = payload.data || payload.banks || [];
         if (Array.isArray(rawBanks) && rawBanks.length > 0) {
-          pajBanks = rawBanks.map(b => ({
-            id: b.id || b.code,
-            code: b.code || b.id,
-            name: b.name
-          }));
+          pajBanks = rawBanks
+            .filter(b => b && b.name && String(b.name).trim())
+            .map(b => ({
+              id: String(b.id || b.code || '').trim(),
+              code: String(b.code || b.id || '').trim(),
+              name: String(b.name).trim()
+            }));
           mergeBanks();
           return;
         }
