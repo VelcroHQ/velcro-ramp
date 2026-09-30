@@ -18,6 +18,10 @@
   <meta name="google-site-verification" content="EPBy3CyMZBGr0nYRYqH8G1YjTCr3rGUxMWOQIPrl68I">
   <link rel="canonical" href="https://ramp.usevelcro.com/">
   <link rel="icon" type="image/png" href="/velcro_favicon.png">
+  <link rel="preload" as="image" href="/velcro_logo.png">
+  <link rel="preload" as="image" href="/logos/usdt.png">
+  <link rel="preload" as="image" href="/logos/usdc.png">
+  <link rel="preload" as="image" href="/logos/solana.png">
 
   <!-- Structured Data: Organization + WebSite -->
   <script type="application/ld+json">
@@ -1440,9 +1444,11 @@
               </div>
             </div>
           </div>
-          <div class="flex items-center justify-end -mt-3">
+          <div class="flex items-center justify-between -mt-3">
+            <span id="sell-min-label" class="text-xs text-gray-400 font-medium">Min: $1</span>
             <span id="sell-max-label" class="text-xs text-gray-400 font-medium">Max: $10,000</span>
           </div>
+          <p id="sell-limit-error" class="hidden text-xs text-red-500 mt-1 font-medium">Maximum sell amount is $10,000 per transaction.</p>
 
           <!-- Bank Details -->
           <div class="input-panel space-y-4">
@@ -2083,6 +2089,11 @@
     var countryRequirements = {};
     var currentReference = '';
     var statusPollInterval = null;
+    var activePollReference = null;
+    var activePollType = null; // 'standard' or 'paj'
+    var activePollTxType = 'buy'; // 'buy' or 'sell'
+    var pollCount = 0;
+    var isPollingPaused = false;
     var currentTxDetails = {}; // Stores details for success modal
     let BUY_MAX_LIMIT = 1000000; // Maximum buy amount per transaction (fetched from /api/settings)
     let SELL_MIN_LIMIT = 1; // Minimum sell amount per transaction (fetched from /api/settings)
@@ -2481,11 +2492,60 @@
       }
     }
 
+    function pruneLocalStorageCache() {
+      try {
+        const now = Date.now();
+        const MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('velcro_tx_') || key.startsWith('velcro_cache_'))) {
+            try {
+              const item = JSON.parse(localStorage.getItem(key));
+              if (item && item.timestamp && (now - item.timestamp > MAX_AGE_MS)) {
+                localStorage.removeItem(key);
+              }
+            } catch (e) { }
+          }
+        }
+      } catch (e) { }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       safeLucideInit();
+      pruneLocalStorageCache();
       fetchSettings();
       switchTab('sell');
       loadSwitchAssets();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeBuyAssetPicker();
+        closeSellAssetPicker();
+        closeAllDropdowns();
+        hideHistoryModal();
+        hideSuccessModal();
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (statusPollInterval) {
+          clearTimeout(statusPollInterval);
+          clearInterval(statusPollInterval);
+          statusPollInterval = null;
+          isPollingPaused = true;
+        }
+      } else {
+        if (isPollingPaused && activePollReference) {
+          isPollingPaused = false;
+          if (activePollType === 'paj') {
+            startPajStatusPoll(activePollReference, activePollTxType);
+          } else if (activePollType === 'standard') {
+            startStatusPoll(activePollReference, activePollTxType);
+          }
+        }
+      }
     });
 
     function getSwitchAsset(symbol, network) {
@@ -2509,12 +2569,24 @@
         if (remaining > 0) {
           const mins = Math.floor(remaining / 60);
           const secs = remaining % 60;
-          const text = `Expires in ${mins}:${secs.toString().padStart(2, '0')}`;
-          if (sellTimer) { sellTimer.textContent = text; sellTimer.classList.remove('hidden'); }
-          if (buyTimer) { buyTimer.textContent = text; buyTimer.classList.remove('hidden'); }
+          const text = `Rates live • Refreshes in ${mins > 0 ? mins + 'm ' : ''}${secs}s`;
+          if (sellTimer) { 
+            sellTimer.textContent = text; 
+            sellTimer.classList.remove('hidden', 'text-red-500', 'text-velcro-green'); 
+          }
+          if (buyTimer) { 
+            buyTimer.textContent = text; 
+            buyTimer.classList.remove('hidden', 'text-red-500', 'text-velcro-green'); 
+          }
         } else {
-          if (sellTimer) { sellTimer.textContent = 'Rate expired — refreshing...'; sellTimer.classList.add('text-red-500'); }
-          if (buyTimer) { buyTimer.textContent = 'Rate expired — refreshing...'; buyTimer.classList.add('text-red-500'); }
+          if (sellTimer) { 
+            sellTimer.textContent = 'Refreshing live rates...'; 
+            sellTimer.classList.add('text-velcro-green'); 
+          }
+          if (buyTimer) { 
+            buyTimer.textContent = 'Refreshing live rates...'; 
+            buyTimer.classList.add('text-velcro-green'); 
+          }
           fetchAllRates();
         }
       }, 1000);
@@ -3546,6 +3618,7 @@
 
     function calculateSell() {
       const amount = getNum('sell-amount');
+      validateSellLimit(amount);
       const pajRate = Number(currentRate.paj);
       const tokenUsd = Number(PAJ_TOKEN_PRICES[currentSellAsset] || 0);
       const switchRate = Number(currentRate.sell);
@@ -3615,9 +3688,18 @@
       calculateSell(); // To update preview
     }
 
+    const BUY_MIN_LIMIT = 2000;
+
     function validateBuyLimit(amount) {
       const errorEl = document.getElementById('buy-limit-error');
+      if (!errorEl) return true;
+      if (amount > 0 && amount < BUY_MIN_LIMIT) {
+        errorEl.textContent = `Minimum buy amount is ₦${BUY_MIN_LIMIT.toLocaleString()}.`;
+        errorEl.classList.remove('hidden');
+        return false;
+      }
       if (amount > BUY_MAX_LIMIT) {
+        errorEl.textContent = `Maximum buy amount is ₦${BUY_MAX_LIMIT.toLocaleString()} per transaction.`;
         errorEl.classList.remove('hidden');
         return false;
       }
@@ -3626,7 +3708,23 @@
     }
 
     function validateSellLimit(amount) {
-      if (amount > SELL_MAX_LIMIT) return false;
+      const errorEl = document.getElementById('sell-limit-error');
+      const symbol = currentSellInputMode === 'USD' ? '$' : '';
+      if (amount > 0 && amount < SELL_MIN_LIMIT) {
+        if (errorEl) {
+          errorEl.textContent = `Minimum sell amount is ${symbol}${SELL_MIN_LIMIT.toLocaleString()}.`;
+          errorEl.classList.remove('hidden');
+        }
+        return false;
+      }
+      if (amount > SELL_MAX_LIMIT) {
+        if (errorEl) {
+          errorEl.textContent = `Maximum sell amount is ${symbol}${SELL_MAX_LIMIT.toLocaleString()} per transaction.`;
+          errorEl.classList.remove('hidden');
+        }
+        return false;
+      }
+      if (errorEl) errorEl.classList.add('hidden');
       return true;
     }
 
@@ -4285,155 +4383,193 @@
       }
     }
 
-    function startStatusPoll(reference, type) {
-      if (statusPollInterval) clearInterval(statusPollInterval);
-      statusPollInterval = setInterval(async () => {
+    function startStatusPoll(reference, type = 'buy') {
+      if (statusPollInterval) { clearTimeout(statusPollInterval); clearInterval(statusPollInterval); statusPollInterval = null; }
+      activePollReference = reference;
+      activePollType = 'standard';
+      activePollTxType = type;
+      pollCount = 0;
+      isPollingPaused = false;
+
+      const doPoll = async () => {
+        if (document.hidden) {
+          isPollingPaused = true;
+          return;
+        }
+        pollCount++;
         try {
           const res = await fetch(`${API_BASE}/api/status?reference=${encodeURIComponent(reference)}`);
-          if (!res.ok) return;
-          const payload = await res.json();
-          const data = payload.data || {};
-          const status = data.status || payload.status;
-          updateStatusUI(status, type);
-          if (type === 'sell') {
-            const sellExpLink = document.getElementById('sell-status-explorer-link');
-            const txHash = data.hash || data.signature || '';
-            const txExplorer = data.explorer_url || (txHash ? getExplorerUrl(txHash, currentSellNetwork) : '');
-            if (sellExpLink && txExplorer && txExplorer !== '#') {
-              sellExpLink.href = txExplorer;
-            }
-          }
-          // Show blockchain explorer link for completed buy transactions
-          if (type === 'buy' && status === 'COMPLETED') {
-            const explorerUrl = data.explorer_url || currentTxDetails.explorerUrl || '';
-            const txHash = data.hash || currentTxDetails.hash || '';
-            // Store for future use
-            if (txHash) currentTxDetails.hash = txHash;
-            if (explorerUrl) currentTxDetails.explorerUrl = explorerUrl;
-            const explorerLink = document.getElementById('buy-explorer-link');
-            const statusDetail = document.getElementById('buy-status-detail');
-            if (explorerLink) {
-              if (explorerUrl) {
-                explorerLink.href = explorerUrl;
-                explorerLink.classList.remove('hidden');
-              } else if (txHash) {
-                // Fallback: build explorer URL from hash and network
-                explorerLink.href = getExplorerUrl(txHash, currentBuyNetwork);
-                explorerLink.classList.remove('hidden');
+          if (res.ok) {
+            const payload = await res.json();
+            const data = payload.data || {};
+            const status = data.status || payload.status;
+            updateStatusUI(status, type);
+
+            if (type === 'sell') {
+              const sellExpLink = document.getElementById('sell-status-explorer-link');
+              const txHash = data.hash || data.signature || '';
+              const txExplorer = data.explorer_url || (txHash ? getExplorerUrl(txHash, currentSellNetwork) : '');
+              if (sellExpLink && txExplorer && txExplorer !== '#') {
+                sellExpLink.href = txExplorer;
               }
             }
-            if (statusDetail && txHash) {
-              statusDetail.textContent = `Tx: ${txHash.slice(0, 12)}...${txHash.slice(-8)}`;
-            }
-          }
-          if (status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED') {
-            clearInterval(statusPollInterval);
-            if (status === 'COMPLETED') {
-              showToast('Transaction Completed Successfully!', 'success');
-              // Show success modal with transaction details
-              // Preserve hash/explorer from previous polls if current response lacks them
+
+            if (type === 'buy' && status === 'COMPLETED') {
+              const explorerUrl = data.explorer_url || currentTxDetails.explorerUrl || '';
               const txHash = data.hash || currentTxDetails.hash || '';
-              const txExplorer = data.explorer_url || currentTxDetails.explorerUrl || '';
-              const modalData = {
-                reference: currentTxDetails.reference || data.reference || '',
-                amount: currentTxDetails.amount,
-                destinationAmount: data.destination?.amount || data.destination_amount || currentTxDetails.destinationAmount,
-                bankName: currentTxDetails.bankName,
-                accountNumber: currentTxDetails.accountNumber,
-                accountName: currentTxDetails.accountName,
-                asset: currentTxDetails.asset || currentBuyAsset || currentSellAsset,
-                network: currentTxDetails.network || currentBuyNetwork || currentSellNetwork,
-                walletAddress: currentTxDetails.walletAddress || data.wallet_address || '',
-                explorerUrl: txExplorer,
-                hash: txHash
-              };
-              // Update currentTxDetails so it's available for next use
-              currentTxDetails.hash = txHash;
-              currentTxDetails.explorerUrl = txExplorer;
-              setTimeout(() => {
-                showSuccessModal(type, modalData);
-              }, 1500);
-            } else if (status === 'FAILED') {
-              showToast('Transaction Failed. Please contact support.', 'error');
+              if (txHash) currentTxDetails.hash = txHash;
+              if (explorerUrl) currentTxDetails.explorerUrl = explorerUrl;
+              const explorerLink = document.getElementById('buy-explorer-link');
+              const statusDetail = document.getElementById('buy-status-detail');
+              if (explorerLink) {
+                if (explorerUrl) {
+                  explorerLink.href = explorerUrl;
+                  explorerLink.classList.remove('hidden');
+                } else if (txHash) {
+                  explorerLink.href = getExplorerUrl(txHash, currentBuyNetwork);
+                  explorerLink.classList.remove('hidden');
+                }
+              }
+              if (statusDetail && txHash) {
+                statusDetail.textContent = `Tx: ${txHash.slice(0, 12)}...${txHash.slice(-8)}`;
+              }
+            }
+
+            if (status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED') {
+              activePollReference = null;
+              activePollType = null;
+              if (statusPollInterval) { clearTimeout(statusPollInterval); statusPollInterval = null; }
+              if (status === 'COMPLETED') {
+                showToast('Transaction Completed Successfully!', 'success');
+                const txHash = data.hash || currentTxDetails.hash || '';
+                const txExplorer = data.explorer_url || currentTxDetails.explorerUrl || '';
+                const modalData = {
+                  reference: currentTxDetails.reference || data.reference || '',
+                  amount: currentTxDetails.amount,
+                  destinationAmount: data.destination?.amount || data.destination_amount || currentTxDetails.destinationAmount,
+                  bankName: currentTxDetails.bankName,
+                  accountNumber: currentTxDetails.accountNumber,
+                  accountName: currentTxDetails.accountName,
+                  asset: currentTxDetails.asset || currentBuyAsset || currentSellAsset,
+                  network: currentTxDetails.network || currentBuyNetwork || currentSellNetwork,
+                  walletAddress: currentTxDetails.walletAddress || data.wallet_address || '',
+                  explorerUrl: txExplorer,
+                  hash: txHash
+                };
+                currentTxDetails.hash = txHash;
+                currentTxDetails.explorerUrl = txExplorer;
+                setTimeout(() => showSuccessModal(type, modalData), 1500);
+              } else if (status === 'FAILED') {
+                showToast('Transaction Failed. Please contact support.', 'error');
+              }
+              return;
             }
           }
         } catch (e) { }
-      }, 5000); // Polling every 5 seconds for better responsiveness
+
+        let delay = 5000;
+        if (pollCount > 12) delay = 15000;
+        else if (pollCount > 6) delay = 10000;
+        statusPollInterval = setTimeout(doPoll, delay);
+      };
+
+      doPoll();
     }
 
     function startPajStatusPoll(txId, type = 'buy') {
-      if (statusPollInterval) clearInterval(statusPollInterval);
-      statusPollInterval = setInterval(async () => {
+      if (statusPollInterval) { clearTimeout(statusPollInterval); clearInterval(statusPollInterval); statusPollInterval = null; }
+      activePollReference = txId;
+      activePollType = 'paj';
+      activePollTxType = type;
+      pollCount = 0;
+      isPollingPaused = false;
+
+      const doPoll = async () => {
+        if (document.hidden) {
+          isPollingPaused = true;
+          return;
+        }
+        pollCount++;
         try {
           const res = await fetch(`${API_BASE}/api/paj/status?id=${encodeURIComponent(txId)}`);
-          if (!res.ok) return;
-          const payload = await res.json();
-          const data = payload.data || {};
-          const status = data.status || 'INIT';
-          // Map PAJ status to generic status for UI
-          const statusMap = {
-            'INIT': 'AWAITING_DEPOSIT',
-            'PAID': 'DETECTED',
-            'PROCESSING': 'PROCESSING',
-            'COMPLETED': 'COMPLETED',
-            'FAILED': 'FAILED',
-            'CANCELLED': 'CANCELLED'
-          };
-          const mappedStatus = statusMap[status] || status;
-          updateStatusUI(mappedStatus, type);
+          if (res.ok) {
+            const payload = await res.json();
+            const data = payload.data || {};
+            const status = data.status || 'INIT';
+            const statusMap = {
+              'INIT': 'AWAITING_DEPOSIT',
+              'PAID': 'DETECTED',
+              'PROCESSING': 'PROCESSING',
+              'COMPLETED': 'COMPLETED',
+              'FAILED': 'FAILED',
+              'CANCELLED': 'CANCELLED'
+            };
+            const mappedStatus = statusMap[status] || status;
+            updateStatusUI(mappedStatus, type);
 
-          // For sell, also update status-1 explorer link
-          if (type === 'sell') {
-            const sellExpLink = document.getElementById('sell-status-explorer-link');
-            const txHash = data.signature || data.hash || '';
-            const depositAddr = data.address || data.pubkey || data.deposit_address || data.recipient || '';
-            if (sellExpLink) {
-              if (txHash) {
-                sellExpLink.href = `https://solscan.io/tx/${txHash}`;
-              } else if (depositAddr) {
-                sellExpLink.href = `https://solscan.io/account/${depositAddr}`;
+            if (type === 'sell') {
+              const sellExpLink = document.getElementById('sell-status-explorer-link');
+              const txHash = data.signature || data.hash || '';
+              const depositAddr = data.address || data.pubkey || data.deposit_address || data.recipient || '';
+              if (sellExpLink) {
+                if (txHash) {
+                  sellExpLink.href = `https://solscan.io/tx/${txHash}`;
+                } else if (depositAddr) {
+                  sellExpLink.href = `https://solscan.io/account/${depositAddr}`;
+                }
               }
             }
-          }
 
-          if (status === 'COMPLETED') {
-            const txHash = data.signature || data.hash || '';
-            const explorerLink = document.getElementById((type === 'sell' ? '' : 'buy') + '-explorer-link');
-            const statusDetail = document.getElementById((type === 'sell' ? '' : 'buy') + '-status-detail');
-
-            if (explorerLink && txHash) {
-              explorerLink.href = `https://solscan.io/tx/${txHash}`;
-              explorerLink.classList.remove('hidden');
-            }
-            if (statusDetail && txHash) {
-              statusDetail.textContent = `Tx: ${txHash.slice(0, 12)}...${txHash.slice(-8)}`;
-            }
-          }
-          if (status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED') {
-            clearInterval(statusPollInterval);
             if (status === 'COMPLETED') {
-              showToast('Transaction Completed Successfully!', 'success');
               const txHash = data.signature || data.hash || '';
-              const modalData = {
-                reference: currentTxDetails.reference || txId,
-                amount: currentTxDetails.amount,
-                destinationAmount: data.fiatAmount || currentTxDetails.destinationAmount,
-                asset: currentTxDetails.asset,
-                network: 'solana',
-                bankName: currentTxDetails.bankName,
-                accountNumber: currentTxDetails.accountNumber,
-                accountName: currentTxDetails.accountName,
-                walletAddress: currentTxDetails.walletAddress || data.recipient || '',
-                explorerUrl: txHash ? `https://solscan.io/tx/${txHash}` : '',
-                hash: txHash
-              };
-              setTimeout(() => showSuccessModal(type, modalData), 1500);
-            } else if (status === 'FAILED') {
-              showToast('Transaction Failed. Please contact support.', 'error');
+              const explorerLink = document.getElementById((type === 'sell' ? '' : 'buy') + '-explorer-link');
+              const statusDetail = document.getElementById((type === 'sell' ? '' : 'buy') + '-status-detail');
+
+              if (explorerLink && txHash) {
+                explorerLink.href = `https://solscan.io/tx/${txHash}`;
+                explorerLink.classList.remove('hidden');
+              }
+              if (statusDetail && txHash) {
+                statusDetail.textContent = `Tx: ${txHash.slice(0, 12)}...${txHash.slice(-8)}`;
+              }
+            }
+
+            if (status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED') {
+              activePollReference = null;
+              activePollType = null;
+              if (statusPollInterval) { clearTimeout(statusPollInterval); statusPollInterval = null; }
+              if (status === 'COMPLETED') {
+                showToast('Transaction Completed Successfully!', 'success');
+                const txHash = data.signature || data.hash || '';
+                const modalData = {
+                  reference: currentTxDetails.reference || txId,
+                  amount: currentTxDetails.amount,
+                  destinationAmount: data.fiatAmount || currentTxDetails.destinationAmount,
+                  asset: currentTxDetails.asset,
+                  network: 'solana',
+                  bankName: currentTxDetails.bankName,
+                  accountNumber: currentTxDetails.accountNumber,
+                  accountName: currentTxDetails.accountName,
+                  walletAddress: currentTxDetails.walletAddress || data.recipient || '',
+                  explorerUrl: txHash ? `https://solscan.io/tx/${txHash}` : '',
+                  hash: txHash
+                };
+                setTimeout(() => showSuccessModal(type, modalData), 1500);
+              } else if (status === 'FAILED') {
+                showToast('Transaction Failed. Please contact support.', 'error');
+              }
+              return;
             }
           }
         } catch (e) { }
-      }, 5000);
+
+        let delay = 5000;
+        if (pollCount > 12) delay = 15000;
+        else if (pollCount > 6) delay = 10000;
+        statusPollInterval = setTimeout(doPoll, delay);
+      };
+
+      doPoll();
     }
 
     function getExplorerUrl(hash, network) {
@@ -4822,6 +4958,23 @@
     let userHistoryCache = [];
     let currentHistoryFilter = 'all';
 
+    function updateHistoryTabCounts() {
+      const allCount = userHistoryCache.length;
+      const buyCount = userHistoryCache.filter(tx => (tx.type || '').toUpperCase() === 'ONRAMP').length;
+      const sellCount = userHistoryCache.filter(tx => (tx.type || '').toUpperCase() === 'OFFRAMP').length;
+      const compCount = userHistoryCache.filter(tx => (tx.status || '').toUpperCase() === 'COMPLETED').length;
+
+      const btnAll = document.getElementById('hist-filter-all');
+      const btnBuy = document.getElementById('hist-filter-onramp');
+      const btnSell = document.getElementById('hist-filter-offramp');
+      const btnComp = document.getElementById('hist-filter-completed');
+
+      if (btnAll) btnAll.textContent = `All (${allCount})`;
+      if (btnBuy) btnBuy.textContent = `Buy (${buyCount})`;
+      if (btnSell) btnSell.textContent = `Sell (${sellCount})`;
+      if (btnComp) btnComp.textContent = `Completed (${compCount})`;
+    }
+
     function filterHistory(filter) {
       currentHistoryFilter = filter;
       document.querySelectorAll('.hist-filter-btn').forEach(b => {
@@ -5082,6 +5235,7 @@
         const res = await fetch(`${API_BASE}/api/transactions?email=${encodeURIComponent(email)}`);
         const payload = await res.json();
         userHistoryCache = payload.data || [];
+        updateHistoryTabCounts();
         filterHistory(currentHistoryFilter || 'all');
       } catch (err) {
         list.innerHTML = '<div class="text-center py-8 text-red-400">Failed to load history</div>';
