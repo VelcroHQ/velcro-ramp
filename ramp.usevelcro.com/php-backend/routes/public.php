@@ -18,12 +18,34 @@ function registerPublicRoutes(Router $router): void
     });
 
     $router->get('/api/assets', function () {
+        $cacheFile = BASE_PATH . '/data/switch_assets_cache.json';
+        $cacheTtl = 600; // 10 minutes cache
+
+        // 1. Check if valid fresh cache exists
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+            $cached = @json_decode((string) file_get_contents($cacheFile), true);
+            if (is_array($cached) && !empty($cached['offramp'])) {
+                jsonResponse(successResponse($cached));
+                return;
+            }
+        }
+
+        // 2. Fetch live assets from Switch API
         try {
             $data = switchApi()->getAssets();
             $assets = $data['data'] ?? [];
         } catch (Throwable $e) {
             error_log('Switch /asset failed: ' . $e->getMessage());
             $assets = [];
+        }
+
+        // 3. Fallback to cached file if live fetch returned empty
+        if (empty($assets) && file_exists($cacheFile)) {
+            $cached = @json_decode((string) file_get_contents($cacheFile), true);
+            if (is_array($cached) && !empty($cached['offramp'])) {
+                jsonResponse(successResponse($cached));
+                return;
+            }
         }
 
         $blockchains = [];
@@ -46,11 +68,15 @@ function registerPublicRoutes(Router $router): void
 
             if (!empty($asset['offramp_supported'])) {
                 $offramp[$symbol] = $offramp[$symbol] ?? ['name' => $name, 'chains' => []];
-                $offramp[$symbol]['chains'][] = $chainId;
+                if (!in_array($chainId, $offramp[$symbol]['chains'], true)) {
+                    $offramp[$symbol]['chains'][] = $chainId;
+                }
             }
             if (!empty($asset['onramp_supported'])) {
                 $onramp[$symbol] = $onramp[$symbol] ?? ['name' => $name, 'chains' => []];
-                $onramp[$symbol]['chains'][] = $chainId;
+                if (!in_array($chainId, $onramp[$symbol]['chains'], true)) {
+                    $onramp[$symbol]['chains'][] = $chainId;
+                }
             }
         }
 
@@ -62,7 +88,18 @@ function registerPublicRoutes(Router $router): void
         }
         unset($info);
 
-        jsonResponse(successResponse(['offramp' => $offramp, 'onramp' => $onramp, 'blockchains' => $blockchains]));
+        $result = ['offramp' => $offramp, 'onramp' => $onramp, 'blockchains' => $blockchains];
+
+        // Save fresh cache if result contains valid data
+        if (!empty($offramp) || !empty($onramp)) {
+            $dir = dirname($cacheFile);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            @file_put_contents($cacheFile, json_encode($result, JSON_PRETTY_PRINT), LOCK_EX);
+        }
+
+        jsonResponse(successResponse($result));
     });
 
     $router->get('/api/rates', function () {
