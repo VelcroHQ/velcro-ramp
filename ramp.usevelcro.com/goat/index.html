@@ -2840,8 +2840,8 @@
 
         function getTxCurrencySymbol(tx) {
             if (!tx) return '$';
-            if (tx.type === 'ONRAMP') return '₦';
-            if (isPajTx(tx)) return '₦'; // PAJ OFFRAMP amounts are in NGN
+            if (tx.type === 'ONRAMP') return '\u20A6';
+            if (isPajTx(tx)) return '\u20A6'; // PAJ OFFRAMP amounts are in NGN
             return '$'; // Switch OFFRAMP amounts are in USD
         }
 

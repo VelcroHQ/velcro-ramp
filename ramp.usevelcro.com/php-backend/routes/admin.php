@@ -28,7 +28,8 @@ function registerAdminRoutes(Router $router): void
                         WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN COALESCE(NULLIF(destination_amount, 0), (amount * COALESCE(NULLIF(rate, 0), 1500)))
                         WHEN status = 'COMPLETED' AND type = 'ONRAMP' THEN amount
                         ELSE 0 
-                    END), 0) AS total_volume_ngn
+                    END), 0) AS total_volume_ngn,
+                    COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN COALESCE(fee_developer, 0) ELSE 0 END), 0) AS local_developer_fees
                 FROM `transactions`
             ") ?? [];
 
@@ -37,11 +38,16 @@ function registerAdminRoutes(Router $router): void
             $completed = (int) ($statsRow['completed_transactions'] ?? 0);
             $volumeUSD = (float) ($statsRow['total_volume_usd'] ?? 0.0);
             $volumeNGN = (float) ($statsRow['total_volume_ngn'] ?? 0.0);
+            $localFees = (float) ($statsRow['local_developer_fees'] ?? 0.0);
 
             try {
                 $feesData = switchApi()->getDeveloperFees();
+                $switchFee = (float) ($feesData['data']['amount'] ?? 0);
+                $feeAmount = $switchFee > 0 ? $switchFee : $localFees;
+                $feeCurrency = $feesData['data']['currency'] ?? 'USDC';
             } catch (Throwable $e) {
-                $feesData = ['data' => ['amount' => 0, 'currency' => 'USD']];
+                $feeAmount = $localFees;
+                $feeCurrency = 'USDC';
             }
 
             jsonResponse([
@@ -50,7 +56,7 @@ function registerAdminRoutes(Router $router): void
                 'completedTransactions' => $completed,
                 'totalVolumeUSD' => $volumeUSD,
                 'totalVolumeNGN' => $volumeNGN,
-                'developerFees' => $feesData['data'] ?? ['amount' => 0, 'currency' => 'USD'],
+                'developerFees' => ['amount' => $feeAmount, 'currency' => $feeCurrency],
             ]);
         } catch (Throwable $e) {
             jsonResponse(['error' => $e->getMessage()], 500);
