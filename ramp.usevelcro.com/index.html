@@ -2584,7 +2584,40 @@
       }
     }
 
-    let cachedBanks = [];
+    const DEFAULT_NIGERIAN_BANKS = [
+      { code: '058', switchCode: '058', pajId: '058', name: 'Guaranty Trust Bank (GTBank)' },
+      { code: '044', switchCode: '044', pajId: '044', name: 'Access Bank' },
+      { code: '057', switchCode: '057', pajId: '057', name: 'Zenith Bank' },
+      { code: '011', switchCode: '011', pajId: '011', name: 'First Bank of Nigeria' },
+      { code: '033', switchCode: '033', pajId: '033', name: 'United Bank for Africa (UBA)' },
+      { code: '100004', switchCode: '100004', pajId: '100004', name: 'Opay (PayCom)' },
+      { code: '100033', switchCode: '100033', pajId: '100033', name: 'PalmPay' },
+      { code: '090267', switchCode: '090267', pajId: '090267', name: 'Kuda Bank' },
+      { code: '090405', switchCode: '090405', pajId: '090405', name: 'Moniepoint MFB' },
+      { code: '070', switchCode: '070', pajId: '070', name: 'Fidelity Bank' },
+      { code: '214', switchCode: '214', pajId: '214', name: 'First City Monument Bank (FCMB)' },
+      { code: '221', switchCode: '221', pajId: '221', name: 'Stanbic IBTC Bank' },
+      { code: '232', switchCode: '232', pajId: '232', name: 'Sterling Bank' },
+      { code: '032', switchCode: '032', pajId: '032', name: 'Union Bank of Nigeria' },
+      { code: '215', switchCode: '215', pajId: '215', name: 'Unity Bank' },
+      { code: '035', switchCode: '035', pajId: '035', name: 'Wema Bank' },
+      { code: '076', switchCode: '076', pajId: '076', name: 'Polaris Bank' },
+      { code: '050', switchCode: '050', pajId: '050', name: 'Ecobank Nigeria' },
+      { code: '082', switchCode: '082', pajId: '082', name: 'Keystone Bank' },
+      { code: '090110', switchCode: '090110', pajId: '090110', name: 'VFD Microfinance Bank' },
+      { code: '090701', switchCode: '090701', pajId: '090701', name: 'Carbon' },
+      { code: '090551', switchCode: '090551', pajId: '090551', name: 'FairMoney MFB' },
+      { code: '301', switchCode: '301', pajId: '301', name: 'Jaiz Bank' },
+      { code: '302', switchCode: '302', pajId: '302', name: 'Taj Bank' },
+      { code: '303', switchCode: '303', pajId: '303', name: 'Lotus Bank' },
+      { code: '101', switchCode: '101', pajId: '101', name: 'Providus Bank' },
+      { code: '102', switchCode: '102', pajId: '102', name: 'Titan Trust Bank' },
+      { code: '105', switchCode: '105', pajId: '105', name: 'PremiumTrust Bank' },
+      { code: '068', switchCode: '068', pajId: '068', name: 'Standard Chartered Bank' },
+      { code: '023', switchCode: '023', pajId: '023', name: 'Citibank Nigeria' }
+    ];
+
+    let cachedBanks = [...DEFAULT_NIGERIAN_BANKS];
     async function fetchInstitutions() {
       const bankReq = countryRequirements['bank_code'];
       switchBanks = bankReq?.option || [];
@@ -2599,18 +2632,30 @@
     }
 
     function mergeBanks() {
-      const merged = [];
       const byNorm = {};
 
-      // Add Switch banks first
+      // Seed with DEFAULT_NIGERIAN_BANKS when country is Nigeria
+      if (currentCountry === 'NG') {
+        for (const b of DEFAULT_NIGERIAN_BANKS) {
+          const norm = normalizeBankName(b.name);
+          byNorm[norm] = { ...b };
+        }
+      }
+
+      // Merge Switch banks
       for (const b of switchBanks) {
         const norm = normalizeBankName(b.name);
-        byNorm[norm] = {
-          name: b.name,
-          code: b.code,
-          switchCode: b.code,
-          pajId: ''
-        };
+        if (byNorm[norm]) {
+          byNorm[norm].switchCode = b.code;
+          if (!byNorm[norm].code) byNorm[norm].code = b.code;
+        } else {
+          byNorm[norm] = {
+            name: b.name,
+            code: b.code,
+            switchCode: b.code,
+            pajId: ''
+          };
+        }
       }
 
       // Merge PAJ banks
@@ -2618,6 +2663,7 @@
         const norm = normalizeBankName(b.name);
         if (byNorm[norm]) {
           byNorm[norm].pajId = b.code;
+          if (!byNorm[norm].code) byNorm[norm].code = b.code;
         } else {
           // Try fuzzy match
           let matched = false;
@@ -2639,7 +2685,8 @@
         }
       }
 
-      cachedBanks = Object.values(byNorm).sort((a, b) => a.name.localeCompare(b.name));
+      const merged = Object.values(byNorm);
+      cachedBanks = (merged.length > 0 ? merged : [...DEFAULT_NIGERIAN_BANKS]).sort((a, b) => a.name.localeCompare(b.name));
       populateBanks();
     }
 
@@ -2670,15 +2717,11 @@
       }
 
       const listContainer = document.getElementById('bank-list-items');
-      let banks = cachedBanks;
-      if (!currentSellAsset || !currentSellNetwork) {
-        listContainer.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs">Select an asset and network first</div>`;
-        return;
-      }
+      let banks = (cachedBanks && cachedBanks.length > 0) ? cachedBanks : (currentCountry === 'NG' ? DEFAULT_NIGERIAN_BANKS : []);
       if (banks.length === 0) {
         listContainer.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs flex flex-col items-center gap-2">
           <i data-lucide="alert-circle" class="w-5 h-5 opacity-50"></i>
-          <span>No banks available for this selection</span>
+          <span>No banks available</span>
         </div>`;
         safeLucideInit();
         return;
@@ -2757,7 +2800,7 @@
       }
 
       // Reset state for new country
-      cachedBanks = [];
+      cachedBanks = [...DEFAULT_NIGERIAN_BANKS];
       countryRequirements = {};
       populateBanks();
       
@@ -3100,6 +3143,7 @@
         if (!switchBanks || switchBanks.length === 0) {
           fetchInstitutions();
         }
+        populateBanks();
       } else {
         currentRate.paj = 0;
         renderSellNetworks(symbol);
@@ -3125,6 +3169,7 @@
         }
         await fetchRequirements();
         fetchInstitutions(); // Switch banks
+        populateBanks();
       }
       calculateSell();
       updateStepIndicators('OFFRAMP');
@@ -4608,6 +4653,7 @@
 
     (async function init() {
       checkLoginState();
+      populateBanks();
       await fetchRequirements();
       fetchInstitutions();
     })();
