@@ -154,6 +154,7 @@ function registerPajRoutes(Router $router): void
                 'amount' => $fiatAmount,
                 'fee_developer' => $businessUSDCFee,
                 'deposit_address' => $d['address'] ?? null,
+                'wallet_address' => $d['address'] ?? null,
                 'beneficiary' => jsonEncodeNullable(['bank' => $bank, 'accountNumber' => $accountNumber, 'holder_name' => $d['accountName'] ?? 'Customer']),
                 'email' => $email ? strtolower(trim($email)) : null,
                 'meta' => jsonEncodeNullable($d),

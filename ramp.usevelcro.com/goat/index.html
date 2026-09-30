@@ -2797,7 +2797,7 @@
                     display: tx.email
                 };
             }
-            let wallet = tx.wallet_address || '';
+            let wallet = tx.wallet_address || tx.deposit_address || '';
             if (!wallet && tx.beneficiary) {
                 try {
                     const ben = typeof tx.beneficiary === 'string' ? JSON.parse(tx.beneficiary) : tx.beneficiary;
@@ -2808,13 +2808,13 @@
             }
             if (wallet) {
                 return {
-                    avatar: wallet.slice(-4),
-                    display: wallet.slice(0, 8) + '...'
+                    avatar: wallet.slice(-4).toUpperCase(),
+                    display: wallet.slice(0, 10) + '...'
                 };
             }
             return {
-                avatar: '??',
-                display: 'unknown'
+                avatar: 'GU',
+                display: 'Guest User'
             };
         }
 
@@ -2830,10 +2830,10 @@
             };
             const summaryRows = txs.map(tx => {
                 const user = getDisplayUser(tx);
-                const userVal = tx.email || tx.wallet_address || '';
+                const userVal = tx.email || tx.wallet_address || tx.deposit_address || '';
                 return `
                 <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
-                    <td data-label="User" onclick="event.stopPropagation(); viewWalletDetails('${userVal}')" title="Click to view user profile"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
+                    <td data-label="User" onclick="event.stopPropagation(); ${userVal ? `viewWalletDetails('${userVal}')` : ''}" title="${userVal ? 'Click to view user profile' : ''}"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
                     <td data-label="Amount"><b>${getTxCurrencySymbol(tx)}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b></td>
@@ -2845,10 +2845,10 @@
 
             const allRows = txs.map(tx => {
                 const user = getDisplayUser(tx);
-                const userVal = tx.email || tx.wallet_address || '';
+                const userVal = tx.email || tx.wallet_address || tx.deposit_address || '';
                 return `
                 <tr>
-                    <td data-label="User" onclick="event.stopPropagation(); viewWalletDetails('${userVal}')" title="Click to view user profile"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
+                    <td data-label="User" onclick="event.stopPropagation(); ${userVal ? `viewWalletDetails('${userVal}')` : ''}" title="${userVal ? 'Click to view user profile' : ''}"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
                     <td data-label="Reference" class="hide-mobile">${tx.reference.slice(0, 10)}...</td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>

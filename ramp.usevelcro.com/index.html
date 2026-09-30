@@ -4080,6 +4080,12 @@
     }
 
     async function generateWalletAddress() {
+      const userEmail = (localStorage.getItem('velcro_user_email') || '').trim();
+      if (!userEmail) {
+        checkLoginState();
+        showToast('Please enter your email address to proceed', 'warning');
+        return;
+      }
       if (currentCountry !== 'NG') {
         showToast('Transactions for this country are currently disabled.', 'warning');
         return;
@@ -4280,6 +4286,12 @@
     }
 
     async function generateBankAccount() {
+      const userEmail = (localStorage.getItem('velcro_user_email') || '').trim();
+      if (!userEmail) {
+        checkLoginState();
+        showToast('Please enter your email address to proceed', 'warning');
+        return;
+      }
       if (currentCountry !== 'NG') {
         showToast('Transactions for this country are currently disabled.', 'warning');
         return;
