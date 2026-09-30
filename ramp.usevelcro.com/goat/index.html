@@ -1208,14 +1208,14 @@
                     <div class="stat-icon-sm teal"><i data-lucide="trending-up"></i></div>
                     <div class="stat-info-sm">
                         <h4>Onramp Vol</h4>
-                        <span id="stat-onramp-vol" style="font-size: 14px;">₦0</span>
+                        <span id="stat-onramp-vol" style="font-size: 14px;">$0 | ~₦0</span>
                     </div>
                 </div>
                 <div class="stat-card-sm">
                     <div class="stat-icon-sm red"><i data-lucide="trending-down"></i></div>
                     <div class="stat-info-sm">
                         <h4>Offramp Vol</h4>
-                        <span id="stat-offramp-vol" style="font-size: 14px;">$0</span>
+                        <span id="stat-offramp-vol" style="font-size: 14px;">$0 | ~₦0</span>
                     </div>
                 </div>
             </div>
@@ -2916,8 +2916,8 @@
                 document.getElementById('stat-completed').innerText = '0';
                 document.getElementById('stat-success-rate').innerText = '0% success';
                 document.getElementById('stat-pending').innerText = '0';
-                document.getElementById('stat-onramp-vol').innerText = '₦0';
-                document.getElementById('stat-offramp-vol').innerText = '$0';
+                document.getElementById('stat-onramp-vol').innerText = '$0 | ~₦0';
+                document.getElementById('stat-offramp-vol').innerText = '$0 | ~₦0';
                 renderAnalytics(txs);
                 return;
             }
@@ -2926,14 +2926,37 @@
             const pending = txs.filter(t => ['PENDING', 'AWAITING_DEPOSIT', 'DETECTED', 'PROCESSING', 'INITIATED'].includes(t.status));
             const successRate = txs.length ? Math.round((completed.length / txs.length) * 100) : 0;
 
-            const onrampVol = completed.filter(t => t.type === 'ONRAMP').reduce((s, t) => s + safeNum(t.amount || t.fiat_amount || t.destination_amount), 0);
-            const offrampVol = completed.filter(t => t.type === 'OFFRAMP').reduce((s, t) => s + safeNum(t.amount || t.fiat_amount), 0);
+            let onrampUSD = 0, onrampNGN = 0;
+            let offrampUSD = 0, offrampNGN = 0;
+
+            completed.forEach(t => {
+                const isPajOrNgn = isPajTx(t) || t.currency === 'NGN';
+                const rate = safeNum(t.rate, 1500) || 1500;
+                if (t.type === 'ONRAMP') {
+                    const ngn = safeNum(t.amount || t.fiat_amount);
+                    const usd = safeNum(t.destination_amount) || (ngn / rate);
+                    onrampNGN += ngn;
+                    onrampUSD += usd;
+                } else if (t.type === 'OFFRAMP') {
+                    if (isPajOrNgn) {
+                        const ngn = safeNum(t.amount || t.fiat_amount);
+                        const usd = safeNum(t.destination_amount) || (ngn / rate);
+                        offrampNGN += ngn;
+                        offrampUSD += usd;
+                    } else {
+                        const usd = safeNum(t.amount || t.fiat_amount);
+                        const ngn = safeNum(t.destination_amount) || (usd * rate);
+                        offrampUSD += usd;
+                        offrampNGN += ngn;
+                    }
+                }
+            });
 
             document.getElementById('stat-completed').innerText = completed.length.toLocaleString();
             document.getElementById('stat-success-rate').innerText = `${successRate}% success rate`;
             document.getElementById('stat-pending').innerText = pending.length.toLocaleString();
-            document.getElementById('stat-onramp-vol').innerText = `₦${safeNum(onrampVol).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
-            document.getElementById('stat-offramp-vol').innerText = `$${safeNum(offrampVol).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+            document.getElementById('stat-onramp-vol').innerText = `$${safeNum(onrampUSD).toLocaleString(undefined, {maximumFractionDigits: 0})} | ~₦${safeNum(onrampNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+            document.getElementById('stat-offramp-vol').innerText = `$${safeNum(offrampUSD).toLocaleString(undefined, {maximumFractionDigits: 0})} | ~₦${safeNum(offrampNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
 
             renderAnalytics(txs);
         }

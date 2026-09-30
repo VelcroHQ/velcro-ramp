@@ -18,13 +18,15 @@ function registerAdminRoutes(Router $router): void
                     COUNT(*) AS all_transactions,
                     COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_transactions,
                     COALESCE(SUM(CASE 
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR currency = 'NGN') THEN (amount / COALESCE(NULLIF(rate, 0), 1500))
                         WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN amount
-                        WHEN status = 'COMPLETED' AND type != 'OFFRAMP' THEN destination_amount
+                        WHEN status = 'COMPLETED' AND type = 'ONRAMP' THEN (amount / COALESCE(NULLIF(rate, 0), 1500))
                         ELSE 0 
                     END), 0) AS total_volume_usd,
                     COALESCE(SUM(CASE 
-                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN destination_amount
-                        WHEN status = 'COMPLETED' AND type != 'OFFRAMP' THEN amount
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR currency = 'NGN') THEN amount
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN COALESCE(NULLIF(destination_amount, 0), (amount * COALESCE(NULLIF(rate, 0), 1500)))
+                        WHEN status = 'COMPLETED' AND type = 'ONRAMP' THEN amount
                         ELSE 0 
                     END), 0) AS total_volume_ngn
                 FROM `transactions`
