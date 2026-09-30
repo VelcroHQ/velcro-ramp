@@ -1264,6 +1264,10 @@
                 </div>
             </header>
 
+            <div class="table-card" style="margin-bottom: 20px; padding: 16px 20px;">
+                <input type="text" id="user-search-input" placeholder="Search users by email or wallet address..." oninput="filterUsers()" style="margin-bottom: 0; padding: 10px 14px; font-size: 13px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 400px;">
+            </div>
+
             <div class="table-card">
                 <table>
                     <thead>
@@ -1847,10 +1851,14 @@
         let savedKey = localStorage.getItem('velcro_admin_key') || '';
         let adminKey = (savedKey && !savedKey.startsWith('Bearer ')) ? `Bearer ${savedKey}` : savedKey;
         let currentTxs = [];
+        let currentUsers = [];
 
         function authenticate() {
             const pass = document.getElementById('admin-pass').value.trim();
             const bearerToken = pass.startsWith('Bearer ') ? pass : `Bearer ${pass}`;
+            const errEl = document.getElementById('auth-error');
+            errEl.style.display = 'none';
+
             fetch(`${API_BASE}/api/admin/stats`, { headers: { 'Authorization': bearerToken } })
                 .then(res => {
                     if (res.ok) {
@@ -1859,8 +1867,13 @@
                         document.getElementById('auth-overlay').style.display = 'none';
                         fetchData();
                     } else {
-                        document.getElementById('auth-error').style.display = 'block';
+                        errEl.innerText = 'Incorrect access key. Access denied.';
+                        errEl.style.display = 'block';
                     }
+                })
+                .catch(err => {
+                    errEl.innerText = 'Unable to connect to server: ' + err.message;
+                    errEl.style.display = 'block';
                 });
         }
 
@@ -1950,7 +1963,8 @@
                 const userRes = await fetch(`${API_BASE}/api/admin/users`, { headers });
                 if (!userRes.ok) throw new Error('Status: ' + userRes.status);
                 const users = await userRes.json();
-                renderUsers(users);
+                currentUsers = users || [];
+                renderUsers(currentUsers);
 
                 // 5. Settings
                 const settingsRes = await fetch(`${API_BASE}/api/admin/settings`, { headers });
@@ -1986,8 +2000,8 @@
                 document.getElementById('stat-onramp-vol').innerText = '—';
                 document.getElementById('stat-offramp-vol').innerText = '—';
                 const retryBtn = `<button onclick="fetchData()" class="btn-primary" style="margin-top:10px;">Retry</button>`;
-                document.getElementById('tx-summary-body').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--failed);padding:20px;">${errMsg}<br>${retryBtn}</td></tr>`;
-                document.getElementById('all-tx-body').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--failed);padding:20px;">${errMsg}<br>${retryBtn}</td></tr>`;
+                document.getElementById('tx-summary-body').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--failed);padding:20px;">${errMsg}<br>${retryBtn}</td></tr>`;
+                document.getElementById('all-tx-body').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--failed);padding:20px;">${errMsg}<br>${retryBtn}</td></tr>`;
             } finally {
                 if (btn) btn.classList.remove('spinning');
             }
@@ -2414,16 +2428,43 @@
                 `;
             });
 
-            summaryBody.innerHTML = summaryRows.slice(0, 8).join('');
-            allBody.innerHTML = allRows.join('');
+            if (summaryRows.length === 0) {
+                summaryBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">No transactions found</td></tr>';
+            } else {
+                summaryBody.innerHTML = summaryRows.slice(0, 8).join('');
+            }
+
+            if (allRows.length === 0) {
+                allBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">No transactions found</td></tr>';
+            } else {
+                allBody.innerHTML = allRows.join('');
+            }
+        }
+
+        function filterUsers() {
+            const query = (document.getElementById('user-search-input')?.value || '').trim().toLowerCase();
+            if (!query) {
+                renderUsers(currentUsers);
+                return;
+            }
+            const filtered = currentUsers.filter(u => u.id && u.id.toLowerCase().includes(query));
+            renderUsers(filtered);
         }
 
         function renderUsers(users) {
-            document.getElementById('user-count-label').innerText = `${users.length} users found.`;
+            const countLabel = document.getElementById('user-count-label');
+            if (countLabel) countLabel.innerText = `${users.length} users found.`;
             const body = document.getElementById('user-body');
+            if (!body) return;
+
+            if (!users || users.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">No users found</td></tr>';
+                return;
+            }
+
             body.innerHTML = users.map(u => `
                 <tr>
-                    <td data-label="User"><b style="font-size: 12px;">${u.id}</b></td>
+                    <td data-label="User"><b style="font-size: 12px; color: var(--primary-link);">${u.id}</b></td>
                     <td data-label="First Seen">${new Date(u.created_at).toLocaleDateString()}</td>
                     <td data-label="Total Volume"><b>$${Number(u.total_volume).toLocaleString()}</b></td>
                     <td data-label="TXs">${u.tx_count}</td>
@@ -2812,10 +2853,11 @@
             const dateTo = document.getElementById('filter-date-to').value;
 
             let filtered = currentTxs.filter(tx => {
-                // Search: reference, amount, wallet address
+                // Search: reference, amount, wallet address, email
                 const matchesSearch = !search ||
                     tx.reference.toLowerCase().includes(search) ||
                     tx.wallet_address?.toLowerCase().includes(search) ||
+                    tx.email?.toLowerCase().includes(search) ||
                     String(tx.amount).includes(search) ||
                     String(tx.destination_amount || '').includes(search);
 
