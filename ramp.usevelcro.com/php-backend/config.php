@@ -100,7 +100,7 @@ define('PAJ_API_KEY', env('PAJ_API_KEY', ''));
 define('PAJ_ENV', env('PAJ_ENV', 'production'));
 define('PAJ_WEBHOOK_SECRET', env('PAJ_WEBHOOK_SECRET', ''));
 define('PAJ_EMAIL', env('PAJ_EMAIL', 'paj@usevelcro.com'));
-define('PAJ_BASE_URL', env('PAJ_BASE_URL', 'https://api.paj.ramp')); // update when actual URL is known
+define('PAJ_BASE_URL', env('PAJ_BASE_URL', 'https://api.paj.cash'));
 
 // ─── Developer Fee / Withdrawal ───
 define('DEVELOPER_FEE', envFloat('DEVELOPER_FEE', 0.5));

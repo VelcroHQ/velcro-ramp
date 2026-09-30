@@ -114,14 +114,23 @@ class SwitchApiClient
             $body['developer_fee'] = getPlatformFee();
             $body['developer_recipient'] = $recipient;
         }
-        if (!empty($payload['callback_url'])) {
-            $body['callback_url'] = $payload['callback_url'];
+        $callbackUrl = !empty($payload['callback_url'])
+            ? $payload['callback_url']
+            : (CALLBACK_URL !== '' ? (CALLBACK_URL . '/webhook/switch') : null);
+        if ($callbackUrl !== null) {
+            $body['callback_url'] = $callbackUrl;
         }
         if ($direction === 'OFFRAMP') {
             $body['static'] = false;
             $body['sender_name'] = 'Velcro Ramp';
-        } elseif ($direction === 'ONRAMP' && !empty($payload['wallet_address'])) {
-            $body['wallet_address'] = $payload['wallet_address'];
+        } elseif ($direction === 'ONRAMP') {
+            if (empty($body['beneficiary']) && !empty($payload['wallet_address'])) {
+                $body['beneficiary'] = [
+                    'holder_type' => 'INDIVIDUAL',
+                    'holder_name' => $payload['holder_name'] ?? 'Customer',
+                    'wallet_address' => $payload['wallet_address'],
+                ];
+            }
         }
         // Remove null/empty optional fields before sending
         $body = array_filter($body, static function ($v, $k) {

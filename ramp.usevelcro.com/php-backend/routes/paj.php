@@ -56,7 +56,23 @@ function registerPajRoutes(Router $router): void
             jsonResponse(errorResponse('fiatAmount, recipient, and mint are required'), 400);
         }
         try {
-            $order = pajApi()->createOnrampOrder((float) $fiatAmount, $recipient, $mint);
+            $feePercent = getPlatformFee();
+            $businessUSDCFee = null;
+            if (isset($body['businessUSDCFee'])) {
+                $businessUSDCFee = (float) $body['businessUSDCFee'];
+            } elseif ($feePercent > 0) {
+                try {
+                    $rateData = pajApi()->getRate((float) $fiatAmount);
+                    $amountUsd = $rateData['amounts']['amountUSD'] ?? null;
+                    if ($amountUsd && $amountUsd > 0) {
+                        $businessUSDCFee = round($amountUsd * ($feePercent / 100), 2);
+                    }
+                } catch (Throwable $e) {
+                    error_log('Failed to calculate PAJ fee: ' . $e->getMessage());
+                }
+            }
+
+            $order = pajApi()->createOnrampOrder((float) $fiatAmount, $recipient, $mint, $businessUSDCFee);
             $d = $order ?? [];
             $assetInfo = null;
             foreach (pajApi()->getAssets() as $a) {
@@ -74,6 +90,7 @@ function registerPajRoutes(Router $router): void
                 'asset' => $assetInfo ? $assetInfo['symbol'] : 'SOL',
                 'channel' => 'PAJ',
                 'amount' => $fiatAmount,
+                'fee_developer' => $businessUSDCFee,
                 'deposit_bank_name' => $d['bank'] ?? 'PAJ Partner Bank',
                 'deposit_account_number' => $d['accountNumber'] ?? null,
                 'deposit_account_name' => $d['accountName'] ?? null,
@@ -101,7 +118,23 @@ function registerPajRoutes(Router $router): void
             jsonResponse(errorResponse('fiatAmount, mint, bank, and accountNumber are required'), 400);
         }
         try {
-            $order = pajApi()->createOfframpOrder((float) $fiatAmount, $mint, $bank, $accountNumber);
+            $feePercent = getPlatformFee();
+            $businessUSDCFee = null;
+            if (isset($body['businessUSDCFee'])) {
+                $businessUSDCFee = (float) $body['businessUSDCFee'];
+            } elseif ($feePercent > 0) {
+                try {
+                    $rateData = pajApi()->getRate((float) $fiatAmount);
+                    $amountUsd = $rateData['amounts']['amountUSD'] ?? null;
+                    if ($amountUsd && $amountUsd > 0) {
+                        $businessUSDCFee = round($amountUsd * ($feePercent / 100), 2);
+                    }
+                } catch (Throwable $e) {
+                    error_log('Failed to calculate PAJ fee: ' . $e->getMessage());
+                }
+            }
+
+            $order = pajApi()->createOfframpOrder((float) $fiatAmount, $mint, $bank, $accountNumber, $businessUSDCFee);
             $d = $order ?? [];
             $assetInfo = null;
             foreach (pajApi()->getAssets() as $a) {
@@ -119,6 +152,7 @@ function registerPajRoutes(Router $router): void
                 'asset' => $assetInfo ? $assetInfo['symbol'] : 'SOL',
                 'channel' => 'PAJ',
                 'amount' => $fiatAmount,
+                'fee_developer' => $businessUSDCFee,
                 'deposit_address' => $d['address'] ?? null,
                 'beneficiary' => jsonEncodeNullable(['bank' => $bank, 'accountNumber' => $accountNumber, 'holder_name' => $d['accountName'] ?? 'Customer']),
                 'email' => $email ? strtolower(trim($email)) : null,

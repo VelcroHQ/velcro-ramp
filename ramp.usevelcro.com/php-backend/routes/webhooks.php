@@ -7,13 +7,15 @@ require_once __DIR__ . '/../paj_api.php';
 function registerWebhookRoutes(Router $router): void
 {
     $router->post('/webhook/switch', function () {
-        $payload = getJsonBody();
+        $rawBody = file_get_contents('php://input') ?: '';
+        $payload = json_decode($rawBody, true) ?: [];
         $ip = clientIp();
 
-        if (SWITCH_WEBHOOK_SECRET !== '') {
-            $sig = $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? $_SERVER['HTTP_X_SWITCH_SIGNATURE'] ?? '';
-            if (!verifyWebhookSignature(SWITCH_WEBHOOK_SECRET, $payload, $sig)) {
-                error_log('[Webhook] Invalid signature rejected');
+        $switchKey = SWITCH_SERVICE_KEY !== '' ? SWITCH_SERVICE_KEY : SWITCH_WEBHOOK_SECRET;
+        if ($switchKey !== '') {
+            $sig = $_SERVER['HTTP_X_SWITCH_SIGNATURE'] ?? $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? '';
+            if (!verifySwitchWebhook($rawBody, $sig, $switchKey)) {
+                error_log('[Webhook] Invalid Switch signature rejected');
                 auditLog('WEBHOOK_REJECTED', ['ip' => $ip, 'reason' => 'invalid_signature', 'provider' => 'switch']);
                 jsonResponse(['success' => false, 'error' => 'Invalid signature'], 401);
             }
@@ -27,14 +29,18 @@ function registerWebhookRoutes(Router $router): void
         if ($reference && $status) {
             $normalizedStatus = strtoupper((string) $status);
             $data = $payload['data'] ?? [];
+            $meta = $data['meta'] ?? ($payload['meta'] ?? []);
+            $hash = $meta['hash'] ?? ($data['hash'] ?? ($payload['hash'] ?? null));
+            $explorerUrl = $meta['explorer_url'] ?? ($data['explorer_url'] ?? ($payload['explorer_url'] ?? null));
+
             Database::safeExecute(
-                "UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = :hash, `explorer_url` = :explorer_url WHERE `reference` = :reference AND (`status` NOT IN ('COMPLETED', 'FAILED', 'CANCELLED') OR :status_check = 'COMPLETED')",
+                "UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`) WHERE (`reference` = :reference OR `switch_reference` = :reference) AND (`status` NOT IN ('COMPLETED', 'FAILED', 'CANCELLED') OR :status_check = 'COMPLETED')",
                 [
                     'status' => $normalizedStatus,
                     'status_check' => $normalizedStatus,
                     'meta' => jsonEncodeNullable($payload),
-                    'hash' => $data['hash'] ?? null,
-                    'explorer_url' => $data['explorer_url'] ?? null,
+                    'hash' => $hash,
+                    'explorer_url' => $explorerUrl,
                     'reference' => $reference,
                 ]
             );

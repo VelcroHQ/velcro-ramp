@@ -213,6 +213,11 @@ class PajApiClient
         ];
     }
 
+    public function getRate(float $amount): array
+    {
+        return $this->request('GET', '/pub/rate/' . rawurlencode((string) $amount));
+    }
+
     public function getTokenValue(float $fiatAmount, string $mint): array
     {
         $qs = http_build_query(['amount' => $fiatAmount, 'mint' => $mint, 'currency' => 'NGN']);
@@ -240,7 +245,7 @@ class PajApiClient
 
     // ─── Orders ───
 
-    public function createOnrampOrder(float $fiatAmount, string $recipient, string $mint, ?string $webhookUrl = null): array
+    public function createOnrampOrder(float $fiatAmount, string $recipient, string $mint, ?float $businessUSDCFee = null, ?string $webhookUrl = null): array
     {
         $payload = [
             'fiatAmount' => $fiatAmount,
@@ -248,12 +253,16 @@ class PajApiClient
             'recipient' => $recipient,
             'mint' => $mint,
             'chain' => 'SOLANA',
-            'webhookURL' => $webhookUrl ?? (CALLBACK_URL . '/webhook/paj'),
+            'webhookURL' => $webhookUrl ?? (CALLBACK_URL !== '' ? CALLBACK_URL . '/webhook/paj' : null),
         ];
+        if ($businessUSDCFee !== null && $businessUSDCFee > 0) {
+            $payload['businessUSDCFee'] = $businessUSDCFee;
+        }
+        $payload = array_filter($payload, static fn ($v) => $v !== null && $v !== '');
         return $this->request('POST', '/pub/onramp', $payload, $this->getSessionToken());
     }
 
-    public function createOfframpOrder(float $fiatAmount, string $mint, string $bank, string $accountNumber, ?string $webhookUrl = null): array
+    public function createOfframpOrder(float $fiatAmount, string $mint, string $bank, string $accountNumber, ?float $businessUSDCFee = null, ?string $webhookUrl = null): array
     {
         $payload = [
             'bank' => $bank,
@@ -262,8 +271,12 @@ class PajApiClient
             'fiatAmount' => $fiatAmount,
             'mint' => $mint,
             'chain' => 'SOLANA',
-            'webhookURL' => $webhookUrl ?? (CALLBACK_URL . '/webhook/paj'),
+            'webhookURL' => $webhookUrl ?? (CALLBACK_URL !== '' ? CALLBACK_URL . '/webhook/paj' : null),
         ];
+        if ($businessUSDCFee !== null && $businessUSDCFee > 0) {
+            $payload['businessUSDCFee'] = $businessUSDCFee;
+        }
+        $payload = array_filter($payload, static fn ($v) => $v !== null && $v !== '');
         return $this->request('POST', '/pub/offramp', $payload, $this->getSessionToken());
     }
 

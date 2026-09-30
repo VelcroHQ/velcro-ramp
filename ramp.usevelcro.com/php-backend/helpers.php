@@ -494,6 +494,28 @@ function smtpSend(string $to, string $subject, string $html, string $text): bool
 // ─── Webhook Signature Verification ───
 
 /**
+ * Verify Switch HMAC-SHA256 webhook signature.
+ * Switch computes HMAC-SHA256 of the raw body using the SWITCH_SERVICE_KEY.
+ *
+ * @param string $rawBody
+ * @param ?string $signatureHeader
+ * @param string $serviceKey
+ */
+function verifySwitchWebhook(string $rawBody, ?string $signatureHeader, string $serviceKey): bool
+{
+    if ($serviceKey === '' || $signatureHeader === null || trim($signatureHeader) === '') {
+        return false;
+    }
+    try {
+        $expected = hash_hmac('sha256', $rawBody, $serviceKey);
+        return hash_equals($expected, trim($signatureHeader));
+    } catch (Throwable $e) {
+        error_log('Switch webhook signature verification error: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
  * Verify HMAC-SHA256 webhook signature.
  *
  * @param array<string,mixed> $payload
@@ -504,7 +526,7 @@ function verifyWebhookSignature(string $secret, array $payload, ?string $signatu
         return false;
     }
     try {
-        // Matches the Node implementation exactly:
+        // Matches the Node implementation:
         // crypto.createHash(alg).update(secret + JSON.stringify(payload)).digest('hex')
         $computed = hash($algorithm, $secret . json_encode($payload));
         return hash_equals($computed, $signatureHeader);
