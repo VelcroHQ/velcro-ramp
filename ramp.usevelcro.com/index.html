@@ -4071,14 +4071,15 @@
         const payload = await res.json();
         const data = payload.data || {};
         const deposit = data.deposit || {};
-        const walletAddress = deposit.address || data.address || '-';
+        const walletAddress = (typeof deposit === 'string' ? deposit : deposit.address) || data.address || data.pubkey || data.deposit_address || data.wallet_address || '-';
         document.getElementById('sell-wallet-address').textContent = walletAddress;
         document.getElementById('sell-reference').textContent = data.reference || '-';
         currentReference = data.reference || '';
         // Update explorer link in status tracker
         const statusExplorerLink = document.getElementById('sell-status-explorer-link');
-        if (statusExplorerLink && walletAddress !== '-' && currentSellNetwork) {
-          statusExplorerLink.href = getWalletExplorerUrl(walletAddress, currentSellNetwork);
+        const net = (currentProvider === 'paj' ? 'solana' : currentSellNetwork) || 'solana';
+        if (statusExplorerLink && walletAddress && walletAddress !== '-') {
+          statusExplorerLink.href = getWalletExplorerUrl(walletAddress, net);
         } else if (statusExplorerLink) {
           statusExplorerLink.href = '#';
         }
@@ -4294,6 +4295,14 @@
           const data = payload.data || {};
           const status = data.status || payload.status;
           updateStatusUI(status, type);
+          if (type === 'sell') {
+            const sellExpLink = document.getElementById('sell-status-explorer-link');
+            const txHash = data.hash || data.signature || '';
+            const txExplorer = data.explorer_url || (txHash ? getExplorerUrl(txHash, currentSellNetwork) : '');
+            if (sellExpLink && txExplorer && txExplorer !== '#') {
+              sellExpLink.href = txExplorer;
+            }
+          }
           // Show blockchain explorer link for completed buy transactions
           if (type === 'buy' && status === 'COMPLETED') {
             const explorerUrl = data.explorer_url || currentTxDetails.explorerUrl || '';
@@ -4376,15 +4385,24 @@
           if (status === 'COMPLETED') {
             const txHash = data.signature || data.hash || '';
             const explorerLink = document.getElementById((type === 'sell' ? '' : 'buy') + '-explorer-link');
-            const statusDetail = document.getElementById((type === 'sell' ? '' : 'buy') + '-status-detail');
-            
-            // For sell, also update status-1 explorer link
-            if (type === 'sell') {
-              const sellExpLink = document.getElementById('sell-status-explorer-link');
-              if (sellExpLink && txHash) {
+          // For sell, also update status-1 explorer link
+          if (type === 'sell') {
+            const sellExpLink = document.getElementById('sell-status-explorer-link');
+            const txHash = data.signature || data.hash || '';
+            const depositAddr = data.address || data.pubkey || data.deposit_address || data.recipient || '';
+            if (sellExpLink) {
+              if (txHash) {
                 sellExpLink.href = `https://solscan.io/tx/${txHash}`;
+              } else if (depositAddr) {
+                sellExpLink.href = `https://solscan.io/account/${depositAddr}`;
               }
             }
+          }
+
+          if (status === 'COMPLETED') {
+            const txHash = data.signature || data.hash || '';
+            const explorerLink = document.getElementById((type === 'sell' ? '' : 'buy') + '-explorer-link');
+            const statusDetail = document.getElementById((type === 'sell' ? '' : 'buy') + '-status-detail');
 
             if (explorerLink && txHash) {
               explorerLink.href = `https://solscan.io/tx/${txHash}`;
