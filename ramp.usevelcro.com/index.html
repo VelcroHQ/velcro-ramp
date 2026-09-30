@@ -3083,8 +3083,11 @@
         document.getElementById('sell-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
         document.getElementById('sell-network-wrap').classList.add('pointer-events-none');
         document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
-        await fetchPajRate();
+        fetchPajRate();
         fetchPajBanks();
+        if (!switchBanks || switchBanks.length === 0) {
+          fetchInstitutions();
+        }
       } else {
         currentRate.paj = 0;
         renderSellNetworks(symbol);
@@ -3118,16 +3121,26 @@
     async function fetchPajBanks() {
       try {
         const res = await fetch(`${API_BASE}/api/paj/banks`);
-        if (!res.ok) throw new Error('Failed to fetch PAJ banks');
+        if (!res.ok) throw new Error('PAJ banks unavailable');
         const payload = await res.json();
-        pajBanks = (payload.data || []).map(b => ({
-          id: b.id,
-          code: b.id,
-          name: b.name
-        }));
-        mergeBanks();
+        const rawBanks = payload.data || payload.banks || [];
+        if (Array.isArray(rawBanks) && rawBanks.length > 0) {
+          pajBanks = rawBanks.map(b => ({
+            id: b.id || b.code,
+            code: b.code || b.id,
+            name: b.name
+          }));
+          mergeBanks();
+          return;
+        }
       } catch (err) {
-        showToast('Failed to load PAJ banks', 'error');
+        console.warn('PAJ banks notice:', err.message);
+      }
+      // Seamlessly fall back to Switch/institutional banks if PAJ directory is unavailable
+      if (!switchBanks || switchBanks.length === 0) {
+        fetchInstitutions();
+      } else {
+        mergeBanks();
       }
     }
 

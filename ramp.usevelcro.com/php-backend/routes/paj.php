@@ -165,14 +165,12 @@ function registerPajRoutes(Router $router): void
     });
 
     $router->get('/api/paj/banks', function () {
-        if (!pajApi()->isConfigured()) {
-            jsonResponse(errorResponse('PAJ module not available'), 503);
-        }
         try {
             $banks = pajApi()->getBanks();
             jsonResponse(successResponse($banks));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            $fallback = pajApi()->getFallbackBanks();
+            jsonResponse(successResponse($fallback));
         }
     });
 
