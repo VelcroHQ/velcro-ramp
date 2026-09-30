@@ -3024,7 +3024,9 @@
       if (!isOpen) {
         el.classList.add('open');
         const parent = el.closest('.custom-select');
-        if (parent) parent.style.zIndex = '9999';
+        if (parent) parent.style.zIndex = '100001';
+        const card = el.closest('.premium-card');
+        if (card) card.style.zIndex = '100000';
 
         if (window.innerWidth <= 640) {
           const backdrop = document.getElementById('dropdown-backdrop');
@@ -3040,6 +3042,7 @@
         const p = o.closest('.custom-select');
         if (p) p.style.zIndex = '';
       });
+      document.querySelectorAll('.premium-card').forEach(c => c.style.zIndex = '');
       document.querySelectorAll('.asset-picker-modal').forEach(o => o.classList.remove('open'));
       document.body.style.overflow = '';
       const backdrop = document.getElementById('dropdown-backdrop');
