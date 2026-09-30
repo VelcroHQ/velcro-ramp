@@ -2771,6 +2771,7 @@
         }
 
         function isPajTx(tx) {
+            if (!tx) return false;
             if (tx.channel === 'PAJ') return true;
             if (tx.reference?.startsWith('paj_')) return true;
             if (tx.deposit_bank_name?.toLowerCase().includes('paj')) return true;
@@ -2779,6 +2780,13 @@
                 if (meta.mint || meta.provider === 'PAJ' || meta.id?.startsWith('paj')) return true;
             } catch (e) {}
             return false;
+        }
+
+        function getTxCurrencySymbol(tx) {
+            if (!tx) return '$';
+            if (tx.type === 'ONRAMP') return '₦';
+            if (isPajTx(tx)) return '₦'; // PAJ OFFRAMP amounts are in NGN
+            return '$'; // Switch OFFRAMP amounts are in USD
         }
 
         function getDisplayUser(tx) {
@@ -2828,7 +2836,7 @@
                     <td data-label="User" onclick="event.stopPropagation(); viewWalletDetails('${userVal}')" title="Click to view user profile"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
-                    <td data-label="Amount"><b>${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}</b></td>
+                    <td data-label="Amount"><b>${getTxCurrencySymbol(tx)}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b></td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Time">${new Date(tx.created_at).toLocaleDateString()}</td>
                 </tr>
@@ -2844,7 +2852,7 @@
                     <td data-label="Reference" class="hide-mobile">${tx.reference.slice(0, 10)}...</td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
-                    <td data-label="Amount"><b>${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}</b></td>
+                    <td data-label="Amount"><b>${getTxCurrencySymbol(tx)}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b></td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Date" class="hide-mobile">${new Date(tx.created_at).toLocaleDateString()}</td>
                     <td data-label="Action"><button class="btn-view" onclick="viewTransaction('${tx.reference}')">Details</button></td>
@@ -3078,7 +3086,7 @@
 
             document.getElementById('modal-status').innerText = tx.status;
             document.getElementById('modal-status').className = `status-pill ${tx.status.toLowerCase()}`;
-            document.getElementById('modal-amount').innerText = `${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}`;
+            document.getElementById('modal-amount').innerText = `${getTxCurrencySymbol(tx)}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             document.getElementById('modal-type').innerText = tx.type;
             document.getElementById('modal-channel').innerText = isPajTx(tx) ? 'PAJ' : 'Switch';
             const hashLink = document.getElementById('modal-hash-link');
@@ -3103,13 +3111,20 @@
             const sentEl = document.getElementById('modal-sent');
             const receivedEl = document.getElementById('modal-received');
             if (tx.type === 'ONRAMP') {
-                sentEl.innerText = `₦${Number(tx.amount).toLocaleString()}`;
-                const dest = tx.destination_amount || 0;
-                receivedEl.innerText = dest > 0 ? `${Number(dest).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 6})} ${tx.asset || ''}` : '-';
+                sentEl.innerText = `₦${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                const dest = safeNum(tx.destination_amount);
+                receivedEl.innerText = dest > 0 ? `${dest.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 6})} ${tx.asset || ''}` : '-';
             } else {
-                sentEl.innerText = `$${Number(tx.amount).toLocaleString()} ${tx.asset || ''}`;
-                const dest = tx.destination_amount || 0;
-                receivedEl.innerText = dest > 0 ? `₦${Number(dest).toLocaleString()}` : '-';
+                // OFFRAMP
+                if (isPajTx(tx)) {
+                    sentEl.innerText = `₦${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} NGN (${tx.asset || 'Crypto'})`;
+                    const dest = safeNum(tx.destination_amount || tx.amount);
+                    receivedEl.innerText = `₦${dest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                } else {
+                    sentEl.innerText = `$${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${tx.asset || ''}`;
+                    const dest = safeNum(tx.destination_amount);
+                    receivedEl.innerText = dest > 0 ? `₦${dest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-';
+                }
             }
 
             // Rate & Fees
@@ -3374,7 +3389,7 @@
                 <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
                     <td data-label="Reference"><code>${tx.reference.slice(0, 8)}...</code></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
-                    <td data-label="Amount">${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}</td>
+                    <td data-label="Amount">${getTxCurrencySymbol(tx)}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Date">${new Date(tx.created_at).toLocaleDateString()}</td>
                 </tr>
