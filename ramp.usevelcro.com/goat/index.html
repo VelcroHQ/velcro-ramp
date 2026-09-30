@@ -2734,6 +2734,43 @@
             }
         }
 
+        async function syncAllLiveStatuses() {
+            const btn = document.getElementById('sync-all-btn');
+            const statusEl = document.getElementById('sync-all-status');
+            if (btn) { btn.disabled = true; btn.innerText = 'Syncing Live...'; }
+            if (statusEl) statusEl.style.display = 'none';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/sync-all-statuses`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = 'var(--success)';
+                        statusEl.innerText = `Synced ${data.synced_count} pending transaction(s) directly from Switch/PAJ APIs.`;
+                    }
+                    if (btn) btn.innerText = 'Synced ✓';
+                    await fetchDashboardData();
+                } else {
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = 'var(--failed)';
+                        statusEl.innerText = data.error || 'Sync failed';
+                    }
+                    if (btn) { btn.disabled = false; btn.innerText = 'Sync All Pending'; }
+                }
+            } catch (e) {
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--failed)';
+                    statusEl.innerText = e.message || 'Network error';
+                }
+                if (btn) { btn.disabled = false; btn.innerText = 'Sync All Pending'; }
+            }
+        }
+
         async function fixPajStatuses() {
             const btn = document.getElementById('fix-paj-status-btn');
             const statusEl = document.getElementById('fix-paj-status-result');

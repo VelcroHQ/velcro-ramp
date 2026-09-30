@@ -311,10 +311,31 @@ function registerPublicRoutes(Router $router): void
         try {
             $data = switchApi()->confirmPayment($reference, $hash);
             $d = $data['data'] ?? [];
+            
+            // Always query live status from Switch immediately after confirm to get authoritative status
+            try {
+                $liveStatusData = switchApi()->getPaymentStatus($reference);
+                if (!empty($liveStatusData['data']['status'])) {
+                    $d = array_merge($d, $liveStatusData['data']);
+                    $data = $liveStatusData;
+                }
+            } catch (Throwable $e) {
+                error_log("Failed to fetch live status immediately after confirm for {$reference}: " . $e->getMessage());
+            }
+
             $newStatus = strtoupper($d['status'] ?? 'PROCESSING');
+            $meta = $d['meta'] ?? [];
+            $explorerUrl = $meta['explorer_url'] ?? ($d['explorer_url'] ?? null);
+
             Database::safeExecute(
-                'UPDATE `transactions` SET `status` = :status, `hash` = COALESCE(:hash, `hash`) WHERE `reference` = :reference OR `switch_reference` = :reference',
-                ['status' => $newStatus, 'hash' => $hash, 'reference' => $reference]
+                'UPDATE `transactions` SET `status` = :status, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`), `meta` = COALESCE(:meta, `meta`) WHERE `reference` = :reference OR `switch_reference` = :reference',
+                [
+                    'status' => $newStatus,
+                    'hash' => $hash ?: ($d['hash'] ?? null),
+                    'explorer_url' => $explorerUrl,
+                    'meta' => jsonEncodeNullable($d),
+                    'reference' => $reference,
+                ]
             );
             jsonResponse($data);
         } catch (Throwable $e) {

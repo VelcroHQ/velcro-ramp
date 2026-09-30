@@ -133,7 +133,57 @@ function registerAdminRoutes(Router $router): void
                     }
                 }
             }
-            jsonResponse(['success' => true, 'fixed' => count($fixed), 'changes' => $fixed]);
+    $router->post('/api/admin/sync-all-statuses', function () {
+        requireAdminAuth();
+        try {
+            $pendingStatuses = ['PENDING', 'AWAITING_DEPOSIT', 'DETECTED', 'PROCESSING', 'INITIATED', 'CONFIRMED', 'RECEIVED', 'VERIFIED'];
+            $placeholders = implode(',', array_fill(0, count($pendingStatuses), '?'));
+            $rows = Database::safeSelect("SELECT * FROM `transactions` WHERE `status` IN ({$placeholders}) ORDER BY `created_at` DESC LIMIT 100", $pendingStatuses, []);
+            $synced = [];
+            foreach ($rows as $tx) {
+                $ref = $tx['reference'] ?: ($tx['switch_reference'] ?? null);
+                if (!$ref) continue;
+                $isPaj = ($tx['channel'] === 'PAJ') || str_starts_with((string)$ref, 'paj_');
+                try {
+                    if ($isPaj) {
+                        if (pajApi()->isConfigured()) {
+                            $res = pajApi()->getTransactionStatus($ref);
+                            $rawStatus = strtoupper((string) ($res['status'] ?? $tx['status']));
+                            $newStatus = mapPajStatus($rawStatus);
+                            if ($newStatus !== $tx['status']) {
+                                Database::safeExecute(
+                                    'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`) WHERE `id` = :id',
+                                    ['status' => $newStatus, 'meta' => jsonEncodeNullable($res), 'hash' => $res['signature'] ?? ($res['hash'] ?? null), 'id' => $tx['id']]
+                                );
+                                $synced[] = ['reference' => $ref, 'before' => $tx['status'], 'after' => $newStatus, 'provider' => 'PAJ'];
+                            }
+                        }
+                    } else {
+                        $res = switchApi()->getPaymentStatus($ref);
+                        $d = $res['data'] ?? [];
+                        if (!empty($d['status'])) {
+                            $newStatus = strtoupper((string)$d['status']);
+                            if ($newStatus !== $tx['status']) {
+                                $meta = $d['meta'] ?? [];
+                                Database::safeExecute(
+                                    'UPDATE `transactions` SET `status` = :status, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`), `meta` = COALESCE(:meta, `meta`) WHERE `id` = :id',
+                                    [
+                                        'status' => $newStatus,
+                                        'hash' => $meta['hash'] ?? ($d['hash'] ?? null),
+                                        'explorer_url' => $meta['explorer_url'] ?? ($d['explorer_url'] ?? null),
+                                        'meta' => jsonEncodeNullable($d),
+                                        'id' => $tx['id'],
+                                    ]
+                                );
+                                $synced[] = ['reference' => $ref, 'before' => $tx['status'], 'after' => $newStatus, 'provider' => 'Switch'];
+                            }
+                        }
+                    }
+                } catch (Throwable $e) {
+                    error_log("Failed to sync tx {$ref}: " . $e->getMessage());
+                }
+            }
+            jsonResponse(['success' => true, 'synced_count' => count($synced), 'synced' => $synced]);
         } catch (Throwable $e) {
             jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
         }
