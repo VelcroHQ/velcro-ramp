@@ -4188,7 +4188,7 @@
           const data = payload.data || {};
           document.getElementById('buy-bank-name').textContent = data.bank || 'Partner Bank';
           document.getElementById('buy-account-number').textContent = data.accountNumber || '-';
-          document.getElementById('buy-account-name').textContent = data.accountName || 'Velcro - Paj inc (Pay amount)';
+          document.getElementById('buy-account-name').textContent = data.accountName || 'Velcro Checkout';
           // Rate used element removed for PAJ
           document.getElementById('buy-reference').textContent = data.id || '-';
           currentReference = data.id || '';
@@ -4875,10 +4875,6 @@
           || (meta.destination && meta.destination.address)
           || '';
 
-        const isPaj = (tx.channel === 'PAJ') || (tx.reference && tx.reference.startsWith('paj_'));
-        const channelLabel = isPaj ? 'PAJ Solana' : 'Switch';
-        const channelBadgeClass = isPaj ? 'badge-pill badge-channel-paj' : 'badge-pill badge-channel-switch';
-
         const typeLabel = (tx.type || '').toUpperCase();
         const isOnramp = typeLabel === 'ONRAMP';
         const isOfframp = typeLabel === 'OFFRAMP';
@@ -4889,7 +4885,6 @@
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="text-sm font-bold text-gray-900">${isOnramp ? 'Buy' : isOfframp ? 'Sell' : typeLabel || 'Trade'} ${assetName}</span>
-                  <span class="${channelBadgeClass}">${channelLabel}</span>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                   <span class="text-[10px] px-2 py-0.5 ${statusClass} rounded-full font-medium uppercase">${tx.status || 'PENDING'}</span>
