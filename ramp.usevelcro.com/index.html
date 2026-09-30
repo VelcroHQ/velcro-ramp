@@ -2360,13 +2360,16 @@
     }
 
     function renderSellNetworks(symbol) {
-      if (!switchAssetsData || !symbol) return;
-      const asset = switchAssetsData.offramp[symbol];
-      if (!asset) return;
+      if (!symbol) return;
       const container = document.getElementById('sell-network-options');
       if (!container) return;
+      const asset = (switchAssetsData && switchAssetsData.offramp) ? switchAssetsData.offramp[symbol] : null;
+      if (!asset) {
+        container.innerHTML = '<div class="custom-option selected" data-network="solana" data-logo="/logos/solana.png" data-name="Solana"><img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana (Native)</span></div>';
+        return;
+      }
       container.innerHTML = sortChains(asset.chains).map(chain => {
-        const bc = switchAssetsData.blockchains[chain];
+        const bc = (switchAssetsData && switchAssetsData.blockchains) ? switchAssetsData.blockchains[chain] : null;
         const logo = getChainLogo(chain);
         const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
         return `<div class="custom-option" data-network="${chain}" data-logo="${logo}" data-name="${name}">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
@@ -2374,13 +2377,16 @@
     }
 
     function renderBuyNetworks(symbol) {
-      if (!switchAssetsData || !symbol) return;
-      const asset = switchAssetsData.onramp[symbol];
-      if (!asset) return;
+      if (!symbol) return;
       const container = document.getElementById('buy-network-options');
       if (!container) return;
+      const asset = (switchAssetsData && switchAssetsData.onramp) ? switchAssetsData.onramp[symbol] : null;
+      if (!asset) {
+        container.innerHTML = '<div class="custom-option selected" data-network="solana" data-logo="/logos/solana.png" data-name="Solana"><img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana (Native)</span></div>';
+        return;
+      }
       container.innerHTML = sortChains(asset.chains).map(chain => {
-        const bc = switchAssetsData.blockchains[chain];
+        const bc = (switchAssetsData && switchAssetsData.blockchains) ? switchAssetsData.blockchains[chain] : null;
         const logo = getChainLogo(chain);
         const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
         return `<div class="custom-option" data-network="${chain}" data-logo="${logo}" data-name="${name}">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
@@ -3133,10 +3139,6 @@
         else openBuyAssetPicker();
         return;
       }
-      if (currentProvider === 'paj') {
-        showToast(`${currentAsset} operates exclusively on Solana`, 'info');
-        return;
-      }
       const dropdownId = isSell ? 'sell-network-options' : 'buy-network-options';
       toggleDropdown(dropdownId);
     }
@@ -3162,6 +3164,9 @@
     }
 
     function closeAllDropdowns() {
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
       document.querySelectorAll('.custom-select-options').forEach(o => {
         o.classList.remove('open');
         const p = o.closest('.custom-select');
@@ -3186,7 +3191,7 @@
       if (modal) {
         modal.classList.add('open');
         document.body.style.overflow = 'hidden';
-        if (searchInput) setTimeout(() => searchInput.focus(), 50);
+        if (window.innerWidth > 640 && searchInput) setTimeout(() => searchInput.focus(), 50);
       }
     }
 
@@ -3231,7 +3236,7 @@
       if (modal) {
         modal.classList.add('open');
         document.body.style.overflow = 'hidden';
-        if (searchInput) setTimeout(() => searchInput.focus(), 50);
+        if (window.innerWidth > 640 && searchInput) setTimeout(() => searchInput.focus(), 50);
       }
     }
 
@@ -3410,6 +3415,9 @@
 
     function selectSellNetwork(id, logo, name, optionEl) {
       currentSellNetwork = id;
+      if (id !== 'solana' && currentProvider === 'paj') {
+        currentProvider = 'switch';
+      }
       document.getElementById('sell-network-display').innerHTML = `
         <img src="${logo}" class="w-5 h-5 rounded-full" alt="${name}">
         <span class="font-medium text-sm">${name}</span>
@@ -3422,7 +3430,7 @@
       document.querySelectorAll('#sell-network-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
       
-      setTimeout(closeAllDropdowns, 50);
+      closeAllDropdowns();
       document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
       if (currentSwitchAsset) fetchRate();
@@ -3434,13 +3442,13 @@
       currentBankSwitchCode = switchCode || '';
       currentBankPajId = pajId || '';
       currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
-      document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${name}</span>`;
+      document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${escapeHtml(name)}</span>`;
       
       // Update highlights
       document.querySelectorAll('#sell-bank-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
       
-      setTimeout(closeAllDropdowns, 50);
+      closeAllDropdowns();
       validateAccount();
       updateStepIndicators('OFFRAMP');
     }
@@ -3595,6 +3603,9 @@
 
     function selectBuyNetwork(id, logo, name, optionEl) {
       currentBuyNetwork = id;
+      if (id !== 'solana' && currentProvider === 'paj') {
+        currentProvider = 'switch';
+      }
       document.getElementById('buy-network-display').innerHTML = `
         <img src="${logo}" class="w-5 h-5 rounded-full" alt="${name}">
         <span class="font-medium text-sm">${name}</span>
@@ -3606,7 +3617,7 @@
       document.querySelectorAll('#buy-network-options .custom-option').forEach(o => o.classList.remove('selected'));
       if (optionEl) optionEl.classList.add('selected');
       
-      setTimeout(closeAllDropdowns, 50);
+      closeAllDropdowns();
       document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentBuyAsset, currentBuyNetwork);
       if (currentSwitchAsset) fetchRate();
@@ -5005,15 +5016,9 @@
       fetchInstitutions();
     })();
 
-    window.addEventListener('scroll', (e) => {
-      const isInsideDropdown = e.target && e.target.closest && (e.target.closest('.custom-select-options') || e.target.closest('.asset-picker-modal'));
-      const isAssetModalOpen = document.querySelector('.asset-picker-modal.open');
-      if (!isInsideDropdown && !isAssetModalOpen) {
-        document.querySelectorAll('.custom-select-options').forEach(o => {
-          o.classList.remove('open');
-          const p = o.closest('.custom-select');
-          if (p) p.style.zIndex = '';
-        });
+    window.addEventListener('scroll', () => {
+      const isAnyOpen = document.querySelector('.custom-select-options.open, .asset-picker-modal.open');
+      if (!isAnyOpen) {
         document.querySelectorAll('.premium-card').forEach(c => c.style.zIndex = '');
         const backdrop = document.getElementById('dropdown-backdrop');
         if (backdrop) backdrop.classList.remove('active');
