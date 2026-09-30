@@ -88,16 +88,12 @@ function registerAdminRoutes(Router $router): void
     $router->get('/api/admin/transactions', function () {
         requireAdminAuth();
         try {
-            $rows = Database::safeSelect('SELECT * FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
+            $rows = Database::safeSelect('SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `created_at`, `updated_at`, `beneficiary` FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
             foreach ($rows as &$row) {
-                $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
-                if (empty($row['wallet_address'])) {
-                    $ben = $row['beneficiary'] ?? [];
-                    $meta = $row['meta'] ?? [];
-                    $row['wallet_address'] = $ben['wallet_address']
-                        ?? ($meta['beneficiary']['wallet_address']
-                        ?? ($meta['recipient']
-                        ?? ($meta['destination']['address'] ?? null)));
+                $row = decodeJsonColumns($row, ['beneficiary']);
+                if (empty($row['wallet_address']) && !empty($row['beneficiary'])) {
+                    $ben = $row['beneficiary'];
+                    $row['wallet_address'] = $ben['wallet_address'] ?? null;
                 }
             }
             jsonResponse($rows);
