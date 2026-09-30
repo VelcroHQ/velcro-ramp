@@ -2040,6 +2040,16 @@
       }
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function renderSellAssetList() {
       const container = document.getElementById('sell-asset-list');
       if (!container) return;
@@ -2051,7 +2061,9 @@
         switchItems = symbols.map(sym => {
           const asset = assets[sym];
           const logo = getAssetLogo(sym);
-          return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectSellAsset('${sym}', '${logo}', '${asset.name}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
+          const safeSym = escapeHtml(sym);
+          const safeName = escapeHtml(asset.name || sym);
+          return `<div class="asset-picker-item" data-symbol="${safeSym}" data-name="${safeName}" onclick="selectSellAsset('${safeSym}', '${logo}', '${safeName}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${safeSym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${safeSym}</div>\n            <div class="asset-picker-name">${safeName}</div>\n          </div>\n        </div>`;
         }).join('');
       }
 
@@ -2105,7 +2117,9 @@
         switchItems = symbols.map(sym => {
           const asset = assets[sym];
           const logo = getAssetLogo(sym);
-          return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${asset.name}" onclick="selectBuyAsset('${sym}', '${logo}', '${asset.name}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${sym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${sym}</div>\n            <div class="asset-picker-name">${asset.name}</div>\n          </div>\n        </div>`;
+          const safeSym = escapeHtml(sym);
+          const safeName = escapeHtml(asset.name || sym);
+          return `<div class="asset-picker-item" data-symbol="${safeSym}" data-name="${safeName}" onclick="selectBuyAsset('${safeSym}', '${logo}', '${safeName}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${safeSym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${safeSym}</div>\n            <div class="asset-picker-name">${safeName}</div>\n          </div>\n        </div>`;
         }).join('');
       }
       // Append static PAJ assets
@@ -2671,10 +2685,11 @@
           topCount = 99;
         }
         if (isTop) topCount++;
-        const safeName = b.name.replace(/"/g, '&quot;');
-        const sc = (b.switchCode || '').replace(/"/g, '&quot;');
-        const pj = (b.pajId || '').replace(/"/g, '&quot;');
-        html += `<div class="custom-option" data-bank-code="${b.code}" data-bank-name="${safeName}" data-switch-code="${sc}" data-paj-id="${pj}">${b.name}</div>`;
+        const safeName = escapeHtml(b.name);
+        const sc = escapeHtml(b.switchCode || '');
+        const pj = escapeHtml(b.pajId || '');
+        const safeCode = escapeHtml(b.code || '');
+        html += `<div class="custom-option" data-bank-code="${safeCode}" data-bank-name="${safeName}" data-switch-code="${sc}" data-paj-id="${pj}">${safeName}</div>`;
       });
 
       if (banks.length === 0) {

@@ -10,29 +10,16 @@
   <link rel="icon" type="image/png" href="/velcro_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            velcro: {
-              green: '#A8CF45',
-              'green-dark': '#8FB336',
-              'green-light': '#C4E470',
-              navy: '#0D0D59',
-              'navy-light': '#141470',
-              'navy-dark': '#080840',
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-  <style>* { font-family: 'Inter', system-ui, sans-serif; }</style>
+  <link href="style.css" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', system-ui, sans-serif; }
+    .max-w-4xl { max-width: 56rem; }
+    .max-w-3xl { max-width: 48rem; }
+    .space-y-8 > :not([hidden]) ~ :not([hidden]) { margin-top: 2rem; }
+    .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
+    .list-disc { list-style-type: disc; }
+    .list-inside { list-style-position: inside; }
+  </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 

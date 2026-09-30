@@ -30,6 +30,9 @@
             --border: #e9edf7;
             --velcro-green: #A8CF45;
             --velcro-navy: #0D0D59;
+            --input-bg: #ffffff;
+            --code-bg: #f1f5f9;
+            --primary-link: #0D0D59;
         }
 
         .dark {
@@ -38,9 +41,13 @@
             --bg-light: #020617;
             --card-bg: #0f172a;
             --text-main: #e2e8f0;
-            --text-secondary: #64748b;
+            --text-secondary: #94a3b8;
             --accent: #6366f1;
             --border: #334155;
+            --velcro-navy: #818cf8;
+            --input-bg: #1e293b;
+            --code-bg: #1e293b;
+            --primary-link: #818cf8;
         }
 
         * {
@@ -1187,7 +1194,7 @@
                     </div>
                     <div>
                         <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Type</label>
-                        <select id="filter-type" onchange="applyFilters()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; background: white;">
+                        <select id="filter-type" onchange="applyFilters()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; background: var(--input-bg); color: var(--text-main);">
                             <option value="">All Types</option>
                             <option value="ONRAMP">Buy (ONRAMP)</option>
                             <option value="OFFRAMP">Sell (OFFRAMP)</option>
@@ -1195,7 +1202,7 @@
                     </div>
                     <div>
                         <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Status</label>
-                        <select id="filter-status" onchange="applyFilters()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; background: white;">
+                        <select id="filter-status" onchange="applyFilters()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; background: var(--input-bg); color: var(--text-main);">
                             <option value="">All Statuses</option>
                             <option value="COMPLETED">Completed</option>
                             <option value="PENDING">Pending</option>
@@ -1208,7 +1215,7 @@
                     </div>
                     <div>
                         <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Channel</label>
-                        <select id="filter-channel" onchange="applyFilters()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; background: white;">
+                        <select id="filter-channel" onchange="applyFilters()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; background: var(--input-bg); color: var(--text-main);">
                             <option value="">All Channels</option>
                             <option value="PAJ">PAJ</option>
                             <option value="BANK">Switch</option>
@@ -1216,16 +1223,16 @@
                     </div>
                     <div>
                         <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Date From</label>
-                        <input type="date" id="filter-date-from" onchange="applyFilters()" style="margin-bottom: 0; padding: 10px 12px; font-size: 13px;">
+                        <input type="date" id="filter-date-from" onchange="applyFilters()" style="margin-bottom: 0; padding: 10px 12px; font-size: 13px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px;">
                     </div>
                     <div>
                         <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Date To</label>
-                        <input type="date" id="filter-date-to" onchange="applyFilters()" style="margin-bottom: 0; padding: 10px 12px; font-size: 13px;">
+                        <input type="date" id="filter-date-to" onchange="applyFilters()" style="margin-bottom: 0; padding: 10px 12px; font-size: 13px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px;">
                     </div>
                 </div>
                 <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
                     <span id="filter-count" style="font-size: 12px; color: var(--text-secondary);">Showing all transactions</span>
-                    <button onclick="clearFilters()" style="background: none; border: none; color: var(--sidebar-bg); font-size: 12px; font-weight: 600; cursor: pointer;">Clear Filters</button>
+                    <button onclick="clearFilters()" style="background: none; border: none; color: var(--primary-link); font-size: 12px; font-weight: 600; cursor: pointer;">Clear Filters</button>
                 </div>
             </div>
 
@@ -1294,7 +1301,7 @@
 
             <div class="user-details-stats">
                 <div class="detail-mini-card">
-                    <b id="detail-vol" style="color: var(--sidebar-bg);">$0</b>
+                    <b id="detail-vol" style="color: var(--primary-link);">$0</b>
                     <span>Total Volume</span>
                 </div>
                 <div class="detail-mini-card">
@@ -1479,7 +1486,7 @@
                             💸 Withdraw Fees to Solana
                         </button>
                         <div style="font-size: 13px; color: var(--text-secondary);">
-                            Recipient: <code id="withdraw-recipient-display" style="background: white; padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--text-main); font-weight: 700; font-family: monospace;">—</code>
+                            Recipient: <code id="withdraw-recipient-display" style="background: var(--input-bg); padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--text-main); font-weight: 700; font-family: monospace;">—</code>
                         </div>
                     </div>
 
@@ -1497,7 +1504,7 @@
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <input type="text" id="withdraw-otp-input" placeholder="000000" maxlength="10" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 20px; font-weight: 700; letter-spacing: 4px; font-family: monospace; max-width: 240px; border-radius: 12px;">
                             <button class="btn-primary" id="btn-withdraw-confirm" onclick="confirmWithdrawal()" style="padding: 0 24px; white-space: nowrap; font-weight: 700;">Confirm Withdrawal</button>
-                            <button onclick="cancelWithdrawal()" style="background: white; border: 1px solid var(--border); padding: 0 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text-main);">Cancel</button>
+                            <button onclick="cancelWithdrawal()" style="background: var(--input-bg); border: 1px solid var(--border); padding: 0 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text-main);">Cancel</button>
                         </div>
                         <p id="withdraw-otp-status" style="font-size: 12px; margin-top: 10px; font-weight: 600;"></p>
                     </div>
@@ -1723,16 +1730,16 @@
             </div>
             <div style="margin-bottom: 20px;">
                 <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">REFERENCE</label>
-                <code id="modal-ref" style="background: #f1f5f9; padding: 8px; border-radius: 6px; display: block; font-size: 13px;">-</code>
+                <code id="modal-ref" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; display: block; font-size: 13px;">-</code>
             </div>
             <div style="margin-bottom: 20px; display: none;" id="modal-email-wrap">
                 <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">USER EMAIL</label>
-                <div id="modal-email" style="background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: 600;">-</div>
+                <div id="modal-email" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; font-size: 13px; font-weight: 600;">-</div>
             </div>
             <div style="margin-bottom: 20px;">
                 <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">TX HASH</label>
-                <a id="modal-hash-link" href="#" target="_blank" style="color: var(--sidebar-bg); font-size: 12px; word-break: break-all; display: block; margin-bottom: 4px;">-</a>
-                <a id="modal-wallet-explorer-link" href="#" target="_blank" style="color: var(--sidebar-bg); font-size: 11px; word-break: break-all; display: none;">
+                <a id="modal-hash-link" href="#" target="_blank" style="color: var(--primary-link); font-size: 12px; word-break: break-all; display: block; margin-bottom: 4px;">-</a>
+                <a id="modal-wallet-explorer-link" href="#" target="_blank" style="color: var(--primary-link); font-size: 11px; word-break: break-all; display: none;">
                   <span style="display: inline-flex; align-items: center; gap: 4px;">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     View wallet on explorer
@@ -1750,7 +1757,7 @@
                 </div>
                 <div style="margin-bottom: 12px;">
                     <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">DESTINATION WALLET</label>
-                    <div id="modal-wallet-address" style="background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
+                    <div id="modal-wallet-address" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
                 </div>
                 <div style="border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
                     <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 8px;">Deposit Bank (User sent fiat here)</label>
@@ -1765,8 +1772,8 @@
             <div id="modal-offramp-details" style="display: none; margin-bottom: 20px;">
                 <div style="margin-bottom: 12px;">
                     <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">DEPOSIT ADDRESS (User sent crypto here)</label>
-                    <div id="modal-deposit-address" style="background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
-                    <a id="modal-deposit-explorer" href="#" target="_blank" style="display: none; margin-top: 6px; font-size: 11px; color: var(--sidebar-bg); align-items: center; gap: 4px;">
+                    <div id="modal-deposit-address" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; font-size: 13px; word-break: break-all; font-family: monospace;">-</div>
+                    <a id="modal-deposit-explorer" href="#" target="_blank" style="display: none; margin-top: 6px; font-size: 11px; color: var(--primary-link); align-items: center; gap: 4px;">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                         View address on explorer
                     </a>
@@ -1805,7 +1812,7 @@
                     <button id="modal-confirm-btn" onclick="confirmTransactionFromModal()" class="btn-primary" style="padding: 12px; font-size: 13px;">
                         Confirm Transaction
                     </button>
-                    <button onclick="forceConfirmFromModal()" style="background: white; border: 1px solid var(--border); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-main);">
+                    <button onclick="forceConfirmFromModal()" style="background: var(--input-bg); border: 1px solid var(--border); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-main);">
                         Force Confirm
                     </button>
                 </div>
@@ -2380,7 +2387,7 @@
                 const userVal = tx.email || tx.wallet_address || '';
                 return `
                 <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
-                    <td data-label="User" onclick="event.stopPropagation(); viewWalletDetails('${userVal}')" title="Click to view user profile"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sidebar-bg);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
+                    <td data-label="User" onclick="event.stopPropagation(); viewWalletDetails('${userVal}')" title="Click to view user profile"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
                     <td data-label="Amount"><b>${(tx.type === 'ONRAMP' ? '₦' : '$')}${Number(tx.amount).toLocaleString()}</b></td>
@@ -2395,7 +2402,7 @@
                 const userVal = tx.email || tx.wallet_address || '';
                 return `
                 <tr>
-                    <td data-label="User" onclick="event.stopPropagation(); viewWalletDetails('${userVal}')" title="Click to view user profile"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sidebar-bg);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
+                    <td data-label="User" onclick="event.stopPropagation(); viewWalletDetails('${userVal}')" title="Click to view user profile"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
                     <td data-label="Reference" class="hide-mobile">${tx.reference.slice(0, 10)}...</td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
