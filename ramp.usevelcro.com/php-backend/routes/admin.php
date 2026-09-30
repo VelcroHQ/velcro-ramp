@@ -133,6 +133,12 @@ function registerAdminRoutes(Router $router): void
                     }
                 }
             }
+            jsonResponse(['success' => true, 'fixed' => count($fixed), 'changes' => $fixed]);
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
     $router->post('/api/admin/sync-all-statuses', function () {
         requireAdminAuth();
         try {
