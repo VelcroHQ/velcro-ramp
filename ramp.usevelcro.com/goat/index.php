@@ -3,22 +3,15 @@
 declare(strict_types=1);
 
 /**
- * Velcro Ramp — Front controller for admin panel & API gateway
+ * Velcro Ramp — Admin Panel Gateway
+ *
+ * Serves index.html directly when accessing /goat or /goat/
  */
 
-$uri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
-
-// If request is for an API endpoint (/api/...) or webhook (/webhook/...)
-if (str_contains($uri, '/api/') || str_contains($uri, '/webhook/')) {
-    require_once __DIR__ . '/../php-backend/index.php';
-    exit;
-}
-
-// Otherwise serve the Admin Dashboard HTML directly
+header('Content-Type: text/html; charset=UTF-8');
 if (file_exists(__DIR__ . '/index.html')) {
-    header('Content-Type: text/html; charset=UTF-8');
     readfile(__DIR__ . '/index.html');
     exit;
 }
 
-require_once __DIR__ . '/../php-backend/index.php';
+echo '<!DOCTYPE html><html><body><h1>Admin Dashboard</h1><p>index.html not found.</p></body></html>';
