@@ -234,6 +234,10 @@ function registerPublicRoutes(Router $router): void
             ]);
         } catch (Throwable $e) {
             error_log('DB write failed in /api/initiate: ' . $e->getMessage());
+            jsonResponse([
+                'status' => 'ERROR',
+                'message' => 'Failed to record transaction in database: ' . $e->getMessage()
+            ], 500);
         }
 
         jsonResponse($data);
@@ -314,8 +318,8 @@ function registerPublicRoutes(Router $router): void
         $type = query('type');
         $country = query('country');
         $status = query('status');
-        $limit = (int) query('limit', 50);
-        $offset = (int) query('offset', 0);
+        $limit = max(1, min((int) query('limit', 50), 100));
+        $offset = max(0, (int) query('offset', 0));
 
         $where = ['email = :email'];
         $params = ['email' => strtolower(trim($email))];

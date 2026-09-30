@@ -12,26 +12,29 @@ function registerAdminRoutes(Router $router): void
         requireAdminAuth();
         $ip = clientIp();
         try {
-            $allTxs = Database::safeSelect('SELECT * FROM `transactions`', [], []);
-            $wallets = [];
-            $completed = 0;
-            $volumeUSD = 0.0;
-            $volumeNGN = 0.0;
-            foreach ($allTxs as $t) {
-                if (!empty($t['wallet_address'])) {
-                    $wallets[$t['wallet_address']] = true;
-                }
-                if ($t['status'] === 'COMPLETED') {
-                    $completed++;
-                    if ($t['type'] === 'OFFRAMP') {
-                        $volumeUSD += (float) $t['amount'];
-                        $volumeNGN += (float) ($t['destination_amount'] ?? 0);
-                    } else {
-                        $volumeNGN += (float) $t['amount'];
-                        $volumeUSD += (float) ($t['destination_amount'] ?? 0);
-                    }
-                }
-            }
+            $statsRow = Database::selectOne("
+                SELECT 
+                    COUNT(DISTINCT NULLIF(wallet_address, '')) AS total_users,
+                    COUNT(*) AS all_transactions,
+                    COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_transactions,
+                    COALESCE(SUM(CASE 
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN amount
+                        WHEN status = 'COMPLETED' AND type != 'OFFRAMP' THEN destination_amount
+                        ELSE 0 
+                    END), 0) AS total_volume_usd,
+                    COALESCE(SUM(CASE 
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN destination_amount
+                        WHEN status = 'COMPLETED' AND type != 'OFFRAMP' THEN amount
+                        ELSE 0 
+                    END), 0) AS total_volume_ngn
+                FROM `transactions`
+            ") ?? [];
+
+            $totalUsers = (int) ($statsRow['total_users'] ?? 0);
+            $allTransactions = (int) ($statsRow['all_transactions'] ?? 0);
+            $completed = (int) ($statsRow['completed_transactions'] ?? 0);
+            $volumeUSD = (float) ($statsRow['total_volume_usd'] ?? 0.0);
+            $volumeNGN = (float) ($statsRow['total_volume_ngn'] ?? 0.0);
 
             try {
                 $feesData = switchApi()->getDeveloperFees();
@@ -123,7 +126,7 @@ function registerAdminRoutes(Router $router): void
     $router->get('/api/admin/users', function () {
         requireAdminAuth();
         try {
-            $rows = Database::safeSelect('SELECT * FROM `transactions`', [], []);
+            $rows = Database::safeSelect('SELECT `email`, `wallet_address`, `status`, `type`, `amount`, `destination_amount`, `created_at` FROM `transactions` ORDER BY `created_at` DESC LIMIT 2000', [], []);
             $userMap = [];
             foreach ($rows as $t) {
                 $id = (!empty($t['email']) ? strtolower(trim($t['email'])) : '') ?: ($t['wallet_address'] ?? 'unknown');

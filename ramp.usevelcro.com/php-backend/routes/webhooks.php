@@ -28,9 +28,10 @@ function registerWebhookRoutes(Router $router): void
             $normalizedStatus = strtoupper((string) $status);
             $data = $payload['data'] ?? [];
             Database::safeExecute(
-                'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = :hash, `explorer_url` = :explorer_url WHERE `reference` = :reference',
+                "UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = :hash, `explorer_url` = :explorer_url WHERE `reference` = :reference AND (`status` NOT IN ('COMPLETED', 'FAILED', 'CANCELLED') OR :status_check = 'COMPLETED')",
                 [
                     'status' => $normalizedStatus,
+                    'status_check' => $normalizedStatus,
                     'meta' => jsonEncodeNullable($payload),
                     'hash' => $data['hash'] ?? null,
                     'explorer_url' => $data['explorer_url'] ?? null,
@@ -64,16 +65,18 @@ function registerWebhookRoutes(Router $router): void
         $recipient = $payload['recipient'] ?? ($payload['data']['recipient'] ?? null);
 
         if ($txId && $status) {
+            $mappedStatus = mapPajStatus($status);
             $update = [
-                'status' => mapPajStatus($status),
+                'status' => $mappedStatus,
                 'meta' => jsonEncodeNullable($payload),
                 'hash' => $hash,
                 'wallet_address' => $recipient,
             ];
             $count = Database::safeExecute(
-                'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = :hash, `wallet_address` = :wallet_address WHERE `reference` = :id OR `switch_reference` = :id',
+                "UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = :hash, `wallet_address` = :wallet_address WHERE (`reference` = :id OR `switch_reference` = :id) AND (`status` NOT IN ('COMPLETED', 'FAILED', 'CANCELLED') OR :status_check = 'COMPLETED')",
                 [
                     'status' => $update['status'],
+                    'status_check' => $update['status'],
                     'meta' => $update['meta'],
                     'hash' => $update['hash'],
                     'wallet_address' => $update['wallet_address'],

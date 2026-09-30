@@ -1682,7 +1682,7 @@
     </main>
 
     <!-- Transaction Detail Modal -->
-    <div id="tx-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px;">
+    <div id="tx-modal" onclick="if(event.target === this) closeTxModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px;">
         <div class="tx-modal-content">
             <button onclick="closeTxModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer;"><i data-lucide="x"></i></button>
             <h2 style="margin-bottom: 5px;">Transaction Details</h2>
@@ -1858,6 +1858,37 @@
         }
 
         let currentConfig = {};
+        let currentSettings = null;
+
+        function showToast(message, type = 'info') {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.style.cssText = 'pointer-events:auto;min-width:240px;max-width:380px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,0.15);transition:all 0.3s ease;display:flex;align-items:center;gap:10px;color:white;opacity:0;transform:translateY(10px);';
+            if (type === 'success') {
+                toast.style.background = '#10B981';
+            } else if (type === 'error') {
+                toast.style.background = '#EF4444';
+            } else {
+                toast.style.background = '#0D0D59';
+            }
+            toast.innerText = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateY(0)';
+            });
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
 
         async function fetchData() {
             const btn = document.querySelector('.refresh-btn');
@@ -1884,7 +1915,7 @@
                     recipientEl.title = currentConfig.developer_recipient;
                 }
                 const banner = document.getElementById('withdraw-security-banner');
-                const withdrawBtn = document.getElementById('btn-withdraw-fees');
+                const withdrawBtn = document.getElementById('btn-withdraw-otp');
                 if (banner && currentConfig.withdrawal_allowed === false) {
                     banner.classList.remove('hidden');
                     if (withdrawBtn) {
@@ -1918,6 +1949,7 @@
                 const settingsRes = await fetch(`${API_BASE}/api/admin/settings`, { headers });
                 if (!settingsRes.ok) throw new Error('Status: ' + settingsRes.status);
                 const settings = await settingsRes.json();
+                currentSettings = settings;
                 document.getElementById('fee-input').value = settings.platform_fee;
                 document.getElementById('buy-max-input').value = settings.buy_max_limit;
                 document.getElementById('sell-min-input').value = settings.sell_min_limit;
@@ -2424,14 +2456,17 @@
             if (!txs) txs = currentTxs || [];
             const completed = txs.filter(t => t.status === 'COMPLETED');
 
-            // Calculate revenue as 0.5% of successful transaction volume
+            // Calculate revenue using dynamic platform fee from settings (or default 0.5%)
+            const feePercent = (currentSettings && currentSettings.platform_fee !== undefined) ? Number(currentSettings.platform_fee) : 0.5;
+            const feeRate = feePercent / 100;
+
             function txRevenueUSD(t) {
                 if (t.type === 'OFFRAMP') {
-                    return (t.amount || 0) * 0.005;
+                    return (t.amount || 0) * feeRate;
                 }
                 // ONRAMP: amount is NGN, convert to USD using rate or fallback 1500
                 const usdValue = t.rate ? (t.amount / t.rate) : (t.amount / 1500);
-                return (usdValue || 0) * 0.005;
+                return (usdValue || 0) * feeRate;
             }
 
             const totalRevenueUSD = completed.reduce((s, t) => s + txRevenueUSD(t), 0);
@@ -2994,7 +3029,7 @@
                     if (data.status !== data.previousStatus) {
                         showToast(`Status updated: ${data.previousStatus} → ${data.status}`, 'success');
                         // Re-fetch transactions to update table
-                        await initDashboard();
+                        await fetchData();
                     } else {
                         showToast('Status unchanged: ' + data.status, 'info');
                     }
@@ -3013,6 +3048,13 @@
         function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('active'); }
         function closeSidebar() { document.getElementById('main-sidebar').classList.remove('active'); }
         function logout() { localStorage.removeItem('velcro_admin_key'); location.reload(); }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeTxModal();
+                closeSidebar();
+            }
+        });
 
         window.onload = () => {
             // Ensure icons render even before auth
