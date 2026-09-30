@@ -575,7 +575,9 @@
         padding-bottom: env(safe-area-inset-bottom, 20px) !important;
         background: white !important;
         box-shadow: 0 -10px 40px rgba(0,0,0,0.2) !important;
-        overflow-y: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
         -webkit-overflow-scrolling: touch !important;
         touch-action: pan-y !important;
       }
@@ -586,12 +588,16 @@
       .custom-select-options.open .custom-option {
         padding: 13px 18px !important;
         font-size: 15px !important;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
       }
       .dropdown-backdrop.active {
         display: block !important;
         position: fixed !important;
         inset: 0 !important;
         background: rgba(0,0,0,0.45) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
         z-index: 99998 !important;
       }
     }
@@ -1045,8 +1051,10 @@
     .dark #sell-qr-code,
     .dark #buy-qr-code { background-color: #ffffff !important; }
 
-    /* Bank filter sticky header in dropdown */
-    .dark .custom-select-options .sticky { background: #1e293b; }
+    /* Bank filter & dropdown header in dark mode */
+    .dark .dropdown-header { background: #0f172a !important; border-color: #334155 !important; }
+    .dark #bank-filter { background: #1e293b !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+    .dark #bank-filter::placeholder { color: #64748b !important; }
 
     /* Toast close button */
     .dark .toast-close:hover { color: #e2e8f0; }
@@ -2364,16 +2372,26 @@
       const container = document.getElementById('sell-network-options');
       if (!container) return;
       const asset = (switchAssetsData && switchAssetsData.offramp) ? switchAssetsData.offramp[symbol] : null;
+      const headerHtml = `
+        <div class="dropdown-header flex items-center justify-between p-3 border-b border-gray-100 dark:border-slate-800 sm:hidden shrink-0 bg-white dark:bg-slate-900">
+          <span class="text-sm font-bold text-gray-900 dark:text-white px-1">Select Blockchain Network</span>
+          <button onclick="closeAllDropdowns()" class="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      `;
+      let optionsHtml = '';
       if (!asset) {
-        container.innerHTML = '<div class="custom-option selected" data-network="solana" data-logo="/logos/solana.png" data-name="Solana"><img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana (Native)</span></div>';
-        return;
+        optionsHtml = '<div class="custom-option selected" data-network="solana" data-logo="/logos/solana.png" data-name="Solana"><img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana (Native)</span></div>';
+      } else {
+        optionsHtml = sortChains(asset.chains).map(chain => {
+          const bc = (switchAssetsData && switchAssetsData.blockchains) ? switchAssetsData.blockchains[chain] : null;
+          const logo = getChainLogo(chain);
+          const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
+          return `<div class="custom-option" data-network="${chain}" data-logo="${logo}" data-name="${name}"><img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span></div>`;
+        }).join('');
       }
-      container.innerHTML = sortChains(asset.chains).map(chain => {
-        const bc = (switchAssetsData && switchAssetsData.blockchains) ? switchAssetsData.blockchains[chain] : null;
-        const logo = getChainLogo(chain);
-        const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
-        return `<div class="custom-option" data-network="${chain}" data-logo="${logo}" data-name="${name}">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
-      }).join('');
+      container.innerHTML = headerHtml + `<div class="flex-1 overflow-y-auto min-h-0 -webkit-overflow-scrolling-touch">${optionsHtml}</div>`;
     }
 
     function renderBuyNetworks(symbol) {
@@ -2381,16 +2399,26 @@
       const container = document.getElementById('buy-network-options');
       if (!container) return;
       const asset = (switchAssetsData && switchAssetsData.onramp) ? switchAssetsData.onramp[symbol] : null;
+      const headerHtml = `
+        <div class="dropdown-header flex items-center justify-between p-3 border-b border-gray-100 dark:border-slate-800 sm:hidden shrink-0 bg-white dark:bg-slate-900">
+          <span class="text-sm font-bold text-gray-900 dark:text-white px-1">Select Blockchain Network</span>
+          <button onclick="closeAllDropdowns()" class="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      `;
+      let optionsHtml = '';
       if (!asset) {
-        container.innerHTML = '<div class="custom-option selected" data-network="solana" data-logo="/logos/solana.png" data-name="Solana"><img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana (Native)</span></div>';
-        return;
+        optionsHtml = '<div class="custom-option selected" data-network="solana" data-logo="/logos/solana.png" data-name="Solana"><img src="/logos/solana.png" class="w-6 h-6" alt="Solana"><span class="font-medium">Solana (Native)</span></div>';
+      } else {
+        optionsHtml = sortChains(asset.chains).map(chain => {
+          const bc = (switchAssetsData && switchAssetsData.blockchains) ? switchAssetsData.blockchains[chain] : null;
+          const logo = getChainLogo(chain);
+          const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
+          return `<div class="custom-option" data-network="${chain}" data-logo="${logo}" data-name="${name}"><img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span></div>`;
+        }).join('');
       }
-      container.innerHTML = sortChains(asset.chains).map(chain => {
-        const bc = (switchAssetsData && switchAssetsData.blockchains) ? switchAssetsData.blockchains[chain] : null;
-        const logo = getChainLogo(chain);
-        const name = bc ? bc.name : chain.charAt(0).toUpperCase() + chain.slice(1);
-        return `<div class="custom-option" data-network="${chain}" data-logo="${logo}" data-name="${name}">\n          <img src="${logo}" class="w-6 h-6" alt="${name}"><span class="font-medium">${name}</span>\n        </div>`;
-      }).join('');
+      container.innerHTML = headerHtml + `<div class="flex-1 overflow-y-auto min-h-0 -webkit-overflow-scrolling-touch">${optionsHtml}</div>`;
     }
 
     async function setDefaults() {
@@ -2944,20 +2972,20 @@
       // Initialize header if not present
       if (!container.querySelector('.dropdown-header')) {
         container.innerHTML = `
-          <div class="dropdown-header sticky top-0 bg-white z-20 p-2 border-b border-gray-100">
+          <div class="dropdown-header shrink-0 p-3 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900">
             <div class="flex items-center gap-2 mb-2 sm:hidden">
-              <span class="text-sm font-bold text-gray-900 flex-1 px-2">Select Bank</span>
-              <button onclick="toggleDropdown('sell-bank-options')" class="p-2 hover:bg-gray-100 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              <span class="text-sm font-bold text-gray-900 dark:text-white flex-1 px-1">Select Bank</span>
+              <button onclick="closeAllDropdowns()" class="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-500 dark:text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
             </div>
             <div class="relative">
-              <input type="text" id="bank-filter" placeholder="Search banks..." 
-                class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-velcro-green bg-gray-50 transition-all" 
+              <input type="text" id="bank-filter" placeholder="Search banks..." autocomplete="off" autocorrect="off" 
+                class="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:border-velcro-green bg-gray-50 dark:bg-slate-800 dark:text-white transition-all" 
                 oninput="populateBanks(this.value)" onclick="event.stopPropagation()">
             </div>
           </div>
-          <div id="bank-list-items"></div>
+          <div id="bank-list-items" class="flex-1 overflow-y-auto min-h-0 -webkit-overflow-scrolling-touch overscroll-contain"></div>
         `;
       }
 
@@ -3078,10 +3106,16 @@
       if (e.key === 'Escape') closeAllDropdowns();
     });
 
+    let lastWindowWidth = window.innerWidth;
     let resizeTimeout;
     window.addEventListener('resize', () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(closeAllDropdowns, 100);
+      // Only close dropdowns if window WIDTH changes (e.g. screen orientation or desktop window resize).
+      // Ignore height changes caused by mobile soft keyboard popups.
+      if (Math.abs(window.innerWidth - lastWindowWidth) > 10) {
+        lastWindowWidth = window.innerWidth;
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(closeAllDropdowns, 100);
+      }
     });
 
     // Mobile-friendly network dropdown delegation
@@ -3156,6 +3190,12 @@
         if (card) card.style.zIndex = '100000';
 
         if (window.innerWidth <= 640) {
+          // On mobile, teleport el to document.body so position:fixed is never trapped inside card stacking context
+          if (el.parentElement !== document.body) {
+            el._originalParent = el.parentElement;
+            el._nextSibling = el.nextSibling;
+            document.body.appendChild(el);
+          }
           const backdrop = document.getElementById('dropdown-backdrop');
           if (backdrop) backdrop.classList.add('active');
           document.body.style.overflow = 'hidden';
@@ -3164,13 +3204,25 @@
     }
 
     function closeAllDropdowns() {
+      // Do not blur search inputs inside open modals/dropdowns when closing
       if (document.activeElement && typeof document.activeElement.blur === 'function') {
-        document.activeElement.blur();
+        const tag = document.activeElement.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+          document.activeElement.blur();
+        }
       }
       document.querySelectorAll('.custom-select-options').forEach(o => {
         o.classList.remove('open');
         const p = o.closest('.custom-select');
         if (p) p.style.zIndex = '';
+        // Return teleported element to original position in DOM tree
+        if (o._originalParent && o.parentElement === document.body) {
+          if (o._nextSibling && o._originalParent.contains(o._nextSibling)) {
+            o._originalParent.insertBefore(o, o._nextSibling);
+          } else {
+            o._originalParent.appendChild(o);
+          }
+        }
       });
       document.querySelectorAll('.premium-card').forEach(c => c.style.zIndex = '');
       document.querySelectorAll('.asset-picker-modal').forEach(o => o.classList.remove('open'));
