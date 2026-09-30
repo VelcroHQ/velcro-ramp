@@ -1852,49 +1852,34 @@
 
   <!-- History Modal -->
   <div id="history-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 overscroll-contain">
-    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="hideHistoryModal()"></div>
+    <div class="absolute inset-0 bg-white/80 backdrop-blur-sm" onclick="hideHistoryModal()"></div>
     <div
-      class="history-modal-dialog relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-hidden animate-fade-in flex flex-col my-auto border border-gray-100 dark:border-slate-800">
-      <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900 z-10">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-velcro-navy/5 dark:bg-slate-800 flex items-center justify-center border border-gray-100 dark:border-slate-700/60 text-velcro-navy dark:text-velcro-green shrink-0 shadow-2xs">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      class="history-modal-dialog relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-hidden animate-fade-in flex flex-col my-auto">
+      <div class="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white z-10">
+        <div>
+          <h2 class="text-lg font-bold text-velcro-navy flex items-center gap-2">
+            <svg class="w-5 h-5 text-velcro-navy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 3v5h5"/>
               <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
               <path d="M12 7v5l4 2"/>
             </svg>
-          </div>
-          <div>
-            <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight">Transaction History</h2>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Your recent on-ramp and off-ramp orders</p>
-          </div>
+            Transaction History</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Your recent on-ramp and off-ramp orders</p>
         </div>
-        <button onclick="hideHistoryModal()" class="w-9 h-9 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition" aria-label="Close History">
+        <button onclick="hideHistoryModal()" class="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition" aria-label="Close History">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <!-- Quick Filter Pills: Horizontally slidable on mobile with dynamic counters -->
-      <div class="px-4 sm:px-5 py-2.5 bg-gray-50/70 dark:bg-slate-950/40 border-b border-gray-100 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 text-xs">
-        <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-filter-btn px-3 py-1.5 rounded-full font-semibold bg-velcro-navy text-white transition-all whitespace-nowrap inline-flex items-center gap-1.5 shadow-xs">
-          <span>All</span>
-          <span id="hist-badge-all" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-white/20 text-white min-w-[18px] text-center">0</span>
-        </button>
-        <button onclick="filterHistory('onramp')" id="hist-filter-onramp" class="hist-filter-btn px-3 py-1.5 rounded-full font-medium bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-750 border border-gray-200 dark:border-slate-700 transition-all whitespace-nowrap inline-flex items-center gap-1.5">
-          <span>Buy</span>
-          <span id="hist-badge-onramp" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 min-w-[18px] text-center">0</span>
-        </button>
-        <button onclick="filterHistory('offramp')" id="hist-filter-offramp" class="hist-filter-btn px-3 py-1.5 rounded-full font-medium bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-750 border border-gray-200 dark:border-slate-700 transition-all whitespace-nowrap inline-flex items-center gap-1.5">
-          <span>Sell</span>
-          <span id="hist-badge-offramp" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 min-w-[18px] text-center">0</span>
-        </button>
-        <button onclick="filterHistory('completed')" id="hist-filter-completed" class="hist-filter-btn px-3 py-1.5 rounded-full font-medium bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-750 border border-gray-200 dark:border-slate-700 transition-all whitespace-nowrap inline-flex items-center gap-1.5">
-          <span>Completed</span>
-          <span id="hist-badge-completed" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 min-w-[18px] text-center">0</span>
-        </button>
+      <!-- Quick Filter Pills: Horizontally slidable on mobile -->
+      <div class="px-4 sm:px-6 py-2.5 bg-gray-50/90 border-b border-gray-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 text-xs">
+        <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-velcro-navy text-white transition-all whitespace-nowrap">All</button>
+        <button onclick="filterHistory('onramp')" id="hist-filter-onramp" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap">Buy (Crypto)</button>
+        <button onclick="filterHistory('offramp')" id="hist-filter-offramp" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap">Sell (Cash)</button>
+        <button onclick="filterHistory('completed')" id="hist-filter-completed" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap">Completed</button>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 space-y-2.5 overscroll-contain" id="history-list" style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
+      <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 pb-8 sm:pb-8 space-y-3 overscroll-contain" id="history-list" style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
         <div class="text-center py-8 text-gray-400">Loading transactions...</div>
       </div>
     </div>
@@ -4772,56 +4757,15 @@
     let userHistoryCache = [];
     let currentHistoryFilter = 'all';
 
-    function getExplorerName(network) {
-      const map = {
-        solana: 'Solscan',
-        ethereum: 'Etherscan',
-        bsc: 'BscScan',
-        polygon: 'PolygonScan',
-        arbitrum: 'Arbiscan',
-        base: 'BaseScan',
-        tron: 'TronScan',
-        bitcoin: 'Mempool',
-        sui: 'SuiVision',
-        optimism: 'Optimism Etherscan',
-        avalanche: 'Snowtrace'
-      };
-      return map[(network || '').toLowerCase()] || 'Blockchain';
-    }
-
-    function updateHistoryCounts() {
-      const allCount = userHistoryCache.length;
-      const buyCount = userHistoryCache.filter(tx => (tx.type || '').toUpperCase() === 'ONRAMP').length;
-      const sellCount = userHistoryCache.filter(tx => (tx.type || '').toUpperCase() === 'OFFRAMP').length;
-      const completedCount = userHistoryCache.filter(tx => (tx.status || '').toUpperCase() === 'COMPLETED').length;
-
-      const badgeAll = document.getElementById('hist-badge-all');
-      const badgeBuy = document.getElementById('hist-badge-onramp');
-      const badgeSell = document.getElementById('hist-badge-offramp');
-      const badgeCompleted = document.getElementById('hist-badge-completed');
-
-      if (badgeAll) badgeAll.textContent = allCount;
-      if (badgeBuy) badgeBuy.textContent = buyCount;
-      if (badgeSell) badgeSell.textContent = sellCount;
-      if (badgeCompleted) badgeCompleted.textContent = completedCount;
-    }
-
     function filterHistory(filter) {
       currentHistoryFilter = filter;
-      const filterKeys = ['all', 'onramp', 'offramp', 'completed'];
-      filterKeys.forEach(k => {
-        const btn = document.getElementById(`hist-filter-${k}`);
-        const badge = document.getElementById(`hist-badge-${k}`);
-        if (btn) {
-          if (k === filter) {
-            btn.className = 'hist-filter-btn px-3 py-1.5 rounded-full font-semibold bg-velcro-navy text-white transition-all whitespace-nowrap inline-flex items-center gap-1.5 shadow-xs';
-            if (badge) badge.className = 'px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-white/20 text-white min-w-[18px] text-center';
-          } else {
-            btn.className = 'hist-filter-btn px-3 py-1.5 rounded-full font-medium bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-750 border border-gray-200 dark:border-slate-700 transition-all whitespace-nowrap inline-flex items-center gap-1.5';
-            if (badge) badge.className = 'px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 min-w-[18px] text-center';
-          }
-        }
+      document.querySelectorAll('.hist-filter-btn').forEach(b => {
+        b.className = 'hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap';
       });
+      const activeBtn = document.getElementById(`hist-filter-${filter}`);
+      if (activeBtn) {
+        activeBtn.className = 'hist-filter-btn px-3 py-1 rounded-full font-medium bg-velcro-navy text-white transition-all whitespace-nowrap';
+      }
 
       let filtered = userHistoryCache;
       if (filter === 'onramp') {
@@ -4853,53 +4797,26 @@
 
       if (!txs || txs.length === 0) {
         list.innerHTML = `
-          <div class="text-center py-12 px-4 flex flex-col items-center justify-center">
-            <div class="w-14 h-14 rounded-2xl bg-gray-100/80 dark:bg-slate-800 flex items-center justify-center text-gray-400 dark:text-gray-500 mb-3 border border-gray-200/50 dark:border-slate-700/60 shadow-2xs">
-              <svg class="w-7 h-7 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
-            </div>
-            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">No transactions found</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-[240px]">
-              ${currentHistoryFilter !== 'all' ? 'Try selecting another tab above to see more orders.' : 'Your completed and pending orders will appear here.'}
-            </p>
+          <div class="text-center py-12 text-gray-400 flex flex-col items-center gap-2">
+            <svg class="w-8 h-8 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            <p class="text-sm">No transactions found${currentHistoryFilter !== 'all' ? ' for this filter' : ''}</p>
           </div>
         `;
         return;
       }
 
       list.innerHTML = txs.map(tx => {
-        const typeUpper = (tx.type || '').toUpperCase();
-        const isBuy = typeUpper === 'ONRAMP';
-        const isSell = typeUpper === 'OFFRAMP';
-
-        const statusRaw = (tx.status || 'PENDING').toUpperCase();
-        let statusBadgeHtml = '';
-        if (statusRaw === 'COMPLETED' || statusRaw === 'SUCCESS' || statusRaw === 'CONFIRMED') {
-          statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Completed</span>`;
-        } else if (statusRaw === 'PROCESSING') {
-          statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200/70 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/40 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>Processing</span>`;
-        } else if (statusRaw === 'FAILED' || statusRaw === 'CANCELLED' || statusRaw === 'EXPIRED') {
-          statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>${statusRaw === 'CANCELLED' ? 'Cancelled' : statusRaw === 'EXPIRED' ? 'Expired' : 'Failed'}</span>`;
-        } else {
-          statusBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>Pending</span>`;
-        }
-
-        const txDate = new Date(tx.created_at);
-        const formattedDate = isNaN(txDate.getTime())
-          ? (tx.created_at || '-')
-          : txDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-        const assetName = tx.asset ? (tx.asset.includes(':') ? tx.asset.split(':')[1].toUpperCase() : tx.asset.toUpperCase()) : 'CRYPTO';
+        const isBuy = tx.type === 'ONRAMP';
+        const statusClass = tx.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+          tx.status === 'FAILED' || tx.status === 'CANCELLED' || tx.status === 'EXPIRED' ? 'bg-red-100 text-red-700' :
+            tx.status === 'PROCESSING' ? 'bg-blue-100 text-blue-700' :
+              'bg-amber-100 text-amber-700';
+        const date = new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const assetName = tx.asset.includes(':') ? tx.asset.split(':')[1].toUpperCase() : tx.asset.toUpperCase();
         const ben = tx.beneficiary ? (typeof tx.beneficiary === 'string' ? JSON.parse(tx.beneficiary) : tx.beneficiary) : {};
         const meta = tx.meta ? (typeof tx.meta === 'string' ? JSON.parse(tx.meta) : tx.meta) : {};
-        const network = meta.network || meta.chain || (tx.asset && tx.asset.includes(':') ? tx.asset.split(':')[0] : 'solana');
-        const networkName = network ? (network.charAt(0).toUpperCase() + network.slice(1)) : 'Network';
-
+        const network = meta.network || meta.chain || (tx.asset.includes(':') ? tx.asset.split(':')[0] : 'solana');
+        
         // Robust wallet resolution across all possible schema locations
         const destWallet = tx.wallet_address
           || ben.wallet_address
@@ -4908,191 +4825,110 @@
           || (meta.destination && meta.destination.address)
           || '';
 
-        // Format crypto amount & fiat amount
-        let primaryAmountHtml = '';
-        let secondaryAmountHtml = '';
-
-        if (isBuy) {
-          const cryptoAmt = tx.destination_amount
-            ? Number(tx.destination_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })
-            : '...';
-          const fiatAmt = tx.amount
-            ? Number(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-            : '0.00';
-          primaryAmountHtml = `<span class="text-sm font-bold text-gray-900 dark:text-white tracking-tight">+${cryptoAmt} ${assetName}</span>`;
-          secondaryAmountHtml = `<span class="text-[11px] text-gray-400 dark:text-gray-500 font-medium">₦${fiatAmt}</span>`;
-        } else if (isSell) {
-          const cryptoAmt = tx.amount
-            ? Number(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })
-            : '0.00';
-          const fiatAmt = tx.destination_amount
-            ? Number(tx.destination_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-            : null;
-          primaryAmountHtml = fiatAmt
-            ? `<span class="text-sm font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">+₦${fiatAmt}</span>`
-            : `<span class="text-sm font-bold text-gray-900 dark:text-white tracking-tight">-${cryptoAmt} ${assetName}</span>`;
-          secondaryAmountHtml = fiatAmt
-            ? `<span class="text-[11px] text-gray-400 dark:text-gray-500 font-medium">-${cryptoAmt} ${assetName}</span>`
-            : `<span class="text-[11px] text-amber-500 font-medium">Processing payout...</span>`;
-        } else {
-          const amt = tx.amount ? Number(tx.amount).toLocaleString() : '0';
-          primaryAmountHtml = `<span class="text-sm font-bold text-gray-900 dark:text-white tracking-tight">${amt} ${assetName}</span>`;
-          secondaryAmountHtml = `<span class="text-[11px] text-gray-400 dark:text-gray-500 font-medium">${typeUpper}</span>`;
-        }
-
-        // Direction badge on asset icon
-        const directionBadgeHtml = isBuy
-          ? `<div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-2xs" title="Buy Order"><svg class="w-2.5 h-2.5 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>`
-          : isSell
-            ? `<div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-2xs" title="Sell Order"><svg class="w-2.5 h-2.5 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>`
-            : `<div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gray-500 text-white flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-2xs"><svg class="w-2.5 h-2.5 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17l10-10M7 7h10v10"/></svg></div>`;
-
-        const explorerUrl = tx.explorer_url || (tx.hash ? getExplorerUrl(tx.hash, network) : null);
-        const explorerName = getExplorerName(network);
+        const typeLabel = (tx.type || '').toUpperCase();
+        const isOnramp = typeLabel === 'ONRAMP';
+        const isOfframp = typeLabel === 'OFFRAMP';
 
         return `
-          <div class="tx-card bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 hover:border-gray-200 dark:hover:border-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.05)] transition-all overflow-hidden">
-            <div class="cursor-pointer select-none p-3.5 sm:p-4 hover:bg-gray-50/50 dark:hover:bg-slate-850/50 transition-colors" onclick="toggleTxDetails(this)">
-              <div class="flex items-center justify-between gap-3">
-                <!-- Left: Asset Icon with Direction + Title + Meta -->
-                <div class="flex items-center gap-3 min-w-0">
-                  <div class="relative w-10 h-10 rounded-2xl bg-gray-50 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-gray-100 dark:border-slate-700/80 p-1.5 shadow-2xs">
-                    <img src="${getAssetLogo(assetName)}" class="w-6 h-6 object-contain rounded-full" alt="${assetName}" onerror="this.src='/logos/usdt.png'"/>
-                    ${directionBadgeHtml}
-                  </div>
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                      <span class="text-sm font-bold text-gray-900 dark:text-white truncate">${isBuy ? 'Buy' : isSell ? 'Sell' : typeUpper} ${assetName}</span>
-                      <span class="text-[9px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">${network}</span>
-                    </div>
-                    <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                      <span>${formattedDate}</span>
-                      <span class="inline-block w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
-                      <span class="font-mono text-[10px] text-gray-400 dark:text-gray-500">#${tx.reference ? tx.reference.slice(0, 8) : ''}</span>
-                    </div>
-                  </div>
+          <div class="tx-card p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100/80 transition-colors">
+            <div class="cursor-pointer select-none" onclick="toggleTxDetails(this)">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-sm font-bold text-gray-900">${isOnramp ? 'Buy' : isOfframp ? 'Sell' : typeLabel || 'Trade'} ${assetName}</span>
                 </div>
-
-                <!-- Right: Amounts + Status Pill + Chevron -->
-                <div class="flex items-center gap-2 shrink-0">
-                  <div class="text-right">
-                    <div class="leading-tight">
-                      ${primaryAmountHtml}
-                    </div>
-                    <div class="flex items-center justify-end gap-1.5 mt-1">
-                      ${secondaryAmountHtml}
-                      ${statusBadgeHtml}
-                    </div>
-                  </div>
-                  <div class="w-6 h-6 rounded-lg bg-gray-50 dark:bg-slate-800 flex items-center justify-center text-gray-400 group-hover:text-gray-600 transition shrink-0 ml-0.5">
-                    <svg class="w-3.5 h-3.5 transition-transform duration-200 tx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
-                  </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="text-[10px] px-2 py-0.5 ${statusClass} rounded-full font-medium uppercase">${tx.status || 'PENDING'}</span>
+                  <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 tx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="flex justify-between items-end">
+                <div>
+                  <p class="text-xs text-gray-600">${isBuy ? `₦${Number(tx.amount).toLocaleString()} → ${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : ''} ${assetName}` : `${Number(tx.amount).toLocaleString()} ${assetName} → ₦${tx.destination_amount ? Number(tx.destination_amount).toLocaleString() : ''}`}</p>
+                  <p class="text-[10px] text-gray-400 mt-1">${date}</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[10px] font-mono text-gray-400">Ref: ${tx.reference.slice(0, 8)}...</p>
                 </div>
               </div>
             </div>
-
-            <!-- Expanded Digital Receipt Drawer -->
-            <div class="tx-details hidden px-3.5 pb-3.5 sm:px-4 sm:pb-4 pt-1 border-t border-dashed border-gray-100 dark:border-slate-800 animate-fade-in">
-              <div class="bg-gray-50/70 dark:bg-slate-950/60 rounded-xl p-3 sm:p-3.5 border border-gray-100 dark:border-slate-800/80 space-y-2 text-xs">
-                ${(statusRaw === 'PENDING' || statusRaw === 'PROCESSING') ? `
-                  <div class="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] mb-2 font-medium">
-                    <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span>${isBuy ? 'Order is processing. Crypto will arrive in your wallet shortly.' : 'Order is processing. Cash will be credited to your bank account shortly.'}</span>
-                  </div>
-                ` : ''}
-
-                <div class="flex items-center justify-between py-1 border-b border-gray-200/50 dark:border-slate-800/80">
-                  <span class="text-gray-400 dark:text-gray-500 text-[11px] font-medium uppercase tracking-wider">Exchange Rate</span>
-                  <span class="font-semibold text-gray-800 dark:text-gray-200">${tx.rate ? `₦${Number(tx.rate).toLocaleString()} / ${assetName}` : '-'}</span>
-                </div>
-
-                <div class="flex items-center justify-between py-1 border-b border-gray-200/50 dark:border-slate-800/80">
-                  <span class="text-gray-400 dark:text-gray-500 text-[11px] font-medium uppercase tracking-wider">Network</span>
-                  <span class="inline-flex items-center gap-1.5 font-semibold text-gray-800 dark:text-gray-200 capitalize">
-                    <img src="${getChainLogo(network)}" class="w-3.5 h-3.5 rounded-full object-contain" onerror="this.style.display='none'"/>
-                    ${networkName}
-                  </span>
-                </div>
-
-                ${destWallet ? `
-                  <div class="flex items-center justify-between gap-2 py-1 border-b border-gray-200/50 dark:border-slate-800/80">
-                    <span class="text-gray-400 dark:text-gray-500 text-[11px] font-medium uppercase tracking-wider shrink-0">Recipient Wallet</span>
-                    <div class="flex items-center gap-1.5 min-w-0 justify-end">
-                      <span class="font-mono text-gray-700 dark:text-gray-300 text-[11px] truncate max-w-[160px] sm:max-w-[240px]" title="${destWallet}">
-                        ${destWallet.slice(0, 6)}...${destWallet.slice(-6)}
-                      </span>
-                      <button onclick="event.stopPropagation(); copyText('${destWallet}', 'Wallet copied!')" class="tx-copy-icon-btn" title="Copy Wallet Address">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                ` : ''}
-
-                ${ben.account_number ? `
-                  <div class="flex items-center justify-between gap-2 py-1 border-b border-gray-200/50 dark:border-slate-800/80">
-                    <span class="text-gray-400 dark:text-gray-500 text-[11px] font-medium uppercase tracking-wider shrink-0">Payout Bank</span>
-                    <div class="flex items-center gap-1.5 text-right">
-                      <span class="font-medium text-gray-700 dark:text-gray-300 text-[11px]">${ben.bank_name || ben.bank_code || 'Bank'} • <span class="font-mono font-semibold">${ben.account_number}</span></span>
-                      <button onclick="event.stopPropagation(); copyText('${ben.account_number}', 'Account copied!')" class="tx-copy-icon-btn" title="Copy Account Number">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                ` : ''}
-
-                ${tx.deposit_bank_name ? `
-                  <div class="flex items-center justify-between gap-2 py-1 border-b border-gray-200/50 dark:border-slate-800/80">
-                    <span class="text-gray-400 dark:text-gray-500 text-[11px] font-medium uppercase tracking-wider shrink-0">Pay-to Bank</span>
-                    <div class="flex items-center gap-1.5 text-right">
-                      <span class="font-medium text-gray-700 dark:text-gray-300 text-[11px]">${tx.deposit_bank_name} • <span class="font-mono font-semibold text-gray-900 dark:text-white">${tx.deposit_account_number || ''}</span></span>
-                      <button onclick="event.stopPropagation(); copyText('${tx.deposit_account_number}', 'Deposit account copied!')" class="tx-copy-icon-btn" title="Copy Deposit Account">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                ` : ''}
-
-                ${tx.deposit_address ? `
-                  <div class="flex items-center justify-between gap-2 py-1 border-b border-gray-200/50 dark:border-slate-800/80">
-                    <span class="text-gray-400 dark:text-gray-500 text-[11px] font-medium uppercase tracking-wider shrink-0">Deposit Address</span>
-                    <div class="flex items-center gap-1.5 min-w-0 justify-end">
-                      <span class="font-mono text-gray-700 dark:text-gray-300 text-[11px] truncate max-w-[160px] sm:max-w-[240px]" title="${tx.deposit_address}">
-                        ${tx.deposit_address.slice(0, 6)}...${tx.deposit_address.slice(-6)}
-                      </span>
-                      <button onclick="event.stopPropagation(); copyText('${tx.deposit_address}', 'Deposit address copied!')" class="tx-copy-icon-btn" title="Copy Deposit Address">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                ` : ''}
-
-                <div class="flex items-center justify-between gap-2 py-1 border-b border-gray-200/50 dark:border-slate-800/80 text-[11px]">
-                  <span class="text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">Order Reference</span>
-                  <div class="flex items-center gap-1 font-mono text-gray-600 dark:text-gray-400">
-                    <span class="text-[11px] select-all">${tx.reference}</span>
-                    <button onclick="event.stopPropagation(); copyText('${tx.reference}', 'Reference copied!')" class="tx-copy-icon-btn" title="Copy Reference">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <div class="tx-details hidden mt-3 pt-3 border-t border-gray-100 dark:border-slate-800 text-xs space-y-2 animate-fade-in">
+              <div class="flex items-center justify-between py-0.5">
+                <span class="text-gray-400">Rate</span>
+                <span class="font-medium text-gray-800 dark:text-gray-200">${tx.rate ? `₦${Number(tx.rate).toLocaleString()}` : '-'}</span>
+              </div>
+              <div class="flex items-center justify-between py-0.5 border-t border-gray-50 dark:border-slate-800/60">
+                <span class="text-gray-400">Network</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-200 uppercase">${network || '-'}</span>
+              </div>
+              ${destWallet ? `
+                <div class="flex items-center justify-between gap-3 py-0.5 border-t border-gray-50 dark:border-slate-800/60">
+                  <span class="text-gray-400 shrink-0">Wallet Address</span>
+                  <div class="flex items-center gap-1.5 min-w-0 justify-end">
+                    <span class="font-mono text-gray-700 dark:text-gray-300 text-[11px] truncate max-w-[180px] sm:max-w-[260px]" title="${destWallet}">${destWallet.slice(0, 8)}...${destWallet.slice(-6)}</span>
+                    <button onclick="event.stopPropagation(); copyText('${destWallet}', 'Wallet copied!')" class="tx-copy-icon-btn" title="Copy Wallet Address">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                     </button>
                   </div>
                 </div>
-
-                ${(tx.hash || tx.explorer_url) ? `
-                  <div class="pt-2">
-                    <div class="flex items-center gap-2">
-                      <a href="${explorerUrl}" target="_blank" rel="noopener noreferrer"
-                        class="flex-1 inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700/80 hover:border-velcro-navy dark:hover:border-velcro-green text-velcro-navy dark:text-velcro-green font-semibold text-xs shadow-2xs hover:shadow-xs transition-all">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        <span>View on ${explorerName}</span>
-                        ${tx.hash ? `<span class="text-[10px] text-gray-400 dark:text-gray-500 font-mono font-normal">(${tx.hash.slice(0, 4)}...${tx.hash.slice(-4)})</span>` : ''}
-                      </a>
-                      ${tx.hash ? `
-                        <button onclick="event.stopPropagation(); copyText('${tx.hash}', 'Transaction hash copied!')" class="h-9 w-9 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700/80 hover:border-velcro-navy text-gray-500 hover:text-velcro-navy dark:text-gray-400 dark:hover:text-white flex items-center justify-center shrink-0 transition-colors" title="Copy Hash">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                        </button>
-                      ` : ''}
-                    </div>
+              ` : ''}
+              ${ben.account_number ? `
+                <div class="flex items-center justify-between gap-3 py-0.5 border-t border-gray-50 dark:border-slate-800/60">
+                  <span class="text-gray-400 shrink-0">Payout Bank</span>
+                  <div class="flex items-center gap-1.5 text-right">
+                    <span class="font-medium text-gray-700 dark:text-gray-300 text-[11px]">${ben.bank_name || ben.bank_code || ben.bank || 'Bank'} • <span class="font-mono font-semibold">${ben.account_number}</span></span>
+                    <button onclick="event.stopPropagation(); copyText('${ben.account_number}', 'Account copied!')" class="tx-copy-icon-btn" title="Copy Account Number">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
                   </div>
-                ` : ''}
+                </div>
+              ` : ''}
+              ${tx.deposit_bank_name ? `
+                <div class="flex items-center justify-between gap-3 py-0.5 border-t border-gray-50 dark:border-slate-800/60">
+                  <span class="text-gray-400 shrink-0">Pay-to Bank</span>
+                  <div class="flex items-center gap-1.5 text-right">
+                    <span class="font-medium text-gray-700 dark:text-gray-300 text-[11px]">${tx.deposit_bank_name} • <span class="font-mono font-semibold text-gray-900 dark:text-white">${tx.deposit_account_number || ''}</span></span>
+                    <button onclick="event.stopPropagation(); copyText('${tx.deposit_account_number}', 'Account copied!')" class="tx-copy-icon-btn" title="Copy Deposit Account">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
+              ${tx.deposit_address ? `
+                <div class="flex items-center justify-between gap-3 py-0.5 border-t border-gray-50 dark:border-slate-800/60">
+                  <span class="text-gray-400 shrink-0">Deposit Address</span>
+                  <div class="flex items-center gap-1.5 min-w-0 justify-end">
+                    <span class="font-mono text-gray-700 dark:text-gray-300 text-[11px] truncate max-w-[180px] sm:max-w-[260px]" title="${tx.deposit_address}">${tx.deposit_address.slice(0, 8)}...${tx.deposit_address.slice(-6)}</span>
+                    <button onclick="event.stopPropagation(); copyText('${tx.deposit_address}', 'Address copied!')" class="tx-copy-icon-btn" title="Copy Deposit Address">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
+              ${(tx.hash || tx.explorer_url) ? `
+                <div class="flex items-center justify-between gap-3 py-0.5 border-t border-gray-50 dark:border-slate-800/60">
+                  <span class="text-gray-400 shrink-0">Blockchain Proof</span>
+                  <div class="flex items-center gap-2">
+                    <a href="${tx.explorer_url || getExplorerUrl(tx.hash, network)}" target="_blank" rel="noopener noreferrer"
+                      class="text-xs font-semibold text-velcro-navy hover:text-velcro-green dark:text-velcro-green inline-flex items-center gap-1 hover:underline">
+                      <span>View on Explorer</span>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </a>
+                    ${tx.hash ? `
+                      <button onclick="event.stopPropagation(); copyText('${tx.hash}', 'Transaction hash copied!')" class="tx-copy-icon-btn" title="Copy Hash">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+              ` : ''}
+              <div class="flex items-center justify-between gap-3 pt-1 border-t border-gray-100 dark:border-slate-800 text-[11px] text-gray-400">
+                <span>Reference</span>
+                <div class="flex items-center gap-1">
+                  <span class="font-mono text-gray-600 dark:text-gray-400">${tx.reference}</span>
+                  <button onclick="event.stopPropagation(); copyText('${tx.reference}', 'Reference copied!')" class="tx-copy-icon-btn" title="Copy Reference">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -5108,31 +4944,16 @@
       document.body.style.overflow = 'hidden';
 
       const list = document.getElementById('history-list');
-      list.innerHTML = `
-        <div class="text-center py-12 text-gray-400 flex flex-col items-center gap-2">
-          <div class="w-8 h-8 border-2 border-velcro-navy/20 border-t-velcro-navy rounded-full animate-spin"></div>
-          <p class="text-xs">Loading transactions...</p>
-        </div>
-      `;
+      list.innerHTML = '<div class="text-center py-8 text-gray-400">Loading transactions...</div>';
 
       try {
         const email = localStorage.getItem('velcro_user_email') || '';
         const res = await fetch(`${API_BASE}/api/transactions?email=${encodeURIComponent(email)}`);
         const payload = await res.json();
         userHistoryCache = payload.data || [];
-        updateHistoryCounts();
         filterHistory(currentHistoryFilter || 'all');
       } catch (err) {
-        list.innerHTML = `
-          <div class="text-center py-10 px-4 flex flex-col items-center">
-            <div class="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center mb-2">
-              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">Unable to load transactions</p>
-            <p class="text-xs text-gray-400 mt-1">Please check your connection and try again.</p>
-            <button onclick="showHistoryModal()" class="mt-3 px-3 py-1.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300">Retry</button>
-          </div>
-        `;
+        list.innerHTML = '<div class="text-center py-8 text-red-400">Failed to load history</div>';
       }
     }
 
