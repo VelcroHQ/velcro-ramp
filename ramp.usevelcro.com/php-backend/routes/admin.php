@@ -12,7 +12,7 @@ function registerAdminRoutes(Router $router): void
         requireAdminAuth();
         $ip = clientIp();
         try {
-            $statsRow = Database::selectOne("
+            $statsRows = Database::safeSelect("
                 SELECT 
                     COUNT(DISTINCT NULLIF(wallet_address, '')) AS total_users,
                     COUNT(*) AS all_transactions,
@@ -31,7 +31,8 @@ function registerAdminRoutes(Router $router): void
                     END), 0) AS total_volume_ngn,
                     COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN COALESCE(fee_developer, 0) ELSE 0 END), 0) AS local_developer_fees
                 FROM `transactions`
-            ") ?? [];
+            ");
+            $statsRow = $statsRows[0] ?? [];
 
             $totalUsers = (int) ($statsRow['total_users'] ?? 0);
             $allTransactions = (int) ($statsRow['all_transactions'] ?? 0);
@@ -59,7 +60,16 @@ function registerAdminRoutes(Router $router): void
                 'developerFees' => ['amount' => $feeAmount, 'currency' => $feeCurrency],
             ]);
         } catch (Throwable $e) {
-            jsonResponse(['error' => $e->getMessage()], 500);
+            error_log('/api/admin/stats error: ' . $e->getMessage());
+            jsonResponse([
+                'totalUsers' => 0,
+                'allTransactions' => 0,
+                'completedTransactions' => 0,
+                'totalVolumeUSD' => 0.0,
+                'totalVolumeNGN' => 0.0,
+                'developerFees' => ['amount' => 0, 'currency' => 'USDC'],
+                'error' => $e->getMessage(),
+            ]);
         }
     });
 
