@@ -3012,10 +3012,6 @@
         html += `<div class="custom-option text-gray-400">No banks found</div>`;
       }
       listContainer.innerHTML = html;
-      // Force iOS to recalculate clickable regions for dynamically added content
-      listContainer.style.display = 'none';
-      listContainer.offsetHeight;
-      listContainer.style.display = '';
     }
 
     async function selectCountry(code, currency, label, flag) {
@@ -3060,6 +3056,13 @@
       const isSelect = e.target.closest('.custom-select');
       const isOption = e.target.closest('.custom-option');
       const isDropdown = e.target.closest('.custom-select-options');
+      const isAssetModal = e.target.closest('.asset-picker-modal');
+      const isAssetPill = e.target.closest('.asset-pill');
+
+      if (isAssetModal || isAssetPill) {
+        return;
+      }
+
       if ((!isSelect && !isDropdown) || isOption) {
         closeAllDropdowns();
       }
@@ -3183,6 +3186,7 @@
       if (modal) {
         modal.classList.add('open');
         document.body.style.overflow = 'hidden';
+        if (searchInput) setTimeout(() => searchInput.focus(), 50);
       }
     }
 
@@ -3227,6 +3231,7 @@
       if (modal) {
         modal.classList.add('open');
         document.body.style.overflow = 'hidden';
+        if (searchInput) setTimeout(() => searchInput.focus(), 50);
       }
     }
 
@@ -5000,15 +5005,28 @@
       fetchInstitutions();
     })();
 
-    window.addEventListener('scroll', () => {
-      closeAllDropdowns();
-      const nav = document.getElementById('main-nav');
-      if (window.scrollY > 10) {
-        nav.classList.add('nav-scrolled');
-      } else {
-        nav.classList.remove('nav-scrolled');
+    window.addEventListener('scroll', (e) => {
+      const isInsideDropdown = e.target && e.target.closest && (e.target.closest('.custom-select-options') || e.target.closest('.asset-picker-modal'));
+      const isAssetModalOpen = document.querySelector('.asset-picker-modal.open');
+      if (!isInsideDropdown && !isAssetModalOpen) {
+        document.querySelectorAll('.custom-select-options').forEach(o => {
+          o.classList.remove('open');
+          const p = o.closest('.custom-select');
+          if (p) p.style.zIndex = '';
+        });
+        document.querySelectorAll('.premium-card').forEach(c => c.style.zIndex = '');
+        const backdrop = document.getElementById('dropdown-backdrop');
+        if (backdrop) backdrop.classList.remove('active');
       }
-    });
+      const nav = document.getElementById('main-nav');
+      if (nav) {
+        if (window.scrollY > 10) {
+          nav.classList.add('nav-scrolled');
+        } else {
+          nav.classList.remove('nav-scrolled');
+        }
+      }
+    }, true);
 
     let userHistoryCache = [];
     let currentHistoryFilter = 'all';
