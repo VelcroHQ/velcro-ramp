@@ -265,12 +265,15 @@ function registerPublicRoutes(Router $router): void
             $d = $data['data'] ?? [];
             if (!empty($d['status'])) {
                 $meta = $d['meta'] ?? [];
+                $hash = $meta['hash'] ?? ($d['hash'] ?? null);
+                $explorerUrl = $meta['explorer_url'] ?? ($d['explorer_url'] ?? null);
                 Database::safeExecute(
-                    'UPDATE `transactions` SET `status` = :status, `hash` = :hash, `explorer_url` = :explorer_url WHERE `reference` = :reference',
+                    'UPDATE `transactions` SET `status` = :status, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`), `meta` = COALESCE(:meta, `meta`) WHERE `reference` = :reference OR `switch_reference` = :reference',
                     [
                         'status' => strtoupper($d['status']),
-                        'hash' => $meta['hash'] ?? ($d['hash'] ?? null),
-                        'explorer_url' => $meta['explorer_url'] ?? ($d['explorer_url'] ?? null),
+                        'hash' => $hash,
+                        'explorer_url' => $explorerUrl,
+                        'meta' => jsonEncodeNullable($d),
                         'reference' => $reference,
                     ]
                 );
@@ -292,7 +295,7 @@ function registerPublicRoutes(Router $router): void
             jsonResponse(errorResponse('reference is required'), 400);
         }
         Database::safeExecute(
-            'UPDATE `transactions` SET `status` = :status WHERE `reference` = :reference',
+            'UPDATE `transactions` SET `status` = :status WHERE `reference` = :reference OR `switch_reference` = :reference',
             ['status' => 'CANCELLED', 'reference' => $reference]
         );
         jsonResponse(['success' => true, 'message' => 'Transaction cancelled']);
@@ -308,9 +311,10 @@ function registerPublicRoutes(Router $router): void
         try {
             $data = switchApi()->confirmPayment($reference, $hash);
             $d = $data['data'] ?? [];
+            $newStatus = strtoupper($d['status'] ?? 'PROCESSING');
             Database::safeExecute(
-                'UPDATE `transactions` SET `status` = :status, `hash` = :hash WHERE `reference` = :reference',
-                ['status' => strtoupper($d['status'] ?? 'PROCESSING'), 'hash' => $hash, 'reference' => $reference]
+                'UPDATE `transactions` SET `status` = :status, `hash` = COALESCE(:hash, `hash`) WHERE `reference` = :reference OR `switch_reference` = :reference',
+                ['status' => $newStatus, 'hash' => $hash, 'reference' => $reference]
             );
             jsonResponse($data);
         } catch (Throwable $e) {
