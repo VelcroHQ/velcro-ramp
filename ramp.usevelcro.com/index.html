@@ -3335,7 +3335,7 @@
         let payload;
         if (currentProvider === 'paj') {
           const bankId = currentBankPajId || currentBankCode;
-          if (!bankId) { nameLoading.classList.add('hidden'); nameInput.classList.remove('hidden'); nameError.textContent = 'Selected bank is not supported by PAJ'; nameError.classList.remove('hidden'); return; }
+          if (!bankId) { nameLoading.classList.add('hidden'); nameInput.classList.remove('hidden'); nameError.textContent = 'Selected bank is not supported for this asset'; nameError.classList.remove('hidden'); return; }
           const res = await fetch(`${API_BASE}/api/paj/resolve`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -3345,7 +3345,7 @@
           if (!res.ok) throw new Error(payload.message || 'Could not resolve account name');
         } else {
           const switchCode = currentBankSwitchCode || currentBankCode;
-          if (!switchCode) { nameLoading.classList.add('hidden'); nameInput.classList.remove('hidden'); nameError.textContent = 'Selected bank is not supported by Switch'; nameError.classList.remove('hidden'); return; }
+          if (!switchCode) { nameLoading.classList.add('hidden'); nameInput.classList.remove('hidden'); nameError.textContent = 'Selected bank is not supported for this asset'; nameError.classList.remove('hidden'); return; }
           const res = await fetch(`${API_BASE}/api/resolve`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -3918,13 +3918,13 @@
       document.getElementById('sell-confirm-amount').textContent = Number(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
       btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
 
-      // PAJ Provider flow
+      // Offramp flow
       if (currentProvider === 'paj') {
         const mint = PAJ_MINTS[currentSellAsset];
-        if (!mint) { showToast('Invalid PAJ asset', 'warning'); btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address'; safeLucideInit(); return; }
+        if (!mint) { showToast('Invalid asset selected', 'warning'); btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address'; safeLucideInit(); return; }
         try {
           const bankId = currentBankPajId || currentBankCode;
-          if (!bankId) { showToast('Selected bank is not supported by PAJ', 'warning'); btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address'; safeLucideInit(); return; }
+          if (!bankId) { showToast('Selected bank is not supported for this asset', 'warning'); btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address'; safeLucideInit(); return; }
           const res = await fetch(`${API_BASE}/api/paj/sell`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -3938,7 +3938,7 @@
           });
           const responseBody = await res.text();
           if (!res.ok) {
-            let errorMsg = 'Failed to initiate PAJ sell transaction';
+            let errorMsg = 'Failed to initiate sell transaction';
             try { const err = JSON.parse(responseBody); errorMsg = err.message || errorMsg; } catch { }
             throw new Error(errorMsg);
           }
@@ -4113,10 +4113,10 @@
       document.getElementById('buy-confirm-ngn').textContent = Number(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
       btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
 
-      // PAJ Provider flow
+      // Onramp flow
       if (currentProvider === 'paj') {
         const mint = PAJ_MINTS[currentBuyAsset];
-        if (!mint) { showToast('Invalid PAJ asset', 'warning'); btn.innerHTML = '<i data-lucide="landmark" class="w-5 h-5"></i> Generate Bank Account'; safeLucideInit(); return; }
+        if (!mint) { showToast('Invalid asset selected', 'warning'); btn.innerHTML = '<i data-lucide="landmark" class="w-5 h-5"></i> Generate Bank Account'; safeLucideInit(); return; }
         try {
           const res = await fetch(`${API_BASE}/api/paj/initiate`, {
             method: 'POST',
@@ -4130,13 +4130,13 @@
           });
           const responseBody = await res.text();
           if (!res.ok) {
-            let errorMsg = 'Failed to initiate PAJ transaction';
+            let errorMsg = 'Failed to initiate transaction';
             try { const err = JSON.parse(responseBody); errorMsg = err.message || errorMsg; } catch { }
             throw new Error(errorMsg);
           }
           const payload = JSON.parse(responseBody);
           const data = payload.data || {};
-          document.getElementById('buy-bank-name').textContent = data.bank || 'PAJ Partner Bank';
+          document.getElementById('buy-bank-name').textContent = data.bank || 'Partner Bank';
           document.getElementById('buy-account-number').textContent = data.accountNumber || '-';
           document.getElementById('buy-account-name').textContent = data.accountName || 'Velcro - Paj inc (Pay amount)';
           // Rate used element removed for PAJ
@@ -4825,10 +4825,6 @@
           || (meta.destination && meta.destination.address)
           || '';
 
-        const isPaj = (tx.channel === 'PAJ') || (tx.reference && tx.reference.startsWith('paj_'));
-        const channelLabel = isPaj ? 'PAJ Solana' : 'Switch';
-        const channelBadgeClass = isPaj ? 'badge-pill badge-channel-paj' : 'badge-pill badge-channel-switch';
-
         const typeLabel = (tx.type || '').toUpperCase();
         const isOnramp = typeLabel === 'ONRAMP';
         const isOfframp = typeLabel === 'OFFRAMP';
@@ -4839,7 +4835,6 @@
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="text-sm font-bold text-gray-900">${isOnramp ? 'Buy' : isOfframp ? 'Sell' : typeLabel || 'Trade'} ${assetName}</span>
-                  <span class="${channelBadgeClass}">${channelLabel}</span>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                   <span class="text-[10px] px-2 py-0.5 ${statusClass} rounded-full font-medium uppercase">${tx.status || 'PENDING'}</span>
