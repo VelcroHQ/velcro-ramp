@@ -495,18 +495,9 @@
       display: block;
     }
 
-    /* Desktop dropdown backdrop */
+    /* Dropdown backdrop: only used on mobile bottom sheets, completely hidden on desktop */
     .dropdown-backdrop {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.15);
-      backdrop-filter: blur(2px);
-      -webkit-backdrop-filter: blur(2px);
-      z-index: 9998;
-    }
-    .dropdown-backdrop.active {
-      display: block;
     }
 
     /* Mobile dropdown overlay */
@@ -3026,9 +3017,9 @@
         const parent = el.closest('.custom-select');
         if (parent) parent.style.zIndex = '9999';
 
-        const backdrop = document.getElementById('dropdown-backdrop');
-        if (backdrop) backdrop.classList.add('active');
         if (window.innerWidth <= 640) {
+          const backdrop = document.getElementById('dropdown-backdrop');
+          if (backdrop) backdrop.classList.add('active');
           document.body.style.overflow = 'hidden';
         }
       }
