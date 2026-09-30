@@ -313,6 +313,34 @@
       background: rgba(156, 163, 175, 0.6);
     }
 
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.025em;
+      line-height: 1.2;
+      border: none !important;
+    }
+    .badge-channel-switch {
+      background: #ecfdf5;
+      color: #047857;
+    }
+    .badge-channel-paj {
+      background: #eef2ff;
+      color: #4338ca;
+    }
+    .dark .badge-channel-switch {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+    .dark .badge-channel-paj {
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+    }
+
     .input-panel {
       background: rgba(255, 255, 255, 0.9);
       border: 1.5px solid rgba(229, 231, 235, 0.7);
@@ -4773,12 +4801,11 @@
 
         const isPaj = (tx.channel === 'PAJ') || (tx.reference && tx.reference.startsWith('paj_'));
         const channelLabel = isPaj ? 'PAJ Solana' : 'Switch';
-        const channelBadgeClass = isPaj ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+        const channelBadgeClass = isPaj ? 'badge-pill badge-channel-paj' : 'badge-pill badge-channel-switch';
 
         const typeLabel = (tx.type || '').toUpperCase();
         const isOnramp = typeLabel === 'ONRAMP';
         const isOfframp = typeLabel === 'OFFRAMP';
-        const typeBadgeClass = isOnramp ? 'bg-blue-100 text-blue-700' : isOfframp ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600';
 
         return `
           <div class="tx-card p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100/80 transition-colors">
@@ -4786,8 +4813,7 @@
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="text-sm font-bold text-gray-900">${isOnramp ? 'Buy' : isOfframp ? 'Sell' : typeLabel || 'Trade'} ${assetName}</span>
-                  <span class="text-[9px] px-1.5 py-0.5 ${typeBadgeClass} rounded font-semibold uppercase tracking-wide">${typeLabel || 'UNKNOWN'}</span>
-                  <span class="text-[9px] px-1.5 py-0.5 ${channelBadgeClass} rounded font-semibold uppercase tracking-wide">${channelLabel}</span>
+                  <span class="${channelBadgeClass}">${channelLabel}</span>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                   <span class="text-[10px] px-2 py-0.5 ${statusClass} rounded-full font-medium uppercase">${tx.status || 'PENDING'}</span>
