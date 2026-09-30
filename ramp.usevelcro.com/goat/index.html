@@ -2897,6 +2897,12 @@
             `).join('');
         }
 
+        function safeNum(val, fallback = 0) {
+            if (val === null || val === undefined || val === '') return fallback;
+            const n = Number(val);
+            return isNaN(n) ? fallback : n;
+        }
+
         function computeStats(txs) {
             if (!txs || !txs.length) {
                 document.getElementById('stat-completed').innerText = '0';
@@ -2912,14 +2918,14 @@
             const pending = txs.filter(t => ['PENDING', 'AWAITING_DEPOSIT', 'DETECTED', 'PROCESSING', 'INITIATED'].includes(t.status));
             const successRate = txs.length ? Math.round((completed.length / txs.length) * 100) : 0;
 
-            const onrampVol = completed.filter(t => t.type === 'ONRAMP').reduce((s, t) => s + (t.destination_amount || 0), 0);
-            const offrampVol = completed.filter(t => t.type === 'OFFRAMP').reduce((s, t) => s + (t.amount || 0), 0);
+            const onrampVol = completed.filter(t => t.type === 'ONRAMP').reduce((s, t) => s + safeNum(t.amount || t.fiat_amount || t.destination_amount), 0);
+            const offrampVol = completed.filter(t => t.type === 'OFFRAMP').reduce((s, t) => s + safeNum(t.amount || t.fiat_amount), 0);
 
             document.getElementById('stat-completed').innerText = completed.length.toLocaleString();
             document.getElementById('stat-success-rate').innerText = `${successRate}% success rate`;
             document.getElementById('stat-pending').innerText = pending.length.toLocaleString();
-            document.getElementById('stat-onramp-vol').innerText = `₦${Number(onrampVol).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
-            document.getElementById('stat-offramp-vol').innerText = `$${Number(offrampVol).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+            document.getElementById('stat-onramp-vol').innerText = `₦${safeNum(onrampVol).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+            document.getElementById('stat-offramp-vol').innerText = `$${safeNum(offrampVol).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
 
             renderAnalytics(txs);
         }
@@ -2933,11 +2939,13 @@
             const feeRate = feePercent / 100;
 
             function txRevenueUSD(t) {
+                const amt = safeNum(t.amount || t.fiat_amount);
+                const rate = safeNum(t.rate, 1500);
                 if (t.type === 'OFFRAMP') {
-                    return (t.amount || 0) * feeRate;
+                    return amt * feeRate;
                 }
                 // ONRAMP: amount is NGN, convert to USD using rate or fallback 1500
-                const usdValue = t.rate ? (t.amount / t.rate) : (t.amount / 1500);
+                const usdValue = rate > 0 ? (amt / rate) : (amt / 1500);
                 return (usdValue || 0) * feeRate;
             }
 
@@ -2950,14 +2958,16 @@
 
             // Avg transaction size in USD
             const avgTx = completed.length ? (completed.reduce((s, t) => {
-                if (t.type === 'OFFRAMP') return s + (t.amount || 0);
-                return s + (t.rate ? (t.amount / t.rate) : (t.amount / 1500));
+                const amt = safeNum(t.amount || t.fiat_amount);
+                const rate = safeNum(t.rate, 1500);
+                if (t.type === 'OFFRAMP') return s + amt;
+                return s + (rate > 0 ? (amt / rate) : (amt / 1500));
             }, 0) / completed.length) : 0;
 
-            document.getElementById('analytic-total-revenue').innerText = `$${totalRevenueUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.getElementById('analytic-paj-revenue').innerText = `$${pajRevenueUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.getElementById('analytic-switch-revenue').innerText = `$${switchRevenueUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.getElementById('analytic-avg-tx').innerText = `$${avgTx.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('analytic-total-revenue').innerText = `$${safeNum(totalRevenueUSD).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('analytic-paj-revenue').innerText = `$${safeNum(pajRevenueUSD).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('analytic-switch-revenue').innerText = `$${safeNum(switchRevenueUSD).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('analytic-avg-tx').innerText = `$${safeNum(avgTx).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             renderBreakdowns(txs);
             calculateProfit();
@@ -3340,7 +3350,7 @@
         async function viewWalletDetails(wallet) {
             if (!wallet) return;
             const userTxs = currentTxs.filter(t => t.email === wallet || t.wallet_address === wallet);
-            const totalVol = userTxs.reduce((s, t) => s + (t.status === 'COMPLETED' ? (t.type === 'OFFRAMP' ? t.amount : (t.destination_amount || 0)) : 0), 0);
+            const totalVol = userTxs.reduce((s, t) => s + (t.status === 'COMPLETED' ? safeNum(t.amount || t.fiat_amount || t.destination_amount) : 0), 0);
             
             const isEmail = wallet.includes('@');
             const headerTitle = document.getElementById('detail-header-title');
