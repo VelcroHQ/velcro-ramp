@@ -1725,7 +1725,7 @@
             </div>
           </div>
           <div class="flex items-center justify-between -mt-3">
-            <span class="text-xs text-gray-400 font-medium">Min: &#8358;2,000</span>
+            <span id="buy-min-label" class="text-xs text-gray-400 font-medium">Min: &#8358;2,000</span>
             <span id="buy-max-label" class="text-xs text-gray-400 font-medium">Max: &#8358;1,000,000</span>
           </div>
           <p id="buy-limit-error" class="hidden text-xs text-red-500 mt-1 font-medium">Maximum buy amount is &#8358;1,000,000 per transaction.</p>
@@ -3690,11 +3690,45 @@
 
     const BUY_MIN_LIMIT = 2000;
 
+    function isUsdtOrUsdcOnTrxOrEth() {
+      const asset = (currentBuyAsset || '').toUpperCase();
+      const net = (currentBuyNetwork || '').toLowerCase();
+      const isUsdToken = asset === 'USDT' || asset === 'USDC';
+      const isTrxOrEthNet = net.includes('tron') || net.includes('trx') || net.includes('eth') || net.includes('ethereum');
+      return isUsdToken && isTrxOrEthNet;
+    }
+
+    function getEffectiveBuyMinLimit() {
+      if (isUsdtOrUsdcOnTrxOrEth()) {
+        const rate = Number(currentRate.buy) || Number(currentRate.paj) || 1500;
+        const fiveUsdInNgn = Math.ceil(5 * rate);
+        return Math.max(BUY_MIN_LIMIT, fiveUsdInNgn);
+      }
+      return BUY_MIN_LIMIT;
+    }
+
+    function updateBuyMinLimitUI() {
+      const minLabel = document.getElementById('buy-min-label');
+      if (!minLabel) return;
+      if (isUsdtOrUsdcOnTrxOrEth()) {
+        const minLimit = getEffectiveBuyMinLimit();
+        minLabel.textContent = `Min: ₦${minLimit.toLocaleString()} ($5)`;
+      } else {
+        minLabel.textContent = `Min: ₦${BUY_MIN_LIMIT.toLocaleString()}`;
+      }
+    }
+
     function validateBuyLimit(amount) {
+      updateBuyMinLimitUI();
       const errorEl = document.getElementById('buy-limit-error');
       if (!errorEl) return true;
-      if (amount > 0 && amount < BUY_MIN_LIMIT) {
-        errorEl.textContent = `Minimum buy amount is ₦${BUY_MIN_LIMIT.toLocaleString()}.`;
+      const minLimit = getEffectiveBuyMinLimit();
+      if (amount > 0 && amount < minLimit) {
+        if (isUsdtOrUsdcOnTrxOrEth()) {
+          errorEl.textContent = `Minimum buy amount for USDT/USDC on TRON/Ethereum is $5 worth (₦${minLimit.toLocaleString()}).`;
+        } else {
+          errorEl.textContent = `Minimum buy amount is ₦${BUY_MIN_LIMIT.toLocaleString()}.`;
+        }
         errorEl.classList.remove('hidden');
         return false;
       }
@@ -4253,7 +4287,15 @@
       if (!currentBuyAsset) { showToast('Please select an asset', 'warning'); return; }
       const amount = getNum('buy-amount');
       const receive = getNum('buy-receive');
-      if (!amount || amount <= 0) { showToast('Please enter a valid amount', 'warning'); return; }
+      const minBuyLimit = getEffectiveBuyMinLimit();
+      if (!amount || amount < minBuyLimit) {
+        if (isUsdtOrUsdcOnTrxOrEth()) {
+          showToast(`Minimum buy amount for USDT/USDC on TRON/Ethereum is $5 worth (₦${minBuyLimit.toLocaleString()})`, 'warning');
+        } else {
+          showToast(`Minimum buy amount is ₦${minBuyLimit.toLocaleString()}`, 'warning');
+        }
+        return;
+      }
       if (amount > BUY_MAX_LIMIT) { showToast(`Maximum buy amount is ₦${BUY_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
       const wallet = document.getElementById('buy-wallet').value.trim();
       if (!wallet) { showToast('Please enter your wallet address', 'warning'); return; }
@@ -4318,7 +4360,8 @@
 
       // Switch Provider flow
       if (!currentBuyNetwork || document.getElementById('buy-network-display').textContent.trim() === 'Select Network') { showToast('Please select a network', 'warning'); return; }
-      if (receive < 1) { showToast('Minimum amount is $1', 'warning'); return; }
+      const minDollars = isUsdtOrUsdcOnTrxOrEth() ? 5 : 1;
+      if (receive < minDollars) { showToast(`Minimum receive amount for this asset/network is $${minDollars}`, 'warning'); return; }
       if (!validateWalletAddress(wallet, currentBuyNetwork)) {
         showToast(`Invalid ${currentBuyNetwork} wallet address`, 'warning'); return;
       }
