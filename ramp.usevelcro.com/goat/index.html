@@ -3354,10 +3354,50 @@
                 }
                 // Beneficiary
                 let ben = {};
-                try { if (tx.beneficiary) ben = JSON.parse(tx.beneficiary); } catch (e) {}
-                document.getElementById('modal-beneficiary-bank').innerText = ben.institution || ben.bankName || ben.bank || ben.bank_code || '-';
-                document.getElementById('modal-beneficiary-number').innerText = ben.accountNumber || ben.account_number || '-';
-                document.getElementById('modal-beneficiary-name').innerText = ben.holder_name || ben.accountName || ben.account_name || ben.name || '-';
+                try {
+                    if (typeof tx.beneficiary === 'object' && tx.beneficiary !== null) {
+                        ben = tx.beneficiary;
+                    } else if (typeof tx.beneficiary === 'string') {
+                        ben = JSON.parse(tx.beneficiary);
+                    }
+                } catch (e) {}
+                if (!ben || Object.keys(ben).length === 0) {
+                    try {
+                        const meta = typeof tx.meta === 'string' ? JSON.parse(tx.meta) : (tx.meta || {});
+                        if (meta.beneficiary && typeof meta.beneficiary === 'object') {
+                            ben = meta.beneficiary;
+                        }
+                    } catch (e) {}
+                }
+                const BANK_NAMES = {
+                    '100004': 'OPay (PayCom)',
+                    '000014': 'Access Bank',
+                    '000013': 'GTBank',
+                    '000015': 'Zenith Bank',
+                    '000016': 'First Bank of Nigeria',
+                    '000004': 'United Bank For Africa (UBA)',
+                    '000007': 'Fidelity Bank',
+                    '000018': 'Union Bank',
+                    '000017': 'Wema Bank',
+                    '000001': 'Sterling Bank',
+                    '000010': 'Ecobank',
+                    '000008': 'Polaris Bank',
+                    '000003': 'FCMB',
+                    '000012': 'Stanbic IBTC',
+                    '000002': 'First City Monument Bank',
+                    '000011': 'Unity Bank',
+                    '090286': 'Safehaven Microfinance Bank',
+                    '100033': 'PalmPay',
+                    '100026': 'Kuda Bank',
+                    '100007': 'Carbon'
+                };
+                const bankName = ben.institution || ben.bankName || ben.bank_name || ben.bank || (ben.bank_code && BANK_NAMES[ben.bank_code] ? BANK_NAMES[ben.bank_code] : ben.bank_code) || '-';
+                const accountNum = ben.accountNumber || ben.account_number || '-';
+                const accountName = ben.holder_name || ben.accountName || ben.account_name || ben.name || '-';
+
+                document.getElementById('modal-beneficiary-bank').innerText = bankName;
+                document.getElementById('modal-beneficiary-number').innerText = accountNum;
+                document.getElementById('modal-beneficiary-name').innerText = accountName;
             }
 
             // Show confirm section only for pending/awaiting deposits

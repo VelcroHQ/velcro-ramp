@@ -5445,7 +5445,7 @@
                     ` : ''}
                   </div>
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                    <p class="font-bold text-gray-900 dark:text-white text-xs">${ben.bank_name || ben.bank_code || ben.bank || 'Bank'} — <span class="font-mono text-purple-700 dark:text-purple-300">${ben.account_number || '-'}</span></p>
+                    <p class="font-bold text-gray-900 dark:text-white text-xs">${ben.bank_name || ben.bankName || ben.institution || ({ '100004': 'OPay (PayCom)', '000014': 'Access Bank', '000013': 'GTBank', '000015': 'Zenith Bank', '000016': 'First Bank', '000004': 'UBA', '000007': 'Fidelity Bank', '000017': 'Wema Bank', '090286': 'Safehaven MFB', '100033': 'PalmPay', '100026': 'Kuda Bank' }[ben.bank_code]) || ben.bank_code || ben.bank || 'Bank'} — <span class="font-mono text-purple-700 dark:text-purple-300">${ben.account_number || '-'}</span></p>
                     <p class="text-[11px] text-gray-600 dark:text-gray-400 font-medium">${ben.holder_name || 'Account Holder'}</p>
                   </div>
                 </div>
