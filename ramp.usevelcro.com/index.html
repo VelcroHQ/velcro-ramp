@@ -1276,9 +1276,6 @@
   <!-- Login Gatekeeper Modal/Overlay -->
   <div id="login-overlay" onclick="if(event.target === this) closeLoginOverlay()" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto hidden">
     <div class="login-card text-center relative animate-fade-in" onclick="event.stopPropagation()">
-      <button type="button" onclick="closeLoginOverlay()" class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800" title="Close">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
       <div class="login-logo-container">
         <img src="/velcro_logo.png" alt="Velcro" class="login-logo">
       </div>
@@ -5203,6 +5200,10 @@
     }
 
     function closeLoginOverlay() {
+      const email = (localStorage.getItem('velcro_user_email') || '').trim();
+      if (!email) {
+        return; // Mandatory email connection - cannot close without connecting email
+      }
       const overlay = document.getElementById('login-overlay');
       if (overlay) {
         overlay.classList.add('hidden');
