@@ -23,7 +23,7 @@ function registerAdminRoutes(Router $router): void
                                 WHEN UPPER(asset) IN ('USDT', 'USDC') AND destination_amount > 0 THEN destination_amount 
                                 ELSE (amount / COALESCE(NULLIF(rate, 0), 1500)) 
                             END
-                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR reference LIKE 'paj_%' OR reference LIKE 'pj_%' OR currency = 'NGN') THEN 
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR reference LIKE 'paj_%' OR reference LIKE 'pj_%') THEN 
                             (amount / COALESCE(NULLIF(rate, 0), 1500))
                         WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN 
                             CASE 
@@ -35,7 +35,7 @@ function registerAdminRoutes(Router $router): void
                     END), 0) AS total_volume_usd,
                     COALESCE(SUM(CASE 
                         WHEN status = 'COMPLETED' AND type = 'ONRAMP' THEN amount
-                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR reference LIKE 'paj_%' OR reference LIKE 'pj_%' OR currency = 'NGN') THEN amount
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR reference LIKE 'paj_%' OR reference LIKE 'pj_%') THEN amount
                         WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN 
                             CASE 
                                 WHEN destination_amount > 0 THEN destination_amount 
@@ -103,13 +103,36 @@ function registerAdminRoutes(Router $router): void
         requireAdminAuth();
         try {
             $rows = Database::safeSelect('SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `created_at`, `updated_at`, `beneficiary` FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
+            
+            // Proactively sync non-terminal transactions with live Switch / PAJ providers
+            $pollCount = 0;
             foreach ($rows as &$row) {
+                $status = strtoupper((string) ($row['status'] ?? ''));
+                if (!in_array($status, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true)) {
+                    if ($pollCount < 20) {
+                        try {
+                            pollSingleTransaction($row);
+                            $pollCount++;
+                            $fresh = Database::selectOne(
+                                'SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `created_at`, `updated_at`, `beneficiary` FROM `transactions` WHERE `id` = :id',
+                                ['id' => $row['id']]
+                            );
+                            if ($fresh) {
+                                $row = $fresh;
+                            }
+                        } catch (Throwable $e) {
+                            error_log("Failed to sync tx {$row['reference']}: " . $e->getMessage());
+                        }
+                    }
+                }
                 $row = decodeJsonColumns($row, ['beneficiary']);
                 if (empty($row['wallet_address']) && !empty($row['beneficiary'])) {
                     $ben = $row['beneficiary'];
                     $row['wallet_address'] = $ben['wallet_address'] ?? null;
                 }
             }
+            unset($row);
+
             jsonResponse($rows);
         } catch (Throwable $e) {
             jsonResponse(['error' => $e->getMessage()], 500);
@@ -169,41 +192,18 @@ function registerAdminRoutes(Router $router): void
             foreach ($rows as $tx) {
                 $ref = $tx['reference'] ?: ($tx['switch_reference'] ?? null);
                 if (!$ref) continue;
-                $isPaj = ($tx['channel'] === 'PAJ') || str_starts_with((string)$ref, 'paj_');
                 try {
-                    if ($isPaj) {
-                        if (pajApi()->isConfigured()) {
-                            $res = pajApi()->getTransactionStatus($ref);
-                            $rawStatus = strtoupper((string) ($res['status'] ?? $tx['status']));
-                            $newStatus = mapPajStatus($rawStatus);
-                            if ($newStatus !== $tx['status']) {
-                                Database::safeExecute(
-                                    'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`) WHERE `id` = :id',
-                                    ['status' => $newStatus, 'meta' => jsonEncodeNullable($res), 'hash' => $res['signature'] ?? ($res['hash'] ?? null), 'id' => $tx['id']]
-                                );
-                                $synced[] = ['reference' => $ref, 'before' => $tx['status'], 'after' => $newStatus, 'provider' => 'PAJ'];
-                            }
-                        }
-                    } else {
-                        $res = switchApi()->getPaymentStatus($ref);
-                        $d = $res['data'] ?? [];
-                        if (!empty($d['status'])) {
-                            $newStatus = strtoupper((string)$d['status']);
-                            if ($newStatus !== $tx['status']) {
-                                $meta = $d['meta'] ?? [];
-                                Database::safeExecute(
-                                    'UPDATE `transactions` SET `status` = :status, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`), `meta` = COALESCE(:meta, `meta`) WHERE `id` = :id',
-                                    [
-                                        'status' => $newStatus,
-                                        'hash' => $meta['hash'] ?? ($d['hash'] ?? null),
-                                        'explorer_url' => $meta['explorer_url'] ?? ($d['explorer_url'] ?? null),
-                                        'meta' => jsonEncodeNullable($d),
-                                        'id' => $tx['id'],
-                                    ]
-                                );
-                                $synced[] = ['reference' => $ref, 'before' => $tx['status'], 'after' => $newStatus, 'provider' => 'Switch'];
-                            }
-                        }
+                    $beforeStatus = $tx['status'];
+                    pollSingleTransaction($tx);
+                    $updated = Database::selectOne('SELECT `id`, `reference`, `status`, `amount`, `destination_amount` FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
+                    if ($updated && $updated['status'] !== $beforeStatus) {
+                        $synced[] = [
+                            'reference' => $ref,
+                            'before' => $beforeStatus,
+                            'after' => $updated['status'],
+                            'amount' => $updated['amount'],
+                            'destination_amount' => $updated['destination_amount']
+                        ];
                     }
                 } catch (Throwable $e) {
                     error_log("Failed to sync tx {$ref}: " . $e->getMessage());
@@ -387,7 +387,7 @@ function registerAdminRoutes(Router $router): void
             }
             pollSingleTransaction($tx);
             $updated = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :reference', ['reference' => $reference]);
-            jsonResponse(['success' => true, 'status' => $updated['status'], 'previousStatus' => $tx['status']]);
+            jsonResponse(['success' => true, 'status' => $updated['status'], 'previousStatus' => $tx['status'], 'transaction' => $updated]);
         } catch (Throwable $e) {
             jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
         }

@@ -7,10 +7,16 @@ declare(strict_types=1);
  * Recommended cron: every 10 minutes.
  */
 
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../poll_helpers.php';
 
-// Prevent web access
-if (php_sapi_name() !== 'cli') {
+// Allow CLI access OR web access with valid admin key
+$isCli = (php_sapi_name() === 'cli');
+$key = $_GET['key'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+$key = str_replace('Bearer ', '', (string)$key);
+$isValidKey = ($key !== '' && hash_equals(ADMIN_PASSWORD, $key));
+
+if (!$isCli && !$isValidKey) {
     http_response_code(403);
     exit('Forbidden');
 }

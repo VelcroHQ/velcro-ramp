@@ -2880,8 +2880,7 @@
             if (!tx) return '$';
             if (tx.type === 'ONRAMP') return '\u20A6';
             if (isPajTx(tx)) return '\u20A6'; // PAJ OFFRAMP amounts are in NGN
-            if (tx.currency === 'NGN') return '\u20A6';
-            return '$'; // Switch OFFRAMP amounts are in USD
+            return '$'; // Switch OFFRAMP amounts are in crypto (USD)
         }
 
         function getTxVolumes(tx) {
@@ -2908,11 +2907,12 @@
                     usd = rate > 0 ? (amt / rate) : (amt / 1500);
                 }
             } else {
-                // OFFRAMP
-                if (isPaj || curr === 'NGN') {
+                // OFFRAMP (Sell)
+                if (isPaj) {
                     ngn = amt;
                     usd = rate > 0 ? (amt / rate) : (amt / 1500);
                 } else {
+                    // Switch OFFRAMP: amt is crypto/USD, dest is NGN
                     if (dest > 0) {
                         ngn = dest;
                         usd = (isDollarAsset && amt > 0) ? amt : (dest / (rate > 0 ? rate : 1500));
@@ -2920,7 +2920,7 @@
                         usd = amt;
                         ngn = amt * (rate > 0 ? rate : 1500);
                     } else {
-                        usd = rate > 0 ? (amt / rate) : 0;
+                        usd = amt;
                         ngn = usd * (rate > 0 ? rate : 1500);
                     }
                 }
@@ -2932,13 +2932,14 @@
             const vols = getTxVolumes(tx);
             const sym = getTxCurrencySymbol(tx);
             const amt = safeNum(tx.amount);
-            const primary = `${sym}${amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const maxDigits = sym === '$' ? 4 : 2;
+            const primary = `${sym}${amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: maxDigits})}`;
             
             let approx = '';
             if (sym === '\u20A6') {
                 approx = `~$${vols.usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
             } else {
-                approx = `~₦${vols.ngn.toLocaleString(undefined, {maximumFractionDigits: 0})} NGN`;
+                approx = `~₦${vols.ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} NGN`;
             }
             return `<div><b>${primary}</b><div style="font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-top: 1px;">${approx}</div></div>`;
         }
@@ -3382,6 +3383,11 @@
 
             document.getElementById('tx-modal').style.display = 'flex';
             lucide.createIcons();
+
+            // If the transaction is pending, automatically check live provider
+            if (!['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'].includes((tx.status || '').toUpperCase())) {
+                refreshTransactionStatus();
+            }
         }
 
         async function confirmTransactionFromModal() {
@@ -3901,15 +3907,19 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    // Update modal status
+                    if (data.transaction) {
+                        const idx = currentTxs.findIndex(t => t.reference === currentModalTx.reference);
+                        if (idx !== -1) currentTxs[idx] = data.transaction;
+                        currentModalTx = data.transaction;
+                    }
                     document.getElementById('modal-status').innerText = data.status;
                     document.getElementById('modal-status').className = `status-pill ${data.status.toLowerCase()}`;
                     if (data.status !== data.previousStatus) {
                         showToast(`Status updated: ${data.previousStatus} → ${data.status}`, 'success');
-                        // Re-fetch transactions to update table
                         await fetchData();
+                        if (currentModalTx) viewTransaction(currentModalTx.reference);
                     } else {
-                        showToast('Status unchanged: ' + data.status, 'info');
+                        showToast('Status verified: ' + data.status, 'info');
                     }
                 } else {
                     showToast(data.error || 'Refresh failed', 'error');

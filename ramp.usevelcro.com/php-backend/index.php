@@ -13,6 +13,7 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/router.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/poll_helpers.php';
 
 // Ensure writable data directory exists
 $dataDir = BASE_PATH . '/data';
