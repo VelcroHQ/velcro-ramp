@@ -1079,41 +1079,48 @@
 
     /* ─── Custom Authentication Overlay & User Display Styles ─── */
     #login-overlay {
-      background-color: rgba(250, 250, 248, 0.5) !important;
-      backdrop-filter: blur(28px) !important;
-      -webkit-backdrop-filter: blur(28px) !important;
+      background-color: rgba(15, 23, 42, 0.65) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
     }
     .dark #login-overlay {
-      background-color: rgba(2, 6, 23, 0.55) !important;
+      background-color: rgba(2, 6, 23, 0.8) !important;
     }
     .login-card {
-      max-width: 480px !important;
+      max-width: 440px !important;
       width: 100% !important;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      padding: 1.5rem !important;
+      background: #ffffff !important;
+      border: 1px solid rgba(226, 232, 240, 0.9) !important;
+      border-radius: 1.5rem !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+      padding: 2.25rem 2rem !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
+      position: relative !important;
+    }
+    .dark .login-card {
+      background: #0f172a !important;
+      border: 1px solid rgba(51, 65, 85, 0.6) !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6) !important;
     }
     .login-logo-container {
-      margin-bottom: 2rem !important;
+      margin-bottom: 1.25rem !important;
     }
     .login-logo {
-      height: 4.5rem !important;
+      height: 3.75rem !important;
       width: auto !important;
       margin: 0 auto !important;
     }
     .login-desc-container {
-      margin-bottom: 2rem !important;
+      margin-bottom: 1.5rem !important;
       max-width: 360px !important;
       margin-left: auto !important;
       margin-right: auto !important;
     }
     .login-description {
-      font-size: 1.125rem !important;
-      line-height: 1.6 !important;
+      font-size: 0.9375rem !important;
+      line-height: 1.55 !important;
       color: #64748b !important;
       margin: 0 !important;
       font-weight: 500 !important;
@@ -1126,7 +1133,7 @@
     }
     .login-input-group {
       text-align: left !important;
-      margin-bottom: 1.5rem !important;
+      margin-bottom: 1.25rem !important;
     }
     .login-label {
       font-size: 0.8125rem !important;
@@ -1135,43 +1142,43 @@
       text-transform: uppercase !important;
       letter-spacing: 0.05em !important;
       display: block !important;
-      margin-bottom: 0.625rem !important;
+      margin-bottom: 0.5rem !important;
     }
     .dark .login-label {
       color: #94a3b8 !important;
     }
     .login-input {
-      font-size: 1.125rem !important;
-      padding: 1.125rem 1.375rem !important;
-      border-radius: 1rem !important;
-      border: 1.5px solid rgba(13, 13, 89, 0.1) !important;
-      background: rgba(255, 255, 255, 0.4) !important;
+      font-size: 1rem !important;
+      padding: 0.875rem 1.125rem !important;
+      border-radius: 0.875rem !important;
+      border: 1.5px solid rgba(13, 13, 89, 0.12) !important;
+      background: #f8fafc !important;
       color: #0d0d59 !important;
       width: 100% !important;
-      transition: all 0.3s ease !important;
+      transition: all 0.25s ease !important;
       box-sizing: border-box !important;
     }
     .dark .login-input {
-      border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
-      background: rgba(15, 23, 42, 0.35) !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.1) !important;
+      background: rgba(30, 41, 59, 0.6) !important;
       color: #f1f5f9 !important;
     }
     .login-input:focus {
       border-color: #a8cf45 !important;
-      background: rgba(255, 255, 255, 0.8) !important;
-      box-shadow: 0 0 0 5px rgba(168, 207, 69, 0.15) !important;
+      background: #ffffff !important;
+      box-shadow: 0 0 0 4px rgba(168, 207, 69, 0.18) !important;
       outline: none !important;
     }
     .dark .login-input:focus {
-      background: rgba(15, 23, 42, 0.7) !important;
+      background: rgba(15, 23, 42, 0.9) !important;
       border-color: #a8cf45 !important;
     }
     .login-button {
       width: 100% !important;
-      padding: 1.125rem 2rem !important;
-      font-size: 1.0625rem !important;
+      padding: 0.95rem 1.5rem !important;
+      font-size: 1rem !important;
       font-weight: 700 !important;
-      border-radius: 1rem !important;
+      border-radius: 0.875rem !important;
       background-color: #a8cf45 !important;
       color: #0d0d59 !important;
       border: none !important;
@@ -1180,75 +1187,82 @@
       justify-content: center !important;
       gap: 0.5rem !important;
       cursor: pointer !important;
-      transition: all 0.3s ease !important;
+      transition: all 0.25s ease !important;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
     }
     .login-button:hover {
-      box-shadow: 0 10px 25px rgba(168, 207, 69, 0.25) !important;
+      box-shadow: 0 8px 20px rgba(168, 207, 69, 0.3) !important;
       transform: translateY(-1px) !important;
     }
     .login-button:active {
       transform: translateY(1px) !important;
     }
     .login-btn-icon {
-      width: 1.25rem !important;
-      height: 1.25rem !important;
+      width: 1.125rem !important;
+      height: 1.125rem !important;
     }
     .user-email-nav {
-      max-width: 150px;
+      max-width: 170px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       display: inline-block;
       vertical-align: middle;
     }
+    @media (min-width: 768px) {
+      .user-email-nav {
+        max-width: 220px;
+      }
+    }
     
     /* Mobile Spacing Optimizations */
     @media (max-width: 640px) {
       .login-card {
-        padding: 1rem !important;
+        padding: 1.5rem 1.25rem !important;
       }
       .login-logo-container {
-        margin-bottom: 1.5rem !important;
+        margin-bottom: 1rem !important;
       }
       .login-logo {
-        height: 3.5rem !important;
+        height: 3rem !important;
       }
       .login-desc-container {
-        margin-bottom: 1.5rem !important;
-        max-width: 300px !important;
+        margin-bottom: 1.25rem !important;
+        max-width: 290px !important;
       }
       .login-description {
-        font-size: 0.95rem !important;
-        line-height: 1.5 !important;
+        font-size: 0.875rem !important;
+        line-height: 1.4 !important;
       }
       .login-input-group {
-        margin-bottom: 1.25rem !important;
+        margin-bottom: 1rem !important;
       }
       .login-label {
         font-size: 0.75rem !important;
-        margin-bottom: 0.5rem !important;
+        margin-bottom: 0.35rem !important;
       }
       .login-input {
-        font-size: 1rem !important;
-        padding: 0.95rem 1.2rem !important;
+        font-size: 0.95rem !important;
+        padding: 0.8rem 1rem !important;
       }
       .login-button {
-        padding: 0.95rem 2rem !important;
-        font-size: 0.95rem !important;
+        padding: 0.85rem 1.5rem !important;
+        font-size: 0.925rem !important;
       }
       .user-email-nav {
-        max-width: 90px;
+        max-width: 110px;
       }
     }
     @media (max-width: 480px) {
       #user-nav-section {
         border-right: none !important;
         padding-right: 0 !important;
-        gap: 0.25rem !important;
+        gap: 0.35rem !important;
       }
       .user-email-nav {
-        display: none !important;
+        max-width: 90px !important;
+        display: inline-block !important;
+        font-size: 0.75rem !important;
       }
       #support-widget button:first-child {
         display: none !important;
@@ -1260,16 +1274,17 @@
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
 
   <!-- Login Gatekeeper Modal/Overlay -->
-  <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md overflow-y-auto hidden">
-    <div class="login-card text-center relative">
-      <button type="button" onclick="closeLoginOverlay()" class="absolute top-2 right-2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full" title="Close">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  <div id="login-overlay" onclick="if(event.target === this) closeLoginOverlay()" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto hidden">
+    <div class="login-card text-center relative animate-fade-in" onclick="event.stopPropagation()">
+      <button type="button" onclick="closeLoginOverlay()" class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800" title="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
       <div class="login-logo-container">
         <img src="/velcro_logo.png" alt="Velcro" class="login-logo">
       </div>
       <div class="login-desc-container">
-        <p class="login-description">Enter your email address to get in and manage your transactions.</p>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Connect Your Email</h3>
+        <p class="login-description">Please enter your email to use Velcro Ramp. Your email is required to process and secure your transactions.</p>
       </div>
       <form id="login-form" onsubmit="handleLoginSubmit(event)">
         <div class="login-input-group">
@@ -1278,7 +1293,7 @@
             class="login-input placeholder-gray-400">
         </div>
         <button type="submit" id="login-submit-btn" class="login-button">
-          <span>Get In</span>
+          <span>Connect Email</span>
           <svg class="login-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
@@ -1298,12 +1313,33 @@
           <span
             class="text-lg font-bold bg-gradient-to-r from-velcro-green to-lime-400 bg-clip-text text-transparent tracking-tight">Convert</span>
         </div>
-        <div class="flex items-center gap-4">
-          <!-- User display panel -->
-          <div id="user-nav-section" class="hidden items-center gap-2 border-r border-gray-200 dark:border-slate-800 pr-4">
-            <span id="user-email-display" class="text-xs text-gray-500 dark:text-gray-400 font-medium font-mono user-email-nav"></span>
-            <button onclick="logoutUser()" class="text-xs text-red-500 hover:text-red-700 hover:underline transition-colors ml-1 font-medium">Logout</button>
+        <div class="flex items-center gap-2 sm:gap-3.5">
+          <!-- Connect Email Button (Shown when not connected) -->
+          <button type="button" id="btn-login-nav" onclick="promptLoginOverlay()"
+            class="hidden items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/30 border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer shadow-sm">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+            </svg>
+            <span>Connect Email</span>
+          </button>
+
+          <!-- User display panel (Shown when connected) -->
+          <div id="user-nav-section" class="hidden items-center gap-2 border-r border-gray-200 dark:border-slate-800 pr-2 sm:pr-3.5">
+            <div class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0"></span>
+              <span id="user-email-display" class="text-xs text-gray-700 dark:text-gray-200 font-medium font-mono user-email-nav" title="Connected Email"></span>
+            </div>
+            <button type="button" onclick="logoutUser()" class="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 px-2 py-1 rounded-lg transition-colors font-medium cursor-pointer" title="Log out / Disconnect email">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              <span>Logout</span>
+            </button>
           </div>
+
           <button onclick="showHistoryModal()" id="history-btn"
             class="text-sm text-gray-600 hover:text-velcro-navy transition-colors flex items-center gap-1.5"
             title="History">
@@ -1329,6 +1365,28 @@
   <section id="convert" class="pt-6 pb-8 lg:pt-10 lg:pb-12 relative z-10">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       <h1 class="sr-only">Velcro Convert — Buy and Sell Crypto with Naira Instantly</h1>
+
+      <!-- Mandatory Email Connection Banner (Shown when not connected) -->
+      <div id="email-gate-banner" class="hidden mb-5 p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-sm transition-all duration-300">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-start sm:items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">Email connection required</p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">Please connect your email address to use Velcro Ramp so we can track and secure your transactions.</p>
+            </div>
+          </div>
+          <button type="button" onclick="promptLoginOverlay()" class="shrink-0 px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition-all shadow-sm cursor-pointer self-start sm:self-center">
+            Connect Email
+          </button>
+        </div>
+      </div>
 
       <!-- Conversion Card -->
       <div
@@ -5015,11 +5073,13 @@
       toast.addEventListener('mouseenter', () => clearTimeout(timer));
     }
 
-    function checkLoginState() {
-      const email = localStorage.getItem('velcro_user_email');
+    function checkLoginState(autoPromptIfMissing = false) {
+      const email = (localStorage.getItem('velcro_user_email') || '').trim();
       const overlay = document.getElementById('login-overlay');
+      const loginNavBtn = document.getElementById('btn-login-nav');
       const navSection = document.getElementById('user-nav-section');
       const navDisplay = document.getElementById('user-email-display');
+      const gateBanner = document.getElementById('email-gate-banner');
       const convertSection = document.getElementById('convert');
       
       if (convertSection) {
@@ -5027,18 +5087,30 @@
       }
 
       if (!email) {
-        if (overlay) {
-          overlay.classList.add('hidden');
-          overlay.classList.remove('flex');
+        // Disconnected state: show Connect Email button in nav, show banner
+        if (loginNavBtn) {
+          loginNavBtn.classList.remove('hidden');
+          loginNavBtn.classList.add('inline-flex');
         }
         if (navSection) {
           navSection.classList.add('hidden');
           navSection.classList.remove('flex');
         }
+        if (gateBanner) {
+          gateBanner.classList.remove('hidden');
+        }
+        if (autoPromptIfMissing) {
+          promptLoginOverlay();
+        }
       } else {
+        // Connected state: show email + logout in nav, hide banner and overlay
         if (overlay) {
           overlay.classList.add('hidden');
           overlay.classList.remove('flex');
+        }
+        if (loginNavBtn) {
+          loginNavBtn.classList.add('hidden');
+          loginNavBtn.classList.remove('inline-flex');
         }
         if (navSection) {
           navSection.classList.remove('hidden');
@@ -5046,6 +5118,10 @@
         }
         if (navDisplay) {
           navDisplay.textContent = email;
+          navDisplay.setAttribute('title', email);
+        }
+        if (gateBanner) {
+          gateBanner.classList.add('hidden');
         }
       }
     }
@@ -5056,7 +5132,10 @@
         overlay.classList.remove('hidden');
         overlay.classList.add('flex');
         const emailInput = document.getElementById('login-email');
-        if (emailInput) emailInput.focus();
+        if (emailInput) {
+          emailInput.value = (localStorage.getItem('velcro_user_email') || '').trim();
+          emailInput.focus();
+        }
       }
     }
 
@@ -5081,18 +5160,21 @@
       }
       
       localStorage.setItem('velcro_user_email', email);
-      showToast('Logged in successfully!', 'success');
+      closeLoginOverlay();
       checkLoginState();
+      showToast('Email connected successfully! Welcome to Velcro Ramp.', 'success');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     function logoutUser() {
       localStorage.removeItem('velcro_user_email');
-      showToast('Logged out successfully', 'success');
       checkLoginState();
+      showToast('Logged out successfully', 'success');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     (async function init() {
-      checkLoginState();
+      checkLoginState(true);
       populateBanks();
       await fetchRequirements();
       fetchInstitutions();
@@ -5392,16 +5474,36 @@
     }
 
     async function showHistoryModal() {
+      const email = (localStorage.getItem('velcro_user_email') || '').trim();
       const modal = document.getElementById('history-modal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.body.style.overflow = 'hidden';
 
       const list = document.getElementById('history-list');
+
+      if (!email) {
+        list.innerHTML = `
+          <div class="text-center py-12 px-4">
+            <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-amber-500/10 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1">Email Connection Required</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-5 max-w-xs mx-auto">Please connect your email address to view your order history and transaction tracking.</p>
+            <button onclick="hideHistoryModal(); promptLoginOverlay();" class="px-5 py-2.5 bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer">
+              Connect Email Now
+            </button>
+          </div>
+        `;
+        return;
+      }
+
       list.innerHTML = '<div class="text-center py-8 text-gray-400">Loading transactions...</div>';
 
       try {
-        const email = localStorage.getItem('velcro_user_email') || '';
         const res = await fetch(`${API_BASE}/api/transactions?email=${encodeURIComponent(email)}`);
         const payload = await res.json();
         userHistoryCache = payload.data || [];
