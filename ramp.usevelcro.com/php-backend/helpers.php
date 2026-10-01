@@ -642,3 +642,65 @@ function mapPajStatus(?string $raw): string
     return PAJ_STATUS_MAP[$s] ?? $s;
 }
 
+/**
+ * Calculate accurate USD and NGN volume for any transaction row.
+ *
+ * @param array<string,mixed> $t
+ * @return array{usd: float, ngn: float}
+ */
+function calculateTxVolumes(array $t): array
+{
+    $type = strtoupper((string) ($t['type'] ?? ''));
+    $channel = strtoupper((string) ($t['channel'] ?? ''));
+    $ref = (string) ($t['reference'] ?? '');
+    $isPaj = ($channel === 'PAJ' || str_starts_with($ref, 'paj_') || str_starts_with($ref, 'pj_'));
+    $currency = strtoupper((string) ($t['currency'] ?? ''));
+    $rate = (float) ($t['rate'] ?? 0);
+    if ($rate <= 0) {
+        $rate = 1500.0;
+    }
+    $amount = (float) ($t['amount'] ?? 0);
+    $destAmount = (float) ($t['destination_amount'] ?? 0);
+    $asset = strtoupper((string) ($t['asset'] ?? ''));
+    $destCurrency = strtoupper((string) ($t['destination_currency'] ?? ''));
+    $isDollarAsset = in_array($asset, ['USDT', 'USDC', 'USD'], true) || in_array($currency, ['USD', 'USDT', 'USDC'], true) || in_array($destCurrency, ['USD', 'USDT', 'USDC'], true);
+
+    $usd = 0.0;
+    $ngn = 0.0;
+
+    if ($type === 'ONRAMP') {
+        // ONRAMP: User pays in fiat NGN (amount) to buy crypto
+        $ngn = $amount;
+        if ($isDollarAsset && $destAmount > 0) {
+            $usd = $destAmount;
+        } else {
+            $usd = $amount / $rate;
+        }
+    } elseif ($type === 'OFFRAMP') {
+        if ($isPaj || $currency === 'NGN') {
+            // PAJ offramp: amount is stored as fiat NGN
+            $ngn = $amount;
+            $usd = $amount / $rate;
+        } else {
+            // Switch offramp:
+            // destination_amount is NGN payout to user bank
+            // amount is crypto/USD sold by user
+            if ($destAmount > 0) {
+                $ngn = $destAmount;
+                $usd = ($isDollarAsset && $amount > 0) ? $amount : ($destAmount / $rate);
+            } elseif ($isDollarAsset && $amount > 0) {
+                $usd = $amount;
+                $ngn = $amount * $rate;
+            } else {
+                $usd = $amount > 0 ? ($amount / $rate) : 0.0;
+                $ngn = $usd * $rate;
+            }
+        }
+    }
+
+    return [
+        'usd' => round($usd, 2),
+        'ngn' => round($ngn, 2),
+    ];
+}
+

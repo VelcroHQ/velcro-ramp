@@ -18,15 +18,29 @@ function registerAdminRoutes(Router $router): void
                     COUNT(*) AS all_transactions,
                     COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_transactions,
                     COALESCE(SUM(CASE 
-                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR reference LIKE 'paj_%') THEN (amount / COALESCE(NULLIF(rate, 0), 1500))
-                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN amount
-                        WHEN status = 'COMPLETED' AND type = 'ONRAMP' THEN COALESCE(NULLIF(destination_amount, 0), (amount / COALESCE(NULLIF(rate, 0), 1500)))
+                        WHEN status = 'COMPLETED' AND type = 'ONRAMP' THEN 
+                            CASE 
+                                WHEN UPPER(asset) IN ('USDT', 'USDC') AND destination_amount > 0 THEN destination_amount 
+                                ELSE (amount / COALESCE(NULLIF(rate, 0), 1500)) 
+                            END
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR reference LIKE 'paj_%' OR reference LIKE 'pj_%' OR currency = 'NGN') THEN 
+                            (amount / COALESCE(NULLIF(rate, 0), 1500))
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN 
+                            CASE 
+                                WHEN UPPER(asset) IN ('USDT', 'USDC') AND amount > 0 THEN amount 
+                                WHEN destination_amount > 0 THEN (destination_amount / COALESCE(NULLIF(rate, 0), 1500)) 
+                                ELSE (amount / COALESCE(NULLIF(rate, 0), 1500)) 
+                            END
                         ELSE 0 
                     END), 0) AS total_volume_usd,
                     COALESCE(SUM(CASE 
-                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR reference LIKE 'paj_%') THEN amount
-                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN COALESCE(NULLIF(destination_amount, 0), (amount * COALESCE(NULLIF(rate, 0), 1500)))
                         WHEN status = 'COMPLETED' AND type = 'ONRAMP' THEN amount
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' AND (channel = 'PAJ' OR reference LIKE 'paj_%' OR reference LIKE 'pj_%' OR currency = 'NGN') THEN amount
+                        WHEN status = 'COMPLETED' AND type = 'OFFRAMP' THEN 
+                            CASE 
+                                WHEN destination_amount > 0 THEN destination_amount 
+                                ELSE (amount * COALESCE(NULLIF(rate, 0), 1500)) 
+                            END
                         ELSE 0 
                     END), 0) AS total_volume_ngn,
                     COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN COALESCE(fee_developer, 0) ELSE 0 END), 0) AS local_developer_fees
@@ -204,7 +218,7 @@ function registerAdminRoutes(Router $router): void
     $router->get('/api/admin/users', function () {
         requireAdminAuth();
         try {
-            $rows = Database::safeSelect('SELECT `email`, `wallet_address`, `beneficiary`, `meta`, `status`, `type`, `amount`, `destination_amount`, `created_at` FROM `transactions` ORDER BY `created_at` DESC LIMIT 2000', [], []);
+            $rows = Database::safeSelect('SELECT `email`, `wallet_address`, `beneficiary`, `meta`, `status`, `type`, `channel`, `reference`, `asset`, `currency`, `amount`, `rate`, `destination_amount`, `destination_currency`, `created_at` FROM `transactions` ORDER BY `created_at` DESC LIMIT 5000', [], []);
             $userMap = [];
             foreach ($rows as $t) {
                 $wallet = $t['wallet_address'] ?? '';
@@ -218,19 +232,17 @@ function registerAdminRoutes(Router $router): void
                     $userMap[$id] = [
                         'id' => $id,
                         'total_volume' => 0.0,
+                        'total_volume_usd' => 0.0,
                         'total_volume_ngn' => 0.0,
                         'tx_count' => 0,
                         'created_at' => $t['created_at'],
                     ];
                 }
                 if ($t['status'] === 'COMPLETED') {
-                    if ($t['type'] === 'OFFRAMP') {
-                        $userMap[$id]['total_volume'] += (float) $t['amount'];
-                        $userMap[$id]['total_volume_ngn'] += (float) ($t['destination_amount'] ?? 0);
-                    } else {
-                        $userMap[$id]['total_volume_ngn'] += (float) $t['amount'];
-                        $userMap[$id]['total_volume'] += (float) ($t['destination_amount'] ?? 0);
-                    }
+                    $vols = calculateTxVolumes($t);
+                    $userMap[$id]['total_volume_usd'] += $vols['usd'];
+                    $userMap[$id]['total_volume_ngn'] += $vols['ngn'];
+                    $userMap[$id]['total_volume'] = $userMap[$id]['total_volume_usd'];
                 }
                 $userMap[$id]['tx_count']++;
                 if ($t['created_at'] < $userMap[$id]['created_at']) {
@@ -238,7 +250,7 @@ function registerAdminRoutes(Router $router): void
                 }
             }
             $users = array_values($userMap);
-            usort($users, static fn ($a, $b) => $b['total_volume'] <=> $a['total_volume']);
+            usort($users, static fn ($a, $b) => $b['total_volume_usd'] <=> $a['total_volume_usd']);
             jsonResponse($users);
         } catch (Throwable $e) {
             jsonResponse(['error' => $e->getMessage()], 500);

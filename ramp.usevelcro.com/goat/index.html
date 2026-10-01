@@ -1421,7 +1421,8 @@
 
             <div class="user-details-stats">
                 <div class="detail-mini-card">
-                    <b id="detail-vol" style="color: var(--primary-link);">$0</b>
+                    <b id="detail-vol" style="color: var(--primary-link); font-size: 18px;">$0.00</b>
+                    <div id="detail-vol-approx" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">~₦0.00 NGN</div>
                     <span>Total Volume</span>
                 </div>
                 <div class="detail-mini-card">
@@ -2879,7 +2880,67 @@
             if (!tx) return '$';
             if (tx.type === 'ONRAMP') return '\u20A6';
             if (isPajTx(tx)) return '\u20A6'; // PAJ OFFRAMP amounts are in NGN
+            if (tx.currency === 'NGN') return '\u20A6';
             return '$'; // Switch OFFRAMP amounts are in USD
+        }
+
+        function getTxVolumes(tx) {
+            if (!tx) return { usd: 0, ngn: 0 };
+            const rate = safeNum(tx.rate, 1500) || 1500;
+            const isPaj = isPajTx(tx);
+            const amt = safeNum(tx.amount || tx.fiat_amount);
+            const dest = safeNum(tx.destination_amount);
+            const asset = ((tx.asset || '') + '').toUpperCase();
+            const curr = ((tx.currency || '') + '').toUpperCase();
+            const destCurr = ((tx.destination_currency || '') + '').toUpperCase();
+            const isDollarAsset = ['USDT', 'USDC', 'USD'].includes(asset) ||
+                ['USDT', 'USDC', 'USD'].includes(curr) ||
+                ['USDT', 'USDC', 'USD'].includes(destCurr);
+
+            let usd = 0;
+            let ngn = 0;
+
+            if (tx.type === 'ONRAMP') {
+                ngn = amt;
+                if (isDollarAsset && dest > 0) {
+                    usd = dest;
+                } else {
+                    usd = rate > 0 ? (amt / rate) : (amt / 1500);
+                }
+            } else {
+                // OFFRAMP
+                if (isPaj || curr === 'NGN') {
+                    ngn = amt;
+                    usd = rate > 0 ? (amt / rate) : (amt / 1500);
+                } else {
+                    if (dest > 0) {
+                        ngn = dest;
+                        usd = (isDollarAsset && amt > 0) ? amt : (dest / (rate > 0 ? rate : 1500));
+                    } else if (isDollarAsset && amt > 0) {
+                        usd = amt;
+                        ngn = amt * (rate > 0 ? rate : 1500);
+                    } else {
+                        usd = rate > 0 ? (amt / rate) : 0;
+                        ngn = usd * (rate > 0 ? rate : 1500);
+                    }
+                }
+            }
+            return { usd, ngn };
+        }
+
+        function formatTxTableAmount(tx) {
+            const vols = getTxVolumes(tx);
+            const sym = getTxCurrencySymbol(tx);
+            const amt = safeNum(tx.amount);
+            const primary = `${sym}${amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            let approx = '';
+            if (sym === '\u20A6') {
+                approx = `~$${vols.usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
+            } else {
+                approx = `~₦${vols.ngn.toLocaleString(undefined, {maximumFractionDigits: 0})} NGN`;
+            }
+            return `<div><b>${primary}</b><div style="font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-top: 1px;">${approx}</div></div>`;
         }
 
         function getDisplayUser(tx) {
@@ -2929,7 +2990,7 @@
                     <td data-label="User" onclick="event.stopPropagation(); ${userVal ? `viewWalletDetails('${userVal}')` : ''}" title="${userVal ? 'Click to view user profile' : ''}"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
-                    <td data-label="Amount"><b>${getTxCurrencySymbol(tx)}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b></td>
+                    <td data-label="Amount">${formatTxTableAmount(tx)}</td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Time">${new Date(tx.created_at).toLocaleDateString()}</td>
                 </tr>
@@ -2945,7 +3006,7 @@
                     <td data-label="Reference" class="hide-mobile">${tx.reference.slice(0, 10)}...</td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
-                    <td data-label="Amount"><b>${getTxCurrencySymbol(tx)}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b></td>
+                    <td data-label="Amount">${formatTxTableAmount(tx)}</td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Date" class="hide-mobile">${new Date(tx.created_at).toLocaleDateString()}</td>
                     <td data-label="Action"><button class="btn-view" onclick="viewTransaction('${tx.reference}')">Details</button></td>
@@ -2987,15 +3048,22 @@
                 return;
             }
 
-            body.innerHTML = users.map(u => `
+            body.innerHTML = users.map(u => {
+                const volUSD = safeNum(u.total_volume_usd !== undefined ? u.total_volume_usd : u.total_volume);
+                const volNGN = safeNum(u.total_volume_ngn) || (volUSD * 1500);
+                return `
                 <tr>
                     <td data-label="User"><b style="font-size: 12px; color: var(--primary-link);">${u.id}</b></td>
                     <td data-label="First Seen">${new Date(u.created_at).toLocaleDateString()}</td>
-                    <td data-label="Total Volume"><b>$${Number(u.total_volume).toLocaleString()}</b></td>
+                    <td data-label="Total Volume">
+                        <div><b>$${volUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b></div>
+                        <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">~₦${volNGN.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                    </td>
                     <td data-label="TXs">${u.tx_count}</td>
                     <td data-label="Action"><button class="btn-view" onclick="viewWalletDetails('${u.id}')">View</button></td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function safeNum(val, fallback = 0) {
@@ -3023,36 +3091,21 @@
             let offrampUSD = 0, offrampNGN = 0;
 
             completed.forEach(t => {
-                const isPaj = isPajTx(t);
-                const rate = safeNum(t.rate, 1500) || 1500;
+                const vols = getTxVolumes(t);
                 if (t.type === 'ONRAMP') {
-                    const ngn = safeNum(t.amount || t.fiat_amount);
-                    const destUsd = safeNum(t.destination_amount);
-                    const usd = (destUsd > 0 && destUsd < ngn) ? destUsd : (ngn / rate);
-                    onrampNGN += ngn;
-                    onrampUSD += usd;
+                    onrampNGN += vols.ngn;
+                    onrampUSD += vols.usd;
                 } else if (t.type === 'OFFRAMP') {
-                    if (isPaj) {
-                        const ngn = safeNum(t.amount || t.fiat_amount);
-                        const destUsd = safeNum(t.destination_amount);
-                        const usd = (destUsd > 0 && destUsd < ngn) ? destUsd : (ngn / rate);
-                        offrampNGN += ngn;
-                        offrampUSD += usd;
-                    } else {
-                        const usd = safeNum(t.amount || t.fiat_amount);
-                        const destNgn = safeNum(t.destination_amount);
-                        const ngn = (destNgn > 0 && destNgn > usd) ? destNgn : (usd * rate);
-                        offrampUSD += usd;
-                        offrampNGN += ngn;
-                    }
+                    offrampNGN += vols.ngn;
+                    offrampUSD += vols.usd;
                 }
             });
 
             document.getElementById('stat-completed').innerText = completed.length.toLocaleString();
             document.getElementById('stat-success-rate').innerText = `${successRate}% success rate`;
             document.getElementById('stat-pending').innerText = pending.length.toLocaleString();
-            document.getElementById('stat-onramp-vol').innerText = `$${safeNum(onrampUSD).toLocaleString(undefined, {maximumFractionDigits: 0})} | ~₦${safeNum(onrampNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
-            document.getElementById('stat-offramp-vol').innerText = `$${safeNum(offrampUSD).toLocaleString(undefined, {maximumFractionDigits: 0})} | ~₦${safeNum(offrampNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+            document.getElementById('stat-onramp-vol').innerText = `$${safeNum(onrampUSD).toLocaleString(undefined, {maximumFractionDigits: 2})} | ~₦${safeNum(onrampNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+            document.getElementById('stat-offramp-vol').innerText = `$${safeNum(offrampUSD).toLocaleString(undefined, {maximumFractionDigits: 2})} | ~₦${safeNum(offrampNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
 
             renderAnalytics(txs);
         }
@@ -3066,14 +3119,8 @@
             const feeRate = feePercent / 100;
 
             function txRevenueUSD(t) {
-                const amt = safeNum(t.amount || t.fiat_amount);
-                const rate = safeNum(t.rate, 1500);
-                if (t.type === 'OFFRAMP') {
-                    return amt * feeRate;
-                }
-                // ONRAMP: amount is NGN, convert to USD using rate or fallback 1500
-                const usdValue = rate > 0 ? (amt / rate) : (amt / 1500);
-                return (usdValue || 0) * feeRate;
+                const vols = getTxVolumes(t);
+                return vols.usd * feeRate;
             }
 
             const totalRevenueUSD = completed.reduce((s, t) => s + txRevenueUSD(t), 0);
@@ -3084,12 +3131,7 @@
             const switchRevenueUSD = switchCompleted.reduce((s, t) => s + txRevenueUSD(t), 0);
 
             // Avg transaction size in USD
-            const avgTx = completed.length ? (completed.reduce((s, t) => {
-                const amt = safeNum(t.amount || t.fiat_amount);
-                const rate = safeNum(t.rate, 1500);
-                if (t.type === 'OFFRAMP') return s + amt;
-                return s + (rate > 0 ? (amt / rate) : (amt / 1500));
-            }, 0) / completed.length) : 0;
+            const avgTx = completed.length ? (completed.reduce((s, t) => s + getTxVolumes(t).usd, 0) / completed.length) : 0;
 
             document.getElementById('analytic-total-revenue').innerText = `$${safeNum(totalRevenueUSD).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             document.getElementById('analytic-paj-revenue').innerText = `$${safeNum(pajRevenueUSD).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
@@ -3205,7 +3247,13 @@
 
             document.getElementById('modal-status').innerText = tx.status;
             document.getElementById('modal-status').className = `status-pill ${tx.status.toLowerCase()}`;
-            document.getElementById('modal-amount').innerText = `${getTxCurrencySymbol(tx)}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const modalVols = getTxVolumes(tx);
+            const modalSym = getTxCurrencySymbol(tx);
+            const modalPrimary = `${modalSym}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const modalApprox = modalSym === '\u20A6'
+                ? `~$${modalVols.usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`
+                : `~₦${modalVols.ngn.toLocaleString(undefined, {maximumFractionDigits: 0})} NGN`;
+            document.getElementById('modal-amount').innerHTML = `${modalPrimary} <span style="font-size: 13px; font-weight: normal; color: var(--text-secondary); margin-left: 6px;">(${modalApprox})</span>`;
             document.getElementById('modal-type').innerText = tx.type;
             document.getElementById('modal-channel').innerText = isPajTx(tx) ? 'PAJ' : 'Switch';
             const hashLink = document.getElementById('modal-hash-link');
@@ -3483,8 +3531,35 @@
 
         async function viewWalletDetails(wallet) {
             if (!wallet) return;
-            const userTxs = currentTxs.filter(t => t.email === wallet || t.wallet_address === wallet);
-            const totalVol = userTxs.reduce((s, t) => s + (t.status === 'COMPLETED' ? safeNum(t.amount || t.fiat_amount || t.destination_amount) : 0), 0);
+            const target = wallet.toLowerCase();
+            const userTxs = currentTxs.filter(t => 
+                (t.email && t.email.toLowerCase() === target) || 
+                (t.wallet_address && t.wallet_address.toLowerCase() === target)
+            );
+            
+            let userUSD = 0;
+            let userNGN = 0;
+            let completedCount = 0;
+            userTxs.forEach(t => {
+                if (t.status === 'COMPLETED') {
+                    completedCount++;
+                    const vols = getTxVolumes(t);
+                    userUSD += vols.usd;
+                    userNGN += vols.ngn;
+                }
+            });
+
+            // Also check currentUsers list if it has aggregate totals from the server
+            const matchedUser = (currentUsers || []).find(u => u.id && u.id.toLowerCase() === target);
+            if (matchedUser) {
+                const apiUSD = safeNum(matchedUser.total_volume_usd !== undefined ? matchedUser.total_volume_usd : matchedUser.total_volume);
+                const apiNGN = safeNum(matchedUser.total_volume_ngn);
+                if (apiUSD > userUSD) userUSD = apiUSD;
+                if (apiNGN > userNGN) userNGN = apiNGN;
+            }
+            if (userNGN === 0 && userUSD > 0) {
+                userNGN = userUSD * 1500;
+            }
             
             const isEmail = wallet.includes('@');
             const headerTitle = document.getElementById('detail-header-title');
@@ -3500,15 +3575,19 @@
             }
 
             document.getElementById('detail-username').innerText = wallet;
-            document.getElementById('detail-vol').innerText = `$${totalVol.toLocaleString()}`;
-            document.getElementById('detail-success').innerText = userTxs.filter(t => t.status === 'COMPLETED').length;
-            document.getElementById('detail-tx-count').innerText = userTxs.length;
+            document.getElementById('detail-vol').innerText = `$${userUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const approxEl = document.getElementById('detail-vol-approx');
+            if (approxEl) {
+                approxEl.innerText = `~₦${userNGN.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} NGN`;
+            }
+            document.getElementById('detail-success').innerText = completedCount || userTxs.filter(t => t.status === 'COMPLETED').length;
+            document.getElementById('detail-tx-count').innerText = (matchedUser && matchedUser.tx_count > userTxs.length) ? matchedUser.tx_count : userTxs.length;
 
             document.getElementById('detail-tx-body').innerHTML = userTxs.map(tx => `
                 <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
                     <td data-label="Reference"><code>${tx.reference.slice(0, 8)}...</code></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
-                    <td data-label="Amount">${getTxCurrencySymbol(tx)}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td data-label="Amount">${formatTxTableAmount(tx)}</td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Date">${new Date(tx.created_at).toLocaleDateString()}</td>
                 </tr>
@@ -3700,13 +3779,18 @@
                 showToast('No users to export', 'warning');
                 return;
             }
-            const headers = ['User Email / Wallet', 'First Seen', 'Total Volume (USD)', 'Total TX Count'];
-            const rows = currentUsers.map(u => [
-                `"${u.id || ''}"`,
-                `"${u.created_at || ''}"`,
-                safeNum(u.total_volume),
-                safeNum(u.tx_count)
-            ]);
+            const headers = ['User Email / Wallet', 'First Seen', 'Total Volume (USD)', 'Total Volume (NGN)', 'Total TX Count'];
+            const rows = currentUsers.map(u => {
+                const volUSD = safeNum(u.total_volume_usd !== undefined ? u.total_volume_usd : u.total_volume);
+                const volNGN = safeNum(u.total_volume_ngn) || (volUSD * 1500);
+                return [
+                    `"${u.id || ''}"`,
+                    `"${u.created_at || ''}"`,
+                    volUSD,
+                    volNGN,
+                    safeNum(u.tx_count)
+                ];
+            });
 
             const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
             const encodedUri = encodeURI(csvContent);

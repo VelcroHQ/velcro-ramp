@@ -80,6 +80,49 @@ $defaults = defaultSettings();
 assertTrue(isset($defaults['platform_fee']), 'defaultSettings includes platform_fee');
 assertTrue(isset($defaults['buy_max_limit']), 'defaultSettings includes buy_max_limit');
 
+// ─── Volume calculation tests ───
+$onrampSol = calculateTxVolumes([
+    'type' => 'ONRAMP',
+    'amount' => 30000,
+    'rate' => 1500,
+    'destination_amount' => 0.18,
+    'asset' => 'SOL',
+]);
+assertEquals(20.0, $onrampSol['usd'], 'ONRAMP SOL converts NGN to USD via rate');
+assertEquals(30000.0, $onrampSol['ngn'], 'ONRAMP SOL retains NGN amount');
+
+$onrampUsdc = calculateTxVolumes([
+    'type' => 'ONRAMP',
+    'amount' => 45000,
+    'rate' => 1500,
+    'destination_amount' => 30.0,
+    'asset' => 'USDC',
+]);
+assertEquals(30.0, $onrampUsdc['usd'], 'ONRAMP USDC uses destination_amount as USD');
+assertEquals(45000.0, $onrampUsdc['ngn'], 'ONRAMP USDC retains NGN amount');
+
+$offrampPaj = calculateTxVolumes([
+    'type' => 'OFFRAMP',
+    'channel' => 'PAJ',
+    'reference' => 'paj_123',
+    'amount' => 49257,
+    'rate' => 1500,
+    'currency' => 'NGN',
+]);
+assertEquals(49257.0, $offrampPaj['ngn'], 'PAJ OFFRAMP treats amount as NGN');
+assertEquals(32.84, $offrampPaj['usd'], 'PAJ OFFRAMP calculates USD via rate');
+
+$offrampSwitchUsdt = calculateTxVolumes([
+    'type' => 'OFFRAMP',
+    'channel' => 'BANK',
+    'amount' => 50,
+    'rate' => 1500,
+    'destination_amount' => 75000,
+    'asset' => 'USDT',
+]);
+assertEquals(50.0, $offrampSwitchUsdt['usd'], 'Switch OFFRAMP USDT uses amount as USD');
+assertEquals(75000.0, $offrampSwitchUsdt['ngn'], 'Switch OFFRAMP uses destination_amount as NGN');
+
 // ─── CORS origins ───
 assertTrue(is_array(CORS_ORIGINS), 'CORS_ORIGINS is an array');
 

@@ -5221,7 +5221,11 @@
               </div>
               <div class="flex justify-between items-end">
                 <div>
-                  <p class="text-xs text-gray-600">${isBuy ? `₦${Number(tx.amount).toLocaleString()} → ${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : ''} ${assetName}` : `${Number(tx.amount).toLocaleString()} ${assetName} → ₦${tx.destination_amount ? Number(tx.destination_amount).toLocaleString() : ''}`}</p>
+                  <p class="text-xs text-gray-600">${isBuy 
+                    ? `₦${Number(tx.amount).toLocaleString()} → ${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : ''} ${assetName}` 
+                    : (tx.channel === 'PAJ' || tx.currency === 'NGN')
+                      ? `${assetName} → ₦${Number(tx.destination_amount || tx.amount).toLocaleString()}`
+                      : `${Number(tx.amount).toLocaleString()} ${assetName} → ₦${tx.destination_amount ? Number(tx.destination_amount).toLocaleString() : ''}`}</p>
                   <p class="text-[10px] text-gray-400 mt-1">${date}</p>
                 </div>
                 <div class="text-right">
@@ -5235,11 +5239,17 @@
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <span class="text-gray-400 text-[10px] uppercase font-bold tracking-wider block mb-0.5">You Sent</span>
-                    <p class="font-bold text-gray-900 dark:text-white text-xs">${isBuy ? `₦${Number(tx.amount).toLocaleString()}` : `${Number(tx.amount).toLocaleString()} ${assetName}`}</p>
+                    <p class="font-bold text-gray-900 dark:text-white text-xs">${isBuy 
+                      ? `₦${Number(tx.amount).toLocaleString()}` 
+                      : (tx.channel === 'PAJ' || tx.currency === 'NGN')
+                        ? (tx.source_amount ? `${Number(tx.source_amount).toFixed(4)} ${assetName}` : `${assetName}`)
+                        : `${Number(tx.amount).toLocaleString()} ${assetName}`}</p>
                   </div>
                   <div>
                     <span class="text-gray-400 text-[10px] uppercase font-bold tracking-wider block mb-0.5">You Received</span>
-                    <p class="font-bold text-emerald-600 dark:text-emerald-400 text-xs">${isBuy ? `${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : '-'} ${assetName}` : `₦${tx.destination_amount ? Number(tx.destination_amount).toLocaleString() : '-'}`}</p>
+                    <p class="font-bold text-emerald-600 dark:text-emerald-400 text-xs">${isBuy 
+                      ? `${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : '-'} ${assetName}` 
+                      : `₦${Number(tx.destination_amount || tx.amount).toLocaleString()}`}</p>
                   </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 pt-2.5 border-t border-gray-100 dark:border-slate-800">
