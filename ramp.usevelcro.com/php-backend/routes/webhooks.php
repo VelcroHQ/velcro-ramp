@@ -126,13 +126,14 @@ function registerWebhookRoutes(Router $router): void
             if ($status) {
                 $mappedStatus = mapPajStatus((string)$status);
                 $count = Database::safeExecute(
-                    'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `wallet_address` = COALESCE(:wallet_address, `wallet_address`), `updated_at` = NOW() WHERE `reference` = :id OR `switch_reference` = :id',
+                    'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `wallet_address` = COALESCE(:wallet_address, `wallet_address`), `updated_at` = NOW() WHERE `reference` = :id1 OR `switch_reference` = :id2',
                     [
                         'status' => $mappedStatus,
                         'meta' => jsonEncodeNullable($payload),
                         'hash' => $hash,
                         'wallet_address' => $recipient,
-                        'id' => (string)$txId,
+                        'id1' => (string)$txId,
+                        'id2' => (string)$txId,
                     ]
                 );
                 if ($count > 0) {

@@ -14,7 +14,7 @@ require_once __DIR__ . '/../poll_helpers.php';
 $isCli = (php_sapi_name() === 'cli');
 $key = $_GET['key'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
 $key = str_replace('Bearer ', '', (string)$key);
-$isValidKey = ($key !== '' && hash_equals(ADMIN_PASSWORD, $key));
+$isValidKey = ($key !== '' && hash('sha256', $key) === ADMIN_PASSWORD_HASH);
 
 if (!$isCli && !$isValidKey) {
     http_response_code(403);

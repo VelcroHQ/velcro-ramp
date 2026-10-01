@@ -232,13 +232,14 @@ function registerPajRoutes(Router $router): void
                 $update['wallet_address'] = $d['recipient'];
             }
             Database::safeExecute(
-                'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = :hash, `wallet_address` = :wallet_address WHERE `reference` = :id OR `switch_reference` = :id',
+                'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = :hash, `wallet_address` = :wallet_address WHERE `reference` = :id1 OR `switch_reference` = :id2',
                 [
                     'status' => $update['status'],
                     'meta' => $update['meta'],
                     'hash' => $update['hash'] ?? null,
                     'wallet_address' => $update['wallet_address'] ?? null,
-                    'id' => $id,
+                    'id1' => $id,
+                    'id2' => $id,
                 ]
             );
             jsonResponse(successResponse($tx));

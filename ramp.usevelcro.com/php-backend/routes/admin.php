@@ -378,15 +378,18 @@ function registerAdminRoutes(Router $router): void
     $router->post('/api/admin/refresh-status/([a-zA-Z0-9_-]+)', function (string $reference) {
         requireAdminAuth();
         try {
-            $tx = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :reference', ['reference' => $reference]);
+            $tx = Database::selectOne(
+                'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+                ['ref1' => $reference, 'ref2' => $reference]
+            );
             if ($tx === null) {
                 jsonResponse(['success' => false, 'error' => 'Transaction not found'], 404);
             }
             if (in_array($tx['status'], FINAL_STATUSES, true)) {
-                jsonResponse(['success' => true, 'message' => 'Transaction already in final state', 'status' => $tx['status']]);
+                jsonResponse(['success' => true, 'message' => 'Transaction already in final state', 'status' => $tx['status'], 'transaction' => $tx]);
             }
             pollSingleTransaction($tx);
-            $updated = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :reference', ['reference' => $reference]);
+            $updated = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
             jsonResponse(['success' => true, 'status' => $updated['status'], 'previousStatus' => $tx['status'], 'transaction' => $updated]);
         } catch (Throwable $e) {
             jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);

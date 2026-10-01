@@ -458,8 +458,8 @@ function registerPublicRoutes(Router $router): void
             jsonResponse(errorResponse('reference is required'), 400);
         }
         Database::safeExecute(
-            'UPDATE `transactions` SET `status` = :status WHERE `reference` = :reference OR `switch_reference` = :reference',
-            ['status' => 'CANCELLED', 'reference' => $reference]
+            'UPDATE `transactions` SET `status` = :status WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+            ['status' => 'CANCELLED', 'ref1' => $reference, 'ref2' => $reference]
         );
         jsonResponse(['success' => true, 'message' => 'Transaction cancelled']);
     });
@@ -538,9 +538,13 @@ function registerPublicRoutes(Router $router): void
                 $st = strtoupper((string)($row['status'] ?? ''));
                 if (!in_array($st, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true) && ($row['channel'] ?? '') !== 'PAJ') {
                     try {
-                        $live = switchApi()->getPaymentStatus((string)$row['reference']);
+                        $refToQuery = !empty($row['switch_reference']) ? (string)$row['switch_reference'] : (string)$row['reference'];
+                        $live = switchApi()->getPaymentStatus($refToQuery);
+                        if (empty($live['data']['status']) && !empty($row['reference']) && (string)$row['reference'] !== $refToQuery) {
+                            $live = switchApi()->getPaymentStatus((string)$row['reference']);
+                        }
                         if (!empty($live['data']['status'])) {
-                            $synced = updateSwitchTransactionFromData((string)$row['reference'], $live['data']);
+                            $synced = updateSwitchTransactionFromData($refToQuery, $live['data']);
                             if ($synced) {
                                 $row = $synced;
                             }
@@ -565,7 +569,10 @@ function registerPublicRoutes(Router $router): void
 
     $router->get('/api/transactions/([a-zA-Z0-9_-]+)', function (string $reference) {
         try {
-            $row = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :reference OR `switch_reference` = :reference', ['reference' => $reference]);
+            $row = Database::selectOne(
+                'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+                ['ref1' => $reference, 'ref2' => $reference]
+            );
             if ($row === null) {
                 jsonResponse(errorResponse('Transaction not found', 404), 404);
             }
@@ -576,7 +583,8 @@ function registerPublicRoutes(Router $router): void
                 if (($row['channel'] ?? '') === 'PAJ') {
                     if (pajApi()->isConfigured()) {
                         try {
-                            $res = pajApi()->getTransactionStatus($row['reference']);
+                            $pajRef = !empty($row['reference']) ? $row['reference'] : ($row['switch_reference'] ?? $reference);
+                            $res = pajApi()->getTransactionStatus((string)$pajRef);
                             if (!empty($res['status'])) {
                                 $newStatus = mapPajStatus($res['status']);
                                 Database::safeExecute('UPDATE `transactions` SET `status` = :s, `meta` = :m WHERE `id` = :id', [
@@ -590,9 +598,13 @@ function registerPublicRoutes(Router $router): void
                     }
                 } else {
                     try {
-                        $live = switchApi()->getPaymentStatus($reference);
-                        if (!empty($live['data'])) {
-                            $synced = updateSwitchTransactionFromData($reference, $live['data']);
+                        $refToQuery = !empty($row['switch_reference']) ? (string)$row['switch_reference'] : $reference;
+                        $live = switchApi()->getPaymentStatus($refToQuery);
+                        if (empty($live['data']['status']) && !empty($row['reference']) && (string)$row['reference'] !== $refToQuery) {
+                            $live = switchApi()->getPaymentStatus((string)$row['reference']);
+                        }
+                        if (!empty($live['data']['status'])) {
+                            $synced = updateSwitchTransactionFromData($refToQuery, $live['data']);
                             if ($synced) {
                                 $row = $synced;
                             }

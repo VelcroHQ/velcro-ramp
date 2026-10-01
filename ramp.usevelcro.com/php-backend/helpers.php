@@ -721,7 +721,11 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
     }
 
     $rawStatus = (string) $d['status'];
-    $normalizedStatus = strtoupper($rawStatus);
+    $normalizedStatus = strtoupper(trim($rawStatus));
+    if ($normalizedStatus === 'SUCCESS' || $normalizedStatus === 'SUCCESSFUL') {
+        $normalizedStatus = 'COMPLETED';
+    }
+
     $source = $d['source'] ?? [];
     $destination = $d['destination'] ?? [];
     $deposit = $d['deposit'] ?? [];
@@ -734,15 +738,30 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
 
     // Check existing transaction
     $tx = Database::selectOne(
-        'SELECT * FROM `transactions` WHERE `reference` = :reference OR `switch_reference` = :reference',
-        ['reference' => $reference]
+        'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+        ['ref1' => $reference, 'ref2' => $reference]
     );
+
+    // If still not found, check if $d has reference or id
+    if (!$tx && !empty($d['reference'])) {
+        $dRef = (string) $d['reference'];
+        $tx = Database::selectOne(
+            'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+            ['ref1' => $dRef, 'ref2' => $dRef]
+        );
+    }
+    if (!$tx && !empty($d['id'])) {
+        $dId = (string) $d['id'];
+        $tx = Database::selectOne(
+            'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+            ['ref1' => $dId, 'ref2' => $dId]
+        );
+    }
 
     $isOfframp = ($tx && strtoupper((string)$tx['type']) === 'OFFRAMP') || $direction === 'OFFRAMP';
 
     if ($isOfframp) {
         // OFFRAMP (Sell crypto for NGN)
-        // User deposited crypto ($source['amount'] or $deposit['amount']), user bank received NGN ($destination['amount'])
         $realCrypto = null;
         if (isset($source['amount']) && (float)$source['amount'] > 0) {
             $realCrypto = (float)$source['amount'];
@@ -752,13 +771,32 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
 
         $realFiat = isset($destination['amount']) && (float)$destination['amount'] > 0 ? (float)$destination['amount'] : null;
 
-        // If rate wasn't explicitly given but amounts are, compute it
         if (!$realRate && $realCrypto && $realFiat && $realCrypto > 0) {
             $realRate = $realFiat / $realCrypto;
         }
 
+        $params = [
+            'status' => $normalizedStatus,
+            'real_crypto' => $realCrypto,
+            'real_source_amount' => $realCrypto,
+            'real_dest_amount' => $realFiat,
+            'real_rate' => $realRate,
+            'hash' => $hash,
+            'explorer_url' => $explorerUrl,
+            'meta' => jsonEncodeNullable($d),
+        ];
+
+        if ($tx && !empty($tx['id'])) {
+            $whereSql = 'WHERE `id` = :id';
+            $params['id'] = $tx['id'];
+        } else {
+            $whereSql = 'WHERE `reference` = :ref1 OR `switch_reference` = :ref2';
+            $params['ref1'] = $reference;
+            $params['ref2'] = $reference;
+        }
+
         Database::safeExecute(
-            'UPDATE `transactions` SET 
+            "UPDATE `transactions` SET 
                 `status` = :status,
                 `amount` = COALESCE(:real_crypto, `amount`),
                 `source_amount` = COALESCE(:real_source_amount, `source_amount`, `amount`),
@@ -768,22 +806,11 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
                 `explorer_url` = COALESCE(:explorer_url, `explorer_url`),
                 `meta` = :meta,
                 `updated_at` = NOW()
-            WHERE `reference` = :reference OR `switch_reference` = :reference',
-            [
-                'status' => $normalizedStatus,
-                'real_crypto' => $realCrypto,
-                'real_source_amount' => $realCrypto,
-                'real_dest_amount' => $realFiat,
-                'real_rate' => $realRate,
-                'hash' => $hash,
-                'explorer_url' => $explorerUrl,
-                'meta' => jsonEncodeNullable($d),
-                'reference' => $reference,
-            ]
+            {$whereSql}",
+            $params
         );
     } else {
         // ONRAMP (Buy crypto with NGN)
-        // User paid fiat ($source['amount']), user wallet received crypto ($destination['amount'])
         $realFiat = isset($source['amount']) && (float)$source['amount'] > 0 ? (float)$source['amount'] : null;
         $realCrypto = isset($destination['amount']) && (float)$destination['amount'] > 0 ? (float)$destination['amount'] : null;
 
@@ -791,8 +818,28 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
             $realRate = $realFiat / $realCrypto;
         }
 
+        $params = [
+            'status' => $normalizedStatus,
+            'real_fiat' => $realFiat,
+            'real_source_amount' => $realFiat,
+            'real_crypto' => $realCrypto,
+            'real_rate' => $realRate,
+            'hash' => $hash,
+            'explorer_url' => $explorerUrl,
+            'meta' => jsonEncodeNullable($d),
+        ];
+
+        if ($tx && !empty($tx['id'])) {
+            $whereSql = 'WHERE `id` = :id';
+            $params['id'] = $tx['id'];
+        } else {
+            $whereSql = 'WHERE `reference` = :ref1 OR `switch_reference` = :ref2';
+            $params['ref1'] = $reference;
+            $params['ref2'] = $reference;
+        }
+
         Database::safeExecute(
-            'UPDATE `transactions` SET 
+            "UPDATE `transactions` SET 
                 `status` = :status,
                 `amount` = COALESCE(:real_fiat, `amount`),
                 `source_amount` = COALESCE(:real_source_amount, `source_amount`, `amount`),
@@ -802,24 +849,18 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
                 `explorer_url` = COALESCE(:explorer_url, `explorer_url`),
                 `meta` = :meta,
                 `updated_at` = NOW()
-            WHERE `reference` = :reference OR `switch_reference` = :reference',
-            [
-                'status' => $normalizedStatus,
-                'real_fiat' => $realFiat,
-                'real_source_amount' => $realFiat,
-                'real_crypto' => $realCrypto,
-                'real_rate' => $realRate,
-                'hash' => $hash,
-                'explorer_url' => $explorerUrl,
-                'meta' => jsonEncodeNullable($d),
-                'reference' => $reference,
-            ]
+            {$whereSql}",
+            $params
         );
     }
 
+    if ($tx && !empty($tx['id'])) {
+        return Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
+    }
+
     return Database::selectOne(
-        'SELECT * FROM `transactions` WHERE `reference` = :reference OR `switch_reference` = :reference',
-        ['reference' => $reference]
+        'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+        ['ref1' => $reference, 'ref2' => $reference]
     );
 }
 

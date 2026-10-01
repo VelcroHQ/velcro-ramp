@@ -10,16 +10,16 @@ require_once __DIR__ . '/paj_api.php';
 
 function pollSingleTransaction(array $tx): void
 {
-    if ($tx['channel'] === 'PAJ') {
+    if (($tx['channel'] ?? '') === 'PAJ') {
         if (!pajApi()->isConfigured()) {
             return;
         }
-        $id = $tx['reference'] ?: $tx['switch_reference'];
+        $id = !empty($tx['reference']) ? $tx['reference'] : ($tx['switch_reference'] ?? null);
         if (!$id) {
             return;
         }
         try {
-            $result = pajApi()->getTransactionStatus($id);
+            $result = pajApi()->getTransactionStatus((string)$id);
             $d = $result ?? [];
             $rawStatus = strtoupper((string) ($d['status'] ?? $tx['status']));
             $newStatus = mapPajStatus($rawStatus);
@@ -32,13 +32,13 @@ function pollSingleTransaction(array $tx): void
                     $update['hash'] = $d['signature'] ?? $d['hash'];
                 }
                 Database::safeExecute(
-                    'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `wallet_address` = COALESCE(:wallet_address, `wallet_address`), `updated_at` = NOW() WHERE `reference` = :reference OR `switch_reference` = :reference',
+                    'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `wallet_address` = COALESCE(:wallet_address, `wallet_address`), `updated_at` = NOW() WHERE `id` = :id',
                     [
                         'status' => $update['status'],
                         'meta' => $update['meta'],
                         'hash' => $update['hash'] ?? null,
                         'wallet_address' => $d['recipient'] ?? ($d['address'] ?? null),
-                        'reference' => $tx['reference'],
+                        'id' => $tx['id'],
                     ]
                 );
                 error_log("[Poller] PAJ {$tx['reference']} → {$newStatus}");
@@ -48,12 +48,17 @@ function pollSingleTransaction(array $tx): void
         }
     } else {
         try {
-            $data = switchApi()->getPaymentStatus($tx['reference']);
+            $refToQuery = !empty($tx['switch_reference']) ? (string)$tx['switch_reference'] : (string)$tx['reference'];
+            $data = switchApi()->getPaymentStatus($refToQuery);
             $d = $data['data'] ?? [];
+            if (empty($d['status']) && !empty($tx['reference']) && (string)$tx['reference'] !== $refToQuery) {
+                $data = switchApi()->getPaymentStatus((string)$tx['reference']);
+                $d = $data['data'] ?? [];
+            }
             if (!empty($d['status'])) {
-                $updated = updateSwitchTransactionFromData($tx['reference'], $d);
+                $updated = updateSwitchTransactionFromData($refToQuery, $d);
                 if ($updated) {
-                    error_log("[Poller] Switch {$tx['reference']} updated → status: " . ($updated['status'] ?? '') . ", amount: " . ($updated['amount'] ?? '') . ", dest_amount: " . ($updated['destination_amount'] ?? ''));
+                    error_log("[Poller] Switch {$refToQuery} updated → status: " . ($updated['status'] ?? '') . ", amount: " . ($updated['amount'] ?? '') . ", dest_amount: " . ($updated['destination_amount'] ?? ''));
                 }
             }
         } catch (Throwable $e) {
