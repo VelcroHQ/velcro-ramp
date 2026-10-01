@@ -51,20 +51,9 @@ function pollSingleTransaction(array $tx): void
             $data = switchApi()->getPaymentStatus($tx['reference']);
             $d = $data['data'] ?? [];
             if (!empty($d['status'])) {
-                $newStatus = strtoupper((string) $d['status']);
-                if ($newStatus !== $tx['status']) {
-                    $meta = $d['meta'] ?? [];
-                    Database::safeExecute(
-                        'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`), `updated_at` = NOW() WHERE `reference` = :reference OR `switch_reference` = :reference',
-                        [
-                            'status' => $newStatus,
-                            'meta' => jsonEncodeNullable($d),
-                            'hash' => $meta['hash'] ?? ($d['hash'] ?? ($d['tx_hash'] ?? $tx['hash'] ?? null)),
-                            'explorer_url' => $meta['explorer_url'] ?? ($d['explorer_url'] ?? $tx['explorer_url'] ?? null),
-                            'reference' => $tx['reference'],
-                        ]
-                    );
-                    error_log("[Poller] Switch {$tx['reference']} → {$newStatus}");
+                $updated = updateSwitchTransactionFromData($tx['reference'], $d);
+                if ($updated) {
+                    error_log("[Poller] Switch {$tx['reference']} updated → status: " . ($updated['status'] ?? '') . ", amount: " . ($updated['amount'] ?? '') . ", dest_amount: " . ($updated['destination_amount'] ?? ''));
                 }
             }
         } catch (Throwable $e) {

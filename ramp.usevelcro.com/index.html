@@ -1719,6 +1719,7 @@
                   class="text-[10px] sm:text-xs font-semibold text-gray-700 flex items-center gap-1.5 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-full"
                   id="buy-rate-display"><span class="w-2 h-2 rounded-full bg-green-500 live-pulse"></span>Rate: --</span>
                 <span id="buy-rate-timer" class="hidden text-[10px] text-amber-600 font-medium"></span>
+                <span id="buy-fee-badge" class="text-[10px] text-gray-400 font-medium">0.5% fee</span>
               </div>
             </div>
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
@@ -2145,7 +2146,7 @@
     var API_BASE = '';
     var currentCountry = 'NG';
     var currentCurrency = 'NGN';
-    var currentRate = { sell: 0, buy: 0 };
+    var currentRate = { sell: 0, buy: 0, sellDirect: 0, buyDirect: 0, paj: 0, pajOfframp: 0, pajOnramp: 0 };
     var currentSwitchAsset = '';
     var currentSellAsset = '';
     var currentBuyAsset = '';
@@ -2740,8 +2741,11 @@
         // Store global rates for quick access
         rates.forEach(r => {
           if (r.currency === currentCurrency) {
-            currentRate.sell = r.rate;
-            currentRate.buy = r.rate;
+            const rawRate = Number(r.rate) || 0;
+            currentRate.sell = rawRate;
+            currentRate.buy = rawRate;
+            currentRate.sellDirect = Number(r.direct_rate) || (rawRate / (1 - currentFee / 100));
+            currentRate.buyDirect = Number(r.direct_rate) || (rawRate * (1 - currentFee / 100));
           }
         });
 
@@ -2777,10 +2781,16 @@
         if (!res.ok) throw new Error('Failed to fetch rate');
         const payload = await res.json();
         const data = payload.data || {};
-        const rate = data.rate || data.data?.rate;
-        if (rate) {
-          if (direction === 'OFFRAMP') currentRate.sell = rate;
-          else currentRate.buy = rate;
+        const rate = Number(data.rate || data.data?.rate || 0);
+        const directRate = Number(data.direct_rate || data.data?.direct_rate || 0);
+        if (rate > 0) {
+          if (direction === 'OFFRAMP') {
+            currentRate.sell = rate;
+            currentRate.sellDirect = directRate > 0 ? directRate : (rate / (1 - currentFee / 100));
+          } else {
+            currentRate.buy = rate;
+            currentRate.buyDirect = directRate > 0 ? directRate : (rate * (1 - currentFee / 100));
+          }
         }
         updateRateDisplays();
         if (direction === 'OFFRAMP') calculateSell();
@@ -2829,7 +2839,11 @@
         
         // Use onramp or offramp rate depending on context
         const direction = document.getElementById('form-sell').classList.contains('hidden') ? 'ONRAMP' : 'OFFRAMP';
-        const rawRate = direction === 'ONRAMP' ? (data.onramp?.rate ?? data.onramp) : (data.offramp?.rate ?? data.offramp);
+        const onrampRate = Number(data.onramp?.rate ?? data.onramp) || 0;
+        const offrampRate = Number(data.offramp?.rate ?? data.offramp) || 0;
+        currentRate.pajOnramp = onrampRate;
+        currentRate.pajOfframp = offrampRate;
+        const rawRate = direction === 'ONRAMP' ? onrampRate : offrampRate;
         const activeRate = Number(rawRate);
         if (!Number.isNaN(activeRate) && activeRate > 0) {
           currentRate.paj = activeRate;
@@ -2843,8 +2857,10 @@
           const approxRate = computePajTokenRate(currentAsset);
           if (direction === 'OFFRAMP') {
             currentRate.sell = approxRate > 0 ? approxRate : 0;
+            currentRate.sellDirect = approxRate > 0 ? approxRate : 0;
           } else {
             currentRate.buy = approxRate > 0 ? approxRate : 0;
+            currentRate.buyDirect = approxRate > 0 ? approxRate : 0;
           }
         }
         updateRateDisplays();
@@ -2857,21 +2873,54 @@
     function updateRateDisplays() {
       const sellRateEl = document.getElementById('sell-rate-display');
       const buyRateEl = document.getElementById('buy-rate-display');
+      const sellBadge = document.getElementById('sell-fee-badge');
+      const buyBadge = document.getElementById('buy-fee-badge');
       const pulse = '<span class="w-2 h-2 rounded-full bg-green-500 live-pulse"></span>';
+
+      if (sellBadge) sellBadge.textContent = `${currentFee}% fee`;
+      if (buyBadge) buyBadge.textContent = `${currentFee}% fee`;
+
       if (sellRateEl) {
-        if (currentProvider === 'paj' && currentRate.paj) {
-          sellRateEl.innerHTML = `${pulse}Rate: $1 on ${currentSellAsset} = ${formatCurrency(currentRate.paj)}`;
-        } else if (currentSellAsset && currentRate.sell) {
-          sellRateEl.innerHTML = `${pulse}Rate: 1 ${currentSellAsset} = ${formatCurrency(currentRate.sell)}`;
+        if (currentProvider === 'paj') {
+          const pajDirect = currentRate.pajOfframp || currentRate.paj;
+          const tokenPrice = Number(PAJ_TOKEN_PRICES[currentSellAsset] || 0);
+          if (currentSellAsset && tokenPrice > 0 && currentSellAsset !== 'USDT' && currentSellAsset !== 'USDC' && currentSellAsset !== 'USDG') {
+            sellRateEl.innerHTML = `${pulse}Rate: 1 ${currentSellAsset} = ${formatCurrency(pajDirect * tokenPrice)}`;
+          } else if (pajDirect) {
+            sellRateEl.innerHTML = `${pulse}Rate: 1 ${currentSellAsset || 'USDT'} = ${formatCurrency(pajDirect)}`;
+          } else {
+            sellRateEl.innerHTML = `${pulse}Rate: --`;
+          }
+        } else if (currentSellAsset) {
+          const directRate = currentRate.sellDirect || (currentRate.sell ? (currentRate.sell / (1 - currentFee / 100)) : 0);
+          if (directRate > 0) {
+            sellRateEl.innerHTML = `${pulse}Rate: 1 ${currentSellAsset} = ${formatCurrency(directRate)}`;
+          } else {
+            sellRateEl.innerHTML = `${pulse}Rate: --`;
+          }
         } else {
           sellRateEl.innerHTML = `${pulse}Rate: --`;
         }
       }
+
       if (buyRateEl) {
-        if (currentProvider === 'paj' && currentRate.paj) {
-          buyRateEl.innerHTML = `${pulse}Rate: $1 on ${currentBuyAsset} = ${formatCurrency(currentRate.paj)}`;
-        } else if (currentBuyAsset && currentRate.buy) {
-          buyRateEl.innerHTML = `${pulse}Rate: 1 ${currentBuyAsset} = ${formatCurrency(currentRate.buy)}`;
+        if (currentProvider === 'paj') {
+          const pajDirect = currentRate.pajOnramp || currentRate.paj;
+          const tokenPrice = Number(PAJ_TOKEN_PRICES[currentBuyAsset] || 0);
+          if (currentBuyAsset && tokenPrice > 0 && currentBuyAsset !== 'USDT' && currentBuyAsset !== 'USDC' && currentBuyAsset !== 'USDG') {
+            buyRateEl.innerHTML = `${pulse}Rate: 1 ${currentBuyAsset} = ${formatCurrency(pajDirect * tokenPrice)}`;
+          } else if (pajDirect) {
+            buyRateEl.innerHTML = `${pulse}Rate: 1 ${currentBuyAsset || 'USDT'} = ${formatCurrency(pajDirect)}`;
+          } else {
+            buyRateEl.innerHTML = `${pulse}Rate: --`;
+          }
+        } else if (currentBuyAsset) {
+          const directRate = currentRate.buyDirect || (currentRate.buy ? (currentRate.buy * (1 - currentFee / 100)) : 0);
+          if (directRate > 0) {
+            buyRateEl.innerHTML = `${pulse}Rate: 1 ${currentBuyAsset} = ${formatCurrency(directRate)}`;
+          } else {
+            buyRateEl.innerHTML = `${pulse}Rate: --`;
+          }
         } else {
           buyRateEl.innerHTML = `${pulse}Rate: --`;
         }
@@ -3748,7 +3797,7 @@
     function calculateSell() {
       const amount = getNum('sell-amount');
       validateSellLimit(amount);
-      const pajRate = Number(currentRate.paj);
+      const pajRate = Number(currentRate.pajOfframp || currentRate.paj);
       const tokenUsd = Number(PAJ_TOKEN_PRICES[currentSellAsset] || 0);
       const switchRate = Number(currentRate.sell);
       
@@ -3763,14 +3812,15 @@
           cryptoToSend = tokenUsd > 0 ? amount / tokenUsd : 0;
         } else {
           // Input is in ASSET (any PAJ token)
-          const receiveBeforeFee = amount * (pajRate * tokenUsd);
+          const price = tokenUsd > 0 ? tokenUsd : (currentSellAsset === 'USDT' || currentSellAsset === 'USDC' || currentSellAsset === 'USDG' ? 1 : 0);
+          const receiveBeforeFee = amount * (pajRate * price);
           receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
           cryptoToSend = amount;
         }
       } else {
-        // Switch provider (always treats input as asset amount for now)
-        const receiveBeforeFee = amount * switchRate;
-        receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
+        // Switch provider: currentRate.sell is the rate returned by Switch API with developer_fee=0.5
+        // Switch will pay out cryptoAmount * switchRate directly to user's bank. No double fee deduction!
+        receiveAfterFee = amount * switchRate;
         cryptoToSend = amount;
       }
 
@@ -3786,7 +3836,7 @@
       const previewFiat = document.getElementById('sell-preview-fiat');
       if (amount > 0 && cryptoToSend > 0) {
         previewCrypto.textContent = `${Number(cryptoToSend).toLocaleString(undefined, {maximumFractionDigits: 4})} ${currentSellAsset}`;
-        previewFiat.textContent = `₦${receiveAfterFee.toLocaleString()}`;
+        previewFiat.textContent = `₦${receiveAfterFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         preview.classList.remove('hidden');
       } else {
         preview.classList.add('hidden');
@@ -3796,7 +3846,7 @@
 
     function calculateSellFromNgn() {
       const ngn = getNum('sell-receive');
-      const pajRate = Number(currentRate.paj);
+      const pajRate = Number(currentRate.pajOfframp || currentRate.paj);
       const tokenUsd = Number(PAJ_TOKEN_PRICES[currentSellAsset] || 0);
       const switchRate = Number(currentRate.sell);
 
@@ -3804,14 +3854,16 @@
       
       if (currentProvider === 'paj') {
         if (currentSellInputMode === 'USD') {
-          const usd = ngnBeforeFee / pajRate;
+          const usd = ngnBeforeFee / (pajRate > 0 ? pajRate : 1);
           setFmt('sell-amount', usd, 2);
         } else {
-          const crypto = ngnBeforeFee / (pajRate * tokenUsd);
+          const price = tokenUsd > 0 ? tokenUsd : (currentSellAsset === 'USDT' || currentSellAsset === 'USDC' || currentSellAsset === 'USDG' ? 1 : 1);
+          const crypto = ngnBeforeFee / ((pajRate > 0 ? pajRate : 1) * price);
           setFmt('sell-amount', crypto, 4);
         }
       } else {
-        const crypto = ngnBeforeFee / switchRate;
+        // Switch provider: receiveAfterFee = amount * switchRate => amount = ngn / switchRate
+        const crypto = switchRate > 0 ? (ngn / switchRate) : 0;
         setFmt('sell-amount', crypto, 4);
       }
       calculateSell(); // To update preview
@@ -4596,6 +4648,13 @@
               if (sellExpLink && txExplorer && txExplorer !== '#') {
                 sellExpLink.href = txExplorer;
               }
+              const actualSent = data.source?.amount || data.source_amount;
+              if (actualSent && Number(actualSent) > 0) {
+                const confirmAmtEl = document.getElementById('sell-confirm-amount');
+                if (confirmAmtEl) {
+                  confirmAmtEl.textContent = Number(actualSent).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6});
+                }
+              }
             }
 
             if (type === 'buy' && status === 'COMPLETED') {
@@ -4627,10 +4686,12 @@
                 showToast('Transaction Completed Successfully!', 'success');
                 const txHash = data.hash || currentTxDetails.hash || '';
                 const txExplorer = data.explorer_url || currentTxDetails.explorerUrl || '';
+                const realAmount = data.source?.amount || data.source_amount || (type === 'sell' && data.amount ? data.amount : currentTxDetails.amount);
+                const realDestAmount = data.destination?.amount || data.destination_amount || currentTxDetails.destinationAmount;
                 const modalData = {
                   reference: currentTxDetails.reference || data.reference || '',
-                  amount: currentTxDetails.amount,
-                  destinationAmount: data.destination?.amount || data.destination_amount || currentTxDetails.destinationAmount,
+                  amount: realAmount,
+                  destinationAmount: realDestAmount,
                   bankName: currentTxDetails.bankName,
                   accountNumber: currentTxDetails.accountNumber,
                   accountName: currentTxDetails.accountName,
@@ -4640,6 +4701,8 @@
                   explorerUrl: txExplorer,
                   hash: txHash
                 };
+                currentTxDetails.amount = realAmount;
+                currentTxDetails.destinationAmount = realDestAmount;
                 currentTxDetails.hash = txHash;
                 currentTxDetails.explorerUrl = txExplorer;
                 setTimeout(() => showSuccessModal(type, modalData), 1500);
@@ -5289,6 +5352,9 @@
         const isOnramp = typeLabel === 'ONRAMP';
         const isOfframp = typeLabel === 'OFFRAMP';
 
+        const sentCrypto = tx.source_amount || (tx.channel !== 'PAJ' ? tx.amount : null);
+        const receivedFiat = tx.destination_amount || (tx.channel === 'PAJ' ? tx.amount : null);
+
         return `
           <div class="tx-card p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100/80 transition-colors">
             <div class="cursor-pointer select-none" onclick="toggleTxDetails(this)">
@@ -5304,10 +5370,8 @@
               <div class="flex justify-between items-end">
                 <div>
                   <p class="text-xs text-gray-600">${isBuy 
-                    ? `₦${Number(tx.amount).toLocaleString()} → ${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : ''} ${assetName}` 
-                    : (tx.channel === 'PAJ' || tx.currency === 'NGN')
-                      ? `${assetName} → ₦${Number(tx.destination_amount || tx.amount).toLocaleString()}`
-                      : `${Number(tx.amount).toLocaleString()} ${assetName} → ₦${tx.destination_amount ? Number(tx.destination_amount).toLocaleString() : ''}`}</p>
+                    ? `₦${Number(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} → ${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : ''} ${assetName}` 
+                    : `${sentCrypto ? Number(sentCrypto).toLocaleString(undefined, {maximumFractionDigits: 4}) : ''} ${assetName} → ₦${receivedFiat ? Number(receivedFiat).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : ''}`}</p>
                   <p class="text-[10px] text-gray-400 mt-1">${date}</p>
                 </div>
                 <div class="text-right">
@@ -5322,22 +5386,20 @@
                   <div>
                     <span class="text-gray-400 text-[10px] uppercase font-bold tracking-wider block mb-0.5">You Sent</span>
                     <p class="font-bold text-gray-900 dark:text-white text-xs">${isBuy 
-                      ? `₦${Number(tx.amount).toLocaleString()}` 
-                      : (tx.channel === 'PAJ' || tx.currency === 'NGN')
-                        ? (tx.source_amount ? `${Number(tx.source_amount).toFixed(4)} ${assetName}` : `${assetName}`)
-                        : `${Number(tx.amount).toLocaleString()} ${assetName}`}</p>
+                      ? `₦${Number(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` 
+                      : (sentCrypto ? `${Number(sentCrypto).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})} ${assetName}` : assetName)}</p>
                   </div>
                   <div>
                     <span class="text-gray-400 text-[10px] uppercase font-bold tracking-wider block mb-0.5">You Received</span>
                     <p class="font-bold text-emerald-600 dark:text-emerald-400 text-xs">${isBuy 
                       ? `${tx.destination_amount ? Number(tx.destination_amount).toFixed(4) : '-'} ${assetName}` 
-                      : `₦${Number(tx.destination_amount || tx.amount).toLocaleString()}`}</p>
+                      : (receivedFiat ? `₦${Number(receivedFiat).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-')}</p>
                   </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 pt-2.5 border-t border-gray-100 dark:border-slate-800">
                   <div>
                     <span class="text-gray-400 text-[10px] uppercase font-bold tracking-wider block mb-0.5">Exchange Rate</span>
-                    <p class="font-medium text-gray-700 dark:text-gray-300 text-xs">${tx.rate ? `₦${Number(tx.rate).toLocaleString()}` : '-'}</p>
+                    <p class="font-medium text-gray-700 dark:text-gray-300 text-xs">${tx.rate ? `₦${Number(tx.rate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}` : '-'}</p>
                   </div>
                   <div>
                     <span class="text-gray-400 text-[10px] uppercase font-bold tracking-wider block mb-0.5">Blockchain Network</span>

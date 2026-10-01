@@ -38,39 +38,21 @@ function registerWebhookRoutes(Router $router): void
             ?? ($payload['event'] ?? null))));
 
         if ($reference) {
-            $data = $payload['data'] ?? [];
-            $meta = $data['meta'] ?? ($payload['meta'] ?? []);
-            $hash = $meta['hash'] ?? ($data['hash'] ?? ($payload['hash'] ?? null));
-            $explorerUrl = $meta['explorer_url'] ?? ($data['explorer_url'] ?? ($payload['explorer_url'] ?? null));
+            $switchData = $payload['data'] ?? $payload;
 
             // Query live Switch status to ensure authoritative state
             try {
                 $liveStatusData = switchApi()->getPaymentStatus((string)$reference);
-                if (!empty($liveStatusData['data']['status'])) {
-                    $d = $liveStatusData['data'];
-                    $status = $d['status'];
-                    $m = $d['meta'] ?? [];
-                    $hash = $m['hash'] ?? ($d['hash'] ?? $hash);
-                    $explorerUrl = $m['explorer_url'] ?? ($d['explorer_url'] ?? $explorerUrl);
-                    $payload = array_merge($payload, $liveStatusData);
+                if (!empty($liveStatusData['data'])) {
+                    $switchData = array_merge($switchData, $liveStatusData['data']);
                 }
             } catch (Throwable $e) {
                 error_log("Failed to fetch live status in Switch webhook for {$reference}: " . $e->getMessage());
             }
 
-            if ($status) {
-                $normalizedStatus = strtoupper((string)$status);
-                Database::safeExecute(
-                    'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`), `updated_at` = NOW() WHERE `reference` = :reference OR `switch_reference` = :reference',
-                    [
-                        'status' => $normalizedStatus,
-                        'meta' => jsonEncodeNullable($payload),
-                        'hash' => $hash,
-                        'explorer_url' => $explorerUrl,
-                        'reference' => (string)$reference,
-                    ]
-                );
-                error_log("[Switch Webhook] Updated status of {$reference} to {$normalizedStatus}");
+            $updatedTx = updateSwitchTransactionFromData((string)$reference, $switchData);
+            if ($updatedTx) {
+                error_log("[Switch Webhook] Updated transaction {$reference} (status: " . ($updatedTx['status'] ?? '') . ", amount: " . ($updatedTx['amount'] ?? '') . ", dest_amount: " . ($updatedTx['destination_amount'] ?? '') . ")");
             }
         }
 

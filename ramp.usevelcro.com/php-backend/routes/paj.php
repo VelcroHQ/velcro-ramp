@@ -43,6 +43,24 @@ function registerPajRoutes(Router $router): void
         }
     });
 
+    $router->post('/api/paj/offramp-value', function () {
+        if (!pajApi()->isConfigured()) {
+            jsonResponse(errorResponse('PAJ module not available'), 503);
+        }
+        $body = getJsonBody();
+        $amount = body($body, 'amount');
+        $mint = body($body, 'mint');
+        if ($amount === null || !$mint) {
+            jsonResponse(errorResponse('amount and mint are required'), 400);
+        }
+        try {
+            $value = pajApi()->getFiatValue((float) $amount, $mint);
+            jsonResponse(successResponse($value));
+        } catch (Throwable $e) {
+            jsonResponse(errorResponse($e->getMessage()), 500);
+        }
+    });
+
     $router->post('/api/paj/initiate', function () {
         if (!pajApi()->isConfigured()) {
             jsonResponse(errorResponse('PAJ module not available'), 503);

@@ -704,3 +704,123 @@ function calculateTxVolumes(array $t): array
     ];
 }
 
+/**
+ * Update a transaction record in the database with authoritative data from Switch.
+ * Captures the actual crypto amount deposited (even if different from initial estimate),
+ * the actual destination amount (NGN paid to bank or crypto sent to wallet),
+ * the exact exchange rate, hash, and status.
+ *
+ * @param string $reference
+ * @param array<string,mixed> $d Switch data payload
+ * @return ?array The updated transaction row
+ */
+function updateSwitchTransactionFromData(string $reference, array $d): ?array
+{
+    if (empty($d) || empty($d['status'])) {
+        return null;
+    }
+
+    $rawStatus = (string) $d['status'];
+    $normalizedStatus = strtoupper($rawStatus);
+    $source = $d['source'] ?? [];
+    $destination = $d['destination'] ?? [];
+    $deposit = $d['deposit'] ?? [];
+    $meta = $d['meta'] ?? [];
+
+    $realRate = !empty($d['rate']) ? (float) $d['rate'] : null;
+    $hash = $meta['hash'] ?? ($d['hash'] ?? null);
+    $explorerUrl = $meta['explorer_url'] ?? ($d['explorer_url'] ?? null);
+    $direction = strtoupper((string) ($d['type'] ?? ''));
+
+    // Check existing transaction
+    $tx = Database::selectOne(
+        'SELECT * FROM `transactions` WHERE `reference` = :reference OR `switch_reference` = :reference',
+        ['reference' => $reference]
+    );
+
+    $isOfframp = ($tx && strtoupper((string)$tx['type']) === 'OFFRAMP') || $direction === 'OFFRAMP';
+
+    if ($isOfframp) {
+        // OFFRAMP (Sell crypto for NGN)
+        // User deposited crypto ($source['amount'] or $deposit['amount']), user bank received NGN ($destination['amount'])
+        $realCrypto = null;
+        if (isset($source['amount']) && (float)$source['amount'] > 0) {
+            $realCrypto = (float)$source['amount'];
+        } elseif (isset($deposit['amount']) && (float)$deposit['amount'] > 0) {
+            $realCrypto = (float)$deposit['amount'];
+        }
+
+        $realFiat = isset($destination['amount']) && (float)$destination['amount'] > 0 ? (float)$destination['amount'] : null;
+
+        // If rate wasn't explicitly given but amounts are, compute it
+        if (!$realRate && $realCrypto && $realFiat && $realCrypto > 0) {
+            $realRate = $realFiat / $realCrypto;
+        }
+
+        Database::safeExecute(
+            'UPDATE `transactions` SET 
+                `status` = :status,
+                `amount` = COALESCE(:real_crypto, `amount`),
+                `source_amount` = COALESCE(:real_source_amount, `source_amount`, `amount`),
+                `destination_amount` = COALESCE(:real_dest_amount, `destination_amount`),
+                `rate` = COALESCE(:real_rate, `rate`),
+                `hash` = COALESCE(:hash, `hash`),
+                `explorer_url` = COALESCE(:explorer_url, `explorer_url`),
+                `meta` = :meta,
+                `updated_at` = NOW()
+            WHERE `reference` = :reference OR `switch_reference` = :reference',
+            [
+                'status' => $normalizedStatus,
+                'real_crypto' => $realCrypto,
+                'real_source_amount' => $realCrypto,
+                'real_dest_amount' => $realFiat,
+                'real_rate' => $realRate,
+                'hash' => $hash,
+                'explorer_url' => $explorerUrl,
+                'meta' => jsonEncodeNullable($d),
+                'reference' => $reference,
+            ]
+        );
+    } else {
+        // ONRAMP (Buy crypto with NGN)
+        // User paid fiat ($source['amount']), user wallet received crypto ($destination['amount'])
+        $realFiat = isset($source['amount']) && (float)$source['amount'] > 0 ? (float)$source['amount'] : null;
+        $realCrypto = isset($destination['amount']) && (float)$destination['amount'] > 0 ? (float)$destination['amount'] : null;
+
+        if (!$realRate && $realCrypto && $realFiat && $realCrypto > 0) {
+            $realRate = $realFiat / $realCrypto;
+        }
+
+        Database::safeExecute(
+            'UPDATE `transactions` SET 
+                `status` = :status,
+                `amount` = COALESCE(:real_fiat, `amount`),
+                `source_amount` = COALESCE(:real_source_amount, `source_amount`, `amount`),
+                `destination_amount` = COALESCE(:real_crypto, `destination_amount`),
+                `rate` = COALESCE(:real_rate, `rate`),
+                `hash` = COALESCE(:hash, `hash`),
+                `explorer_url` = COALESCE(:explorer_url, `explorer_url`),
+                `meta` = :meta,
+                `updated_at` = NOW()
+            WHERE `reference` = :reference OR `switch_reference` = :reference',
+            [
+                'status' => $normalizedStatus,
+                'real_fiat' => $realFiat,
+                'real_source_amount' => $realFiat,
+                'real_crypto' => $realCrypto,
+                'real_rate' => $realRate,
+                'hash' => $hash,
+                'explorer_url' => $explorerUrl,
+                'meta' => jsonEncodeNullable($d),
+                'reference' => $reference,
+            ]
+        );
+    }
+
+    return Database::selectOne(
+        'SELECT * FROM `transactions` WHERE `reference` = :reference OR `switch_reference` = :reference',
+        ['reference' => $reference]
+    );
+}
+
+

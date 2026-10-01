@@ -178,6 +178,18 @@ function registerPublicRoutes(Router $router): void
         }
         try {
             $data = switchApi()->getRate($body);
+            $feePercent = getPlatformFee();
+            if (!empty($data['data']['rate'])) {
+                $effRate = (float) $data['data']['rate'];
+                if (strtoupper((string) $direction) === 'OFFRAMP') {
+                    $directRate = round($effRate / (1 - ($feePercent / 100)), 2);
+                } else {
+                    $directRate = round($effRate * (1 - ($feePercent / 100)), 2);
+                }
+                $data['data']['effective_rate'] = $effRate;
+                $data['data']['direct_rate'] = $directRate;
+                $data['data']['fee_percent'] = $feePercent;
+            }
             jsonResponse($data);
         } catch (Throwable $e) {
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
@@ -187,6 +199,132 @@ function registerPublicRoutes(Router $router): void
             ], $status);
         }
     });
+
+    $quoteHandler = function () {
+        $body = getJsonBody();
+        $direction = strtoupper((string) body($body, 'direction', 'OFFRAMP'));
+        $provider = strtolower((string) body($body, 'provider', 'switch'));
+        $asset = strtoupper((string) body($body, 'asset', 'USDT'));
+        $network = strtolower((string) body($body, 'network', 'solana'));
+        $amount = (float) body($body, 'amount', 0);
+        $country = (string) body($body, 'country', 'NG');
+        $currency = (string) body($body, 'currency', 'NGN');
+        $feePercent = getPlatformFee(); // 0.5%
+
+        if ($provider === 'paj') {
+            try {
+                $pajRateData = pajApi()->getPajRate();
+                $onrampRate = (float) ($pajRateData['onramp']['rate'] ?? 1369.56);
+                $offrampRate = (float) ($pajRateData['offramp']['rate'] ?? 1343.52);
+
+                if ($direction === 'ONRAMP') {
+                    $mint = body($body, 'mint');
+                    $tokenRate = null;
+                    if ($mint) {
+                        try {
+                            $val = pajApi()->getTokenValue($amount > 0 ? $amount : 10000, $mint);
+                            $tokenRate = (float) ($val['tokenRate'] ?? 0);
+                        } catch (Throwable $e) {}
+                    }
+                    if (!$tokenRate || $tokenRate <= 0) {
+                        $tokenRate = $onrampRate;
+                    }
+                    $directRate = $tokenRate;
+                    $grossCrypto = $amount > 0 ? ($amount / $tokenRate) : 0.0;
+                    $feeCrypto = $grossCrypto * ($feePercent / 100);
+                    $receiveCrypto = $grossCrypto - $feeCrypto;
+
+                    jsonResponse(successResponse([
+                        'provider' => 'paj',
+                        'direction' => 'ONRAMP',
+                        'asset' => $asset,
+                        'network' => $network,
+                        'amount' => $amount,
+                        'direct_rate' => $directRate,
+                        'effective_rate' => round($directRate / (1 - $feePercent / 100), 4),
+                        'fee_percent' => $feePercent,
+                        'receive_amount' => round($receiveCrypto, 6),
+                        'receive_currency' => $asset,
+                    ]));
+                } else {
+                    $directRate = $offrampRate;
+                    $grossFiat = $amount * $directRate;
+                    $feeFiat = $grossFiat * ($feePercent / 100);
+                    $receiveFiat = $grossFiat - $feeFiat;
+
+                    jsonResponse(successResponse([
+                        'provider' => 'paj',
+                        'direction' => 'OFFRAMP',
+                        'asset' => $asset,
+                        'network' => $network,
+                        'amount' => $amount,
+                        'direct_rate' => $directRate,
+                        'effective_rate' => round($directRate * (1 - $feePercent / 100), 2),
+                        'fee_percent' => $feePercent,
+                        'receive_amount' => round($receiveFiat, 2),
+                        'receive_currency' => 'NGN',
+                    ]));
+                }
+            } catch (Throwable $e) {
+                jsonResponse(errorResponse($e->getMessage()), 500);
+            }
+        } else {
+            try {
+                $switchAsset = body($body, 'switch_asset');
+                if (!$switchAsset) {
+                    $switchAsset = strtolower($network) . ':' . strtolower($asset);
+                }
+
+                $rateWithFeeData = switchApi()->getRate([
+                    'direction' => $direction,
+                    'asset' => $switchAsset,
+                    'country' => $country,
+                    'currency' => $currency,
+                    'channel' => 'BANK',
+                ]);
+                $effectiveRate = (float) ($rateWithFeeData['data']['rate'] ?? 0);
+
+                if ($direction === 'OFFRAMP') {
+                    $directRate = round($effectiveRate / (1 - ($feePercent / 100)), 2);
+                    $receiveFiat = $amount > 0 ? ($amount * $effectiveRate) : 0.0;
+
+                    jsonResponse(successResponse([
+                        'provider' => 'switch',
+                        'direction' => 'OFFRAMP',
+                        'asset' => $asset,
+                        'network' => $network,
+                        'amount' => $amount,
+                        'direct_rate' => $directRate,
+                        'effective_rate' => round($effectiveRate, 2),
+                        'fee_percent' => $feePercent,
+                        'receive_amount' => round($receiveFiat, 2),
+                        'receive_currency' => 'NGN',
+                    ]));
+                } else {
+                    $directRate = round($effectiveRate * (1 - ($feePercent / 100)), 2);
+                    $receiveCrypto = ($amount > 0 && $effectiveRate > 0) ? ($amount / $effectiveRate) : 0.0;
+
+                    jsonResponse(successResponse([
+                        'provider' => 'switch',
+                        'direction' => 'ONRAMP',
+                        'asset' => $asset,
+                        'network' => $network,
+                        'amount' => $amount,
+                        'direct_rate' => $directRate,
+                        'effective_rate' => round($effectiveRate, 2),
+                        'fee_percent' => $feePercent,
+                        'receive_amount' => round($receiveCrypto, 6),
+                        'receive_currency' => $asset,
+                    ]));
+                }
+            } catch (Throwable $e) {
+                jsonResponse(errorResponse($e->getMessage()), 500);
+            }
+        }
+    };
+
+    $router->post('/api/rate/calculate', $quoteHandler);
+    $router->post('/api/quote', $quoteHandler);
 
     $router->post('/api/initiate', function () {
         $body = getJsonBody();
@@ -301,19 +439,7 @@ function registerPublicRoutes(Router $router): void
             $data = switchApi()->getPaymentStatus($reference);
             $d = $data['data'] ?? [];
             if (!empty($d['status'])) {
-                $meta = $d['meta'] ?? [];
-                $hash = $meta['hash'] ?? ($d['hash'] ?? null);
-                $explorerUrl = $meta['explorer_url'] ?? ($d['explorer_url'] ?? null);
-                Database::safeExecute(
-                    'UPDATE `transactions` SET `status` = :status, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`), `meta` = COALESCE(:meta, `meta`) WHERE `reference` = :reference OR `switch_reference` = :reference',
-                    [
-                        'status' => strtoupper($d['status']),
-                        'hash' => $hash,
-                        'explorer_url' => $explorerUrl,
-                        'meta' => jsonEncodeNullable($d),
-                        'reference' => $reference,
-                    ]
-                );
+                updateSwitchTransactionFromData($reference, $d);
             }
             jsonResponse($data);
         } catch (Throwable $e) {
@@ -360,20 +486,10 @@ function registerPublicRoutes(Router $router): void
                 error_log("Failed to fetch live status immediately after confirm for {$reference}: " . $e->getMessage());
             }
 
-            $newStatus = strtoupper($d['status'] ?? 'PROCESSING');
-            $meta = $d['meta'] ?? [];
-            $explorerUrl = $meta['explorer_url'] ?? ($d['explorer_url'] ?? null);
+            if (!empty($d['status'])) {
+                updateSwitchTransactionFromData($reference, $d);
+            }
 
-            Database::safeExecute(
-                'UPDATE `transactions` SET `status` = :status, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`), `meta` = COALESCE(:meta, `meta`) WHERE `reference` = :reference OR `switch_reference` = :reference',
-                [
-                    'status' => $newStatus,
-                    'hash' => $hash ?: ($d['hash'] ?? null),
-                    'explorer_url' => $explorerUrl,
-                    'meta' => jsonEncodeNullable($d),
-                    'reference' => $reference,
-                ]
-            );
             jsonResponse($data);
         } catch (Throwable $e) {
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
@@ -418,6 +534,19 @@ function registerPublicRoutes(Router $router): void
         try {
             $rows = Database::select($sql, $params);
             foreach ($rows as &$row) {
+                // If the transaction is pending and from Switch, check if it recently completed on Switch
+                $st = strtoupper((string)($row['status'] ?? ''));
+                if (!in_array($st, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true) && ($row['channel'] ?? '') !== 'PAJ') {
+                    try {
+                        $live = switchApi()->getPaymentStatus((string)$row['reference']);
+                        if (!empty($live['data']['status'])) {
+                            $synced = updateSwitchTransactionFromData((string)$row['reference'], $live['data']);
+                            if ($synced) {
+                                $row = $synced;
+                            }
+                        }
+                    } catch (Throwable $e) {}
+                }
                 $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
                 if (empty($row['wallet_address'])) {
                     $ben = $row['beneficiary'] ?? [];
@@ -436,10 +565,42 @@ function registerPublicRoutes(Router $router): void
 
     $router->get('/api/transactions/([a-zA-Z0-9_-]+)', function (string $reference) {
         try {
-            $row = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :reference', ['reference' => $reference]);
+            $row = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :reference OR `switch_reference` = :reference', ['reference' => $reference]);
             if ($row === null) {
                 jsonResponse(errorResponse('Transaction not found', 404), 404);
             }
+
+            // Proactively sync if in any non-terminal state
+            $currentStatus = strtoupper((string)($row['status'] ?? ''));
+            if (!in_array($currentStatus, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true)) {
+                if (($row['channel'] ?? '') === 'PAJ') {
+                    if (pajApi()->isConfigured()) {
+                        try {
+                            $res = pajApi()->getTransactionStatus($row['reference']);
+                            if (!empty($res['status'])) {
+                                $newStatus = mapPajStatus($res['status']);
+                                Database::safeExecute('UPDATE `transactions` SET `status` = :s, `meta` = :m WHERE `id` = :id', [
+                                    's' => $newStatus,
+                                    'm' => jsonEncodeNullable($res),
+                                    'id' => $row['id']
+                                ]);
+                                $row['status'] = $newStatus;
+                            }
+                        } catch (Throwable $e) {}
+                    }
+                } else {
+                    try {
+                        $live = switchApi()->getPaymentStatus($reference);
+                        if (!empty($live['data'])) {
+                            $synced = updateSwitchTransactionFromData($reference, $live['data']);
+                            if ($synced) {
+                                $row = $synced;
+                            }
+                        }
+                    } catch (Throwable $e) {}
+                }
+            }
+
             $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
             if (empty($row['wallet_address'])) {
                 $ben = $row['beneficiary'] ?? [];
