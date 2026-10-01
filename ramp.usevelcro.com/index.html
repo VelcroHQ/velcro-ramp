@@ -1261,7 +1261,10 @@
 
   <!-- Login Gatekeeper Modal/Overlay -->
   <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md overflow-y-auto hidden">
-    <div class="login-card text-center">
+    <div class="login-card text-center relative">
+      <button type="button" onclick="closeLoginOverlay()" class="absolute top-2 right-2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full" title="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
       <div class="login-logo-container">
         <img src="/velcro_logo.png" alt="Velcro" class="login-logo">
       </div>
@@ -4150,7 +4153,7 @@
     async function generateWalletAddress() {
       const userEmail = (localStorage.getItem('velcro_user_email') || '').trim();
       if (!userEmail) {
-        checkLoginState();
+        promptLoginOverlay();
         showToast('Please enter your email address to proceed', 'warning');
         return;
       }
@@ -4356,7 +4359,7 @@
     async function generateBankAccount() {
       const userEmail = (localStorage.getItem('velcro_user_email') || '').trim();
       if (!userEmail) {
-        checkLoginState();
+        promptLoginOverlay();
         showToast('Please enter your email address to proceed', 'warning');
         return;
       }
@@ -5017,17 +5020,26 @@
       const overlay = document.getElementById('login-overlay');
       const navSection = document.getElementById('user-nav-section');
       const navDisplay = document.getElementById('user-email-display');
+      const convertSection = document.getElementById('convert');
       
+      if (convertSection) {
+        convertSection.classList.remove('hidden');
+      }
+
       if (!email) {
-        overlay.classList.remove('hidden');
-        overlay.classList.add('flex');
-        if (navSection) navSection.classList.add('hidden');
-        if (navSection) navSection.classList.remove('flex');
-        document.getElementById('convert').classList.add('hidden');
+        if (overlay) {
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex');
+        }
+        if (navSection) {
+          navSection.classList.add('hidden');
+          navSection.classList.remove('flex');
+        }
       } else {
-        overlay.classList.add('hidden');
-        overlay.classList.remove('flex');
-        document.getElementById('convert').classList.remove('hidden');
+        if (overlay) {
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex');
+        }
         if (navSection) {
           navSection.classList.remove('hidden');
           navSection.classList.add('flex');
@@ -5035,6 +5047,24 @@
         if (navDisplay) {
           navDisplay.textContent = email;
         }
+      }
+    }
+
+    function promptLoginOverlay() {
+      const overlay = document.getElementById('login-overlay');
+      if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        const emailInput = document.getElementById('login-email');
+        if (emailInput) emailInput.focus();
+      }
+    }
+
+    function closeLoginOverlay() {
+      const overlay = document.getElementById('login-overlay');
+      if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
       }
     }
 
