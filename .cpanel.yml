@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/velcrohq/ramp.usevelcro.com/
+    - /bin/cp -R ramp.usevelcro.com/* $DEPLOYPATH
