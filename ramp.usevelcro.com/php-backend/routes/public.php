@@ -527,9 +527,7 @@ function registerPublicRoutes(Router $router): void
         }
 
         $sql = 'SELECT * FROM `transactions` WHERE ' . implode(' AND ', $where) .
-               ' ORDER BY `created_at` DESC LIMIT :limit OFFSET :offset';
-        $params['limit'] = $limit;
-        $params['offset'] = $offset;
+               " ORDER BY `created_at` DESC LIMIT {$limit} OFFSET {$offset}";
 
         try {
             $rows = Database::select($sql, $params);
