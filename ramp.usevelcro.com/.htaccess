@@ -1,8 +1,10 @@
 # Velcro Ramp — production document root rules
-# Extract these files into your hosting account's public_html/ folder.
 DirectoryIndex index.html index.php
-Options -Indexes -ExecCGI
 ServerSignature Off
+
+# Pass Authorization header to CGI/PHP environment
+CGIPassAuth On
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
 # Block access to hidden files
 <FilesMatch "^\.">
@@ -21,8 +23,6 @@ ServerSignature Off
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set X-XSS-Protection "0"
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
-    # Uncomment after HTTPS is confirmed working:
-    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
 
 # Gzip compression for text assets
@@ -44,6 +44,10 @@ ServerSignature Off
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Pass Authorization header to CGI/PHP environment
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
     # Ensure /goat redirects to /goat/ cleanly
     RewriteRule ^goat$ /goat/ [R=301,L]
 
@@ -57,12 +61,4 @@ ServerSignature Off
 
     # Everything else -> index.html (SPA fallback)
     RewriteRule ^ index.html [L]
-</IfModule>
-
-# PHP production settings
-<IfModule mod_php.c>
-    php_flag display_errors off
-    php_value upload_max_filesize 2M
-    php_value post_max_size 8M
-    php_value max_execution_time 60
 </IfModule>

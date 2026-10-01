@@ -1,22 +1,9 @@
-# Velcro Ramp — Admin dashboard protection
-#
-# If this directory is placed inside the web root, this file adds a password
-# prompt in addition to the application-level admin auth. Configure the user
-# and password with your hosting control panel or use the htpasswd tool:
-#
-#   htpasswd -cb /path/to/.htpasswd velcro-admin YourStrongPassword
-#
-# Force Apache to prioritize index.html (the UI dashboard) over index.php (the API gateway)
+# Velcro Ramp — Admin dashboard protection rules
 DirectoryIndex index.html index.php
 
 # Enable passing Authorization header to PHP CGI
 CGIPassAuth On
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
-
-AuthType Basic
-AuthName "Velcro Admin"
-# AuthUserFile /path/to/.htpasswd
-# Require valid-user
 
 # Security headers
 <IfModule mod_headers.c>
