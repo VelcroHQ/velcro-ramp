@@ -32,8 +32,14 @@ function pollSingleTransaction(array $tx): void
                     $update['hash'] = $d['signature'] ?? $d['hash'];
                 }
                 Database::safeExecute(
-                    'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = :hash WHERE `reference` = :reference',
-                    ['status' => $update['status'], 'meta' => $update['meta'], 'hash' => $update['hash'] ?? null, 'reference' => $tx['reference']]
+                    'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `wallet_address` = COALESCE(:wallet_address, `wallet_address`), `updated_at` = NOW() WHERE `reference` = :reference OR `switch_reference` = :reference',
+                    [
+                        'status' => $update['status'],
+                        'meta' => $update['meta'],
+                        'hash' => $update['hash'] ?? null,
+                        'wallet_address' => $d['recipient'] ?? ($d['address'] ?? null),
+                        'reference' => $tx['reference'],
+                    ]
                 );
                 error_log("[Poller] PAJ {$tx['reference']} → {$newStatus}");
             }
@@ -49,10 +55,11 @@ function pollSingleTransaction(array $tx): void
                 if ($newStatus !== $tx['status']) {
                     $meta = $d['meta'] ?? [];
                     Database::safeExecute(
-                        'UPDATE `transactions` SET `status` = :status, `hash` = :hash, `explorer_url` = :explorer_url WHERE `reference` = :reference',
+                        'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `explorer_url` = COALESCE(:explorer_url, `explorer_url`), `updated_at` = NOW() WHERE `reference` = :reference OR `switch_reference` = :reference',
                         [
                             'status' => $newStatus,
-                            'hash' => $d['hash'] ?? ($d['tx_hash'] ?? $tx['hash'] ?? null),
+                            'meta' => jsonEncodeNullable($d),
+                            'hash' => $meta['hash'] ?? ($d['hash'] ?? ($d['tx_hash'] ?? $tx['hash'] ?? null)),
                             'explorer_url' => $meta['explorer_url'] ?? ($d['explorer_url'] ?? $tx['explorer_url'] ?? null),
                             'reference' => $tx['reference'],
                         ]
@@ -68,9 +75,9 @@ function pollSingleTransaction(array $tx): void
 
 function runBackgroundPoller(): void
 {
-    $since = gmdate('Y-m-d H:i:s', strtotime('-24 hours'));
+    $since = gmdate('Y-m-d H:i:s', strtotime('-72 hours'));
     $placeholders = implode(',', array_fill(0, count(POLLABLE_STATUSES), '?'));
-    $sql = "SELECT * FROM `transactions` WHERE `status` IN ({$placeholders}) AND `created_at` >= ? ORDER BY `created_at` DESC LIMIT 50";
+    $sql = "SELECT * FROM `transactions` WHERE `status` IN ({$placeholders}) AND `created_at` >= ? ORDER BY `created_at` DESC LIMIT 100";
     $params = [...POLLABLE_STATUSES, $since];
 
     try {
@@ -79,7 +86,7 @@ function runBackgroundPoller(): void
             error_log("[Poller] Checking " . count($txs) . " pending transaction(s)...");
             foreach ($txs as $tx) {
                 pollSingleTransaction($tx);
-                usleep(1500000); // 1.5s delay between calls
+                usleep(500000); // 0.5s delay between calls
             }
         }
     } catch (Throwable $e) {

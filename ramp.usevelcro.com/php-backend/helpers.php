@@ -619,15 +619,26 @@ const POLLABLE_STATUSES = ['PENDING', 'AWAITING_DEPOSIT', 'DETECTED', 'PROCESSIN
 
 const PAJ_STATUS_MAP = [
     'INIT' => 'AWAITING_DEPOSIT',
+    'PENDING' => 'AWAITING_DEPOSIT',
+    'AWAITING_DEPOSIT' => 'AWAITING_DEPOSIT',
     'PAID' => 'DETECTED',
+    'DETECTED' => 'DETECTED',
     'PROCESSING' => 'PROCESSING',
     'COMPLETED' => 'COMPLETED',
+    'SUCCESS' => 'COMPLETED',
+    'SUCCESSFUL' => 'COMPLETED',
+    'DONE' => 'COMPLETED',
     'FAILED' => 'FAILED',
     'CANCELLED' => 'CANCELLED',
+    'EXPIRED' => 'EXPIRED',
+    'TRANSACTION.COMPLETED' => 'COMPLETED',
+    'TRANSACTION.SUCCESSFUL' => 'COMPLETED',
+    'TRANSACTION.FAILED' => 'FAILED',
 ];
 
 function mapPajStatus(?string $raw): string
 {
-    $s = strtoupper($raw ?? '');
+    $s = strtoupper(trim($raw ?? ''));
     return PAJ_STATUS_MAP[$s] ?? $s;
 }
+
