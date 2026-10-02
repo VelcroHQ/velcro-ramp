@@ -1161,7 +1161,7 @@
                 <div class="stat-card-sm">
                     <div class="stat-icon-sm blue"><i data-lucide="users"></i></div>
                     <div class="stat-info-sm">
-                        <h4>Active Wallets</h4>
+                        <h4>Active Users</h4>
                         <span id="stat-total-users">0</span>
                     </div>
                 </div>
@@ -1354,7 +1354,8 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>User / Wallet</th>
+                            <th>User Email</th>
+                            <th>Wallet Address</th>
                             <th>First Seen</th>
                             <th>Total Volume</th>
                             <th>TXs</th>
@@ -1415,7 +1416,7 @@
                 <div class="user-profile-lg"><i data-lucide="wallet"></i></div>
                 <div>
                     <h2 id="detail-username" style="font-size: 18px; word-break: break-all;">-</h2>
-                    <p style="color: var(--text-secondary);">Active Participant</p>
+                    <p id="detail-user-subtitle" style="color: var(--text-secondary);">Active Participant</p>
                 </div>
             </div>
 
@@ -3047,7 +3048,11 @@
                 renderUsers(currentUsers);
                 return;
             }
-            const filtered = currentUsers.filter(u => u.id && u.id.toLowerCase().includes(query));
+            const filtered = currentUsers.filter(u => 
+                (u.id && u.id.toLowerCase().includes(query)) ||
+                (u.email && u.email.toLowerCase().includes(query)) ||
+                (u.wallet_address && u.wallet_address.toLowerCase().includes(query))
+            );
             renderUsers(filtered);
         }
 
@@ -3058,23 +3063,42 @@
             if (!body) return;
 
             if (!users || users.length === 0) {
-                body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">No users found</td></tr>';
+                body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">No users found</td></tr>';
                 return;
             }
 
             body.innerHTML = users.map(u => {
                 const volUSD = safeNum(u.total_volume_usd !== undefined ? u.total_volume_usd : u.total_volume);
                 const volNGN = safeNum(u.total_volume_ngn) || (volUSD * 1500);
+                const email = u.email || (u.id && u.id.includes('@') ? u.id : '');
+                const wallet = u.wallet_address || (u.id && !u.id.includes('@') ? u.id : '');
+                const targetKey = email || wallet || u.id;
+
+                const emailHtml = email 
+                    ? `<div style="display:flex;align-items:center;gap:6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary-link);flex-shrink:0;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        <b style="font-size: 12px; color: var(--primary-link); word-break: break-all;">${email}</b>
+                       </div>`
+                    : `<span style="font-size: 11px; color: var(--text-secondary); font-style: italic;">No email</span>`;
+
+                const walletHtml = wallet
+                    ? `<div style="font-family: monospace; font-size: 11px; color: var(--text-secondary); display:flex; align-items:center; gap:4px;" title="${wallet}">
+                        <span>${wallet.length > 16 ? wallet.slice(0, 8) + '...' + wallet.slice(-6) : wallet}</span>
+                        <button onclick="navigator.clipboard.writeText('${wallet}'); showToast('Wallet copied', 'success');" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--text-secondary);font-size:11px;" title="Copy wallet">📋</button>
+                       </div>`
+                    : `<span style="font-size: 11px; color: var(--text-secondary); font-style: italic;">—</span>`;
+
                 return `
                 <tr>
-                    <td data-label="User"><b style="font-size: 12px; color: var(--primary-link);">${u.id}</b></td>
+                    <td data-label="User Email">${emailHtml}</td>
+                    <td data-label="Wallet">${walletHtml}</td>
                     <td data-label="First Seen">${new Date(u.created_at).toLocaleDateString()}</td>
                     <td data-label="Total Volume">
                         <div><b>$${volUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b></div>
                         <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">~₦${volNGN.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
                     </td>
                     <td data-label="TXs">${u.tx_count}</td>
-                    <td data-label="Action"><button class="btn-view" onclick="viewWalletDetails('${u.id}')">View</button></td>
+                    <td data-label="Action"><button class="btn-view" onclick="viewWalletDetails('${targetKey}')">View</button></td>
                 </tr>
                 `;
             }).join('');
@@ -3591,10 +3615,24 @@
         async function viewWalletDetails(wallet) {
             if (!wallet) return;
             const target = wallet.toLowerCase();
-            const userTxs = currentTxs.filter(t => 
-                (t.email && t.email.toLowerCase() === target) || 
-                (t.wallet_address && t.wallet_address.toLowerCase() === target)
+
+            // Find aggregate user record from currentUsers
+            const matchedUser = (currentUsers || []).find(u => 
+                (u.id && u.id.toLowerCase() === target) ||
+                (u.email && u.email.toLowerCase() === target) ||
+                (u.wallet_address && u.wallet_address.toLowerCase() === target)
             );
+
+            const displayEmail = matchedUser?.email || (wallet.includes('@') ? wallet : '');
+            const displayWallet = matchedUser?.wallet_address || (!wallet.includes('@') ? wallet : '');
+            const isEmail = Boolean(displayEmail);
+
+            const userTxs = currentTxs.filter(t => {
+                const tEmail = (t.email || '').toLowerCase();
+                const tWallet = (t.wallet_address || '').toLowerCase();
+                return (tEmail && (tEmail === target || (displayEmail && tEmail === displayEmail.toLowerCase()))) ||
+                       (tWallet && (tWallet === target || (displayWallet && tWallet === displayWallet.toLowerCase())));
+            });
             
             let userUSD = 0;
             let userNGN = 0;
@@ -3608,8 +3646,6 @@
                 }
             });
 
-            // Also check currentUsers list if it has aggregate totals from the server
-            const matchedUser = (currentUsers || []).find(u => u.id && u.id.toLowerCase() === target);
             if (matchedUser) {
                 const apiUSD = safeNum(matchedUser.total_volume_usd !== undefined ? matchedUser.total_volume_usd : matchedUser.total_volume);
                 const apiNGN = safeNum(matchedUser.total_volume_ngn);
@@ -3620,7 +3656,6 @@
                 userNGN = userUSD * 1500;
             }
             
-            const isEmail = wallet.includes('@');
             const headerTitle = document.getElementById('detail-header-title');
             const activityTitle = document.getElementById('detail-activity-title');
             if (headerTitle) headerTitle.innerText = isEmail ? 'User Insights' : 'Wallet Insights';
@@ -3633,7 +3668,20 @@
                     : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="12" y1="4" x2="12" y2="20"/></svg>';
             }
 
-            document.getElementById('detail-username').innerText = wallet;
+            const usernameEl = document.getElementById('detail-username');
+            const subTitleEl = document.getElementById('detail-user-subtitle');
+            if (displayEmail) {
+                if (usernameEl) usernameEl.innerText = displayEmail;
+                if (subTitleEl) {
+                    subTitleEl.innerHTML = displayWallet 
+                        ? `<span style="font-family:monospace;font-size:12px;color:var(--text-secondary);">Wallet: ${displayWallet}</span>` 
+                        : 'Active User';
+                }
+            } else {
+                if (usernameEl) usernameEl.innerText = displayWallet || wallet;
+                if (subTitleEl) subTitleEl.innerText = 'Active Wallet';
+            }
+
             document.getElementById('detail-vol').innerText = `$${userUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             const approxEl = document.getElementById('detail-vol-approx');
             if (approxEl) {
@@ -3838,15 +3886,18 @@
                 showToast('No users to export', 'warning');
                 return;
             }
-            const headers = ['User Email / Wallet', 'First Seen', 'Total Volume (USD)', 'Total Volume (NGN)', 'Total TX Count'];
+            const headers = ['User Email', 'Wallet Address', 'First Seen', 'Total Volume (USD)', 'Total Volume (NGN)', 'Total TX Count'];
             const rows = currentUsers.map(u => {
                 const volUSD = safeNum(u.total_volume_usd !== undefined ? u.total_volume_usd : u.total_volume);
                 const volNGN = safeNum(u.total_volume_ngn) || (volUSD * 1500);
+                const email = u.email || (u.id && u.id.includes('@') ? u.id : '');
+                const wallet = u.wallet_address || (u.id && !u.id.includes('@') ? u.id : '');
                 return [
-                    `"${u.id || ''}"`,
+                    `"${(email || '').replace(/"/g, '""')}"`,
+                    `"${(wallet || '').replace(/"/g, '""')}"`,
                     `"${u.created_at || ''}"`,
-                    volUSD,
-                    volNGN,
+                    volUSD.toFixed(2),
+                    volNGN.toFixed(2),
                     safeNum(u.tx_count)
                 ];
             });

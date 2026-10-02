@@ -14,7 +14,7 @@ function registerAdminRoutes(Router $router): void
         try {
             $statsRows = Database::safeSelect("
                 SELECT 
-                    COUNT(DISTINCT NULLIF(wallet_address, '')) AS total_users,
+                    COUNT(DISTINCT LOWER(COALESCE(NULLIF(TRIM(email), ''), NULLIF(TRIM(wallet_address), '')))) AS total_users,
                     COUNT(*) AS all_transactions,
                     COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_transactions,
                     COALESCE(SUM(CASE 
@@ -199,6 +199,22 @@ function registerAdminRoutes(Router $router): void
         requireAdminAuth();
         try {
             $rows = Database::safeSelect('SELECT `email`, `wallet_address`, `beneficiary`, `meta`, `status`, `type`, `channel`, `reference`, `asset`, `currency`, `amount`, `rate`, `destination_amount`, `destination_currency`, `created_at` FROM `transactions` ORDER BY `created_at` DESC LIMIT 5000', [], []);
+            
+            // Build wallet -> email correlation map
+            $walletToEmail = [];
+            foreach ($rows as $t) {
+                $wallet = $t['wallet_address'] ?? '';
+                if (empty($wallet)) {
+                    $ben = !empty($t['beneficiary']) ? (is_array($t['beneficiary']) ? $t['beneficiary'] : json_decode((string)$t['beneficiary'], true)) : [];
+                    $meta = !empty($t['meta']) ? (is_array($t['meta']) ? $t['meta'] : json_decode((string)$t['meta'], true)) : [];
+                    $wallet = $ben['wallet_address'] ?? ($meta['beneficiary']['wallet_address'] ?? ($meta['recipient'] ?? ($meta['destination']['address'] ?? '')));
+                }
+                $email = !empty($t['email']) ? strtolower(trim($t['email'])) : '';
+                if (!empty($wallet) && !empty($email)) {
+                    $walletToEmail[strtolower(trim($wallet))] = $email;
+                }
+            }
+
             $userMap = [];
             foreach ($rows as $t) {
                 $wallet = $t['wallet_address'] ?? '';
@@ -207,16 +223,30 @@ function registerAdminRoutes(Router $router): void
                     $meta = !empty($t['meta']) ? (is_array($t['meta']) ? $t['meta'] : json_decode((string)$t['meta'], true)) : [];
                     $wallet = $ben['wallet_address'] ?? ($meta['beneficiary']['wallet_address'] ?? ($meta['recipient'] ?? ($meta['destination']['address'] ?? '')));
                 }
-                $id = (!empty($t['email']) ? strtolower(trim($t['email'])) : '') ?: ($wallet ?: 'unknown');
+                $email = !empty($t['email']) ? strtolower(trim($t['email'])) : '';
+                if (empty($email) && !empty($wallet) && isset($walletToEmail[strtolower(trim($wallet))])) {
+                    $email = $walletToEmail[strtolower(trim($wallet))];
+                }
+
+                $id = $email ?: ($wallet ?: 'unknown');
                 if (!isset($userMap[$id])) {
                     $userMap[$id] = [
                         'id' => $id,
+                        'email' => $email,
+                        'wallet_address' => $wallet,
                         'total_volume' => 0.0,
                         'total_volume_usd' => 0.0,
                         'total_volume_ngn' => 0.0,
                         'tx_count' => 0,
                         'created_at' => $t['created_at'],
                     ];
+                } else {
+                    if (empty($userMap[$id]['email']) && !empty($email)) {
+                        $userMap[$id]['email'] = $email;
+                    }
+                    if (empty($userMap[$id]['wallet_address']) && !empty($wallet)) {
+                        $userMap[$id]['wallet_address'] = $wallet;
+                    }
                 }
                 if ($t['status'] === 'COMPLETED') {
                     $vols = calculateTxVolumes($t);
