@@ -146,15 +146,48 @@ function registerPajRoutes(Router $router): void
             jsonResponse(errorResponse('fiatAmount, recipient, and mint are required'), 400);
         }
         try {
+            $totalInputAmount = (float) $fiatAmount;
             $feePercent = getPajFee();
             $businessUSDCFee = null;
+            $pajCryptoFiat = $totalInputAmount;
+
             if (isset($body['businessUSDCFee']) && is_numeric($body['businessUSDCFee'])) {
                 $businessUSDCFee = (float) $body['businessUSDCFee'];
-            } elseif ($feePercent > 0) {
-                $businessUSDCFee = calculatePajDeveloperFee((float) $fiatAmount, 'ONRAMP');
+            } elseif ($feePercent > 0 && $totalInputAmount > 0) {
+                // Fetch live PAJ onramp rate for accurate conversion
+                $rate = 1360.0;
+                try {
+                    $rates = pajApi()->getPajRate();
+                    if (!empty($rates['onramp']['rate']) && is_numeric($rates['onramp']['rate']) && (float) $rates['onramp']['rate'] > 0) {
+                        $rate = (float) $rates['onramp']['rate'];
+                    }
+                } catch (Throwable $e) {
+                    error_log('Failed to fetch live PAJ rate for fee deduction: ' . $e->getMessage());
+                }
+
+                // In PAJ onramp, any businessUSDCFee passed to /pub/onramp is converted to NGN at PAJ's rate
+                // and added to the deposit invoice.
+                // To ensure the user transfers EXACTLY what they entered ($totalInputAmount) without surcharges,
+                // the fee is calculated inside the amount:
+                // feeUSDC is calculated, and the fiatAmount sent to PAJ is reduced by its NGN equivalent
+                // so that (pajCryptoFiat + addedFeeNgn) == $totalInputAmount!
+                $feeUsd = ($totalInputAmount * ($feePercent / 100)) / $rate;
+                $businessUSDCFee = round($feeUsd, 2);
+
+                if ($businessUSDCFee > 0) {
+                    $addedFeeNgn = round($businessUSDCFee * $rate, 2);
+                    if ($totalInputAmount > $addedFeeNgn) {
+                        $pajCryptoFiat = round($totalInputAmount - $addedFeeNgn, 2);
+                    } else {
+                        $businessUSDCFee = null;
+                        $pajCryptoFiat = $totalInputAmount;
+                    }
+                } else {
+                    $businessUSDCFee = null;
+                }
             }
 
-            $order = pajApi()->createOnrampOrder((float) $fiatAmount, $recipient, $mint, $businessUSDCFee);
+            $order = pajApi()->createOnrampOrder($pajCryptoFiat, $recipient, $mint, $businessUSDCFee);
             $d = $order ?? [];
             $assetInfo = null;
             foreach (pajApi()->getAssets() as $a) {
@@ -171,7 +204,7 @@ function registerPajRoutes(Router $router): void
                 'currency' => 'NGN',
                 'asset' => $assetInfo ? $assetInfo['symbol'] : 'SOL',
                 'channel' => 'PAJ',
-                'amount' => isset($d['fiatAmount']) && (float) $d['fiatAmount'] > 0 ? (float) $d['fiatAmount'] : $fiatAmount,
+                'amount' => isset($d['fiatAmount']) && (float) $d['fiatAmount'] > 0 ? (float) $d['fiatAmount'] : $totalInputAmount,
                 'destination_amount' => isset($d['amount']) ? (float) $d['amount'] : null,
                 'fee_developer' => $businessUSDCFee,
                 'deposit_bank_name' => $d['bank'] ?? 'PAJ Partner Bank',

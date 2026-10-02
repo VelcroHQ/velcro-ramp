@@ -4202,10 +4202,11 @@
         if (typeof data === 'number' && data > 0) {
           tokenAmount = data;
         } else if (data && typeof data === 'object') {
-          if (data.tokenRate && data.tokenRate > 0) {
-            tokenAmount = fiatAmount / data.tokenRate;
-          } else if (data.amount !== undefined && data.amount > 0) {
-            tokenAmount = data.amount;
+          if (data.amount !== undefined && Number(data.amount) > 0) {
+            tokenAmount = Number(data.amount);
+          } else if (data.tokenRate && data.tokenRate > 0) {
+            const raw = fiatAmount / data.tokenRate;
+            tokenAmount = currentPajFee > 0 ? raw * (1 - (currentPajFee / 100)) : raw;
           }
         }
         if (tokenAmount !== null) {
