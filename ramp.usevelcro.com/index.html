@@ -2893,18 +2893,19 @@
       if (sellRateEl) {
         if (currentProvider === 'paj') {
           const pajDirect = currentRate.pajOfframp || currentRate.paj;
-          const tokenPrice = Number(PAJ_TOKEN_PRICES[currentSellAsset] || 0);
-          if (currentSellAsset && tokenPrice > 0 && currentSellAsset !== 'USDT' && currentSellAsset !== 'USDC' && currentSellAsset !== 'USDG') {
-            sellRateEl.innerHTML = `${pulse}Rate: 1 ${currentSellAsset} = ${formatCurrency(pajDirect * tokenPrice)}`;
-          } else if (pajDirect) {
-            sellRateEl.innerHTML = `${pulse}Rate: 1 ${currentSellAsset || 'USDT'} = ${formatCurrency(pajDirect)}`;
+          if (pajDirect) {
+            const formatted = Number(pajDirect).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            sellRateEl.innerHTML = `${pulse}Rate: $1 = ₦${formatted}`;
           } else {
             sellRateEl.innerHTML = `${pulse}Rate: --`;
           }
         } else if (currentSellAsset) {
           const directRate = currentRate.sellDirect || (currentRate.sell ? (currentRate.sell / (1 - currentFee / 100)) : 0);
           if (directRate > 0) {
-            sellRateEl.innerHTML = `${pulse}Rate: 1 ${currentSellAsset} = ${formatCurrency(directRate)}`;
+            const isUsdStable = currentSellAsset === 'USDT' || currentSellAsset === 'USDC' || currentSellAsset === 'USDG';
+            const label = isUsdStable ? '$1' : `1 ${currentSellAsset}`;
+            const formatted = Number(directRate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            sellRateEl.innerHTML = `${pulse}Rate: ${label} = ₦${formatted}`;
           } else {
             sellRateEl.innerHTML = `${pulse}Rate: --`;
           }
@@ -2916,18 +2917,19 @@
       if (buyRateEl) {
         if (currentProvider === 'paj') {
           const pajDirect = currentRate.pajOnramp || currentRate.paj;
-          const tokenPrice = Number(PAJ_TOKEN_PRICES[currentBuyAsset] || 0);
-          if (currentBuyAsset && tokenPrice > 0 && currentBuyAsset !== 'USDT' && currentBuyAsset !== 'USDC' && currentBuyAsset !== 'USDG') {
-            buyRateEl.innerHTML = `${pulse}Rate: 1 ${currentBuyAsset} = ${formatCurrency(pajDirect * tokenPrice)}`;
-          } else if (pajDirect) {
-            buyRateEl.innerHTML = `${pulse}Rate: 1 ${currentBuyAsset || 'USDT'} = ${formatCurrency(pajDirect)}`;
+          if (pajDirect) {
+            const formatted = Number(pajDirect).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            buyRateEl.innerHTML = `${pulse}Rate: $1 = ₦${formatted}`;
           } else {
             buyRateEl.innerHTML = `${pulse}Rate: --`;
           }
         } else if (currentBuyAsset) {
           const directRate = currentRate.buyDirect || (currentRate.buy ? (currentRate.buy * (1 - currentFee / 100)) : 0);
           if (directRate > 0) {
-            buyRateEl.innerHTML = `${pulse}Rate: 1 ${currentBuyAsset} = ${formatCurrency(directRate)}`;
+            const isUsdStable = currentBuyAsset === 'USDT' || currentBuyAsset === 'USDC' || currentBuyAsset === 'USDG';
+            const label = isUsdStable ? '$1' : `1 ${currentBuyAsset}`;
+            const formatted = Number(directRate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            buyRateEl.innerHTML = `${pulse}Rate: ${label} = ₦${formatted}`;
           } else {
             buyRateEl.innerHTML = `${pulse}Rate: --`;
           }
