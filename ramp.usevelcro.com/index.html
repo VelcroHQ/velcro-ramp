@@ -419,13 +419,24 @@
     }
 
     /* Success Modal Premium Styling */
+    .success-modal-backdrop {
+      position: fixed !important;
+      inset: 0 !important;
+      background-color: rgba(15, 23, 42, 0.72) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      z-index: 0 !important;
+    }
+    .dark .success-modal-backdrop {
+      background-color: rgba(2, 6, 23, 0.82) !important;
+    }
     .success-modal-card {
       width: 100% !important;
-      max-width: 400px !important;
-      margin: 0 auto !important;
+      max-width: 380px !important;
+      margin: auto !important;
       background: #ffffff;
       border: 1px solid rgba(229, 231, 235, 0.9);
-      box-shadow: 0 25px 60px -15px rgba(13, 13, 89, 0.2), 0 0 1px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 25px 60px -15px rgba(13, 13, 89, 0.25), 0 0 1px rgba(0, 0, 0, 0.08);
       border-radius: 24px;
       overflow: hidden;
       position: relative;
@@ -2098,31 +2109,31 @@
 
 
   <!-- Success Modal -->
-  <div id="success-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div id="success-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain" style="-webkit-overflow-scrolling: touch;">
     <!-- Darkened, blurred backdrop for focus -->
-    <div class="absolute inset-0 bg-slate-900/65 backdrop-blur-md transition-opacity" onclick="hideSuccessModal()"></div>
+    <div id="success-modal-backdrop" class="success-modal-backdrop" onclick="hideSuccessModal()"></div>
     
-    <!-- Modal Card (Strictly bounded to 390-400px) -->
-    <div class="success-modal-card success-modal-animate relative max-h-[90vh] overflow-y-auto flex flex-col z-10" style="max-width: 390px; width: 100%;">
+    <!-- Modal Card (Bounded to 380px, centered with my-auto so it never clips at the top) -->
+    <div class="success-modal-card success-modal-animate relative my-auto flex flex-col z-10" style="max-width: 380px; width: 100%;">
       <!-- Ambient Top Glow -->
       <div class="success-ambient-glow"></div>
       
       <!-- Close Button -->
       <button onclick="hideSuccessModal()" title="Close"
-        class="absolute top-3.5 right-3.5 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors z-20">
+        class="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors z-20">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
 
-      <div class="p-5 sm:p-6 text-center relative z-10">
+      <div class="p-4 sm:p-5 text-center relative z-10">
         <!-- Success Animated Icon -->
-        <div class="relative mx-auto w-14 h-14 flex items-center justify-center mb-2.5">
+        <div class="relative mx-auto w-12 h-12 flex items-center justify-center mb-2">
           <div class="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping opacity-30" style="animation-duration: 3s;"></div>
-          <div class="success-icon-badge">
-            <div class="success-icon-inner">
-              <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <div class="success-icon-badge" style="width: 44px; height: 44px;">
+            <div class="success-icon-inner" style="width: 38px; height: 38px;">
+              <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
             </div>
@@ -2130,37 +2141,37 @@
         </div>
 
         <!-- Status Badge -->
-        <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/70 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 mb-1.5">
+        <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200/70 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 mb-1">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span id="success-badge-status">Transfer Complete</span>
         </div>
 
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white tracking-tight mb-0.5" id="success-title">Crypto Delivered!</h2>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3.5 leading-relaxed" id="success-subtitle">Your tokens have been transferred successfully.</p>
+        <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white tracking-tight mb-0.5" id="success-title">Crypto Delivered!</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2.5 leading-relaxed" id="success-subtitle">Your tokens have been transferred successfully.</p>
         
         <!-- Hero Amount Box -->
-        <div class="success-hero-box p-3 mb-3 text-center">
+        <div class="success-hero-box p-2.5 sm:p-3 mb-2.5 text-center">
           <p class="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-400 mb-0.5" id="success-hero-label">Delivered Amount</p>
           <div class="flex items-center justify-center gap-1.5 flex-wrap">
             <span class="text-2xl font-black text-gray-900 dark:text-white tracking-tight" id="success-amount">-</span>
             <span id="success-asset-tag" class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">SOL</span>
           </div>
-          <div id="success-secondary-row" class="mt-2 pt-2 border-t border-gray-200/60 dark:border-slate-700/60 flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+          <div id="success-secondary-row" class="mt-1.5 pt-1.5 border-t border-gray-200/60 dark:border-slate-700/60 flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
             <span id="success-secondary-label">Amount Paid:</span>
             <span id="success-secondary-value" class="font-bold text-gray-800 dark:text-gray-200">-</span>
           </div>
         </div>
 
         <!-- Receipt Summary Card -->
-        <div class="success-receipt-box p-3 text-left space-y-2.5 mb-4 text-xs">
+        <div class="success-receipt-box p-2.5 sm:p-3 text-left space-y-2 mb-3 text-xs">
           <!-- Network Row -->
-          <div class="flex items-center justify-between py-0.5 border-b border-gray-200/60 dark:border-slate-700/50 pb-2" id="success-destination-row">
+          <div class="flex items-center justify-between py-0.5 border-b border-gray-200/60 dark:border-slate-700/50 pb-1.5" id="success-destination-row">
             <span class="text-gray-500 dark:text-gray-400 font-medium" id="success-destination-label">Network</span>
             <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-1" id="success-destination">-</span>
           </div>
 
           <!-- Recipient / Account Row -->
-          <div class="flex items-center justify-between py-0.5 border-b border-gray-200/60 dark:border-slate-700/50 pb-2" id="success-detail-row">
+          <div class="flex items-center justify-between py-0.5 border-b border-gray-200/60 dark:border-slate-700/50 pb-1.5" id="success-detail-row">
             <span class="text-gray-500 dark:text-gray-400 font-medium" id="success-detail-label">Recipient</span>
             <div class="flex items-center gap-1">
               <span class="font-mono font-medium text-gray-800 dark:text-gray-200 text-[11px]" id="success-detail">-</span>
@@ -2193,7 +2204,7 @@
         <!-- Action Buttons -->
         <div class="space-y-2">
           <a id="success-explorer-link" href="#" target="_blank" rel="noopener noreferrer"
-            class="hidden w-full bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-slate-700 py-2.5 rounded-xl text-xs font-semibold transition-all inline-flex items-center justify-center gap-2 shadow-sm">
+            class="hidden w-full bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-slate-700 py-2 rounded-xl text-xs font-semibold transition-all inline-flex items-center justify-center gap-2 shadow-sm">
             <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
               <polyline points="15 3 21 3 21 9"/>
@@ -2202,7 +2213,7 @@
             <span>View on Blockchain Explorer</span>
           </a>
           <button onclick="hideSuccessModal(); window.location.reload();"
-            class="w-full bg-velcro-green hover:bg-[#b5e038] text-velcro-navy py-3 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+            class="w-full bg-velcro-green hover:bg-[#b5e038] text-velcro-navy py-2.5 sm:py-3 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
             Done
           </button>
         </div>
