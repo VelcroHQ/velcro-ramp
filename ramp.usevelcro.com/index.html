@@ -418,6 +418,88 @@
       color: #e2e8f0;
     }
 
+    /* Success Modal Premium Styling */
+    .success-modal-card {
+      background: #ffffff;
+      border: 1px solid rgba(229, 231, 235, 0.9);
+      box-shadow: 0 25px 60px -15px rgba(13, 13, 89, 0.2), 0 0 1px rgba(0, 0, 0, 0.08);
+      border-radius: 28px;
+      overflow: hidden;
+      position: relative;
+    }
+    .dark .success-modal-card {
+      background: #0f172a;
+      border-color: rgba(51, 65, 85, 0.7);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    .success-ambient-glow {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      height: 140px;
+      background: radial-gradient(circle at 50% 0%, rgba(168, 207, 69, 0.28) 0%, rgba(34, 197, 94, 0.12) 40%, transparent 70%);
+      pointer-events: none;
+    }
+    .dark .success-ambient-glow {
+      background: radial-gradient(circle at 50% 0%, rgba(168, 207, 69, 0.22) 0%, rgba(16, 185, 129, 0.1) 45%, transparent 70%);
+    }
+    .success-receipt-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+    }
+    .dark .success-receipt-box {
+      background: rgba(30, 41, 59, 0.45);
+      border-color: rgba(51, 65, 85, 0.6);
+    }
+    .success-hero-box {
+      background: linear-gradient(180deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.5) 100%);
+      border: 1px solid rgba(226, 232, 240, 0.85);
+      border-radius: 20px;
+    }
+    .dark .success-hero-box {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
+      border-color: rgba(51, 65, 85, 0.6);
+    }
+    @keyframes successPop {
+      0% {
+        opacity: 0;
+        transform: scale(0.92) translateY(12px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    .success-modal-animate {
+      animation: successPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .success-icon-badge {
+      width: 68px;
+      height: 68px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #A8CF45 0%, #22c55e 100%);
+      box-shadow: 0 10px 25px -5px rgba(34, 197, 94, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .success-icon-inner {
+      width: 60px;
+      height: 60px;
+      border-radius: 18px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dark .success-icon-inner {
+      background: #0f172a;
+    }
+
     .input-panel {
       background: rgba(255, 255, 255, 0.9);
       border: 1.5px solid rgba(229, 231, 235, 0.7);
@@ -2014,41 +2096,88 @@
 
   <!-- Success Modal -->
   <div id="success-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4">
-    <div class="absolute inset-0 bg-white/80 backdrop-blur-sm" onclick="hideSuccessModal()"></div>
-    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in flex flex-col">
-      <div class="p-5 sm:p-6 text-center">
-        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
+    <!-- Darkened, blurred backdrop for focus -->
+    <div class="absolute inset-0 bg-slate-900/65 backdrop-blur-md transition-opacity" onclick="hideSuccessModal()"></div>
+    
+    <!-- Modal Card -->
+    <div class="success-modal-card success-modal-animate relative w-full max-w-md max-h-[92vh] overflow-y-auto flex flex-col z-10">
+      <!-- Ambient Top Glow -->
+      <div class="success-ambient-glow"></div>
+      
+      <!-- Close Button -->
+      <button onclick="hideSuccessModal()" title="Close"
+        class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors z-20">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="p-6 sm:p-7 text-center relative z-10">
+        <!-- Success Animated Icon -->
+        <div class="relative mx-auto w-20 h-20 flex items-center justify-center mb-3.5">
+          <div class="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping opacity-30" style="animation-duration: 3s;"></div>
+          <div class="success-icon-badge">
+            <div class="success-icon-inner">
+              <svg class="w-7 h-7 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+          </div>
         </div>
-        <h2 class="text-xl font-bold text-gray-900 mb-1" id="success-title">Transaction Successful!</h2>
-        <p class="text-sm text-gray-500 mb-6" id="success-subtitle">Your transaction has been completed.</p>
+
+        <!-- Status Badge -->
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/70 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 mb-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="success-badge-status">Transfer Complete</span>
+        </div>
+
+        <h2 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-1" id="success-title">Crypto Delivered!</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-5 leading-relaxed" id="success-subtitle">Your tokens have been transferred successfully.</p>
         
-        <div class="bg-gray-50 rounded-xl p-4 text-left space-y-4 mb-6">
-          <!-- Amount -->
-          <div>
-            <p class="text-[10px] uppercase tracking-wider text-gray-400 font-medium mb-1">Amount</p>
-            <p class="text-xl font-bold text-gray-900" id="success-amount">-</p>
+        <!-- Hero Amount Box -->
+        <div class="success-hero-box p-4 mb-4 text-center">
+          <p class="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-400 mb-1" id="success-hero-label">Delivered Amount</p>
+          <div class="flex items-center justify-center gap-2 flex-wrap">
+            <span class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight" id="success-amount">-</span>
+            <span id="success-asset-tag" class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">SOL</span>
           </div>
-          <!-- Destination -->
-          <div id="success-destination-row">
-            <p class="text-[10px] uppercase tracking-wider text-gray-400 font-medium mb-1" id="success-destination-label">Credited To</p>
-            <p class="text-sm font-semibold text-gray-900" id="success-destination">-</p>
+          <div id="success-secondary-row" class="mt-2.5 pt-2.5 border-t border-gray-200/60 dark:border-slate-700/60 flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <span id="success-secondary-label">Amount Paid:</span>
+            <span id="success-secondary-value" class="font-bold text-gray-800 dark:text-gray-200">-</span>
           </div>
-          <!-- Detail -->
-          <div id="success-detail-row">
-            <p class="text-[10px] uppercase tracking-wider text-gray-400 font-medium mb-1" id="success-detail-label">Detail</p>
-            <p class="text-sm font-mono text-gray-700" id="success-detail">-</p>
+        </div>
+
+        <!-- Receipt Summary Card -->
+        <div class="success-receipt-box p-4 text-left space-y-3 mb-5">
+          <!-- Network Row -->
+          <div class="flex items-center justify-between py-0.5 border-b border-gray-200/60 dark:border-slate-700/50 pb-2.5" id="success-destination-row">
+            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium" id="success-destination-label">Network</span>
+            <span class="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-1.5" id="success-destination">-</span>
           </div>
-          <!-- Reference with copy -->
-          <div>
-            <p class="text-[10px] uppercase tracking-wider text-gray-400 font-medium mb-1">Reference</p>
-            <div class="flex items-center gap-2">
-              <p class="text-sm font-mono text-gray-700 break-all flex-1" id="success-reference">-</p>
+
+          <!-- Recipient / Account Row -->
+          <div class="flex items-center justify-between py-0.5 border-b border-gray-200/60 dark:border-slate-700/50 pb-2.5" id="success-detail-row">
+            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium" id="success-detail-label">Recipient</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-mono font-medium text-gray-800 dark:text-gray-200" id="success-detail">-</span>
+              <button onclick="copySuccessDetail()" title="Copy recipient"
+                class="shrink-0 p-1 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-750 text-gray-500 dark:text-gray-400 hover:text-velcro-navy transition-colors">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Order Reference Row -->
+          <div class="flex items-center justify-between py-0.5">
+            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Order Reference</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-mono font-medium text-gray-800 dark:text-gray-200" id="success-reference">-</span>
               <button onclick="copySuccessReference()" title="Copy reference"
-                class="shrink-0 p-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 hover:text-velcro-navy">
+                class="shrink-0 p-1 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-750 text-gray-500 dark:text-gray-400 hover:text-velcro-navy transition-colors">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
                   <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
@@ -2058,15 +2187,22 @@
           </div>
         </div>
         
-        <a id="success-explorer-link" href="#" target="_blank" rel="noopener noreferrer"
-          class="hidden w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 mb-3">
-          <i data-lucide="external-link" class="w-4 h-4"></i>
-          Check on Blockchain
-        </a>
-        <button onclick="hideSuccessModal(); window.location.reload();"
-          class="w-full bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy py-3 rounded-xl text-sm font-bold transition-colors">
-          Done
-        </button>
+        <!-- Action Buttons -->
+        <div class="space-y-2.5">
+          <a id="success-explorer-link" href="#" target="_blank" rel="noopener noreferrer"
+            class="hidden w-full bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-slate-700 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-2 shadow-sm">
+            <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            <span>View on Blockchain Explorer</span>
+          </a>
+          <button onclick="hideSuccessModal(); window.location.reload();"
+            class="w-full bg-velcro-green hover:bg-[#b5e038] text-velcro-navy py-3.5 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+            Done
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -4731,10 +4867,16 @@
                 const txExplorer = data.explorer_url || currentTxDetails.explorerUrl || '';
                 const realAmount = data.source?.amount || data.source_amount || (type === 'sell' && data.amount ? data.amount : currentTxDetails.amount);
                 const realDestAmount = data.destination?.amount || data.destination_amount || currentTxDetails.destinationAmount;
+                const isBuy = (type === 'buy');
+                const cryptoVal = isBuy ? realDestAmount : realAmount;
+                const fiatVal = isBuy ? realAmount : realDestAmount;
                 const modalData = {
                   reference: currentTxDetails.reference || data.reference || '',
                   amount: realAmount,
                   destinationAmount: realDestAmount,
+                  cryptoAmount: cryptoVal,
+                  fiatAmount: fiatVal,
+                  paidAmount: isBuy ? fiatVal : null,
                   bankName: currentTxDetails.bankName,
                   accountNumber: currentTxDetails.accountNumber,
                   accountName: currentTxDetails.accountName,
@@ -4831,11 +4973,17 @@
               if (status === 'COMPLETED') {
                 showToast('Transaction Completed Successfully!', 'success');
                 const txHash = data.signature || data.hash || '';
+                const isBuy = (type === 'buy');
+                const cryptoVal = isBuy ? (data.amount || currentTxDetails.destinationAmount) : (data.amount || currentTxDetails.amount);
+                const fiatVal = isBuy ? (data.fiatAmount || currentTxDetails.amount) : (data.fiatAmount || currentTxDetails.destinationAmount);
                 const modalData = {
                   reference: currentTxDetails.reference || txId,
-                  amount: currentTxDetails.amount,
-                  destinationAmount: data.fiatAmount || currentTxDetails.destinationAmount,
-                  asset: currentTxDetails.asset,
+                  amount: fiatVal,
+                  destinationAmount: isBuy ? cryptoVal : fiatVal,
+                  cryptoAmount: cryptoVal,
+                  fiatAmount: fiatVal,
+                  paidAmount: isBuy ? fiatVal : null,
+                  asset: currentTxDetails.asset || 'SOL',
                   network: 'solana',
                   bankName: currentTxDetails.bankName,
                   accountNumber: currentTxDetails.accountNumber,
@@ -4844,6 +4992,10 @@
                   explorerUrl: txHash ? `https://solscan.io/tx/${txHash}` : '',
                   hash: txHash
                 };
+                currentTxDetails.destinationAmount = cryptoVal;
+                currentTxDetails.amount = fiatVal;
+                currentTxDetails.hash = txHash;
+                if (txHash) currentTxDetails.explorerUrl = `https://solscan.io/tx/${txHash}`;
                 setTimeout(() => showSuccessModal(type, modalData), 1500);
               } else if (status === 'FAILED') {
                 showToast('Transaction Failed. Please contact support.', 'error');
@@ -5011,11 +5163,22 @@
       });
     }
 
+    let fullSuccessRecipient = '';
+    function copySuccessDetail() {
+      if (!fullSuccessRecipient) {
+        const el = document.getElementById('success-detail');
+        if (el) fullSuccessRecipient = el.getAttribute('data-full-val') || el.textContent;
+      }
+      if (!fullSuccessRecipient || fullSuccessRecipient === '-') return;
+      copyText(fullSuccessRecipient, 'Recipient copied to clipboard!');
+    }
+
     function copySuccessReference() {
-      const ref = document.getElementById('success-reference').textContent;
-      navigator.clipboard.writeText(ref).then(() => {
-        showToast('Reference copied!', 'success');
-      });
+      const el = document.getElementById('success-reference');
+      if (!el) return;
+      const ref = el.getAttribute('data-full-ref') || el.textContent;
+      if (!ref || ref === '-') return;
+      copyText(ref, 'Reference copied!');
     }
 
     function copyText(text, label = 'Copied to clipboard!') {
@@ -5630,6 +5793,57 @@
       document.body.style.overflow = '';
     }
 
+    function formatCryptoDigits(num) {
+      if (num === null || num === undefined || num === '') return '0';
+      const val = Number(num);
+      if (isNaN(val) || val <= 0) return '0';
+      if (val >= 1000) {
+        return val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+      }
+      if (val >= 1) {
+        return Number(val.toFixed(4)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      }
+      if (val < 0.001) {
+        return Number(val.toFixed(6)).toString();
+      }
+      return Number(val.toFixed(4)).toString();
+    }
+
+    function formatFiatDigits(num, currency = 'NGN') {
+      if (num === null || num === undefined || num === '') return '-';
+      const val = Number(num);
+      if (isNaN(val)) return String(num);
+      const symbol = (currency === 'NGN' || !currency) ? '₦' : currency + ' ';
+      return `${symbol}${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function formatNetworkBadge(net) {
+      if (!net) return '-';
+      const n = net.toLowerCase();
+      let label = net.charAt(0).toUpperCase() + net.slice(1);
+      let colorClass = 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300';
+      if (n.includes('solana')) {
+        label = 'Solana';
+        colorClass = 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300';
+      } else if (n.includes('tron') || n.includes('trx')) {
+        label = 'TRON';
+        colorClass = 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300';
+      } else if (n.includes('eth') || n.includes('erc20')) {
+        label = 'Ethereum';
+        colorClass = 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300';
+      } else if (n.includes('bsc') || n.includes('binance')) {
+        label = 'BNB Chain';
+        colorClass = 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300';
+      } else if (n.includes('base')) {
+        label = 'Base';
+        colorClass = 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300';
+      } else if (n.includes('polygon') || n.includes('matic')) {
+        label = 'Polygon';
+        colorClass = 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300';
+      }
+      return `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${colorClass}">${label}</span>`;
+    }
+
     function showSuccessModal(type, data) {
       const modal = document.getElementById('success-modal');
       const title = document.getElementById('success-title');
@@ -5642,40 +5856,120 @@
       const refEl = document.getElementById('success-reference');
       const explorerLink = document.getElementById('success-explorer-link');
 
-      if (type === 'sell') {
-        title.textContent = 'Payout Successful!';
-        subtitle.textContent = 'Your crypto has been converted and sent to your bank account.';
-        amountEl.textContent = `₦${data.destinationAmount?.toLocaleString() || data.amount?.toLocaleString() || '-'}`;
-        destLabel.textContent = 'Bank';
-        destEl.textContent = data.bankName || '-';
-        detailLabel.textContent = 'Account';
-        detailEl.textContent = `${data.accountNumber || '-'} (${data.accountName || '-'})`;
-        explorerLink.classList.add('hidden');
-      } else {
-        title.textContent = 'Crypto Delivered!';
-        subtitle.textContent = 'Your crypto has been sent to your wallet.';
-        amountEl.textContent = `${data.destinationAmount?.toFixed(4) || (data.amount ? Number(data.amount).toFixed(4) : '-')} ${data.asset || ''}`;
-        destLabel.textContent = 'Network';
-        destEl.textContent = data.network || '-';
-        detailLabel.textContent = 'Wallet';
-        detailEl.textContent = data.walletAddress ? `${data.walletAddress.slice(0, 8)}...${data.walletAddress.slice(-8)}` : '-';
+      const heroLabel = document.getElementById('success-hero-label');
+      const assetTag = document.getElementById('success-asset-tag');
+      const secondaryRow = document.getElementById('success-secondary-row');
+      const secondaryLabel = document.getElementById('success-secondary-label');
+      const secondaryValue = document.getElementById('success-secondary-value');
+      const statusBadge = document.getElementById('success-badge-status');
 
-        // Always show blockchain explorer link for buy — tx hash preferred, wallet address as fallback
-        const explorerUrl = data.explorerUrl || currentTxDetails.explorerUrl || '';
-        const txHash = data.hash || currentTxDetails.hash || '';
-        const txNetwork = data.network || currentTxDetails.network || currentBuyNetwork || '';
-        const walletAddress = data.walletAddress || currentTxDetails.walletAddress || '';
-        if (explorerUrl || txHash) {
-          explorerLink.href = explorerUrl || getExplorerUrl(txHash, txNetwork);
-        } else if (walletAddress && txNetwork) {
-          explorerLink.href = getWalletExplorerUrl(walletAddress, txNetwork);
-        } else {
-          explorerLink.href = '#';
-        }
-        explorerLink.classList.remove('hidden');
-      }
+      const isBuy = (type === 'buy');
+      const rawAsset = (data.asset || (isBuy ? currentBuyAsset : currentSellAsset) || (isBuy ? 'SOL' : 'USDT')).toUpperCase();
       
-      refEl.textContent = data.reference || '-';
+      let rawCrypto = isBuy ? (data.cryptoAmount || data.destinationAmount) : (data.cryptoAmount || data.amount);
+      let rawFiat = isBuy ? (data.fiatAmount || data.paidAmount || data.amount) : (data.fiatAmount || data.destinationAmount);
+
+      // Safety check: if for buy, rawCrypto is suspiciously large (> 500 when asset is SOL/BTC/ETH), fallback to currentTxDetails.destinationAmount
+      if (isBuy && Number(rawCrypto) > 500 && ['SOL', 'BTC', 'ETH'].includes(rawAsset)) {
+        if (currentTxDetails && currentTxDetails.destinationAmount && Number(currentTxDetails.destinationAmount) < 500) {
+          rawCrypto = currentTxDetails.destinationAmount;
+        }
+      }
+
+      if (isBuy) {
+        if (title) title.textContent = 'Crypto Delivered!';
+        if (subtitle) subtitle.textContent = 'Your tokens have been transferred to your wallet.';
+        if (statusBadge) statusBadge.textContent = 'Transfer Complete';
+        if (heroLabel) heroLabel.textContent = 'Delivered Amount';
+        if (amountEl) amountEl.textContent = formatCryptoDigits(rawCrypto);
+        if (assetTag) {
+          assetTag.textContent = rawAsset;
+          assetTag.className = 'text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60';
+        }
+
+        if (secondaryRow && secondaryLabel && secondaryValue) {
+          if (rawFiat && Number(rawFiat) > 0) {
+            secondaryLabel.textContent = 'Amount Paid:';
+            secondaryValue.textContent = formatFiatDigits(rawFiat);
+            secondaryRow.classList.remove('hidden');
+          } else {
+            secondaryRow.classList.add('hidden');
+          }
+        }
+
+        if (destLabel) destLabel.textContent = 'Network';
+        if (destEl) destEl.innerHTML = formatNetworkBadge(data.network || currentTxDetails?.network || currentBuyNetwork || 'Solana');
+
+        const rawWallet = data.walletAddress || currentTxDetails?.walletAddress || '';
+        fullSuccessRecipient = rawWallet;
+        if (detailLabel) detailLabel.textContent = 'Recipient Wallet';
+        if (detailEl) {
+          detailEl.textContent = rawWallet ? `${rawWallet.slice(0, 6)}...${rawWallet.slice(-6)}` : '-';
+          detailEl.setAttribute('data-full-val', rawWallet);
+          detailEl.title = rawWallet;
+        }
+
+        // Blockchain Explorer link
+        const explorerUrl = data.explorerUrl || currentTxDetails?.explorerUrl || '';
+        const txHash = data.hash || currentTxDetails?.hash || '';
+        const txNetwork = data.network || currentTxDetails?.network || currentBuyNetwork || 'solana';
+        if (explorerLink) {
+          if (explorerUrl || txHash) {
+            explorerLink.href = explorerUrl || getExplorerUrl(txHash, txNetwork);
+            explorerLink.classList.remove('hidden');
+          } else if (rawWallet && txNetwork) {
+            explorerLink.href = getWalletExplorerUrl(rawWallet, txNetwork);
+            explorerLink.classList.remove('hidden');
+          } else {
+            explorerLink.classList.add('hidden');
+          }
+        }
+      } else {
+        if (title) title.textContent = 'Payout Successful!';
+        if (subtitle) subtitle.textContent = 'Your funds have been sent to your bank account.';
+        if (statusBadge) statusBadge.textContent = 'Payout Sent';
+        if (heroLabel) heroLabel.textContent = 'Payout Amount';
+        if (amountEl) amountEl.textContent = formatFiatDigits(rawFiat);
+        if (assetTag) {
+          assetTag.textContent = 'NGN';
+          assetTag.className = 'text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60';
+        }
+
+        if (secondaryRow && secondaryLabel && secondaryValue) {
+          if (rawCrypto && Number(rawCrypto) > 0) {
+            secondaryLabel.textContent = 'Crypto Sold:';
+            secondaryValue.textContent = `${formatCryptoDigits(rawCrypto)} ${rawAsset}`;
+            secondaryRow.classList.remove('hidden');
+          } else {
+            secondaryRow.classList.add('hidden');
+          }
+        }
+
+        if (destLabel) destLabel.textContent = 'Destination Bank';
+        if (destEl) destEl.textContent = data.bankName || currentTxDetails?.bankName || '-';
+
+        const accNum = data.accountNumber || currentTxDetails?.accountNumber || '';
+        const accName = data.accountName || currentTxDetails?.accountName || '';
+        fullSuccessRecipient = accNum;
+        if (detailLabel) detailLabel.textContent = 'Account';
+        if (detailEl) {
+          detailEl.textContent = accNum ? `${accNum} (${accName || '-'})` : '-';
+          detailEl.setAttribute('data-full-val', `${accNum} ${accName}`);
+          detailEl.title = `${accNum} ${accName}`;
+        }
+
+        if (explorerLink) {
+          explorerLink.classList.add('hidden');
+        }
+      }
+
+      const ref = data.reference || currentTxDetails?.reference || '-';
+      if (refEl) {
+        refEl.setAttribute('data-full-ref', ref);
+        refEl.textContent = ref.length > 20 ? `${ref.slice(0, 10)}...${ref.slice(-6)}` : ref;
+        refEl.title = ref;
+      }
+
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.body.style.overflow = 'hidden';
