@@ -4170,7 +4170,9 @@
         updateStepIndicators('ONRAMP');
         return;
       }
-      const receive = amount / rate;
+      const feePercent = typeof currentPlatformFee === 'number' ? currentPlatformFee : 0.5;
+      const feeFactor = feePercent > 0 && feePercent < 100 ? (1 - (feePercent / 100)) : 1;
+      const receive = (amount * feeFactor) / rate;
       if (Number.isNaN(receive)) {
         setFmt('buy-receive', '', 4);
         document.getElementById('buy-preview').classList.add('hidden');
@@ -4240,15 +4242,39 @@
 
     function calculateBuyFromCrypto() {
       const crypto = getNum('buy-receive');
+      if (!crypto || crypto <= 0) {
+        setFmt('buy-amount', '', 2);
+        document.getElementById('buy-preview').classList.add('hidden');
+        return;
+      }
       let ngn = 0;
       if (currentProvider === 'paj') {
         const approxRate = computePajTokenRate(currentBuyAsset);
-        ngn = crypto * approxRate;
+        const feePercent = typeof currentPajFee === 'number' ? currentPajFee : 0.5;
+        // User inputs crypto -> Naira amount includes developer profit
+        const feeFactor = feePercent > 0 && feePercent < 100 ? (1 - (feePercent / 100)) : 1;
+        ngn = approxRate > 0 ? ((crypto * approxRate) / feeFactor) : 0;
       } else {
-        ngn = crypto * currentRate.buy;
+        const feePercent = typeof currentPlatformFee === 'number' ? currentPlatformFee : 0.5;
+        const feeFactor = feePercent > 0 && feePercent < 100 ? (1 - (feePercent / 100)) : 1;
+        ngn = currentRate.buy > 0 ? ((crypto * currentRate.buy) / feeFactor) : 0;
       }
       setFmt('buy-amount', ngn, 2);
       validateBuyLimit(ngn);
+
+      // Update preview card
+      const preview = document.getElementById('buy-preview');
+      const previewFiat = document.getElementById('buy-preview-fiat');
+      const previewCrypto = document.getElementById('buy-preview-crypto');
+      const previewUsd = document.getElementById('buy-preview-usd');
+      if (preview && previewFiat && previewCrypto) {
+        previewFiat.textContent = `₦${Number(ngn.toFixed(2)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const usdVal = currentRate.paj ? (ngn / currentRate.paj).toFixed(2) : '';
+        if (previewUsd) previewUsd.textContent = usdVal ? `(~$${usdVal})` : '';
+        previewCrypto.textContent = `${crypto.toFixed(4)} ${currentBuyAsset}`;
+        preview.classList.remove('hidden');
+      }
+      updateStepIndicators('ONRAMP');
     }
 
     function showManualConfirm(type) {

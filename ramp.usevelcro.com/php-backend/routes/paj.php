@@ -37,7 +37,8 @@ function calculatePajDeveloperFee(float $fiatAmount, string $direction = 'ONRAMP
         error_log('Failed to fetch live PAJ rate for fee calculation: ' . $e->getMessage());
     }
     $fee = ($fiatAmount / $rate) * ($feePercent / 100);
-    return round($fee, 2);
+    $feeRounded = round($fee, 2);
+    return ($feeRounded < 0.01 && $fee > 0) ? 0.01 : $feeRounded;
 }
 
 function registerPajRoutes(Router $router): void
@@ -85,19 +86,23 @@ function registerPajRoutes(Router $router): void
         }
         try {
             $fiat = (float) $fiatAmount;
+            $feePercent = getPajFee();
             $value = pajApi()->getTokenValue(1.0, $mint);
             $tokenRate = (float) ($value['tokenRate'] ?? 0);
             if ($tokenRate <= 0) {
                 $pajRateData = pajApi()->getPajRate();
                 $tokenRate = (float) ($pajRateData['onramp']['rate'] ?? 1363.5);
             }
-            $crypto = $tokenRate > 0 ? ($fiat / $tokenRate) : 0.0;
+            $grossCrypto = $tokenRate > 0 ? ($fiat / $tokenRate) : 0.0;
+            // Value shown to the user is already minus developer profit
+            $netCrypto = $grossCrypto * (1 - ($feePercent / 100));
             jsonResponse(successResponse([
                 'fiatAmount' => $fiat,
                 'tokenRate' => $tokenRate,
-                'amount' => round($crypto, 6),
-                'cryptoAmount' => round($crypto, 6),
-                'fee_percent' => getPajFee(),
+                'amount' => round($netCrypto, 6),
+                'cryptoAmount' => round($netCrypto, 6),
+                'gross_crypto' => round($grossCrypto, 6),
+                'fee_percent' => $feePercent,
             ]));
         } catch (Throwable $e) {
             jsonResponse(errorResponse($e->getMessage()), 500);
@@ -148,7 +153,18 @@ function registerPajRoutes(Router $router): void
         }
         try {
             $totalInputAmount = (float) $fiatAmount;
-            $order = pajApi()->createOnrampOrder($totalInputAmount, $recipient, $mint, null);
+            $feePercent = getPajFee();
+            $businessUSDCFee = null;
+            if (isset($body['businessUSDCFee']) && is_numeric($body['businessUSDCFee'])) {
+                $businessUSDCFee = (float) $body['businessUSDCFee'];
+            } elseif ($feePercent > 0 && $totalInputAmount > 0) {
+                $businessUSDCFee = calculatePajDeveloperFee($totalInputAmount, 'ONRAMP');
+                if ($businessUSDCFee < 0.01) {
+                    $businessUSDCFee = 0.01;
+                }
+            }
+
+            $order = pajApi()->createOnrampOrder($totalInputAmount, $recipient, $mint, $businessUSDCFee);
             $d = $order ?? [];
             $assetInfo = null;
             foreach (pajApi()->getAssets() as $a) {
