@@ -55,15 +55,21 @@ function registerAdminRoutes(Router $router): void
             $volumeNGN = (float) ($statsRow['total_volume_ngn'] ?? 0.0);
             $localFees = (float) ($statsRow['local_developer_fees'] ?? 0.0);
 
+            $switchFee = 0.0;
+            $feeCurrency = 'USDC';
             try {
                 $feesData = switchApi()->getDeveloperFees();
                 $switchFee = (float) ($feesData['data']['amount'] ?? 0);
-                $feeAmount = $switchFee > 0 ? $switchFee : $localFees;
                 $feeCurrency = $feesData['data']['currency'] ?? 'USDC';
-            } catch (Throwable $e) {
-                $feeAmount = $localFees;
-                $feeCurrency = 'USDC';
-            }
+            } catch (Throwable $e) {}
+
+            $pajFeesRows = Database::safeSelect("
+                SELECT COALESCE(SUM(fee_developer), 0) AS paj_developer_fees
+                FROM `transactions`
+                WHERE `channel` = 'PAJ' AND `status` = 'COMPLETED'
+            ");
+            $pajFees = (float) ($pajFeesRows[0]['paj_developer_fees'] ?? 0.0);
+            $totalFeeAmount = $switchFee > 0 ? round($switchFee + $pajFees, 2) : round($localFees, 2);
 
             jsonResponse([
                 'totalUsers' => $totalUsers,
@@ -71,7 +77,12 @@ function registerAdminRoutes(Router $router): void
                 'completedTransactions' => $completed,
                 'totalVolumeUSD' => $volumeUSD,
                 'totalVolumeNGN' => $volumeNGN,
-                'developerFees' => ['amount' => $feeAmount, 'currency' => $feeCurrency],
+                'developerFees' => [
+                    'amount' => $totalFeeAmount,
+                    'currency' => $feeCurrency,
+                    'switch' => $switchFee,
+                    'paj' => $pajFees,
+                ],
             ]);
         } catch (Throwable $e) {
             error_log('/api/admin/stats error: ' . $e->getMessage());
@@ -368,9 +379,19 @@ function registerAdminRoutes(Router $router): void
         if (isset($body['platform_fee'])) {
             $fee = (float) $body['platform_fee'];
             if ($fee < 0 || $fee > 10) {
-                jsonResponse(['success' => false, 'error' => 'Fee must be between 0 and 10'], 400);
+                jsonResponse(['success' => false, 'error' => 'Platform Fee must be between 0 and 10%'], 400);
             }
             $settings['platform_fee'] = $fee;
+        }
+        if (isset($body['paj_fee'])) {
+            $pFee = (float) $body['paj_fee'];
+            if ($pFee < 0 || $pFee > 10) {
+                jsonResponse(['success' => false, 'error' => 'PAJ Fee must be between 0 and 10%'], 400);
+            }
+            $settings['paj_fee'] = $pFee;
+        }
+        if (isset($body['paj_rate_margin'])) {
+            $settings['paj_rate_margin'] = (float) $body['paj_rate_margin'];
         }
         if (isset($body['paj_email'])) {
             if (!filter_var($body['paj_email'], FILTER_VALIDATE_EMAIL)) {

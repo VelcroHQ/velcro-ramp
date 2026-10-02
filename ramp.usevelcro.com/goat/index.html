@@ -675,6 +675,8 @@
             }
             /* Settings inputs zoom fix */
             #fee-input,
+            #paj-fee-input,
+            #paj-margin-input,
             #buy-max-input,
             #sell-min-input,
             #sell-max-input,
@@ -1493,12 +1495,30 @@
                     </div>
 
                     <div style="margin-bottom: 20px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Platform Fee (%)</label>
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Switch Platform Fee (%)</label>
                         <div style="display: flex; gap: 10px;">
                             <input type="number" id="fee-input" placeholder="0.5" step="0.01" min="0" max="10" style="margin-bottom: 0; flex: 1;">
                             <span style="display: flex; align-items: center; padding: 0 14px; background: var(--bg-light); border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--text-secondary);">%</span>
                         </div>
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Deducted from the "You'll receive" amount. Range: 0% – 10%.</p>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Developer fee charged on Switch network orders. Range: 0% – 10%.</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">PAJ Developer Fee (%)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="paj-fee-input" placeholder="0.5" step="0.01" min="0" max="10" style="margin-bottom: 0; flex: 1;">
+                            <span style="display: flex; align-items: center; padding: 0 14px; background: var(--bg-light); border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--text-secondary);">%</span>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Developer fee collected on PAJ orders (in USDC) and credited to your PAJ business balance. Range: 0% – 10%.</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">PAJ Rate Margin (± NGN)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="paj-margin-input" placeholder="0.0" step="0.5" style="margin-bottom: 0; flex: 1;">
+                            <span style="display: flex; align-items: center; padding: 0 14px; background: var(--bg-light); border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--text-secondary);">₦</span>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Spread added to buy rate / deducted from sell rate. Leave 0 to show exact PAJ rates.</p>
                     </div>
 
                     <div style="margin-bottom: 20px;">
@@ -2482,6 +2502,12 @@
                     const settings = await settingsRes.json();
                     currentSettings = settings;
                     document.getElementById('fee-input').value = settings.platform_fee;
+                    if (document.getElementById('paj-fee-input')) {
+                        document.getElementById('paj-fee-input').value = settings.paj_fee !== undefined ? settings.paj_fee : 0.5;
+                    }
+                    if (document.getElementById('paj-margin-input')) {
+                        document.getElementById('paj-margin-input').value = settings.paj_rate_margin !== undefined ? settings.paj_rate_margin : 0.0;
+                    }
                     document.getElementById('buy-max-input').value = settings.buy_max_limit;
                     document.getElementById('sell-min-input').value = settings.sell_min_limit;
                     document.getElementById('sell-max-input').value = settings.sell_max_limit;
@@ -2688,9 +2714,18 @@
             const feeInput = document.getElementById('fee-input');
             const fee = parseFloat(feeInput.value);
             if (Number.isNaN(fee) || fee < 0 || fee > 10) {
-                setSettingsMessage('Fee must be between 0 and 10', 'error');
+                setSettingsMessage('Switch Fee must be between 0 and 10%', 'error');
                 return;
             }
+            const pajFeeInput = document.getElementById('paj-fee-input');
+            const pajFee = pajFeeInput ? parseFloat(pajFeeInput.value) : 0.5;
+            if (Number.isNaN(pajFee) || pajFee < 0 || pajFee > 10) {
+                setSettingsMessage('PAJ Fee must be between 0 and 10%', 'error');
+                return;
+            }
+            const pajMarginInput = document.getElementById('paj-margin-input');
+            const pajMargin = pajMarginInput ? (parseFloat(pajMarginInput.value) || 0.0) : 0.0;
+
             const buyMax = parseFloat(document.getElementById('buy-max-input').value);
             const sellMin = parseFloat(document.getElementById('sell-min-input').value);
             const sellMax = parseFloat(document.getElementById('sell-max-input').value);
@@ -2720,11 +2755,20 @@
                 const res = await fetch(`${API_BASE}/api/admin/settings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
-                    body: JSON.stringify({ platform_fee: fee, buy_max_limit: buyMax, sell_min_limit: sellMin, sell_max_limit: sellMax, paj_usdt_enabled: pajUsdt, paj_usdc_enabled: pajUsdc })
+                    body: JSON.stringify({
+                        platform_fee: fee,
+                        paj_fee: pajFee,
+                        paj_rate_margin: pajMargin,
+                        buy_max_limit: buyMax,
+                        sell_min_limit: sellMin,
+                        sell_max_limit: sellMax,
+                        paj_usdt_enabled: pajUsdt,
+                        paj_usdc_enabled: pajUsdc
+                    })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    setSettingsMessage(`Saved successfully. Fee: ${fee}%, Buy Max: ₦${buyMax.toLocaleString()}, Sell: $${sellMin.toLocaleString()}–$${sellMax.toLocaleString()}`, 'success');
+                    setSettingsMessage(`Saved successfully. Switch Fee: ${fee}%, PAJ Fee: ${pajFee}%, PAJ Margin: ₦${pajMargin}`, 'success');
                 } else {
                     setSettingsMessage(data.error || 'Failed to save settings', 'error');
                 }
@@ -3379,7 +3423,13 @@
             const feeParts = [];
             if (tx.fee_total) feeParts.push(`Total: ₦${Number(tx.fee_total).toLocaleString()}`);
             if (tx.fee_platform) feeParts.push(`Platform: ₦${Number(tx.fee_platform).toLocaleString()}`);
-            if (tx.fee_developer) feeParts.push(`Dev: ₦${Number(tx.fee_developer).toLocaleString()}`);
+            if (tx.fee_developer) {
+                if (tx.channel === 'PAJ') {
+                    feeParts.push(`Dev: $${Number(tx.fee_developer).toFixed(2)}`);
+                } else {
+                    feeParts.push(`Dev: ₦${Number(tx.fee_developer).toLocaleString()}`);
+                }
+            }
             feesEl.innerText = feeParts.length ? feeParts.join(' | ') : '-';
 
             // Type-specific details

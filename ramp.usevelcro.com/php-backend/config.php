@@ -160,6 +160,8 @@ function defaultSettings(): array
 {
     return [
         'platform_fee' => DEVELOPER_FEE,
+        'paj_fee' => DEVELOPER_FEE,
+        'paj_rate_margin' => 0.0,
         'buy_max_limit' => 1000000,
         'sell_min_limit' => 1,
         'sell_max_limit' => 10000,

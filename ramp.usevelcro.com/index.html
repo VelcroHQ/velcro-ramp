@@ -2166,6 +2166,8 @@
     let SELL_MIN_LIMIT = 1; // Minimum sell amount per transaction (fetched from /api/settings)
     let SELL_MAX_LIMIT = 10000; // Maximum sell amount per transaction (fetched from /api/settings)
     let currentFee = 0.5; // Platform fee percentage (fetched from /api/settings)
+    let currentPajFee = 0.5; // PAJ fee percentage (fetched from /api/settings or /api/paj/rate)
+    let currentPajMargin = 0.0; // PAJ rate margin
     let pajUsdtEnabled = false;
     let pajUsdcEnabled = false;
     let switchBanks = [];
@@ -2692,15 +2694,22 @@
         if (data.success) {
           if (typeof data.data.platform_fee === 'number') {
             currentFee = data.data.platform_fee;
-            // Update fee badges
-            const sellBadge = document.getElementById('sell-fee-badge');
-            const buyBadge = document.getElementById('buy-fee-badge');
-            if (sellBadge) sellBadge.textContent = `${currentFee}% fee`;
-            if (buyBadge) buyBadge.textContent = `${currentFee}% fee`;
-            // Recalculate displayed amounts with new fee
-            calculateSell();
-            calculateBuy();
           }
+          if (typeof data.data.paj_fee === 'number') {
+            currentPajFee = data.data.paj_fee;
+          }
+          if (typeof data.data.paj_rate_margin === 'number') {
+            currentPajMargin = data.data.paj_rate_margin;
+          }
+          // Update fee badges
+          const activeFee = currentProvider === 'paj' ? currentPajFee : currentFee;
+          const sellBadge = document.getElementById('sell-fee-badge');
+          const buyBadge = document.getElementById('buy-fee-badge');
+          if (sellBadge) sellBadge.textContent = `${activeFee}% fee`;
+          if (buyBadge) buyBadge.textContent = `${activeFee}% fee`;
+          // Recalculate displayed amounts with new fee
+          calculateSell();
+          calculateBuy();
           if (data.data.buy_max_limit !== undefined) {
             BUY_MAX_LIMIT = Math.max(parseInt(data.data.buy_max_limit) || 1000000, 1000000);
             const maxLabel = document.getElementById('buy-max-label');
@@ -2860,6 +2869,9 @@
             currentRate.buyDirect = approxRate > 0 ? approxRate : 0;
           }
         }
+        if (typeof data.fee_percent === 'number') {
+          currentPajFee = data.fee_percent;
+        }
         updateRateDisplays();
         if (direction === 'OFFRAMP') calculateSell();
         else calculateBuy();
@@ -2874,8 +2886,9 @@
       const buyBadge = document.getElementById('buy-fee-badge');
       const pulse = '<span class="w-2 h-2 rounded-full bg-green-500 live-pulse"></span>';
 
-      if (sellBadge) sellBadge.textContent = `${currentFee}% fee`;
-      if (buyBadge) buyBadge.textContent = `${currentFee}% fee`;
+      const activeFee = currentProvider === 'paj' ? currentPajFee : currentFee;
+      if (sellBadge) sellBadge.textContent = `${activeFee}% fee`;
+      if (buyBadge) buyBadge.textContent = `${activeFee}% fee`;
 
       if (sellRateEl) {
         if (currentProvider === 'paj') {
@@ -3802,16 +3815,17 @@
       let cryptoToSend = 0;
 
       if (currentProvider === 'paj') {
+        const activeFee = typeof currentPajFee === 'number' ? currentPajFee : currentFee;
         if (currentSellInputMode === 'USD') {
           // Input is in USD ($)
           const receiveBeforeFee = amount * pajRate;
-          receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
+          receiveAfterFee = receiveBeforeFee * (1 - activeFee / 100);
           cryptoToSend = tokenUsd > 0 ? amount / tokenUsd : 0;
         } else {
           // Input is in ASSET (any PAJ token)
           const price = tokenUsd > 0 ? tokenUsd : (currentSellAsset === 'USDT' || currentSellAsset === 'USDC' || currentSellAsset === 'USDG' ? 1 : 0);
           const receiveBeforeFee = amount * (pajRate * price);
-          receiveAfterFee = receiveBeforeFee * (1 - currentFee / 100);
+          receiveAfterFee = receiveBeforeFee * (1 - activeFee / 100);
           cryptoToSend = amount;
         }
       } else {
@@ -3846,8 +3860,9 @@
       const pajRate = Number(currentRate.pajOfframp || currentRate.paj);
       const tokenUsd = Number(PAJ_TOKEN_PRICES[currentSellAsset] || 0);
       const switchRate = Number(currentRate.sell);
+      const activeFee = currentProvider === 'paj' ? (typeof currentPajFee === 'number' ? currentPajFee : currentFee) : currentFee;
 
-      const ngnBeforeFee = ngn / (1 - currentFee / 100);
+      const ngnBeforeFee = ngn / (1 - activeFee / 100);
       
       if (currentProvider === 'paj') {
         if (currentSellInputMode === 'USD') {

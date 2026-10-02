@@ -219,6 +219,20 @@ function getPlatformFee(): float
     return is_nan($fee) ? DEVELOPER_FEE : $fee;
 }
 
+function getPajFee(): float
+{
+    $settings = loadSettings();
+    $fee = (float) ($settings['paj_fee'] ?? $settings['platform_fee'] ?? DEVELOPER_FEE);
+    return is_nan($fee) ? DEVELOPER_FEE : $fee;
+}
+
+function getPajRateMargin(): float
+{
+    $settings = loadSettings();
+    $margin = (float) ($settings['paj_rate_margin'] ?? 0.0);
+    return is_nan($margin) ? 0.0 : $margin;
+}
+
 function getDeveloperRecipientForAsset(?string $asset): string
 {
     if ($asset === null || $asset === '') {

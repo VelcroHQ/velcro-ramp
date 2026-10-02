@@ -213,9 +213,11 @@ function registerPublicRoutes(Router $router): void
 
         if ($provider === 'paj') {
             try {
+                $pajFeePercent = getPajFee();
+                $margin = getPajRateMargin();
                 $pajRateData = pajApi()->getPajRate();
-                $onrampRate = (float) ($pajRateData['onramp']['rate'] ?? 1369.56);
-                $offrampRate = (float) ($pajRateData['offramp']['rate'] ?? 1343.52);
+                $onrampRate = (float) ($pajRateData['onramp']['rate'] ?? 1369.56) + $margin;
+                $offrampRate = (float) ($pajRateData['offramp']['rate'] ?? 1343.52) - $margin;
 
                 if ($direction === 'ONRAMP') {
                     $mint = body($body, 'mint');
@@ -231,7 +233,7 @@ function registerPublicRoutes(Router $router): void
                     }
                     $directRate = $tokenRate;
                     $grossCrypto = $amount > 0 ? ($amount / $tokenRate) : 0.0;
-                    $feeCrypto = $grossCrypto * ($feePercent / 100);
+                    $feeCrypto = $grossCrypto * ($pajFeePercent / 100);
                     $receiveCrypto = $grossCrypto - $feeCrypto;
 
                     jsonResponse(successResponse([
@@ -241,15 +243,15 @@ function registerPublicRoutes(Router $router): void
                         'network' => $network,
                         'amount' => $amount,
                         'direct_rate' => $directRate,
-                        'effective_rate' => round($directRate / (1 - $feePercent / 100), 4),
-                        'fee_percent' => $feePercent,
+                        'effective_rate' => round($directRate / (1 - $pajFeePercent / 100), 4),
+                        'fee_percent' => $pajFeePercent,
                         'receive_amount' => round($receiveCrypto, 6),
                         'receive_currency' => $asset,
                     ]));
                 } else {
                     $directRate = $offrampRate;
                     $grossFiat = $amount * $directRate;
-                    $feeFiat = $grossFiat * ($feePercent / 100);
+                    $feeFiat = $grossFiat * ($pajFeePercent / 100);
                     $receiveFiat = $grossFiat - $feeFiat;
 
                     jsonResponse(successResponse([
@@ -259,8 +261,8 @@ function registerPublicRoutes(Router $router): void
                         'network' => $network,
                         'amount' => $amount,
                         'direct_rate' => $directRate,
-                        'effective_rate' => round($directRate * (1 - $feePercent / 100), 2),
-                        'fee_percent' => $feePercent,
+                        'effective_rate' => round($directRate * (1 - $pajFeePercent / 100), 2),
+                        'fee_percent' => $pajFeePercent,
                         'receive_amount' => round($receiveFiat, 2),
                         'receive_currency' => 'NGN',
                     ]));
@@ -664,6 +666,8 @@ function registerPublicRoutes(Router $router): void
         $settings = loadSettings();
         jsonResponse(successResponse([
             'platform_fee' => (float) ($settings['platform_fee'] ?? DEVELOPER_FEE),
+            'paj_fee' => (float) ($settings['paj_fee'] ?? DEVELOPER_FEE),
+            'paj_rate_margin' => (float) ($settings['paj_rate_margin'] ?? 0.0),
             'buy_max_limit' => (int) ($settings['buy_max_limit'] ?? 1000000),
             'sell_min_limit' => (float) ($settings['sell_min_limit'] ?? 1),
             'sell_max_limit' => (float) ($settings['sell_max_limit'] ?? 10000),
