@@ -5,7 +5,7 @@
 *.sql
 
 # Editor & Deployment credentials
-.vscode/sftp.json
+**/.vscode/sftp.json
 
 # Large Archives & backups
 *.zip
