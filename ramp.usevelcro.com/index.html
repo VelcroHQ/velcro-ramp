@@ -1839,8 +1839,11 @@
                   <span id="buy-confirm-network">Solana</span>
                 </span>
               </div>
-              <div class="bg-velcro-navy/5 p-3 rounded-lg border border-velcro-navy/10 mb-3">
-                <p class="text-xs text-gray-500 mb-0.5">Amount to Pay</p>
+              <div class="bg-velcro-navy/5 p-3 rounded-lg border border-velcro-navy/10 mb-3 cursor-pointer hover:bg-velcro-navy/10 transition-colors group" onclick="copyAmountToPay()" title="Click to copy exact amount">
+                <div class="flex items-center justify-between mb-0.5">
+                  <p class="text-xs text-gray-500">Amount to Pay (Transfer exact)</p>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-gray-400 group-hover:text-velcro-green transition-colors"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </div>
                 <p class="text-xl font-bold text-gray-900"><span id="buy-confirm-currency-symbol">&#8358;</span><span
                     id="buy-confirm-ngn">0.00</span></p>
               </div>
@@ -2651,6 +2654,31 @@
     function formatCurrency(value) {
       const symbol = '₦';
       return symbol + Number(value).toLocaleString();
+    }
+
+    function copyAmountToPay() {
+      const el = document.getElementById('buy-confirm-ngn');
+      if (!el) return;
+      const clean = el.textContent.replace(/,/g, '').trim();
+      if (!clean || clean === '0.00') return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(clean).then(() => {
+          showToast(`Copied exact amount: ₦${el.textContent}`, 'success');
+        }).catch(() => fallbackCopy(clean));
+      } else {
+        fallbackCopy(clean);
+      }
+      function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast(`Copied exact amount: ₦${el.textContent}`, 'success');
+      }
     }
 
     function startRateExpiryTimer() {
@@ -4534,10 +4562,11 @@
           }
           const payload = JSON.parse(responseBody);
           const data = payload.data || {};
+          const exactPayAmount = Number(data.fiatAmount) > 0 ? Number(data.fiatAmount) : amount;
+          document.getElementById('buy-confirm-ngn').textContent = Number(exactPayAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
           document.getElementById('buy-bank-name').textContent = data.bank || 'Partner Bank';
           document.getElementById('buy-account-number').textContent = data.accountNumber || '-';
           document.getElementById('buy-account-name').textContent = data.accountName || 'Velcro Checkout';
-          // Rate used element removed for PAJ
           document.getElementById('buy-reference').textContent = data.id || '-';
           currentReference = data.id || '';
           document.getElementById('buy-generated-account').classList.remove('hidden');
@@ -4549,8 +4578,8 @@
           currentTxDetails = {
             type: 'buy',
             reference: data.id,
-            amount: amount,
-            destinationAmount: receive,
+            amount: exactPayAmount,
+            destinationAmount: data.amount || receive,
             asset: currentBuyAsset,
             network: 'solana',
             walletAddress: wallet,
