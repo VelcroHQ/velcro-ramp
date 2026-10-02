@@ -151,6 +151,12 @@ function registerPajRoutes(Router $router): void
         if ($fiatAmount === null || !$recipient || !$mint) {
             jsonResponse(errorResponse('fiatAmount, recipient, and mint are required'), 400);
         }
+        if ((!$email || trim((string)$email) === '') && !empty($recipient)) {
+            $found = Database::safeSelect("SELECT `email` FROM `transactions` WHERE LOWER(`wallet_address`) = LOWER(:wallet) AND `email` IS NOT NULL AND `email` != '' ORDER BY `id` DESC LIMIT 1", ['wallet' => trim((string)$recipient)], []);
+            if (!empty($found[0]['email'])) {
+                $email = $found[0]['email'];
+            }
+        }
         try {
             $totalInputAmount = (float) $fiatAmount;
             $feePercent = getPajFee();
@@ -209,6 +215,12 @@ function registerPajRoutes(Router $router): void
         $email = body($body, 'email');
         if ($fiatAmount === null || !$mint || !$bank || !$accountNumber) {
             jsonResponse(errorResponse('fiatAmount, mint, bank, and accountNumber are required'), 400);
+        }
+        if ((!$email || trim((string)$email) === '') && !empty($accountNumber)) {
+            $found = Database::safeSelect("SELECT `email` FROM `transactions` WHERE `deposit_account_number` = :acc AND `email` IS NOT NULL AND `email` != '' ORDER BY `id` DESC LIMIT 1", ['acc' => trim((string)$accountNumber)], []);
+            if (!empty($found[0]['email'])) {
+                $email = $found[0]['email'];
+            }
         }
         try {
             $feePercent = getPajFee();

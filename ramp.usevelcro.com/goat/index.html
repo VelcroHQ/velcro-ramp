@@ -3018,13 +3018,7 @@
         }
 
         function getDisplayUser(tx) {
-            if (tx.email) {
-                const avatarVal = tx.email.slice(0, 2).toUpperCase();
-                return {
-                    avatar: avatarVal,
-                    display: tx.email
-                };
-            }
+            let email = tx.email;
             let wallet = tx.wallet_address || tx.deposit_address || '';
             if (!wallet && tx.beneficiary) {
                 try {
@@ -3034,15 +3028,37 @@
                     }
                 } catch (e) {}
             }
+
+            // Cross-reference: if email is missing, find matching email from other transactions with same wallet
+            if (!email && wallet && typeof currentTxs !== 'undefined' && Array.isArray(currentTxs)) {
+                const match = currentTxs.find(t => t.email && (
+                    (t.wallet_address && t.wallet_address.toLowerCase() === wallet.toLowerCase()) ||
+                    (t.deposit_address && t.deposit_address.toLowerCase() === wallet.toLowerCase())
+                ));
+                if (match) {
+                    email = match.email;
+                }
+            }
+
+            if (email) {
+                const avatarVal = email.slice(0, 2).toUpperCase();
+                return {
+                    avatar: avatarVal,
+                    display: email,
+                    wallet: wallet
+                };
+            }
             if (wallet) {
                 return {
                     avatar: wallet.slice(-4).toUpperCase(),
-                    display: wallet.slice(0, 10) + '...'
+                    display: wallet.length > 14 ? (wallet.slice(0, 6) + '...' + wallet.slice(-4)) : wallet,
+                    wallet: wallet
                 };
             }
             return {
                 avatar: 'GU',
-                display: 'Guest User'
+                display: 'Guest User',
+                wallet: ''
             };
         }
 

@@ -115,14 +115,52 @@ function registerAdminRoutes(Router $router): void
         try {
             $rows = Database::safeSelect('SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `created_at`, `updated_at`, `beneficiary` FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
             
+            // Build wallet -> email lookup map from known transactions & developer recipient
+            $walletToEmail = [];
+            if (defined('PAJ_EMAIL') && PAJ_EMAIL !== '') {
+                if (defined('DEVELOPER_RECIPIENT_SVM') && DEVELOPER_RECIPIENT_SVM !== '') {
+                    $walletToEmail[strtolower(trim(DEVELOPER_RECIPIENT_SVM))] = strtolower(trim(PAJ_EMAIL));
+                }
+                if (defined('DEVELOPER_RECIPIENT') && DEVELOPER_RECIPIENT !== '') {
+                    $walletToEmail[strtolower(trim(DEVELOPER_RECIPIENT))] = strtolower(trim(PAJ_EMAIL));
+                }
+            }
+
+            foreach ($rows as $r) {
+                if (!empty($r['email']) && !empty($r['wallet_address'])) {
+                    $walletToEmail[strtolower(trim($r['wallet_address']))] = strtolower(trim($r['email']));
+                }
+            }
+
+            $needsBackfill = false;
             foreach ($rows as &$row) {
                 $row = decodeJsonColumns($row, ['beneficiary']);
                 if (empty($row['wallet_address']) && !empty($row['beneficiary'])) {
                     $ben = $row['beneficiary'];
                     $row['wallet_address'] = $ben['wallet_address'] ?? null;
                 }
+                // Auto-resolve missing email from mapped wallet address
+                if (empty($row['email']) && !empty($row['wallet_address'])) {
+                    $w = strtolower(trim($row['wallet_address']));
+                    if (isset($walletToEmail[$w])) {
+                        $row['email'] = $walletToEmail[$w];
+                        $needsBackfill = true;
+                    }
+                }
             }
             unset($row);
+
+            // Persist resolved emails to DB so future queries are instant and consistent
+            if ($needsBackfill) {
+                try {
+                    foreach ($walletToEmail as $wallet => $em) {
+                        Database::safeExecute("UPDATE `transactions` SET `email` = :em WHERE LOWER(`wallet_address`) = :w AND (`email` IS NULL OR `email` = '')", [
+                            'em' => $em,
+                            'w' => $wallet
+                        ]);
+                    }
+                } catch (Throwable $e) {}
+            }
 
             jsonResponse($rows);
         } catch (Throwable $e) {
