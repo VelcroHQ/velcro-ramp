@@ -4,6 +4,22 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../paj_api.php';
 
+if (!function_exists('getPajFee')) {
+    function getPajFee(): float
+    {
+        $settings = loadSettings();
+        return (float) ($settings['paj_fee'] ?? DEVELOPER_FEE);
+    }
+}
+
+if (!function_exists('getPajRateMargin')) {
+    function getPajRateMargin(): float
+    {
+        $settings = loadSettings();
+        return (float) ($settings['paj_rate_margin'] ?? 0.0);
+    }
+}
+
 function calculatePajDeveloperFee(float $fiatAmount, string $direction = 'ONRAMP'): float
 {
     $feePercent = getPajFee();

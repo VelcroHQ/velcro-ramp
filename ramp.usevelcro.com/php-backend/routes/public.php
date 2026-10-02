@@ -4,6 +4,22 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../switch_api.php';
 
+if (!function_exists('getPajFee')) {
+    function getPajFee(): float
+    {
+        $settings = loadSettings();
+        return (float) ($settings['paj_fee'] ?? DEVELOPER_FEE);
+    }
+}
+
+if (!function_exists('getPajRateMargin')) {
+    function getPajRateMargin(): float
+    {
+        $settings = loadSettings();
+        return (float) ($settings['paj_rate_margin'] ?? 0.0);
+    }
+}
+
 // ─── Public API Routes ───
 
 function registerPublicRoutes(Router $router): void
