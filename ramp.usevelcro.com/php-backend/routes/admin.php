@@ -234,6 +234,7 @@ function registerAdminRoutes(Router $router): void
                         'id' => $id,
                         'email' => $email,
                         'wallet_address' => $wallet,
+                        'wallets' => !empty($wallet) ? [$wallet] : [],
                         'total_volume' => 0.0,
                         'total_volume_usd' => 0.0,
                         'total_volume_ngn' => 0.0,
@@ -243,6 +244,9 @@ function registerAdminRoutes(Router $router): void
                 } else {
                     if (empty($userMap[$id]['email']) && !empty($email)) {
                         $userMap[$id]['email'] = $email;
+                    }
+                    if (!empty($wallet) && !in_array($wallet, $userMap[$id]['wallets'], true)) {
+                        $userMap[$id]['wallets'][] = $wallet;
                     }
                     if (empty($userMap[$id]['wallet_address']) && !empty($wallet)) {
                         $userMap[$id]['wallet_address'] = $wallet;
@@ -259,6 +263,10 @@ function registerAdminRoutes(Router $router): void
                     $userMap[$id]['created_at'] = $t['created_at'];
                 }
             }
+            foreach ($userMap as &$u) {
+                $u['wallet_count'] = count($u['wallets']);
+            }
+            unset($u);
             $users = array_values($userMap);
             usort($users, static fn ($a, $b) => $b['total_volume_usd'] <=> $a['total_volume_usd']);
             jsonResponse($users);

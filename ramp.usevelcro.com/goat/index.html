@@ -1347,7 +1347,7 @@
             </header>
 
             <div class="table-card" style="margin-bottom: 20px; padding: 16px 20px;">
-                <input type="text" id="user-search-input" placeholder="Search users by email or wallet address..." oninput="filterUsers()" style="margin-bottom: 0; padding: 10px 14px; font-size: 13px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 400px;">
+                <input type="text" id="user-search-input" placeholder="Search users by email, wallet, or address..." oninput="filterUsers()" style="margin-bottom: 0; padding: 10px 14px; font-size: 13px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 400px;">
             </div>
 
             <div class="table-card">
@@ -1355,7 +1355,7 @@
                     <thead>
                         <tr>
                             <th>User Email</th>
-                            <th>Wallet Address</th>
+                            <th>Addresses Used</th>
                             <th>First Seen</th>
                             <th>Total Volume</th>
                             <th>TXs</th>
@@ -1436,14 +1436,30 @@
                 </div>
             </div>
 
+            <!-- Destination Addresses Card -->
+            <div class="table-card" style="margin-bottom: 24px;" id="detail-addresses-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                    <div>
+                        <h3 style="font-size: 15px; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="wallet" style="width: 17px; height: 17px; color: var(--primary-link);"></i>
+                            Destination & Used Addresses
+                        </h3>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin: 2px 0 0 0;">All blockchain addresses this user has bought crypto to or transacted with.</p>
+                    </div>
+                    <span id="detail-addresses-count" class="badge" style="background: rgba(13, 13, 89, 0.08); color: var(--velcro-navy); font-size: 11px; padding: 4px 10px; border-radius: 8px; font-weight: 600;">0 addresses</span>
+                </div>
+                <div id="detail-addresses-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
             <div class="table-card">
-                <h3 id="detail-activity-title">Wallet Activity</h3>
+                <h3 id="detail-activity-title">User Activity</h3>
                 <table style="margin-top: 20px;">
                     <thead>
                         <tr>
                             <th>Reference</th>
                             <th>Type</th>
                             <th>Amount</th>
+                            <th>Destination / Wallet</th>
                             <th>Status</th>
                             <th>Date</th>
                         </tr>
@@ -3051,7 +3067,8 @@
             const filtered = currentUsers.filter(u => 
                 (u.id && u.id.toLowerCase().includes(query)) ||
                 (u.email && u.email.toLowerCase().includes(query)) ||
-                (u.wallet_address && u.wallet_address.toLowerCase().includes(query))
+                (u.wallet_address && u.wallet_address.toLowerCase().includes(query)) ||
+                (Array.isArray(u.wallets) && u.wallets.some(w => w && w.toLowerCase().includes(query)))
             );
             renderUsers(filtered);
         }
@@ -3071,8 +3088,9 @@
                 const volUSD = safeNum(u.total_volume_usd !== undefined ? u.total_volume_usd : u.total_volume);
                 const volNGN = safeNum(u.total_volume_ngn) || (volUSD * 1500);
                 const email = u.email || (u.id && u.id.includes('@') ? u.id : '');
-                const wallet = u.wallet_address || (u.id && !u.id.includes('@') ? u.id : '');
-                const targetKey = email || wallet || u.id;
+                const wallets = (Array.isArray(u.wallets) && u.wallets.length) ? u.wallets : (u.wallet_address ? [u.wallet_address] : []);
+                const primaryWallet = wallets[0] || u.wallet_address || '';
+                const targetKey = email || primaryWallet || u.id;
 
                 const emailHtml = email 
                     ? `<div style="display:flex;align-items:center;gap:6px;">
@@ -3081,17 +3099,35 @@
                        </div>`
                     : `<span style="font-size: 11px; color: var(--text-secondary); font-style: italic;">No email</span>`;
 
-                const walletHtml = wallet
-                    ? `<div style="font-family: monospace; font-size: 11px; color: var(--text-secondary); display:flex; align-items:center; gap:4px;" title="${wallet}">
-                        <span>${wallet.length > 16 ? wallet.slice(0, 8) + '...' + wallet.slice(-6) : wallet}</span>
-                        <button onclick="navigator.clipboard.writeText('${wallet}'); showToast('Wallet copied', 'success');" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--text-secondary);font-size:11px;" title="Copy wallet">📋</button>
-                       </div>`
-                    : `<span style="font-size: 11px; color: var(--text-secondary); font-style: italic;">—</span>`;
+                let walletHtml = '';
+                if (!wallets.length) {
+                    walletHtml = `<span style="font-size: 11px; color: var(--text-secondary); font-style: italic;">—</span>`;
+                } else if (wallets.length === 1) {
+                    const w = wallets[0];
+                    walletHtml = `<div style="font-family: monospace; font-size: 11px; color: var(--text-secondary); display:flex; align-items:center; gap:4px;" title="${w}">
+                        <span>${w.length > 16 ? w.slice(0, 8) + '...' + w.slice(-6) : w}</span>
+                        <button onclick="event.stopPropagation(); navigator.clipboard.writeText('${w}'); showToast('Wallet copied', 'success');" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--text-secondary);font-size:11px;" title="Copy wallet">📋</button>
+                       </div>`;
+                } else {
+                    const w = wallets[0];
+                    const tooltipList = wallets.map((addr, idx) => `${idx + 1}. ${addr}`).join('\n');
+                    walletHtml = `<div style="display:flex; flex-direction:column; gap:4px;">
+                        <div style="font-family: monospace; font-size: 11px; color: var(--text-secondary); display:flex; align-items:center; gap:4px;" title="${w}">
+                            <span>${w.length > 14 ? w.slice(0, 6) + '...' + w.slice(-4) : w}</span>
+                            <button onclick="event.stopPropagation(); navigator.clipboard.writeText('${w}'); showToast('Wallet copied', 'success');" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--text-secondary);font-size:11px;" title="Copy latest address">📋</button>
+                        </div>
+                        <div>
+                            <span onclick="event.stopPropagation(); viewWalletDetails('${targetKey}')" style="background: rgba(13, 13, 89, 0.08); color: var(--velcro-navy); padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" title="User has used ${wallets.length} addresses:\n${tooltipList}">
+                                +${wallets.length - 1} more (${wallets.length} addrs)
+                            </span>
+                        </div>
+                    </div>`;
+                }
 
                 return `
                 <tr>
                     <td data-label="User Email">${emailHtml}</td>
-                    <td data-label="Wallet">${walletHtml}</td>
+                    <td data-label="Addresses Used">${walletHtml}</td>
                     <td data-label="First Seen">${new Date(u.created_at).toLocaleDateString()}</td>
                     <td data-label="Total Volume">
                         <div><b>$${volUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b></div>
@@ -3620,18 +3656,32 @@
             const matchedUser = (currentUsers || []).find(u => 
                 (u.id && u.id.toLowerCase() === target) ||
                 (u.email && u.email.toLowerCase() === target) ||
-                (u.wallet_address && u.wallet_address.toLowerCase() === target)
+                (u.wallet_address && u.wallet_address.toLowerCase() === target) ||
+                (Array.isArray(u.wallets) && u.wallets.some(w => w && w.toLowerCase() === target))
             );
 
             const displayEmail = matchedUser?.email || (wallet.includes('@') ? wallet : '');
-            const displayWallet = matchedUser?.wallet_address || (!wallet.includes('@') ? wallet : '');
-            const isEmail = Boolean(displayEmail);
+            const knownWallets = (matchedUser && Array.isArray(matchedUser.wallets)) ? [...matchedUser.wallets] : [];
+            if (matchedUser?.wallet_address && !knownWallets.includes(matchedUser.wallet_address)) {
+                knownWallets.push(matchedUser.wallet_address);
+            }
+            if (!wallet.includes('@') && !knownWallets.includes(wallet)) {
+                knownWallets.push(wallet);
+            }
+            const lowerKnown = knownWallets.map(w => w.toLowerCase());
 
             const userTxs = currentTxs.filter(t => {
                 const tEmail = (t.email || '').toLowerCase();
                 const tWallet = (t.wallet_address || '').toLowerCase();
                 return (tEmail && (tEmail === target || (displayEmail && tEmail === displayEmail.toLowerCase()))) ||
-                       (tWallet && (tWallet === target || (displayWallet && tWallet === displayWallet.toLowerCase())));
+                       (tWallet && (tWallet === target || lowerKnown.includes(tWallet)));
+            });
+
+            // Gather all distinct destination addresses from transactions as well
+            userTxs.forEach(t => {
+                if (t.wallet_address && !knownWallets.some(w => w.toLowerCase() === t.wallet_address.toLowerCase())) {
+                    knownWallets.push(t.wallet_address);
+                }
             });
             
             let userUSD = 0;
@@ -3655,7 +3705,8 @@
             if (userNGN === 0 && userUSD > 0) {
                 userNGN = userUSD * 1500;
             }
-            
+
+            const isEmail = Boolean(displayEmail);
             const headerTitle = document.getElementById('detail-header-title');
             const activityTitle = document.getElementById('detail-activity-title');
             if (headerTitle) headerTitle.innerText = isEmail ? 'User Insights' : 'Wallet Insights';
@@ -3673,12 +3724,11 @@
             if (displayEmail) {
                 if (usernameEl) usernameEl.innerText = displayEmail;
                 if (subTitleEl) {
-                    subTitleEl.innerHTML = displayWallet 
-                        ? `<span style="font-family:monospace;font-size:12px;color:var(--text-secondary);">Wallet: ${displayWallet}</span>` 
-                        : 'Active User';
+                    const count = knownWallets.length;
+                    subTitleEl.innerText = `Active User · ${count} destination address${count === 1 ? '' : 'es'} used`;
                 }
             } else {
-                if (usernameEl) usernameEl.innerText = displayWallet || wallet;
+                if (usernameEl) usernameEl.innerText = knownWallets[0] || wallet;
                 if (subTitleEl) subTitleEl.innerText = 'Active Wallet';
             }
 
@@ -3690,15 +3740,65 @@
             document.getElementById('detail-success').innerText = completedCount || userTxs.filter(t => t.status === 'COMPLETED').length;
             document.getElementById('detail-tx-count').innerText = (matchedUser && matchedUser.tx_count > userTxs.length) ? matchedUser.tx_count : userTxs.length;
 
-            document.getElementById('detail-tx-body').innerHTML = userTxs.map(tx => `
+            // Render Destination Addresses Card
+            const addrsCountEl = document.getElementById('detail-addresses-count');
+            const addrsListEl = document.getElementById('detail-addresses-list');
+            if (addrsCountEl) addrsCountEl.innerText = `${knownWallets.length} address${knownWallets.length === 1 ? '' : 'es'}`;
+            
+            if (addrsListEl) {
+                if (knownWallets.length === 0) {
+                    addrsListEl.innerHTML = `<div style="font-size: 12px; color: var(--text-secondary); font-style: italic; padding: 12px 0;">No destination blockchain addresses recorded for this user.</div>`;
+                } else {
+                    addrsListEl.innerHTML = knownWallets.map((addr, idx) => {
+                        const addrTxs = userTxs.filter(t => t.wallet_address && t.wallet_address.toLowerCase() === addr.toLowerCase());
+                        const assets = [...new Set(addrTxs.map(t => t.asset).filter(Boolean))];
+                        let addrVolUSD = 0;
+                        addrTxs.forEach(t => {
+                            if (t.status === 'COMPLETED') {
+                                const vols = getTxVolumes(t);
+                                addrVolUSD += vols.usd;
+                            }
+                        });
+
+                        return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-hover, rgba(0,0,0,0.02)); border: 1px solid var(--border); border-radius: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 250px;">
+                                <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); width: 22px;">#${idx + 1}</span>
+                                <code style="font-size: 12px; font-weight: 600; color: var(--text-main); word-break: break-all;">${addr}</code>
+                                <button onclick="event.stopPropagation(); navigator.clipboard.writeText('${addr}'); showToast('Address copied', 'success');" style="background: none; border: none; cursor: pointer; padding: 2px 4px; color: var(--primary-link);" title="Copy address">📋</button>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; font-size: 11px;">
+                                ${assets.length ? `<span style="display: flex; gap: 4px;">${assets.map(a => `<span style="background: var(--input-bg); border: 1px solid var(--border); padding: 1px 6px; border-radius: 6px; font-weight: 600; font-size: 10px;">${a}</span>`).join('')}</span>` : ''}
+                                <span style="color: var(--text-secondary);">${addrTxs.length} order${addrTxs.length === 1 ? '' : 's'}</span>
+                                ${addrVolUSD > 0 ? `<b style="color: var(--velcro-green);">$${addrVolUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</b>` : ''}
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // Render Activity Rows with Destination Address Column
+            document.getElementById('detail-tx-body').innerHTML = userTxs.map(tx => {
+                const txAddr = tx.wallet_address || '';
+                const addrDisplay = txAddr 
+                    ? `<div style="font-family: monospace; font-size: 11px; display: flex; align-items: center; gap: 4px;" title="${txAddr}">
+                        <span>${txAddr.length > 14 ? txAddr.slice(0, 6) + '...' + txAddr.slice(-4) : txAddr}</span>
+                        <button onclick="event.stopPropagation(); navigator.clipboard.writeText('${txAddr}'); showToast('Address copied', 'success');" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--text-secondary);font-size:11px;" title="Copy address">📋</button>
+                       </div>`
+                    : '<span style="font-size: 11px; color: var(--text-secondary); font-style: italic;">—</span>';
+
+                return `
                 <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
                     <td data-label="Reference"><code>${tx.reference.slice(0, 8)}...</code></td>
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Amount">${formatTxTableAmount(tx)}</td>
+                    <td data-label="Destination / Wallet">${addrDisplay}</td>
                     <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
                     <td data-label="Date">${new Date(tx.created_at).toLocaleDateString()}</td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
 
             switchSection('user-detail');
         }
@@ -3886,15 +3986,19 @@
                 showToast('No users to export', 'warning');
                 return;
             }
-            const headers = ['User Email', 'Wallet Address', 'First Seen', 'Total Volume (USD)', 'Total Volume (NGN)', 'Total TX Count'];
+            const headers = ['User Email', 'Primary Address', 'All Addresses Used', 'Address Count', 'First Seen', 'Total Volume (USD)', 'Total Volume (NGN)', 'Total TX Count'];
             const rows = currentUsers.map(u => {
                 const volUSD = safeNum(u.total_volume_usd !== undefined ? u.total_volume_usd : u.total_volume);
                 const volNGN = safeNum(u.total_volume_ngn) || (volUSD * 1500);
                 const email = u.email || (u.id && u.id.includes('@') ? u.id : '');
-                const wallet = u.wallet_address || (u.id && !u.id.includes('@') ? u.id : '');
+                const wallets = (Array.isArray(u.wallets) && u.wallets.length) ? u.wallets : (u.wallet_address ? [u.wallet_address] : []);
+                const primaryWallet = wallets[0] || u.wallet_address || '';
+                const allWallets = wallets.join('; ');
                 return [
                     `"${(email || '').replace(/"/g, '""')}"`,
-                    `"${(wallet || '').replace(/"/g, '""')}"`,
+                    `"${(primaryWallet || '').replace(/"/g, '""')}"`,
+                    `"${allWallets.replace(/"/g, '""')}"`,
+                    wallets.length,
                     `"${u.created_at || ''}"`,
                     volUSD.toFixed(2),
                     volNGN.toFixed(2),
