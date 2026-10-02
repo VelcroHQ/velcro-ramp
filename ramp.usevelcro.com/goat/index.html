@@ -2397,68 +2397,81 @@
             const headers = { 'Authorization': adminKey };
 
             try {
+                // Fetch stats, config, transactions, users, settings in parallel for maximum speed
+                const [statsRes, configRes, txRes, userRes, settingsRes] = await Promise.all([
+                    fetch(`${API_BASE}/api/admin/stats`, { headers }),
+                    fetch(`${API_BASE}/api/admin/config`, { headers }),
+                    fetch(`${API_BASE}/api/admin/transactions`, { headers }),
+                    fetch(`${API_BASE}/api/admin/users`, { headers }),
+                    fetch(`${API_BASE}/api/admin/settings`, { headers })
+                ]);
+
+                if ([statsRes, configRes, txRes, userRes, settingsRes].some(r => r.status === 401)) {
+                    throw new Error('Status: 401');
+                }
+
                 // 1. Stats
-                const statsRes = await fetch(`${API_BASE}/api/admin/stats`, { headers });
-                if (!statsRes.ok) throw new Error('Status: ' + statsRes.status);
-                const stats = await statsRes.json();
-                document.getElementById('stat-total-users').innerText = stats.totalUsers;
-                document.getElementById('stat-total-txs').innerText = stats.allTransactions;
-                document.getElementById('stat-total-volume').innerText = `$${Number(stats.totalVolumeUSD).toLocaleString(undefined, {maximumFractionDigits: 0})} | ₦${Number(stats.totalVolumeNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
-                document.getElementById('stat-total-earned').innerText = `${Number(stats.developerFees.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${stats.developerFees.currency || 'USDC'}`;
+                if (statsRes.ok) {
+                    const stats = await statsRes.json();
+                    document.getElementById('stat-total-users').innerText = stats.totalUsers;
+                    document.getElementById('stat-total-txs').innerText = stats.allTransactions;
+                    document.getElementById('stat-total-volume').innerText = `$${Number(stats.totalVolumeUSD).toLocaleString(undefined, {maximumFractionDigits: 0})} | ₦${Number(stats.totalVolumeNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+                    document.getElementById('stat-total-earned').innerText = `${Number(stats.developerFees.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${stats.developerFees.currency || 'USDC'}`;
+                }
 
                 // 2. Config (recipient address, etc.)
-                const configRes = await fetch(`${API_BASE}/api/admin/config`, { headers });
-                if (!configRes.ok) throw new Error('Status: ' + configRes.status);
-                currentConfig = await configRes.json();
-                const recipientEl = document.getElementById('withdraw-recipient-display');
-                if (recipientEl && currentConfig.developer_recipient) {
-                    recipientEl.innerText = currentConfig.developer_recipient.slice(0, 6) + '...' + currentConfig.developer_recipient.slice(-6);
-                    recipientEl.title = currentConfig.developer_recipient;
-                }
-                const banner = document.getElementById('withdraw-security-banner');
-                const withdrawBtn = document.getElementById('btn-withdraw-otp');
-                if (banner && currentConfig.withdrawal_allowed === false) {
-                    banner.classList.remove('hidden');
-                    if (withdrawBtn) {
-                        withdrawBtn.style.opacity = '0.5';
-                        withdrawBtn.style.cursor = 'not-allowed';
-                        withdrawBtn.title = 'Withdrawal blocked — address not whitelisted';
+                if (configRes.ok) {
+                    currentConfig = await configRes.json();
+                    const recipientEl = document.getElementById('withdraw-recipient-display');
+                    if (recipientEl && currentConfig.developer_recipient) {
+                        recipientEl.innerText = currentConfig.developer_recipient.slice(0, 6) + '...' + currentConfig.developer_recipient.slice(-6);
+                        recipientEl.title = currentConfig.developer_recipient;
                     }
-                } else if (banner) {
-                    banner.classList.add('hidden');
-                    if (withdrawBtn) {
-                        withdrawBtn.style.opacity = '1';
-                        withdrawBtn.style.cursor = 'pointer';
-                        withdrawBtn.title = 'Withdraw all fees to Solana wallet';
+                    const banner = document.getElementById('withdraw-security-banner');
+                    const withdrawBtn = document.getElementById('btn-withdraw-otp');
+                    if (banner && currentConfig.withdrawal_allowed === false) {
+                        banner.classList.remove('hidden');
+                        if (withdrawBtn) {
+                            withdrawBtn.style.opacity = '0.5';
+                            withdrawBtn.style.cursor = 'not-allowed';
+                            withdrawBtn.title = 'Withdrawal blocked — address not whitelisted';
+                        }
+                    } else if (banner) {
+                        banner.classList.add('hidden');
+                        if (withdrawBtn) {
+                            withdrawBtn.style.opacity = '1';
+                            withdrawBtn.style.cursor = 'pointer';
+                            withdrawBtn.title = 'Withdraw all fees to Solana wallet';
+                        }
                     }
                 }
 
                 // 3. Transactions
-                const txRes = await fetch(`${API_BASE}/api/admin/transactions`, { headers });
-                if (!txRes.ok) throw new Error('Status: ' + txRes.status);
-                currentTxs = await txRes.json();
-                renderTransactions(currentTxs);
-                computeStats(currentTxs);
+                if (txRes.ok) {
+                    currentTxs = await txRes.json();
+                    renderTransactions(currentTxs);
+                    computeStats(currentTxs);
+                }
 
                 // 4. Users (Wallets)
-                const userRes = await fetch(`${API_BASE}/api/admin/users`, { headers });
-                if (!userRes.ok) throw new Error('Status: ' + userRes.status);
-                const users = await userRes.json();
-                currentUsers = users || [];
-                renderUsers(currentUsers);
+                if (userRes.ok) {
+                    const users = await userRes.json();
+                    currentUsers = users || [];
+                    renderUsers(currentUsers);
+                }
 
                 // 5. Settings
-                const settingsRes = await fetch(`${API_BASE}/api/admin/settings`, { headers });
-                if (!settingsRes.ok) throw new Error('Status: ' + settingsRes.status);
-                const settings = await settingsRes.json();
-                currentSettings = settings;
-                document.getElementById('fee-input').value = settings.platform_fee;
-                document.getElementById('buy-max-input').value = settings.buy_max_limit;
-                document.getElementById('sell-min-input').value = settings.sell_min_limit;
-                document.getElementById('sell-max-input').value = settings.sell_max_limit;
-                document.getElementById('paj-email-input').value = settings.paj_email || '';
-                document.getElementById('paj-usdt-toggle').checked = !!settings.paj_usdt_enabled;
-                document.getElementById('paj-usdc-toggle').checked = !!settings.paj_usdc_enabled;
+                if (settingsRes.ok) {
+                    const settings = await settingsRes.json();
+                    currentSettings = settings;
+                    document.getElementById('fee-input').value = settings.platform_fee;
+                    document.getElementById('buy-max-input').value = settings.buy_max_limit;
+                    document.getElementById('sell-min-input').value = settings.sell_min_limit;
+                    document.getElementById('sell-max-input').value = settings.sell_max_limit;
+                    document.getElementById('paj-email-input').value = settings.paj_email || '';
+                    document.getElementById('paj-usdt-toggle').checked = !!settings.paj_usdt_enabled;
+                    document.getElementById('paj-usdc-toggle').checked = !!settings.paj_usdc_enabled;
+                }
 
                 // 6. PAJ Session
                 await fetchPajSession();

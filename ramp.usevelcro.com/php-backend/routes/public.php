@@ -531,23 +531,35 @@ function registerPublicRoutes(Router $router): void
 
         try {
             $rows = Database::select($sql, $params);
+            $now = time();
+            $polledCount = 0;
             foreach ($rows as &$row) {
-                // If the transaction is pending and from Switch, check if it recently completed on Switch
                 $st = strtoupper((string)($row['status'] ?? ''));
-                if (!in_array($st, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true) && ($row['channel'] ?? '') !== 'PAJ') {
-                    try {
-                        $refToQuery = !empty($row['switch_reference']) ? (string)$row['switch_reference'] : (string)$row['reference'];
-                        $live = switchApi()->getPaymentStatus($refToQuery);
-                        if (empty($live['data']['status']) && !empty($row['reference']) && (string)$row['reference'] !== $refToQuery) {
-                            $live = switchApi()->getPaymentStatus((string)$row['reference']);
-                        }
-                        if (!empty($live['data']['status'])) {
-                            $synced = updateSwitchTransactionFromData($refToQuery, $live['data']);
-                            if ($synced) {
-                                $row = $synced;
+                if (!in_array($st, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true)) {
+                    $createdAt = !empty($row['created_at']) ? strtotime($row['created_at']) : 0;
+                    $ageSeconds = $now - $createdAt;
+
+                    // Clean up old abandoned orders (> 2 hours old) as EXPIRED so they are never polled
+                    if ($ageSeconds > 7200 && in_array($st, ['AWAITING_DEPOSIT', 'PENDING'], true)) {
+                        Database::safeExecute('UPDATE `transactions` SET `status` = "EXPIRED", `updated_at` = NOW() WHERE `id` = :id', ['id' => $row['id']]);
+                        $row['status'] = 'EXPIRED';
+                        $st = 'EXPIRED';
+                    }
+
+                    // Only proactively poll at most 1 very recent pending transaction (< 30 minutes old)
+                    if ($polledCount < 1 && $ageSeconds <= 1800 && ($row['channel'] ?? '') !== 'PAJ') {
+                        try {
+                            $refToQuery = !empty($row['switch_reference']) ? (string)$row['switch_reference'] : (string)$row['reference'];
+                            $live = switchApi()->getPaymentStatus($refToQuery, 3);
+                            $polledCount++;
+                            if (!empty($live['data']['status'])) {
+                                $synced = updateSwitchTransactionFromData($refToQuery, $live['data']);
+                                if ($synced) {
+                                    $row = $synced;
+                                }
                             }
-                        }
-                    } catch (Throwable $e) {}
+                        } catch (Throwable $e) {}
+                    }
                 }
                 $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
                 if (empty($row['wallet_address'])) {

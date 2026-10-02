@@ -156,9 +156,11 @@ class SwitchApiClient
         return $this->request($endpoint, ['method' => 'POST', 'body' => $body]);
     }
 
-    public function getPaymentStatus(string $reference): array
+    public function getPaymentStatus(string $reference, int $timeout = 4): array
     {
-        return $this->request('/payment/status?reference=' . urlencode($reference));
+        return $this->request('/payment/status?reference=' . urlencode($reference), [
+            'timeout' => $timeout,
+        ], 0);
     }
 
     public function confirmPayment(string $reference, ?string $hash = null): array

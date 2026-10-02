@@ -104,27 +104,7 @@ function registerAdminRoutes(Router $router): void
         try {
             $rows = Database::safeSelect('SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `created_at`, `updated_at`, `beneficiary` FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
             
-            // Proactively sync non-terminal transactions with live Switch / PAJ providers
-            $pollCount = 0;
             foreach ($rows as &$row) {
-                $status = strtoupper((string) ($row['status'] ?? ''));
-                if (!in_array($status, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true)) {
-                    if ($pollCount < 20) {
-                        try {
-                            pollSingleTransaction($row);
-                            $pollCount++;
-                            $fresh = Database::selectOne(
-                                'SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `created_at`, `updated_at`, `beneficiary` FROM `transactions` WHERE `id` = :id',
-                                ['id' => $row['id']]
-                            );
-                            if ($fresh) {
-                                $row = $fresh;
-                            }
-                        } catch (Throwable $e) {
-                            error_log("Failed to sync tx {$row['reference']}: " . $e->getMessage());
-                        }
-                    }
-                }
                 $row = decodeJsonColumns($row, ['beneficiary']);
                 if (empty($row['wallet_address']) && !empty($row['beneficiary'])) {
                     $ben = $row['beneficiary'];
