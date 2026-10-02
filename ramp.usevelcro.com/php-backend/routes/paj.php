@@ -173,21 +173,12 @@ function registerPajRoutes(Router $router): void
                 // so that (pajCryptoFiat + addedFeeNgn) == $totalInputAmount!
                 $feeUsd = ($totalInputAmount * ($feePercent / 100)) / $rate;
                 $businessUSDCFee = round($feeUsd, 2);
-
-                if ($businessUSDCFee > 0) {
-                    $addedFeeNgn = round($businessUSDCFee * $rate, 2);
-                    if ($totalInputAmount > $addedFeeNgn) {
-                        $pajCryptoFiat = round($totalInputAmount - $addedFeeNgn, 2);
-                    } else {
-                        $businessUSDCFee = null;
-                        $pajCryptoFiat = $totalInputAmount;
-                    }
-                } else {
+                if ($businessUSDCFee <= 0) {
                     $businessUSDCFee = null;
                 }
             }
 
-            $order = pajApi()->createOnrampOrder($pajCryptoFiat, $recipient, $mint, $businessUSDCFee);
+            $order = pajApi()->createOnrampOrder($totalInputAmount, $recipient, $mint, $businessUSDCFee);
             $d = $order ?? [];
             $assetInfo = null;
             foreach (pajApi()->getAssets() as $a) {
