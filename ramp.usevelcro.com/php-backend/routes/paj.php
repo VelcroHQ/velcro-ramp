@@ -84,12 +84,21 @@ function registerPajRoutes(Router $router): void
             jsonResponse(errorResponse('fiatAmount and mint are required'), 400);
         }
         try {
-            $feePercent = getPajFee();
-            $value = pajApi()->getTokenValue((float) $fiatAmount, $mint);
-            if (is_array($value)) {
-                $value['fee_percent'] = getPajFee();
+            $fiat = (float) $fiatAmount;
+            $value = pajApi()->getTokenValue(1.0, $mint);
+            $tokenRate = (float) ($value['tokenRate'] ?? 0);
+            if ($tokenRate <= 0) {
+                $pajRateData = pajApi()->getPajRate();
+                $tokenRate = (float) ($pajRateData['onramp']['rate'] ?? 1363.5);
             }
-            jsonResponse(successResponse($value));
+            $crypto = $tokenRate > 0 ? ($fiat / $tokenRate) : 0.0;
+            jsonResponse(successResponse([
+                'fiatAmount' => $fiat,
+                'tokenRate' => $tokenRate,
+                'amount' => round($crypto, 6),
+                'cryptoAmount' => round($crypto, 6),
+                'fee_percent' => getPajFee(),
+            ]));
         } catch (Throwable $e) {
             jsonResponse(errorResponse($e->getMessage()), 500);
         }
