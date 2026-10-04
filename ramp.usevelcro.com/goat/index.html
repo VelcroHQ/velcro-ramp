@@ -122,6 +122,23 @@
             border-color: var(--sidebar-bg);
         }
 
+        .btn-secondary {
+            width: 100%;
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--velcro-navy);
+            background: var(--bg-light);
+        }
+
         .btn-primary {
             width: 100%;
             background: var(--success);
@@ -1639,8 +1656,8 @@
                 <div style="background: var(--bg-light); padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
                     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
                         <button id="btn-withdraw-otp" onclick="requestWithdrawOTP()" title="Request OTP for withdrawal" 
-                            style="background: linear-gradient(135deg, #9945FF, #14F195); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(20, 241, 149, 0.2);">
-                            💸 Withdraw Fees to Solana
+                            style="background: var(--velcro-green); color: #0D0D59; border: none; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px;">
+                            Withdraw Fees to Solana
                         </button>
                         <div style="font-size: 13px; color: var(--text-secondary);">
                             Recipient: <code id="withdraw-recipient-display" style="background: var(--input-bg); padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--text-main); font-weight: 700; font-family: monospace;">—</code>
@@ -1690,7 +1707,7 @@
                             <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Fix PAJ Channels</div>
                         </div>
                         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Retroactively tag old PAJ transactions that were incorrectly saved with <code>channel: 'BANK'</code>.</p>
-                        <button class="btn-primary" onclick="fixPajChannels()" id="fix-paj-btn" style="background: #7c3aed; width: 100%;">Fix PAJ Channels</button>
+                        <button class="btn-secondary" onclick="fixPajChannels()" id="fix-paj-btn">Fix PAJ Channels</button>
                         <p id="fix-paj-status" style="font-size: 12px; margin-top: 8px; display: none;"></p>
                     </div>
                     <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
@@ -1701,7 +1718,7 @@
                             <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Fix PAJ Statuses</div>
                         </div>
                         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Map old raw PAJ statuses (INIT, PAID) to Velcro generic statuses (AWAITING_DEPOSIT, DETECTED).</p>
-                        <button class="btn-primary" onclick="fixPajStatuses()" id="fix-paj-status-btn" style="background: #b45309; width: 100%;">Fix PAJ Statuses</button>
+                        <button class="btn-secondary" onclick="fixPajStatuses()" id="fix-paj-status-btn">Fix PAJ Statuses</button>
                         <p id="fix-paj-status-result" style="font-size: 12px; margin-top: 8px; display: none;"></p>
                     </div>
                     <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
@@ -1722,7 +1739,7 @@
                             <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Security Audit Log</div>
                         </div>
                         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">View recent admin actions, login attempts, and withdrawal events.</p>
-                        <button class="btn-primary" onclick="fetchAuditLog()" style="width: 100%; background: #dc2626;">View Audit Log</button>
+                        <button class="btn-secondary" onclick="switchSection('audit'); fetchAuditLog()">View Audit Log</button>
                         <div id="audit-log-container" style="margin-top: 12px; max-height: 200px; overflow-y: auto; font-size: 11px; display: none;"></div>
                     </div>
                 </div>
@@ -3081,7 +3098,7 @@
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
                     <td data-label="Amount">${formatTxTableAmount(tx)}</td>
-                    <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
+                    <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${statusLabel(tx.status)}</span></td>
                     <td data-label="Time">${new Date(tx.created_at).toLocaleDateString()}</td>
                 </tr>
                 `;
@@ -3097,7 +3114,7 @@
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Channel">${channelBadge(tx)}</td>
                     <td data-label="Amount">${formatTxTableAmount(tx)}</td>
-                    <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
+                    <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${statusLabel(tx.status)}</span></td>
                     <td data-label="Date" class="hide-mobile">${new Date(tx.created_at).toLocaleDateString()}</td>
                     <td data-label="Action"><button class="btn-view" onclick="viewTransaction('${tx.reference}')">Details</button></td>
                 </tr>
@@ -3378,7 +3395,7 @@
                 }
             }
 
-            document.getElementById('modal-status').innerText = tx.status;
+            document.getElementById('modal-status').innerText = statusLabel(tx.status);
             document.getElementById('modal-status').className = `status-pill ${tx.status.toLowerCase()}`;
             const modalVols = getTxVolumes(tx);
             const modalSym = getTxCurrencySymbol(tx);
@@ -3859,7 +3876,7 @@
                     <td data-label="Type"><b>${tx.type}</b></td>
                     <td data-label="Amount">${formatTxTableAmount(tx)}</td>
                     <td data-label="Destination / Wallet">${addrDisplay}</td>
-                    <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${tx.status}</span></td>
+                    <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${statusLabel(tx.status)}</span></td>
                     <td data-label="Date">${new Date(tx.created_at).toLocaleDateString()}</td>
                 </tr>
                 `;
@@ -3910,7 +3927,7 @@
             document.getElementById('withdraw-otp-section').classList.add('hidden');
             document.getElementById('withdraw-otp-input').value = '';
             const btn = document.getElementById('btn-withdraw-otp');
-            btn.innerText = '💸 Withdraw Fees to Solana';
+            btn.innerText = 'Withdraw Fees to Solana';
             btn.disabled = false;
         }
 
@@ -4151,6 +4168,11 @@
             return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
 
+        function statusLabel(status) {
+            const s = String(status || '').replace(/_/g, ' ').toLowerCase();
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
         function escapeHtml(str) {
             if (!str) return '';
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -4212,7 +4234,7 @@
                         if (idx !== -1) currentTxs[idx] = data.transaction;
                         currentModalTx = data.transaction;
                     }
-                    document.getElementById('modal-status').innerText = data.status;
+                    document.getElementById('modal-status').innerText = statusLabel(data.status);
                     document.getElementById('modal-status').className = `status-pill ${data.status.toLowerCase()}`;
                     if (data.status !== data.previousStatus) {
                         showToast(`Status updated: ${data.previousStatus} → ${data.status}`, 'success');

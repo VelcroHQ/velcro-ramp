@@ -263,8 +263,7 @@
         font-size: 0.8125rem;
       }
       /* Modal optimizations on mobile */
-      #history-modal .p-6,
-      #success-modal .p-6 {
+      #history-modal .p-6 {
         padding: 1.25rem 1rem !important;
       }
       #support-widget {
@@ -418,69 +417,149 @@
       color: #e2e8f0;
     }
 
-    /* Success Modal Premium Styling */
+    /* Success Modal */
     .success-modal-backdrop {
-      position: fixed !important;
-      inset: 0 !important;
-      background-color: rgba(15, 23, 42, 0.72) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
-      z-index: 0 !important;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(13, 13, 89, 0.42);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 0;
     }
     .dark .success-modal-backdrop {
-      background-color: rgba(2, 6, 23, 0.82) !important;
+      background-color: rgba(2, 6, 23, 0.8);
     }
     .success-modal-card {
-      width: 100% !important;
-      max-width: 380px !important;
-      margin: auto !important;
+      width: 100%;
+      max-width: 400px;
+      margin: auto;
       background: #ffffff;
-      border: 1px solid rgba(229, 231, 235, 0.9);
-      box-shadow: 0 25px 60px -15px rgba(13, 13, 89, 0.25), 0 0 1px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(13, 13, 89, 0.06);
+      box-shadow: 0 32px 80px -24px rgba(13, 13, 89, 0.45), 0 2px 6px rgba(13, 13, 89, 0.06);
       border-radius: 24px;
       overflow: hidden;
-      position: relative;
     }
     .dark .success-modal-card {
       background: #0f172a;
       border-color: rgba(51, 65, 85, 0.7);
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 32px 80px -24px rgba(0, 0, 0, 0.7);
     }
     .success-ambient-glow {
       position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      height: 110px;
-      background: radial-gradient(circle at 50% 0%, rgba(168, 207, 69, 0.25) 0%, rgba(34, 197, 94, 0.08) 45%, transparent 70%);
+      inset: 0 0 auto 0;
+      height: 180px;
+      background: radial-gradient(60% 100% at 50% 0%, rgba(168, 207, 69, 0.22) 0%, rgba(168, 207, 69, 0) 100%);
       pointer-events: none;
     }
     .dark .success-ambient-glow {
-      background: radial-gradient(circle at 50% 0%, rgba(168, 207, 69, 0.2) 0%, rgba(16, 185, 129, 0.08) 45%, transparent 70%);
+      background: radial-gradient(60% 100% at 50% 0%, rgba(168, 207, 69, 0.14) 0%, rgba(168, 207, 69, 0) 100%);
     }
-    .success-receipt-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 14px;
+
+    .success-check {
+      width: 64px;
+      height: 64px;
+      border-radius: 9999px;
+      background: #A8CF45;
+      color: #0D0D59;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 8px rgba(168, 207, 69, 0.18), 0 14px 30px -10px rgba(143, 179, 54, 0.7);
     }
-    .dark .success-receipt-box {
+    .dark .success-check {
+      box-shadow: 0 0 0 8px rgba(168, 207, 69, 0.12), 0 14px 30px -10px rgba(0, 0, 0, 0.6);
+    }
+    .success-check svg {
+      width: 30px;
+      height: 30px;
+    }
+    .success-check-path {
+      stroke-dasharray: 24;
+      stroke-dashoffset: 24;
+      animation: successDraw 0.45s 0.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+    @keyframes successDraw {
+      to { stroke-dashoffset: 0; }
+    }
+
+    .success-receipt {
+      background: #f8f9fb;
+      border: 1px solid rgba(13, 13, 89, 0.06);
+      border-radius: 16px;
+      padding: 2px 16px;
+    }
+    .dark .success-receipt {
       background: rgba(30, 41, 59, 0.45);
       border-color: rgba(51, 65, 85, 0.6);
     }
-    .success-hero-box {
-      background: linear-gradient(180deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.5) 100%);
-      border: 1px solid rgba(226, 232, 240, 0.85);
-      border-radius: 16px;
+    .success-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 46px;
     }
-    .dark .success-hero-box {
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
-      border-color: rgba(51, 65, 85, 0.6);
+    .success-row + .success-row {
+      border-top: 1px dashed #e3e6ec;
     }
+    .dark .success-row + .success-row {
+      border-top-color: rgba(71, 85, 105, 0.55);
+    }
+    .success-row dt {
+      color: #6b7280;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .success-row dd {
+      margin: 0;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #0D0D59;
+      font-weight: 600;
+    }
+    .dark .success-row dt { color: #94a3b8; }
+    .dark .success-row dd { color: #e2e8f0; }
+    .success-row dd img {
+      /* logo PNGs carry transparent padding */
+      width: 22px;
+      height: 22px;
+      margin: -3px -2px -3px -4px;
+    }
+    .dark #success-title,
+    .dark #success-amount {
+      color: #ffffff !important;
+    }
+    .success-copy {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      margin-right: -6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      color: #9ca3af;
+      transition: color 0.15s ease, background-color 0.15s ease;
+    }
+    .success-copy:hover {
+      color: #0D0D59;
+      background: rgba(13, 13, 89, 0.06);
+    }
+    .dark .success-copy:hover {
+      color: #ffffff;
+      background: rgba(148, 163, 184, 0.12);
+    }
+    .success-copy svg {
+      width: 14px;
+      height: 14px;
+    }
+
     @keyframes successPop {
       0% {
         opacity: 0;
-        transform: scale(0.92) translateY(12px);
+        transform: scale(0.96) translateY(10px);
       }
       100% {
         opacity: 1;
@@ -488,30 +567,11 @@
       }
     }
     .success-modal-animate {
-      animation: successPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: successPop 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    .success-icon-badge {
-      width: 54px;
-      height: 54px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #A8CF45 0%, #22c55e 100%);
-      box-shadow: 0 8px 20px -4px rgba(34, 197, 94, 0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-    .success-icon-inner {
-      width: 46px;
-      height: 46px;
-      border-radius: 13px;
-      background: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .dark .success-icon-inner {
-      background: #0f172a;
+    @media (prefers-reduced-motion: reduce) {
+      .success-modal-animate { animation: none; }
+      .success-check-path { animation: none; stroke-dashoffset: 0; }
     }
 
     .input-panel {
@@ -2074,9 +2134,9 @@
 
   <!-- History Modal -->
   <div id="history-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 overscroll-contain">
-    <div class="absolute inset-0 bg-white/80 backdrop-blur-sm" onclick="hideHistoryModal()"></div>
+    <div class="success-modal-backdrop" onclick="hideHistoryModal()"></div>
     <div
-      class="history-modal-dialog relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-hidden animate-fade-in flex flex-col my-auto">
+      class="history-modal-dialog relative bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-hidden animate-fade-in flex flex-col my-auto">
       <div class="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white z-10">
         <div>
           <h2 class="text-lg font-bold text-velcro-navy flex items-center gap-2">
@@ -2088,13 +2148,13 @@
             Transaction History</h2>
           <p class="text-xs text-gray-500 mt-0.5">Your recent on-ramp and off-ramp orders</p>
         </div>
-        <button onclick="hideHistoryModal()" class="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition" aria-label="Close History">
-          <i data-lucide="x" class="w-5 h-5"></i>
+        <button onclick="hideHistoryModal()" class="w-8 h-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-velcro-navy hover:bg-gray-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors" aria-label="Close history">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
 
       <!-- Quick Filter Pills: Horizontally slidable on mobile -->
-      <div class="px-4 sm:px-6 py-2.5 bg-gray-50/90 border-b border-gray-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 text-xs">
+      <div class="px-4 sm:px-6 py-2.5 bg-gray-50/90 dark:bg-slate-900/60 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 text-xs">
         <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-velcro-navy text-white transition-all whitespace-nowrap">All</button>
         <button onclick="filterHistory('onramp')" id="hist-filter-onramp" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap">Buy (Crypto)</button>
         <button onclick="filterHistory('offramp')" id="hist-filter-offramp" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap">Sell (Cash)</button>
@@ -2109,111 +2169,82 @@
 
 
   <!-- Success Modal -->
-  <div id="success-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain" style="-webkit-overflow-scrolling: touch;">
-    <!-- Darkened, blurred backdrop for focus -->
+  <div id="success-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-4 overflow-y-auto overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="success-title" style="-webkit-overflow-scrolling: touch;">
     <div id="success-modal-backdrop" class="success-modal-backdrop" onclick="hideSuccessModal()"></div>
-    
-    <!-- Modal Card (Bounded to 380px, centered with my-auto so it never clips at the top) -->
-    <div class="success-modal-card success-modal-animate relative my-auto flex flex-col z-10" style="max-width: 380px; width: 100%;">
-      <!-- Ambient Top Glow -->
+
+    <div id="success-card" tabindex="-1" class="success-modal-card success-modal-animate relative my-auto z-10 outline-none">
       <div class="success-ambient-glow"></div>
-      
-      <!-- Close Button -->
-      <button onclick="hideSuccessModal()" title="Close"
-        class="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors z-20">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+
+      <button onclick="hideSuccessModal()" aria-label="Close"
+        class="absolute top-3.5 right-3.5 z-20 w-8 h-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-velcro-navy hover:bg-gray-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
 
-      <div class="p-4 sm:p-5 text-center relative z-10">
-        <!-- Success Animated Icon -->
-        <div class="relative mx-auto w-12 h-12 flex items-center justify-center mb-2">
-          <div class="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping opacity-30" style="animation-duration: 3s;"></div>
-          <div class="success-icon-badge" style="width: 44px; height: 44px;">
-            <div class="success-icon-inner" style="width: 38px; height: 38px;">
-              <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </div>
-          </div>
+      <div class="relative z-10 px-6 pt-9 pb-6 sm:px-7">
+        <div class="success-check mx-auto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline class="success-check-path" points="20 6 9 17 4 12"></polyline>
+          </svg>
         </div>
 
-        <!-- Status Badge -->
-        <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200/70 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 mb-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="success-badge-status">Transfer Complete</span>
+        <div class="mt-5 text-center">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-velcro-green-dark dark:text-velcro-green" id="success-badge-status">Transfer complete</p>
+          <h2 class="mt-1.5 text-xl font-bold tracking-tight text-velcro-navy dark:text-white" id="success-title">Crypto delivered</h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed" id="success-subtitle">Your tokens have been sent to your wallet.</p>
         </div>
 
-        <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white tracking-tight mb-0.5" id="success-title">Crypto Delivered!</h2>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2.5 leading-relaxed" id="success-subtitle">Your tokens have been transferred successfully.</p>
-        
-        <!-- Hero Amount Box -->
-        <div class="success-hero-box p-2.5 sm:p-3 mb-2.5 text-center">
-          <p class="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-400 mb-0.5" id="success-hero-label">Delivered Amount</p>
-          <div class="flex items-center justify-center gap-1.5 flex-wrap">
-            <span class="text-2xl font-black text-gray-900 dark:text-white tracking-tight" id="success-amount">-</span>
-            <span id="success-asset-tag" class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">SOL</span>
-          </div>
-          <div id="success-secondary-row" class="mt-1.5 pt-1.5 border-t border-gray-200/60 dark:border-slate-700/60 flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-            <span id="success-secondary-label">Amount Paid:</span>
-            <span id="success-secondary-value" class="font-bold text-gray-800 dark:text-gray-200">-</span>
-          </div>
+        <div class="success-amount-block mt-6 text-center">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400" id="success-hero-label">You received</p>
+          <p class="mt-1 flex items-baseline justify-center gap-2 flex-wrap">
+            <span class="text-[34px] leading-tight font-extrabold tracking-tight text-velcro-navy dark:text-white tabular-nums" id="success-amount">-</span>
+            <span class="text-base font-semibold text-gray-400 dark:text-gray-500" id="success-asset-tag">SOL</span>
+          </p>
+          <p id="success-secondary-row" class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <span id="success-secondary-label">You paid</span>
+            <span id="success-secondary-value" class="font-semibold text-gray-700 dark:text-gray-200 tabular-nums">-</span>
+          </p>
         </div>
 
-        <!-- Receipt Summary Card -->
-        <div class="success-receipt-box p-2.5 sm:p-3 text-left space-y-2 mb-3 text-xs">
-          <!-- Network Row -->
-          <div class="flex items-center justify-between py-0.5 border-b border-gray-200/60 dark:border-slate-700/50 pb-1.5" id="success-destination-row">
-            <span class="text-gray-500 dark:text-gray-400 font-medium" id="success-destination-label">Network</span>
-            <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-1" id="success-destination">-</span>
+        <dl class="success-receipt mt-6 text-sm">
+          <div class="success-row" id="success-destination-row">
+            <dt id="success-destination-label">Network</dt>
+            <dd id="success-destination">-</dd>
           </div>
-
-          <!-- Recipient / Account Row -->
-          <div class="flex items-center justify-between py-0.5 border-b border-gray-200/60 dark:border-slate-700/50 pb-1.5" id="success-detail-row">
-            <span class="text-gray-500 dark:text-gray-400 font-medium" id="success-detail-label">Recipient</span>
-            <div class="flex items-center gap-1">
-              <span class="font-mono font-medium text-gray-800 dark:text-gray-200 text-[11px]" id="success-detail">-</span>
-              <button onclick="copySuccessDetail()" title="Copy recipient"
-                class="shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-750 text-gray-400 hover:text-velcro-navy transition-colors">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-                </svg>
+          <div class="success-row" id="success-detail-row">
+            <dt id="success-detail-label">Recipient</dt>
+            <dd>
+              <span class="font-mono text-[13px] truncate" id="success-detail">-</span>
+              <button onclick="copySuccessDetail()" aria-label="Copy recipient" class="success-copy">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
               </button>
-            </div>
+            </dd>
           </div>
-
-          <!-- Order Reference Row -->
-          <div class="flex items-center justify-between py-0.5">
-            <span class="text-gray-500 dark:text-gray-400 font-medium">Order Reference</span>
-            <div class="flex items-center gap-1">
-              <span class="font-mono font-medium text-gray-800 dark:text-gray-200 text-[11px]" id="success-reference">-</span>
-              <button onclick="copySuccessReference()" title="Copy reference"
-                class="shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-750 text-gray-400 hover:text-velcro-navy transition-colors">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-                </svg>
+          <div class="success-row">
+            <dt>Reference</dt>
+            <dd>
+              <span class="font-mono text-[13px] truncate" id="success-reference">-</span>
+              <button onclick="copySuccessReference()" aria-label="Copy reference" class="success-copy">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
               </button>
-            </div>
+            </dd>
           </div>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div class="space-y-2">
+          <div class="success-row">
+            <dt>Date</dt>
+            <dd id="success-date">-</dd>
+          </div>
+        </dl>
+
+        <div class="mt-6 flex flex-col-reverse sm:flex-row gap-2.5">
           <a id="success-explorer-link" href="#" target="_blank" rel="noopener noreferrer"
-            class="hidden w-full bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-slate-700 py-2 rounded-xl text-xs font-semibold transition-all inline-flex items-center justify-center gap-2 shadow-sm">
-            <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/>
-              <line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-            <span>View on Blockchain Explorer</span>
+            class="hidden w-full sm:flex-1 h-12 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-velcro-navy/30 hover:bg-gray-50 dark:hover:bg-slate-750 text-sm font-semibold text-velcro-navy dark:text-gray-100 transition-colors inline-flex items-center justify-center gap-2">
+            View on explorer
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
           </a>
-          <button onclick="hideSuccessModal(); window.location.reload();"
-            class="w-full bg-velcro-green hover:bg-[#b5e038] text-velcro-navy py-2.5 sm:py-3 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+          <button id="success-done" onclick="hideSuccessModal(); window.location.reload();"
+            class="w-full sm:flex-1 h-12 rounded-xl bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy text-sm font-bold transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-velcro-green/30">
             Done
           </button>
         </div>
@@ -5626,7 +5657,7 @@
                   <span class="text-sm font-bold text-gray-900">${isOnramp ? 'Buy' : isOfframp ? 'Sell' : typeLabel || 'Trade'} ${assetName}</span>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <span class="text-[10px] px-2 py-0.5 ${statusClass} rounded-full font-medium uppercase">${tx.status || 'PENDING'}</span>
+                  <span class="text-[10px] px-2 py-0.5 ${statusClass} rounded-full font-medium uppercase">${(tx.status || 'PENDING').replace(/_/g, ' ')}</span>
                   <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 tx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
               </div>
@@ -5788,7 +5819,7 @@
                   </button>
                 </div>
                 <div>
-                  <span class="font-medium text-gray-500">Status: <span class="text-gray-700 dark:text-gray-200 font-semibold">${tx.status}</span></span>
+                  <span class="font-medium text-gray-500">Status: <span class="text-gray-700 dark:text-gray-200 font-semibold">${String(tx.status || '').replace(/_/g, ' ')}</span></span>
                 </div>
               </div>
             </div>
@@ -5870,31 +5901,23 @@
       return `${symbol}${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
-    function formatNetworkBadge(net) {
-      if (!net) return '-';
-      const n = net.toLowerCase();
-      let label = net.charAt(0).toUpperCase() + net.slice(1);
-      let colorClass = 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300';
-      if (n.includes('solana')) {
-        label = 'Solana';
-        colorClass = 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300';
-      } else if (n.includes('tron') || n.includes('trx')) {
-        label = 'TRON';
-        colorClass = 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300';
-      } else if (n.includes('eth') || n.includes('erc20')) {
-        label = 'Ethereum';
-        colorClass = 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300';
-      } else if (n.includes('bsc') || n.includes('binance')) {
-        label = 'BNB Chain';
-        colorClass = 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300';
-      } else if (n.includes('base')) {
-        label = 'Base';
-        colorClass = 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300';
-      } else if (n.includes('polygon') || n.includes('matic')) {
-        label = 'Polygon';
-        colorClass = 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300';
+    // Network name with its chain logo (from /logos), for the success receipt.
+    function renderNetwork(el, net) {
+      const n = String(net || '').toLowerCase();
+      const known = [
+        ['solana', 'Solana', 'solana'], ['tron', 'TRON', 'tron'], ['trx', 'TRON', 'tron'],
+        ['arbitrum', 'Arbitrum', 'arbitrum'], ['optimism', 'Optimism', 'optimism'], ['avalanche', 'Avalanche', 'avalanche'],
+        ['eth', 'Ethereum', 'ethereum'], ['erc20', 'Ethereum', 'ethereum'],
+        ['bsc', 'BNB Chain', 'bsc'], ['binance', 'BNB Chain', 'bsc'],
+        ['base', 'Base', 'base'], ['polygon', 'Polygon', 'polygon'], ['matic', 'Polygon', 'polygon'],
+      ].find(([key]) => n.includes(key));
+      el.textContent = known ? known[1] : (net ? net.charAt(0).toUpperCase() + net.slice(1) : '-');
+      if (known) {
+        const img = document.createElement('img');
+        img.src = `/logos/${known[2]}.png`;
+        img.alt = '';
+        el.prepend(img);
       }
-      return `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${colorClass}">${label}</span>`;
     }
 
     function showSuccessModal(type, data) {
@@ -5929,20 +5952,19 @@
         }
       }
 
+      if (detailEl) detailEl.classList.toggle('font-mono', isBuy);
+
       if (isBuy) {
-        if (title) title.textContent = 'Crypto Delivered!';
-        if (subtitle) subtitle.textContent = 'Your tokens have been transferred to your wallet.';
-        if (statusBadge) statusBadge.textContent = 'Transfer Complete';
-        if (heroLabel) heroLabel.textContent = 'Delivered Amount';
+        if (title) title.textContent = 'Crypto delivered';
+        if (subtitle) subtitle.textContent = 'Your tokens have been sent to your wallet.';
+        if (statusBadge) statusBadge.textContent = 'Transfer complete';
+        if (heroLabel) heroLabel.textContent = 'You received';
         if (amountEl) amountEl.textContent = formatCryptoDigits(rawCrypto);
-        if (assetTag) {
-          assetTag.textContent = rawAsset;
-          assetTag.className = 'text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60';
-        }
+        if (assetTag) assetTag.textContent = rawAsset;
 
         if (secondaryRow && secondaryLabel && secondaryValue) {
           if (rawFiat && Number(rawFiat) > 0) {
-            secondaryLabel.textContent = 'Amount Paid:';
+            secondaryLabel.textContent = 'You paid';
             secondaryValue.textContent = formatFiatDigits(rawFiat);
             secondaryRow.classList.remove('hidden');
           } else {
@@ -5951,13 +5973,13 @@
         }
 
         if (destLabel) destLabel.textContent = 'Network';
-        if (destEl) destEl.innerHTML = formatNetworkBadge(data.network || currentTxDetails?.network || currentBuyNetwork || 'Solana');
+        if (destEl) renderNetwork(destEl, data.network || currentTxDetails?.network || currentBuyNetwork || 'Solana');
 
         const rawWallet = data.walletAddress || currentTxDetails?.walletAddress || '';
         fullSuccessRecipient = rawWallet;
-        if (detailLabel) detailLabel.textContent = 'Recipient Wallet';
+        if (detailLabel) detailLabel.textContent = 'Wallet';
         if (detailEl) {
-          detailEl.textContent = rawWallet ? `${rawWallet.slice(0, 6)}...${rawWallet.slice(-6)}` : '-';
+          detailEl.textContent = rawWallet ? `${rawWallet.slice(0, 6)}…${rawWallet.slice(-6)}` : '-';
           detailEl.setAttribute('data-full-val', rawWallet);
           detailEl.title = rawWallet;
         }
@@ -5978,19 +6000,16 @@
           }
         }
       } else {
-        if (title) title.textContent = 'Payout Successful!';
+        if (title) title.textContent = 'Payout sent';
         if (subtitle) subtitle.textContent = 'Your funds have been sent to your bank account.';
-        if (statusBadge) statusBadge.textContent = 'Payout Sent';
-        if (heroLabel) heroLabel.textContent = 'Payout Amount';
+        if (statusBadge) statusBadge.textContent = 'Payout complete';
+        if (heroLabel) heroLabel.textContent = 'You received';
         if (amountEl) amountEl.textContent = formatFiatDigits(rawFiat);
-        if (assetTag) {
-          assetTag.textContent = 'NGN';
-          assetTag.className = 'text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60';
-        }
+        if (assetTag) assetTag.textContent = ''; // the ₦ sign already says NGN
 
         if (secondaryRow && secondaryLabel && secondaryValue) {
           if (rawCrypto && Number(rawCrypto) > 0) {
-            secondaryLabel.textContent = 'Crypto Sold:';
+            secondaryLabel.textContent = 'You sold';
             secondaryValue.textContent = `${formatCryptoDigits(rawCrypto)} ${rawAsset}`;
             secondaryRow.classList.remove('hidden');
           } else {
@@ -5998,7 +6017,7 @@
           }
         }
 
-        if (destLabel) destLabel.textContent = 'Destination Bank';
+        if (destLabel) destLabel.textContent = 'Bank';
         if (destEl) destEl.textContent = data.bankName || currentTxDetails?.bankName || '-';
 
         const accNum = data.accountNumber || currentTxDetails?.accountNumber || '';
@@ -6006,7 +6025,7 @@
         fullSuccessRecipient = accNum;
         if (detailLabel) detailLabel.textContent = 'Account';
         if (detailEl) {
-          detailEl.textContent = accNum ? `${accNum} (${accName || '-'})` : '-';
+          detailEl.textContent = accNum ? (accName ? `${accNum} · ${accName}` : accNum) : '-';
           detailEl.setAttribute('data-full-val', `${accNum} ${accName}`);
           detailEl.title = `${accNum} ${accName}`;
         }
@@ -6019,14 +6038,21 @@
       const ref = data.reference || currentTxDetails?.reference || '-';
       if (refEl) {
         refEl.setAttribute('data-full-ref', ref);
-        refEl.textContent = ref.length > 20 ? `${ref.slice(0, 10)}...${ref.slice(-6)}` : ref;
+        refEl.textContent = ref.length > 20 ? `${ref.slice(0, 8)}…${ref.slice(-6)}` : ref;
         refEl.title = ref;
+      }
+
+      const dateEl = document.getElementById('success-date');
+      if (dateEl) {
+        const when = new Date(data.completedAt || data.updated_at || Date.now());
+        dateEl.textContent = (isNaN(when) ? new Date() : when).toLocaleString('en-NG', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
       }
 
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.body.style.overflow = 'hidden';
       safeLucideInit();
+      document.getElementById('success-card')?.focus({ preventScroll: true });
     }
 
     function hideSuccessModal() {

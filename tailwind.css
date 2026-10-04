@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide number-input spinners on the amount fields */
+#buy-amount, #buy-receive, #sell-amount, #sell-receive {
+  -webkit-appearance: none;
+  appearance: none;
+  -moz-appearance: textfield;
+}
+#buy-amount::-webkit-inner-spin-button, #buy-amount::-webkit-outer-spin-button,
+#buy-receive::-webkit-inner-spin-button, #buy-receive::-webkit-outer-spin-button,
+#sell-amount::-webkit-inner-spin-button, #sell-amount::-webkit-outer-spin-button,
+#sell-receive::-webkit-inner-spin-button, #sell-receive::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
