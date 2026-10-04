@@ -4997,7 +4997,7 @@
         'hyperevm': `https://hyperevmscan.io/tx/${hash}`,
         'berachain': `https://berascan.io/tx/${hash}`
       };
-      return explorers[network] || '#';
+      return explorers[String(network || '').toLowerCase()] || '#';
     }
 
     function getWalletExplorerUrl(address, network) {
@@ -5023,7 +5023,7 @@
         'hyperevm': `https://hyperevmscan.io/address/${address}`,
         'berachain': `https://berascan.io/address/${address}`
       };
-      return explorers[network] || '#';
+      return explorers[String(network || '').toLowerCase()] || '#';
     }
 
     function updateStatusUI(status, type) {
@@ -5537,7 +5537,7 @@
         const assetName = (asset.includes(':') ? asset.split(':')[1] : asset).toUpperCase();
         const ben = tx.beneficiary ? (typeof tx.beneficiary === 'string' ? JSON.parse(tx.beneficiary) : tx.beneficiary) : {};
         const meta = tx.meta ? (typeof tx.meta === 'string' ? JSON.parse(tx.meta) : tx.meta) : {};
-        const network = meta.network || meta.chain || (asset.includes(':') ? asset.split(':')[0] : 'solana');
+        const network = String(meta.network || meta.chain || (asset.includes(':') ? asset.split(':')[0] : 'solana')).toLowerCase();
         const net = networkInfo(network);
 
         // Robust wallet resolution across all possible schema locations
@@ -5557,7 +5557,8 @@
         const sent = isBuy ? ngn(tx.amount) : (sentCrypto ? crypto(sentCrypto, assetName) : assetName);
         const received = isBuy ? (tx.destination_amount ? crypto(tx.destination_amount, assetName) : '—') : (receivedFiat ? ngn(receivedFiat) : '—');
 
-        const explorer = (tx.hash || tx.explorer_url) ? (tx.explorer_url || getExplorerUrl(tx.hash, network)) : '';
+        let explorer = (tx.hash || tx.explorer_url) ? (tx.explorer_url || getExplorerUrl(tx.hash, network)) : '';
+        if (explorer === '#') explorer = '';
         const icon = isBuy
           ? '<path d="M17 7 7 17"/><path d="M17 17H7V7"/>'
           : '<path d="M7 17 17 7"/><path d="M7 7h10v10"/>';

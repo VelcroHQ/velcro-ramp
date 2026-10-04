@@ -426,25 +426,12 @@
             text-transform: uppercase;
         }
 
-        .completed {
-            background: rgba(168, 207, 69, 0.1);
-            color: #8bab2f;
-        }
-
-        .pending {
-            background: rgba(255, 181, 71, 0.1);
-            color: var(--pending);
-        }
-
-        .failed, .expired, .cancelled {
-            background: rgba(238, 93, 80, 0.1);
-            color: var(--failed);
-        }
-
-        .awaiting_deposit, .processing, .received, .verified, .initiated, .detected, .confirmed {
-            background: rgba(13, 13, 89, 0.1);
-            color: var(--velcro-navy);
-        }
+        .completed { background: rgba(168, 207, 69, 0.16); color: #5f7d17; }
+        .awaiting_deposit, .pending, .initiated { background: #fffbeb; color: #b45309; }
+        .processing, .received, .verified, .detected, .confirmed { background: #f0f9ff; color: #0369a1; }
+        .failed { background: #fef2f2; color: #dc2626; }
+        .cancelled { background: #f3f4f6; color: #4b5563; }
+        .expired { background: #fff7ed; color: #c2410c; }
 
         .btn-view {
             padding: 6px 12px;
@@ -766,14 +753,12 @@
         .dark .btn-view:hover {
             background: #1e293b;
         }
-        .dark .completed {
-            background: rgba(168, 207, 69, 0.15);
-            color: #c4e860;
-        }
-        .dark .awaiting_deposit, .dark .processing, .dark .received, .dark .verified {
-            background: rgba(168, 207, 69, 0.1);
-            color: var(--velcro-green);
-        }
+        .dark .completed { background: rgba(168, 207, 69, 0.15); color: #c4e860; }
+        .dark .awaiting_deposit, .dark .pending, .dark .initiated { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .dark .processing, .dark .received, .dark .verified, .dark .detected, .dark .confirmed { background: rgba(14, 165, 233, 0.15); color: #7dd3fc; }
+        .dark .failed { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .dark .cancelled { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+        .dark .expired { background: rgba(249, 115, 22, 0.15); color: #fdba74; }
         .dark .user-profile-lg {
             background: #1e293b;
             color: var(--text-main);
@@ -1092,6 +1077,87 @@
             .filters-grid {
                 grid-template-columns: 1fr !important;
             }
+        }
+
+        /* ─── Phones ─── */
+        @media (max-width: 640px) {
+            /* Title and its actions share a row when they fit (refresh no longer floats alone). */
+            header {
+                flex-direction: row !important;
+                flex-wrap: wrap;
+                align-items: center !important;
+                justify-content: space-between;
+            }
+            header .header-title { flex: 1 1 200px; min-width: 0; }
+            .header-actions { width: auto !important; }
+
+            /* Tables become stacked cards: every column visible, labelled from data-label. */
+            .table-card { overflow-x: visible; padding: 12px; }
+            .table-card table { min-width: 0; margin-top: 0 !important; }
+            .table-card thead { display: none; }
+            .table-card table, .table-card tbody, .table-card tr { display: block; width: 100%; }
+            .table-card tr {
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 2px 14px;
+                margin-bottom: 10px;
+                background: var(--card-bg);
+            }
+            .table-card td {
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr);
+                column-gap: 12px;
+                align-items: center;
+                justify-items: end;
+                padding: 9px 0 !important;
+                border: 0 !important;
+                text-align: right;
+                max-width: none !important;
+                white-space: normal !important;
+                overflow: visible !important;
+                word-break: break-word;
+            }
+            .table-card td + td { border-top: 1px dashed var(--border) !important; }
+            .table-card td > * { grid-column: 2; }
+            .table-card td::before {
+                content: attr(data-label);
+                grid-column: 1;
+                grid-row: 1 / span 6;
+                justify-self: start;
+                text-align: left;
+                font-size: 11px;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: var(--text-secondary);
+            }
+            /* First column (user / reference) is the card's heading. */
+            .table-card td:first-child,
+            .table-card td[colspan] { grid-template-columns: minmax(0, 1fr); }
+            .table-card td:first-child > * { grid-column: 1; }
+            .table-card td:first-child { justify-items: start; text-align: left; padding-top: 12px !important; }
+            .table-card td:first-child::before,
+            .table-card td[colspan]::before { display: none; }
+            .table-card td[colspan] { justify-items: center; text-align: center; }
+            .table-card td[colspan] > * { grid-column: 1; }
+
+            /* Transaction details: bottom sheet. */
+            #tx-modal { align-items: flex-end !important; padding: 0 !important; }
+            .tx-modal-content {
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: 92dvh;
+                border-radius: 24px 24px 0 0 !important;
+                padding: 22px 18px calc(22px + env(safe-area-inset-bottom)) !important;
+            }
+        }
+        @media (max-width: 480px) {
+            /* Stats: two compact columns instead of eight full-width cards. */
+            .stats-row, .stats-grid, .stats-grid-2 { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+            .stat-card { flex-direction: column; align-items: flex-start; padding: 14px; gap: 10px; }
+            .stat-icon { width: 36px; height: 36px; border-radius: 10px; }
+            .stat-icon svg { width: 18px; height: 18px; }
+            .stat-info span { font-size: 16px; line-height: 1.25; word-break: break-word; }
         }
     </style>
 </head>
@@ -2214,7 +2280,7 @@
     <!-- Transaction Detail Modal -->
     <div id="tx-modal" onclick="if(event.target === this) closeTxModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px;">
         <div class="tx-modal-content">
-            <button onclick="closeTxModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer;"><i data-lucide="x"></i></button>
+            <button onclick="closeTxModal()" aria-label="Close" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--text-main);"><i data-lucide="x"></i></button>
             <h2 style="margin-bottom: 5px;">Transaction Details</h2>
             <div class="tx-modal-info">
                 <div>
@@ -2954,6 +3020,32 @@
             return map[network?.toLowerCase()] || '#';
         }
 
+        // Switch assets are "chain:symbol"; PAJ assets are bare symbols and always on Solana.
+        function txChain(tx) {
+            const asset = String(tx.asset || '');
+            return asset.includes(':') ? asset.split(':')[0].toLowerCase() : 'solana';
+        }
+
+        function assetSymbol(asset) {
+            const a = String(asset || '');
+            return (a.includes(':') ? a.split(':')[1] : a).toUpperCase();
+        }
+
+        function getTxExplorerUrl(hash, network) {
+            const map = {
+                'solana': `https://solscan.io/tx/${hash}`,
+                'ethereum': `https://etherscan.io/tx/${hash}`,
+                'bsc': `https://bscscan.com/tx/${hash}`,
+                'polygon': `https://polygonscan.com/tx/${hash}`,
+                'arbitrum': `https://arbiscan.io/tx/${hash}`,
+                'base': `https://basescan.org/tx/${hash}`,
+                'tron': `https://tronscan.org/#/transaction/${hash}`,
+                'optimism': `https://optimistic.etherscan.io/tx/${hash}`,
+                'avalanche': `https://snowtrace.io/tx/${hash}`,
+            };
+            return map[String(network || '').toLowerCase()] || '#';
+        }
+
         function isPajTx(tx) {
             if (!tx) return false;
             if (tx.channel === 'PAJ') return true;
@@ -3067,7 +3159,7 @@
             }
             if (wallet) {
                 return {
-                    avatar: wallet.slice(-4).toUpperCase(),
+                    avatar: wallet.slice(0, 2).toUpperCase(),
                     display: wallet.length > 14 ? (wallet.slice(0, 6) + '...' + wallet.slice(-4)) : wallet,
                     wallet: wallet
                 };
@@ -3410,12 +3502,12 @@
             const walletExplorerLink = document.getElementById('modal-wallet-explorer-link');
             if (tx.hash) {
                 hashLink.innerText = tx.hash;
-                hashLink.href = tx.explorer_url || '#';
+                hashLink.href = tx.explorer_url || getTxExplorerUrl(tx.hash, txChain(tx));
                 walletExplorerLink.style.display = 'none';
             } else if (tx.wallet_address) {
                 hashLink.innerText = 'No hash available';
                 hashLink.href = '#';
-                walletExplorerLink.href = getWalletExplorerUrl(tx.wallet_address, tx.asset === 'SOL' ? 'solana' : tx.asset === 'USDT' || tx.asset === 'USDC' ? 'solana' : tx.asset);
+                walletExplorerLink.href = getWalletExplorerUrl(tx.wallet_address, txChain(tx));
                 walletExplorerLink.style.display = 'block';
             } else {
                 hashLink.innerText = 'No hash available';
@@ -3430,15 +3522,15 @@
             if (tx.type === 'ONRAMP') {
                 sentEl.innerText = `₦${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                 const dest = safeNum(tx.destination_amount);
-                receivedEl.innerText = dest > 0 ? `${dest.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 6})} ${tx.asset || ''}` : '-';
+                receivedEl.innerText = dest > 0 ? `${dest.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 6})} ${assetSymbol(tx.asset)}` : '-';
             } else {
                 // OFFRAMP
                 if (isPajTx(tx)) {
-                    sentEl.innerText = `₦${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} NGN (${tx.asset || 'Crypto'})`;
+                    sentEl.innerText = `₦${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} NGN (${assetSymbol(tx.asset) || 'Crypto'})`;
                     const dest = safeNum(tx.destination_amount || tx.amount);
                     receivedEl.innerText = `₦${dest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                 } else {
-                    sentEl.innerText = `$${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${tx.asset || ''}`;
+                    sentEl.innerText = `$${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${assetSymbol(tx.asset)}`;
                     const dest = safeNum(tx.destination_amount);
                     receivedEl.innerText = dest > 0 ? `₦${dest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-';
                 }
