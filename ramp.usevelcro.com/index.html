@@ -76,7 +76,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="style.css" rel="stylesheet">
+  <link href="style.css?v=2" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.436.0/lucide.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -295,8 +295,6 @@
     #history-list {
       flex: 1 1 0% !important;
       min-height: 0 !important;
-      max-height: calc(85vh - 125px) !important;
-      max-height: calc(85dvh - 125px) !important;
       overflow-x: hidden !important;
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch !important;
@@ -456,6 +454,33 @@
       height: 22px;
       margin: -3px -2px -3px -4px;
     }
+    .history-day {
+      padding: 4px 4px 0;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9ca3af;
+    }
+    .history-ref {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: rgba(13, 13, 89, 0.05);
+      color: #0D0D59;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      transition: background-color 0.15s ease;
+    }
+    .history-ref:hover { background: rgba(13, 13, 89, 0.1); }
+    .history-ref svg { width: 11px; height: 11px; opacity: 0.6; }
+    .dark .history-ref { background: rgba(148, 163, 184, 0.12); color: #e2e8f0; }
+    .dark .history-ref:hover { background: rgba(148, 163, 184, 0.2); }
+
     .dark #success-title,
     .dark #login-title,
     .dark #success-amount,
@@ -725,7 +750,7 @@
     }
 
     .custom-option.selected {
-      background: #f0fdf4;
+      background: rgba(168, 207, 69, 0.14);
     }
 
     .custom-select-trigger {
@@ -862,7 +887,7 @@
       background: #f9fafb;
     }
     .asset-picker-item.selected {
-      background: #f0fdf4;
+      background: rgba(168, 207, 69, 0.14);
     }
     .asset-picker-item:last-child {
       border-bottom: none;
@@ -1031,7 +1056,7 @@
     .dark .bg-velcro-green.text-velcro-navy { color: #0D0D59 !important; }
     /* Keep tab text dark on green indicator background */
     .dark #tab-sell.text-velcro-navy,
-    .dark #tab-buy.text-velcro-navy { color: #a8cf45 !important; }
+    .dark #tab-buy.text-velcro-navy { color: #0D0D59 !important; }
     .dark .bg-velcro-navy\/5 { background-color: rgba(168, 207, 69, 0.08) !important; }
     .dark .border-velcro-navy\/10 { border-color: rgba(168, 207, 69, 0.15) !important; }
 
@@ -1064,12 +1089,13 @@
 
     .dark .custom-select-options { background: #1e293b; border-color: #475569; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
     .dark .custom-option:hover { background: #334155; }
-    .dark .custom-option.selected { background: #064e3b; }
+    .dark .custom-option.selected { background: rgba(168, 207, 69, 0.12); }
     .dark .dropdown-backdrop { background: rgba(0,0,0,0.45); }
 
     /* Asset picker modal */
     .dark .asset-picker-sheet { background: #0f172a; box-shadow: 0 -10px 40px rgba(0,0,0,0.4); }
     .dark .asset-picker-header { border-color: #334155; }
+    .dark .asset-picker-header h3 { color: #e2e8f0; }
     .dark .asset-picker-back { background: #334155; color: #cbd5e1; }
     .dark .asset-picker-back:hover { background: #475569; }
     .dark .asset-picker-search-wrap { background: #1e293b; }
@@ -1077,7 +1103,7 @@
     .dark .asset-picker-search-wrap input::placeholder { color: #64748b; }
     .dark .asset-picker-item { border-color: #1e293b; }
     .dark .asset-picker-item:hover { background: #1e293b; }
-    .dark .asset-picker-item.selected { background: #064e3b; }
+    .dark .asset-picker-item.selected { background: rgba(168, 207, 69, 0.12); }
     .dark .asset-picker-divider { background: #020617; color: #64748b; }
     .dark .asset-picker-symbol { color: #e2e8f0; }
 
@@ -1238,6 +1264,17 @@
       .dark #login-overlay .success-modal-card::before,
       .dark #history-modal .history-modal-dialog::before {
         background: rgba(255, 255, 255, 0.2);
+      }
+      /* History is a page on phones, not a sheet: fill the screen. */
+      #history-modal .history-modal-dialog {
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+        border: 0;
+        padding-top: env(safe-area-inset-top);
+      }
+      #history-modal .history-modal-dialog::before {
+        content: none;
       }
     }
     @media (max-width: 639px) and (prefers-reduced-motion: reduce) {
@@ -5468,14 +5505,34 @@
         </span>${number && !String(number).includes('*') ? copyBtn(number, 'Account number') : ''}`);
       const bankNames = { '100004': 'OPay', '000014': 'Access Bank', '000013': 'GTBank', '000015': 'Zenith Bank', '000016': 'First Bank', '000004': 'UBA', '000007': 'Fidelity Bank', '000017': 'Wema Bank', '090286': 'Safehaven MFB', '100033': 'PalmPay', '100026': 'Kuda Bank' };
 
+      const statusStyles = {
+        COMPLETED: 'bg-velcro-green/15 text-velcro-green-dark dark:bg-velcro-green/10 dark:text-velcro-green [&>i]:bg-velcro-green',
+        AWAITING_DEPOSIT: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 [&>i]:bg-amber-500',
+        PROCESSING: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 [&>i]:bg-sky-500',
+        FAILED: 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 [&>i]:bg-red-500',
+        CANCELLED: 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 [&>i]:bg-gray-400',
+        EXPIRED: 'bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 [&>i]:bg-orange-500',
+      };
+      const statusGroup = { PENDING: 'AWAITING_DEPOSIT', INITIATED: 'AWAITING_DEPOSIT', INIT: 'AWAITING_DEPOSIT', DETECTED: 'PROCESSING', CONFIRMED: 'PROCESSING', RECEIVED: 'PROCESSING', VERIFIED: 'PROCESSING', PAID: 'PROCESSING' };
+
+      // Group orders under Today / Yesterday / date headers.
+      const dayKey = d => d.toDateString();
+      const today = new Date();
+      const yesterday = new Date(today.getTime() - 86400000);
+      let lastDay = '';
+
       list.innerHTML = txs.map(tx => {
         const status = String(tx.status || 'PENDING').toUpperCase();
-        const statusClass = status === 'COMPLETED' ? 'bg-velcro-green/15 text-velcro-green-dark dark:bg-velcro-green/10 dark:text-velcro-green'
-          : ['FAILED', 'CANCELLED', 'EXPIRED'].includes(status) ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
-          : status === 'PROCESSING' ? 'bg-velcro-navy/[0.07] text-velcro-navy dark:bg-slate-800 dark:text-gray-200'
-          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
+        const statusClass = statusStyles[statusGroup[status] || status] || statusStyles.AWAITING_DEPOSIT;
+        const statusText = status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, ' ');
         // MySQL "YYYY-MM-DD HH:MM:SS" isn't parsed by Safari; the "T" form is.
-        const date = new Date(String(tx.created_at || '').replace(' ', 'T')).toLocaleString('en-NG', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+        const when = new Date(String(tx.created_at || '').replace(' ', 'T'));
+        const valid = !isNaN(when);
+        const time = valid ? when.toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' }) : '';
+        const day = valid ? (dayKey(when) === dayKey(today) ? 'Today' : dayKey(when) === dayKey(yesterday) ? 'Yesterday' : when.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })) : 'Earlier';
+        const groupHeader = day !== lastDay ? `<p class="history-day">${day}</p>` : '';
+        lastDay = day;
+        const shortRef = String(tx.reference || '').slice(0, 8).toUpperCase();
         const asset = String(tx.asset || '');
         const assetName = (asset.includes(':') ? asset.split(':')[1] : asset).toUpperCase();
         const ben = tx.beneficiary ? (typeof tx.beneficiary === 'string' ? JSON.parse(tx.beneficiary) : tx.beneficiary) : {};
@@ -5505,7 +5562,7 @@
           ? '<path d="M17 7 7 17"/><path d="M17 17H7V7"/>'
           : '<path d="M7 17 17 7"/><path d="M7 7h10v10"/>';
 
-        return `
+        return groupHeader + `
           <div class="tx-card rounded-2xl border border-gray-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-velcro-navy/20 dark:hover:border-slate-700 transition-colors">
             <div class="flex items-center gap-3 p-4 cursor-pointer select-none" onclick="toggleTxDetails(this)">
               <span class="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center ${isBuy ? 'bg-velcro-green/15 text-velcro-green-dark' : 'bg-velcro-navy/[0.07] text-velcro-navy dark:bg-slate-800'}">
@@ -5516,9 +5573,13 @@
                   <p class="text-sm font-semibold text-velcro-navy dark:text-white truncate">${title}</p>
                   <p class="text-sm font-bold text-velcro-navy dark:text-white tabular-nums whitespace-nowrap">${received}</p>
                 </div>
-                <div class="mt-1 flex items-center justify-between gap-3">
-                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${date}</p>
-                  <span class="shrink-0 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${statusClass}">${status.replace(/_/g, ' ')}</span>
+                <div class="mt-1.5 flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-2 min-w-0 text-xs text-gray-500 dark:text-gray-400">
+                    <span class="shrink-0 tabular-nums">${time}</span>
+                    <button type="button" onclick="event.stopPropagation(); copyText('${tx.reference}', 'Reference copied!')" title="Copy reference ${tx.reference}"
+                      class="history-ref">#${shortRef}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
+                  </div>
+                  <span class="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusClass}"><i class="w-1.5 h-1.5 rounded-full"></i>${statusText}</span>
                 </div>
               </div>
               <svg class="tx-chevron shrink-0 w-4 h-4 text-gray-400 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>

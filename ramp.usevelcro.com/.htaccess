@@ -37,8 +37,14 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     ExpiresByType image/jpeg "access plus 1 month"
     ExpiresByType image/svg+xml "access plus 1 month"
     ExpiresByType image/x-icon "access plus 1 month"
-    ExpiresByType text/css "access plus 1 week"
-    ExpiresByType application/javascript "access plus 1 week"
+</IfModule>
+
+# CSS/JS change on every deploy but their URLs don't: make browsers revalidate
+# (a cheap 304 when unchanged) instead of keeping a stale copy for a week.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
 </IfModule>
 
 <IfModule mod_rewrite.c>
