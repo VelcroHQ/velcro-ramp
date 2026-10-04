@@ -31,28 +31,20 @@ function registerWebhookRoutes(Router $router): void
             ?? ($payload['id']
             ?? ($payload['data']['id'] ?? null)));
 
-        $status = $payload['status']
-            ?? ($payload['data']['status']
-            ?? ($payload['state']
-            ?? ($payload['data']['state']
-            ?? ($payload['event'] ?? null))));
-
+        // The payload is unauthenticated when no signature is sent, so it only tells us
+        // which reference to re-check. Only live data from Switch is written; if that
+        // lookup fails, the poller picks the transaction up later.
         if ($reference) {
-            $switchData = $payload['data'] ?? $payload;
-
-            // Query live Switch status to ensure authoritative state
             try {
                 $liveStatusData = switchApi()->getPaymentStatus((string)$reference);
-                if (!empty($liveStatusData['data'])) {
-                    $switchData = array_merge($switchData, $liveStatusData['data']);
+                if (!empty($liveStatusData['data']['status'])) {
+                    $updatedTx = updateSwitchTransactionFromData((string)$reference, $liveStatusData['data']);
+                    if ($updatedTx) {
+                        error_log("[Switch Webhook] Updated transaction {$reference} (status: " . ($updatedTx['status'] ?? '') . ", amount: " . ($updatedTx['amount'] ?? '') . ", dest_amount: " . ($updatedTx['destination_amount'] ?? '') . ")");
+                    }
                 }
             } catch (Throwable $e) {
                 error_log("Failed to fetch live status in Switch webhook for {$reference}: " . $e->getMessage());
-            }
-
-            $updatedTx = updateSwitchTransactionFromData((string)$reference, $switchData);
-            if ($updatedTx) {
-                error_log("[Switch Webhook] Updated transaction {$reference} (status: " . ($updatedTx['status'] ?? '') . ", amount: " . ($updatedTx['amount'] ?? '') . ", dest_amount: " . ($updatedTx['destination_amount'] ?? '') . ")");
             }
         }
 
@@ -89,34 +81,18 @@ function registerWebhookRoutes(Router $router): void
             ?? ($payload['transactionId']
             ?? ($payload['data']['transactionId'] ?? null)))))));
 
-        $status = $payload['status']
-            ?? ($payload['data']['status']
-            ?? ($payload['state']
-            ?? ($payload['data']['state']
-            ?? ($payload['event'] ?? null))));
-
-        $hash = $payload['signature']
-            ?? ($payload['hash']
-            ?? ($payload['txHash']
-            ?? ($payload['tx_hash']
-            ?? ($payload['data']['signature']
-            ?? ($payload['data']['hash'] ?? null)))));
-
-        $recipient = $payload['recipient']
-            ?? ($payload['wallet_address']
-            ?? ($payload['data']['recipient']
-            ?? ($payload['data']['wallet_address'] ?? null)));
-
         if ($txId) {
-            // Live query PAJ directly to ensure 100% authoritative final state
+            // The payload is unauthenticated when no signature is sent, so only live data
+            // from PAJ is written. If that lookup fails, the poller picks the transaction up later.
+            $status = null;
             try {
                 if (pajApi()->isConfigured()) {
                     $liveData = pajApi()->getTransactionStatus((string)$txId);
                     if (!empty($liveData['status'])) {
                         $status = $liveData['status'];
-                        $hash = $liveData['signature'] ?? ($liveData['hash'] ?? $hash);
-                        $recipient = $liveData['recipient'] ?? ($liveData['address'] ?? $recipient);
-                        $payload = array_merge($payload, $liveData);
+                        $hash = $liveData['signature'] ?? ($liveData['hash'] ?? null);
+                        $recipient = $liveData['recipient'] ?? ($liveData['address'] ?? null);
+                        $payload = $liveData;
                     }
                 }
             } catch (Throwable $e) {

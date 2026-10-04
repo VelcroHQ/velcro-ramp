@@ -48,6 +48,19 @@ function errorResponse(string $message, int $status = 400): array
     ];
 }
 
+/**
+ * Message safe to show the public: provider errors pass through (e.g. "amount below minimum"),
+ * database errors are logged and hidden.
+ */
+function publicError(Throwable $e): string
+{
+    if ($e instanceof PDOException) {
+        error_log('DB error: ' . $e->getMessage());
+        return 'Internal server error';
+    }
+    return $e->getMessage();
+}
+
 // ─── CORS ───
 function handleCors(): void
 {
@@ -104,28 +117,39 @@ function query(string $key, mixed $default = null): mixed
  */
 function clientIp(): string
 {
-    $keys = ['HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'];
-    foreach ($keys as $key) {
-        if (!empty($_SERVER[$key])) {
-            $ips = explode(',', $_SERVER[$key]);
-            $ip = trim($ips[0]);
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
-            }
-        }
-    }
-    return 'unknown';
+    // X-Forwarded-For / X-Real-IP are client-controlled, so only REMOTE_ADDR is trusted.
+    // ponytail: behind a proxy (e.g. Cloudflare) this is the proxy IP; trust its header only if requests can't bypass it.
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : 'unknown';
+}
+
+/**
+ * Stricter than FILTER_VALIDATE_EMAIL, which accepts quotes and other characters
+ * that break out of HTML/JS when the email is rendered in the dashboards.
+ */
+function isValidEmail(string $email): bool
+{
+    return (bool) preg_match('/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i', $email);
 }
 
 // ─── Admin Auth ───
 
+/**
+ * Checks the admin password. After 10 failures from one IP, every attempt
+ * (even a correct one) is rejected until the 15-minute window rolls over.
+ */
 function verifyAdminPassword(string $input): bool
 {
-    if (ADMIN_PASSWORD_HASH === '') {
+    $rlKey = 'admin_fail_' . clientIp();
+    if (ADMIN_PASSWORD_HASH === '' || !rateLimitCheck($rlKey, 10, 900, true)) {
         return false;
     }
     $clean = preg_replace('/^Bearer\s+/i', '', trim($input));
-    return hash('sha256', $clean) === ADMIN_PASSWORD_HASH;
+    if (hash_equals(ADMIN_PASSWORD_HASH, hash('sha256', $clean))) {
+        return true;
+    }
+    rateLimitCheck($rlKey, 10, 900);
+    return false;
 }
 
 function requireAdminAuth(): void
@@ -341,7 +365,7 @@ function isWithdrawalAllowed(string $address): bool
 
 // ─── Rate Limiting (simple in-memory + APCu fallback) ───
 
-function rateLimitCheck(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $window = RATE_LIMIT_WINDOW_SECONDS): bool
+function rateLimitCheck(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $window = RATE_LIMIT_WINDOW_SECONDS, bool $peek = false): bool
 {
     // Prefer APCu for shared-hosting persistence across requests
     if (extension_loaded('apcu') && ini_get('apc.enabled')) {
@@ -352,7 +376,9 @@ function rateLimitCheck(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $wi
         if ($count >= $max) {
             return false;
         }
-        apcu_store($windowKey, $count + 1, $window);
+        if (!$peek) {
+            apcu_store($windowKey, $count + 1, $window);
+        }
         return true;
     }
     // Fallback: file-based rate limit (slower, but works everywhere)
@@ -369,7 +395,9 @@ function rateLimitCheck(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $wi
     if ($count >= $max) {
         return false;
     }
-    @file_put_contents($file, (string) ($count + 1), LOCK_EX);
+    if (!$peek) {
+        @file_put_contents($file, (string) ($count + 1), LOCK_EX);
+    }
     return true;
 }
 

@@ -87,7 +87,7 @@ define('DB_HOST', env('DB_HOST', '127.0.0.1'));
 define('DB_PORT', envInt('DB_PORT', 3306));
 define('DB_NAME', env('DB_NAME', 'velcrohq_ramp'));
 define('DB_USER', env('DB_USER', 'velcrohq_kamalramp'));
-define('DB_PASS', env('DB_PASS', '4V+cnuIR+4P2K[h{'));
+define('DB_PASS', env('DB_PASS', ''));
 define('DB_CHARSET', 'utf8mb4');
 
 // ─── Switch API ───
@@ -119,9 +119,10 @@ define('WITHDRAWAL_ALLOWED_RECIPIENTS', array_map(
 define('WITHDRAWAL_COOLDOWN_SECONDS', 60);
 
 // ─── Admin ───
-$adminPasswordRaw = env('ADMIN_PASSWORD', 'velcroadmin2026');
+$adminPasswordRaw = env('ADMIN_PASSWORD', '');
 if ($adminPasswordRaw === '') {
-    define('ADMIN_PASSWORD_HASH', hash('sha256', 'velcroadmin2026'));
+    // No password configured: admin is locked (verifyAdminPassword rejects an empty hash).
+    define('ADMIN_PASSWORD_HASH', '');
 } else {
     $clean = preg_replace('/^Bearer\s+/i', '', trim($adminPasswordRaw));
     if (str_starts_with($clean, 'sha256:')) {
@@ -132,8 +133,9 @@ if ($adminPasswordRaw === '') {
 }
 
 // ─── CORS ───
-$corsOrigins = env('CORS_ORIGINS', '*');
-define('CORS_ORIGINS', $corsOrigins === '*' ? ['*'] : array_map('trim', explode(',', $corsOrigins)));
+// Unset = same-origin only (the frontend calls /api on its own domain).
+$corsOrigins = env('CORS_ORIGINS', '');
+define('CORS_ORIGINS', $corsOrigins === '' ? [] : ($corsOrigins === '*' ? ['*'] : array_map('trim', explode(',', $corsOrigins))));
 
 // ─── SMTP / Notifications ───
 define('SMTP_HOST', env('SMTP_HOST', ''));

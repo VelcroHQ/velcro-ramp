@@ -149,7 +149,7 @@ function registerPublicRoutes(Router $router): void
         $body = getJsonBody();
         $country = body($body, 'country');
         $beneficiary = body($body, 'beneficiary');
-        if (!$country || !$beneficiary) {
+        if (!$country || !is_array($beneficiary)) {
             jsonResponse(errorResponse('country and beneficiary are required'), 400);
         }
         try {
@@ -159,7 +159,7 @@ function registerPublicRoutes(Router $router): void
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
             jsonResponse([
                 'status' => 'ERROR',
-                'message' => $e->getMessage()
+                'message' => publicError($e)
             ], $status);
         }
     });
@@ -211,7 +211,7 @@ function registerPublicRoutes(Router $router): void
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
             jsonResponse([
                 'status' => 'ERROR',
-                'message' => $e->getMessage()
+                'message' => publicError($e)
             ], $status);
         }
     });
@@ -284,7 +284,7 @@ function registerPublicRoutes(Router $router): void
                     ]));
                 }
             } catch (Throwable $e) {
-                jsonResponse(errorResponse($e->getMessage()), 500);
+                jsonResponse(errorResponse(publicError($e)), 500);
             }
         } else {
             try {
@@ -336,7 +336,7 @@ function registerPublicRoutes(Router $router): void
                     ]));
                 }
             } catch (Throwable $e) {
-                jsonResponse(errorResponse($e->getMessage()), 500);
+                jsonResponse(errorResponse(publicError($e)), 500);
             }
         }
     };
@@ -355,10 +355,14 @@ function registerPublicRoutes(Router $router): void
             jsonResponse(errorResponse('direction, amount, country, and asset are required'), 400);
         }
 
-        $txRef = body($body, 'reference') ?? generateUuid();
+        // Always server-generated: a client-chosen reference could collide with another user's.
+        $txRef = generateUuid();
         $callbackUrl = body($body, 'callback_url');
         $walletAddress = body($body, 'wallet_address');
-        $email = body($body, 'email');
+        $email = strtolower(trim((string) body($body, 'email', '')));
+        if ($email !== '' && !isValidEmail($email)) {
+            jsonResponse(errorResponse('Invalid email address'), 400);
+        }
         $beneficiary = body($body, 'beneficiary');
 
         // If wallet_address wasn't at root, extract from beneficiary (used by onramp)
@@ -385,7 +389,7 @@ function registerPublicRoutes(Router $router): void
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
             jsonResponse([
                 'status' => 'ERROR',
-                'message' => $e->getMessage()
+                'message' => publicError($e)
             ], $status);
         }
 
@@ -434,15 +438,13 @@ function registerPublicRoutes(Router $router): void
                 'beneficiary' => jsonEncodeNullable($beneficiary),
                 'wallet_address' => $walletAddress,
                 'callback_url' => $callbackUrl,
-                'email' => $email ? strtolower(trim($email)) : null,
+                'email' => $email !== '' ? $email : null,
                 'meta' => jsonEncodeNullable($d),
             ]);
         } catch (Throwable $e) {
-            error_log('DB write failed in /api/initiate: ' . $e->getMessage());
-            jsonResponse([
-                'status' => 'ERROR',
-                'message' => 'Failed to record transaction in database: ' . $e->getMessage()
-            ], 500);
+            // The Switch order already exists, so still hand the user their deposit details.
+            // Log the full order so the missing row can be recovered by hand.
+            error_log('DB write failed in /api/initiate for ' . $txRef . ': ' . $e->getMessage() . ' order=' . json_encode($data));
         }
 
         jsonResponse($data);
@@ -464,7 +466,7 @@ function registerPublicRoutes(Router $router): void
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
             jsonResponse([
                 'status' => 'ERROR',
-                'message' => $e->getMessage()
+                'message' => publicError($e)
             ], $status);
         }
     });
@@ -475,8 +477,9 @@ function registerPublicRoutes(Router $router): void
         if (!$reference) {
             jsonResponse(errorResponse('reference is required'), 400);
         }
+        // Only orders still waiting for a deposit can be cancelled; never overwrite a completed/processing one.
         Database::safeExecute(
-            'UPDATE `transactions` SET `status` = :status WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+            "UPDATE `transactions` SET `status` = :status, `updated_at` = NOW() WHERE (`reference` = :ref1 OR `switch_reference` = :ref2) AND `status` IN ('AWAITING_DEPOSIT', 'PENDING', 'INITIATED')",
             ['status' => 'CANCELLED', 'ref1' => $reference, 'ref2' => $reference]
         );
         jsonResponse(['success' => true, 'message' => 'Transaction cancelled']);
@@ -513,7 +516,7 @@ function registerPublicRoutes(Router $router): void
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
             jsonResponse([
                 'status' => 'ERROR',
-                'message' => $e->getMessage()
+                'message' => publicError($e)
             ], $status);
         }
     });
@@ -588,10 +591,30 @@ function registerPublicRoutes(Router $router): void
                         ?? ($meta['recipient']
                         ?? ($meta['destination']['address'] ?? null)));
                 }
+
+                // The email is not verified, so anyone can query any email here.
+                // Return only what the history UI needs: no raw provider payload, masked bank account.
+                // ponytail: real fix is email-OTP login; until then this list is enumerable by email.
+                $meta = is_array($row['meta'] ?? null) ? $row['meta'] : [];
+                $row['meta'] = array_filter([
+                    'chain' => $meta['chain'] ?? null,
+                    'network' => $meta['network'] ?? null,
+                    'recipient' => $meta['recipient'] ?? null,
+                    'destination' => isset($meta['destination']['address']) ? ['address' => $meta['destination']['address']] : null,
+                ]);
+                if (is_array($row['beneficiary'] ?? null)) {
+                    foreach (['account_number', 'accountNumber'] as $k) {
+                        if (!empty($row['beneficiary'][$k])) {
+                            $row['beneficiary'][$k] = '******' . substr((string) $row['beneficiary'][$k], -4);
+                        }
+                    }
+                }
+                unset($row['callback_url']);
             }
+            unset($row);
             jsonResponse(successResponse($rows));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(publicError($e)), 500);
         }
     });
 
@@ -655,25 +678,7 @@ function registerPublicRoutes(Router $router): void
             $status = $e->getCode() >= 400 ? $e->getCode() : 500;
             jsonResponse([
                 'status' => 'ERROR',
-                'message' => $e->getMessage()
-            ], $status);
-        }
-    });
-
-    $router->get('/api/history', function () {
-        try {
-            $data = switchApi()->getHistory([
-                'limit' => query('limit', 20),
-                'offset' => query('offset', 0),
-                'status' => query('status'),
-                'direction' => query('direction'),
-            ]);
-            jsonResponse($data);
-        } catch (Throwable $e) {
-            $status = $e->getCode() >= 400 ? $e->getCode() : 500;
-            jsonResponse([
-                'status' => 'ERROR',
-                'message' => $e->getMessage()
+                'message' => publicError($e)
             ], $status);
         }
     });

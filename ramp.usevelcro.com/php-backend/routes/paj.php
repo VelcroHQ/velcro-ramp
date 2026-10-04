@@ -70,7 +70,7 @@ function registerPajRoutes(Router $router): void
             $rate['rate_margin'] = $margin;
             jsonResponse(successResponse($rate));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(publicError($e)), 500);
         }
     });
 
@@ -105,7 +105,7 @@ function registerPajRoutes(Router $router): void
                 'fee_percent' => $feePercent,
             ]));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(publicError($e)), 500);
         }
     });
 
@@ -135,7 +135,7 @@ function registerPajRoutes(Router $router): void
             }
             jsonResponse(successResponse($value));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(publicError($e)), 500);
         }
     });
 
@@ -147,9 +147,12 @@ function registerPajRoutes(Router $router): void
         $fiatAmount = body($body, 'fiatAmount');
         $recipient = body($body, 'recipient');
         $mint = body($body, 'mint');
-        $email = body($body, 'email');
+        $email = strtolower(trim((string) body($body, 'email', '')));
         if ($fiatAmount === null || !$recipient || !$mint) {
             jsonResponse(errorResponse('fiatAmount, recipient, and mint are required'), 400);
+        }
+        if ($email !== '' && !isValidEmail($email)) {
+            jsonResponse(errorResponse('Invalid email address'), 400);
         }
         if ((!$email || trim((string)$email) === '') && !empty($recipient)) {
             $found = Database::safeSelect("SELECT `email` FROM `transactions` WHERE LOWER(`wallet_address`) = LOWER(:wallet) AND `email` IS NOT NULL AND `email` != '' ORDER BY `id` DESC LIMIT 1", ['wallet' => trim((string)$recipient)], []);
@@ -160,14 +163,10 @@ function registerPajRoutes(Router $router): void
         try {
             $totalInputAmount = (float) $fiatAmount;
             $feePercent = getPajFee();
+            // Fee is always computed server-side; never accept it from the request.
             $businessUSDCFee = null;
-            if (isset($body['businessUSDCFee']) && is_numeric($body['businessUSDCFee'])) {
-                $businessUSDCFee = (float) $body['businessUSDCFee'];
-            } elseif ($feePercent > 0 && $totalInputAmount > 0) {
-                $businessUSDCFee = calculatePajDeveloperFee($totalInputAmount, 'ONRAMP');
-                if ($businessUSDCFee < 0.01) {
-                    $businessUSDCFee = 0.01;
-                }
+            if ($feePercent > 0 && $totalInputAmount > 0) {
+                $businessUSDCFee = max(0.01, calculatePajDeveloperFee($totalInputAmount, 'ONRAMP'));
             }
 
             $order = pajApi()->createOnrampOrder($totalInputAmount, $recipient, $mint, $businessUSDCFee);
@@ -180,7 +179,7 @@ function registerPajRoutes(Router $router): void
                 }
             }
             Database::safeInsert('transactions', [
-                'reference' => $d['id'] ?? ('paj_' . time()),
+                'reference' => $d['id'] ?? ('paj_' . bin2hex(random_bytes(8))),
                 'type' => 'ONRAMP',
                 'status' => mapPajStatus($d['status'] ?? null) ?: 'AWAITING_DEPOSIT',
                 'country' => 'NG',
@@ -199,7 +198,7 @@ function registerPajRoutes(Router $router): void
             ]);
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(publicError($e)), 500);
         }
     });
 
@@ -212,9 +211,12 @@ function registerPajRoutes(Router $router): void
         $mint = body($body, 'mint');
         $bank = body($body, 'bank');
         $accountNumber = body($body, 'accountNumber');
-        $email = body($body, 'email');
+        $email = strtolower(trim((string) body($body, 'email', '')));
         if ($fiatAmount === null || !$mint || !$bank || !$accountNumber) {
             jsonResponse(errorResponse('fiatAmount, mint, bank, and accountNumber are required'), 400);
+        }
+        if ($email !== '' && !isValidEmail($email)) {
+            jsonResponse(errorResponse('Invalid email address'), 400);
         }
         if ((!$email || trim((string)$email) === '') && !empty($accountNumber)) {
             $found = Database::safeSelect("SELECT `email` FROM `transactions` WHERE `deposit_account_number` = :acc AND `email` IS NOT NULL AND `email` != '' ORDER BY `id` DESC LIMIT 1", ['acc' => trim((string)$accountNumber)], []);
@@ -224,10 +226,9 @@ function registerPajRoutes(Router $router): void
         }
         try {
             $feePercent = getPajFee();
+            // Fee is always computed server-side; never accept it from the request.
             $businessUSDCFee = null;
-            if (isset($body['businessUSDCFee']) && is_numeric($body['businessUSDCFee'])) {
-                $businessUSDCFee = (float) $body['businessUSDCFee'];
-            } elseif ($feePercent > 0) {
+            if ($feePercent > 0) {
                 $businessUSDCFee = calculatePajDeveloperFee((float) $fiatAmount, 'OFFRAMP');
             }
 
@@ -241,7 +242,7 @@ function registerPajRoutes(Router $router): void
                 }
             }
             Database::safeInsert('transactions', [
-                'reference' => $d['id'] ?? ('paj_' . time()),
+                'reference' => $d['id'] ?? ('paj_' . bin2hex(random_bytes(8))),
                 'type' => 'OFFRAMP',
                 'status' => mapPajStatus($d['status'] ?? null) ?: 'AWAITING_DEPOSIT',
                 'country' => 'NG',
@@ -257,7 +258,7 @@ function registerPajRoutes(Router $router): void
             ]);
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(publicError($e)), 500);
         }
     });
 
@@ -285,7 +286,7 @@ function registerPajRoutes(Router $router): void
             $resolved = pajApi()->resolveBankAccount($bank, $accountNumber);
             jsonResponse(successResponse($resolved));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(publicError($e)), 500);
         }
     });
 
@@ -311,7 +312,7 @@ function registerPajRoutes(Router $router): void
                 $update['wallet_address'] = $d['recipient'];
             }
             Database::safeExecute(
-                'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = :hash, `wallet_address` = :wallet_address WHERE `reference` = :id1 OR `switch_reference` = :id2',
+                'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `wallet_address` = COALESCE(:wallet_address, `wallet_address`) WHERE `reference` = :id1 OR `switch_reference` = :id2',
                 [
                     'status' => $update['status'],
                     'meta' => $update['meta'],
@@ -323,7 +324,7 @@ function registerPajRoutes(Router $router): void
             );
             jsonResponse(successResponse($tx));
         } catch (Throwable $e) {
-            jsonResponse(errorResponse($e->getMessage()), 500);
+            jsonResponse(errorResponse(publicError($e)), 500);
         }
     });
 

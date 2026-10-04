@@ -51,9 +51,22 @@ assertTrue((int) $otp >= 100000 && (int) $otp <= 999999, 'OTP is in valid range'
 // ─── Admin password hashing ───
 $hash = hash('sha256', 'secret123');
 $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer secret123';
+// Fresh IP per run so failure counters from earlier runs don't lock this one out.
+$_SERVER['REMOTE_ADDR'] = '10.' . random_int(0, 255) . '.' . random_int(0, 255) . '.' . random_int(1, 254);
 assertTrue(verifyAdminPassword('Bearer secret123'), 'verifyAdminPassword accepts Bearer prefix');
 assertTrue(verifyAdminPassword('secret123'), 'verifyAdminPassword accepts raw password');
 assertTrue(!verifyAdminPassword('wrong'), 'verifyAdminPassword rejects wrong password');
+for ($i = 0; $i < 9; $i++) {
+    verifyAdminPassword('wrong');
+}
+assertTrue(!verifyAdminPassword('secret123'), 'verifyAdminPassword locks out after 10 failures, even for the right password');
+$_SERVER['HTTP_X_FORWARDED_FOR'] = '1.2.3.4';
+assertTrue(clientIp() === $_SERVER['REMOTE_ADDR'], 'clientIp ignores X-Forwarded-For');
+
+// ─── Email validation ───
+assertTrue(isValidEmail('jane.doe+ramp@example.co'), 'isValidEmail accepts normal email');
+assertTrue(!isValidEmail("a'onerror=x@example.com"), 'isValidEmail rejects quotes');
+assertTrue(!isValidEmail('<img src=x>@example.com'), 'isValidEmail rejects HTML');
 
 // ─── Webhook signature ───
 $secret = 'my-secret';

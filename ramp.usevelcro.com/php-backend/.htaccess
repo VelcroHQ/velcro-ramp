@@ -32,7 +32,7 @@
     Deny from all
 </FilesMatch>
 
-<FilesMatch "\.(env|log|json|lock|md)$">
+<FilesMatch "\.(env|log|json|lock|md|old)$">
     Order allow,deny
     Deny from all
 </FilesMatch>

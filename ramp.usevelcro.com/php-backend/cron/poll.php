@@ -8,15 +8,14 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../poll_helpers.php';
 
 // Allow CLI access OR web access with valid admin key
 $isCli = (php_sapi_name() === 'cli');
-$key = $_GET['key'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
-$key = str_replace('Bearer ', '', (string)$key);
-$isValidKey = ($key !== '' && hash('sha256', $key) === ADMIN_PASSWORD_HASH);
+$key = (string) ($_GET['key'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
 
-if (!$isCli && !$isValidKey) {
+if (!$isCli && !verifyAdminPassword($key)) {
     http_response_code(403);
     exit('Forbidden');
 }

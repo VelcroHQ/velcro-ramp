@@ -2484,14 +2484,14 @@
 
                 // 3. Transactions
                 if (txRes.ok) {
-                    currentTxs = await txRes.json();
+                    currentTxs = scrub(await txRes.json());
                     renderTransactions(currentTxs);
                     computeStats(currentTxs);
                 }
 
                 // 4. Users (Wallets)
                 if (userRes.ok) {
-                    const users = await userRes.json();
+                    const users = scrub(await userRes.json());
                     currentUsers = users || [];
                     renderUsers(currentUsers);
                 }
@@ -3962,7 +3962,7 @@
             if (body) body.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading audit logs...</td></tr>';
             try {
                 const res = await fetch(`${API_BASE}/api/admin/audit`, { headers: { 'Authorization': adminKey } });
-                const data = await res.json();
+                const data = scrub(await res.json());
                 const logs = Array.isArray(data) ? data : (data.logs || data.data || []);
                 currentAuditLogs = logs;
                 renderAuditLogs(currentAuditLogs);
@@ -4151,6 +4151,32 @@
             return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // Customer data (emails, wallets, names, references, user agents) is rendered through
+        // innerHTML and inline onclick='...' all over this page. Entity-escaping doesn't protect
+        // the onclick JS strings, so strip the characters that can break out, once, at load time.
+        // ponytail: also mangles legit values like O'Brien; per-sink escaping if that matters.
+        function scrub(v) {
+            if (typeof v === 'string') {
+                // Some endpoints return beneficiary/meta as JSON text; scrub inside it, keep it valid JSON.
+                if (/^\s*[\[{]/.test(v)) {
+                    try { return JSON.stringify(scrub(JSON.parse(v))); } catch (e) {}
+                }
+                return v.replace(/[<>"'`\\]/g, '');
+            }
+            if (Array.isArray(v)) return v.map(scrub);
+            if (v && typeof v === 'object') {
+                const out = {};
+                for (const k in v) out[k] = scrub(v[k]);
+                return out;
+            }
+            return v;
+        }
+
         function switchSection(id) {
             document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
             const targetSection = document.getElementById(`section-${id}`);
@@ -4181,6 +4207,7 @@
                 const data = await res.json();
                 if (data.success) {
                     if (data.transaction) {
+                        data.transaction = scrub(data.transaction);
                         const idx = currentTxs.findIndex(t => t.reference === currentModalTx.reference);
                         if (idx !== -1) currentTxs[idx] = data.transaction;
                         currentModalTx = data.transaction;

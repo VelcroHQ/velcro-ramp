@@ -2460,6 +2460,19 @@
       }
     }
 
+    // History rows are rendered via innerHTML and inline onclick='...'. Anyone can create an order
+    // under any email, so strip characters that could break out of HTML/JS before rendering.
+    function scrub(v) {
+      if (typeof v === 'string') return v.replace(/[<>"'`\\]/g, '');
+      if (Array.isArray(v)) return v.map(scrub);
+      if (v && typeof v === 'object') {
+        const out = {};
+        for (const k in v) out[k] = scrub(v[k]);
+        return out;
+      }
+      return v;
+    }
+
     function escapeHtml(str) {
       if (!str) return '';
       return String(str)
@@ -5818,7 +5831,7 @@
       try {
         const res = await fetch(`${API_BASE}/api/transactions?email=${encodeURIComponent(email)}`);
         const payload = await res.json();
-        userHistoryCache = payload.data || [];
+        userHistoryCache = scrub(payload.data || []);
         updateHistoryTabCounts();
         filterHistory(currentHistoryFilter || 'all');
       } catch (err) {

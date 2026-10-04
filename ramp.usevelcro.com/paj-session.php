@@ -24,10 +24,8 @@ $authError = '';
 
 // Check if trying to login
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
-    $password = trim($_POST['password'] ?? '');
-    $passHash = hash('sha256', $password);
-    
-    if (defined('ADMIN_PASSWORD_HASH') && ADMIN_PASSWORD_HASH !== '' && $passHash === ADMIN_PASSWORD_HASH) {
+    if (verifyAdminPassword((string) ($_POST['password'] ?? ''))) {
+        session_regenerate_id(true);
         $_SESSION['paj_auth'] = true;
     } else {
         $authError = 'Invalid admin password.';
