@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 /* Hide number-input spinners on the amount fields */
 #buy-amount, #buy-receive, #sell-amount, #sell-receive {
