@@ -694,6 +694,7 @@ function registerPublicRoutes(Router $router): void
             'sell_max_limit' => (float) ($settings['sell_max_limit'] ?? 10000),
             'paj_usdt_enabled' => (bool) ($settings['paj_usdt_enabled'] ?? false),
             'paj_usdc_enabled' => (bool) ($settings['paj_usdc_enabled'] ?? false),
+            'referral_fee' => (float) ($settings['referral_fee'] ?? 0.3),
         ]));
     });
 }
