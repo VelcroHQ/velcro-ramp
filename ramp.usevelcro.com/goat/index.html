@@ -432,6 +432,9 @@
         .failed { background: #fef2f2; color: #dc2626; }
         .cancelled { background: #f3f4f6; color: #4b5563; }
         .expired { background: #fff7ed; color: #c2410c; }
+        .approved { background: rgba(168, 207, 69, 0.16); color: #5f7d17; }
+        .rejected { background: #fef2f2; color: #dc2626; }
+        .ref-fee-input { width: 72px !important; padding: 6px 8px !important; margin: 0 !important; font-size: 13px !important; }
 
         .btn-view {
             padding: 6px 12px;
@@ -759,6 +762,8 @@
         .dark .failed { background: rgba(239, 68, 68, 0.15); color: #f87171; }
         .dark .cancelled { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
         .dark .expired { background: rgba(249, 115, 22, 0.15); color: #fdba74; }
+        .dark .approved { background: rgba(168, 207, 69, 0.15); color: #c4e860; }
+        .dark .rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; }
         .dark .user-profile-lg {
             background: #1e293b;
             color: var(--text-main);
@@ -1214,6 +1219,9 @@
                 <li onclick="switchSection('api-tools')" id="nav-api-tools">
                     <i data-lucide="shield-check"></i> API Tools
                 </li>
+                <li onclick="switchSection('referrals')" id="nav-referrals">
+                    <i data-lucide="gift"></i> Referrals
+                </li>
                 <li onclick="switchSection('audit')" id="nav-audit">
                     <i data-lucide="shield-alert"></i> Audit Logs
                 </li>
@@ -1452,6 +1460,53 @@
         </div>
 
         <!-- Audit Logs Content -->
+        <div id="section-referrals" class="view-content">
+            <header>
+                <div class="header-title">
+                    <h1>Referrals</h1>
+                    <p>Referrers earn a % of every successful order made through their link.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="refresh-btn" onclick="fetchReferrals()"><i data-lucide="rotate-cw"></i></button>
+                </div>
+            </header>
+
+            <div class="table-card ref-settings" style="margin-bottom: 20px;">
+                <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px;">
+                    <div style="flex: 1 1 220px;">
+                        <label for="ref-default-fee" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 6px;">Default referral fee (%)</label>
+                        <input type="number" id="ref-default-fee" step="0.01" min="0" max="10" style="margin-bottom: 0;">
+                    </div>
+                    <button class="btn-primary" onclick="saveDefaultReferralFee()" style="width: auto; padding: 12px 22px;">Save</button>
+                </div>
+                <p style="margin-top: 10px; font-size: 12px; color: var(--text-secondary);">Applies to new orders. Each order keeps the fee it was placed with. Paid from Velcro's fee, not added to the customer's price. Minimum withdrawal: <b id="ref-min-withdrawal">$3.00</b>.</p>
+            </div>
+
+            <div class="table-card" style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 14px; font-size: 16px;">Withdrawal requests <span id="ref-pending-count" class="status-pill pending" style="display: none; margin-left: 6px;"></span></h3>
+                <table>
+                    <thead>
+                        <tr><th>Requested</th><th>Referrer</th><th>Amount</th><th>Network</th><th>Address</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="ref-withdrawals-body">
+                        <tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-card">
+                <h3 style="margin-bottom: 14px; font-size: 16px;">Referrers</h3>
+                <table>
+                    <thead>
+                        <tr><th>Referrer</th><th>Code</th><th>Fee</th><th>Orders</th><th>Volume</th><th>Earned</th><th>Balance</th></tr>
+                    </thead>
+                    <tbody id="ref-referrers-body">
+                        <tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="section-audit" class="view-content">
             <header>
                 <div class="header-title">
@@ -4066,6 +4121,111 @@
         }
 
         let currentAuditLogs = [];
+        // ─── Referrals ───
+        const usdFmt = v => '$' + Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const shortAddr = a => a && a.length > 14 ? a.slice(0, 6) + '…' + a.slice(-6) : (a || '');
+
+        async function adminPost(path, body) {
+            const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.success === false) throw new Error(data.error || `Request failed (${res.status})`);
+            return data;
+        }
+
+        async function fetchReferrals() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/referrals`, { headers: { 'Authorization': adminKey } });
+                const data = scrub(await res.json());
+                if (!res.ok) throw new Error(data.error || 'Failed to load referrals');
+                renderReferrals(data);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        function renderReferrals(data) {
+            document.getElementById('ref-default-fee').value = data.default_fee_percent;
+            document.getElementById('ref-min-withdrawal').innerText = usdFmt(data.min_withdrawal_usd);
+
+            const pending = data.withdrawals.filter(w => w.status === 'PENDING').length;
+            const badge = document.getElementById('ref-pending-count');
+            badge.style.display = pending ? 'inline-block' : 'none';
+            badge.innerText = `${pending} pending`;
+
+            const wBody = document.getElementById('ref-withdrawals-body');
+            wBody.innerHTML = data.withdrawals.length ? data.withdrawals.map(w => `
+                <tr>
+                    <td data-label="Requested">${new Date(String(w.created_at).replace(' ', 'T')).toLocaleString()}</td>
+                    <td data-label="Referrer">${w.email}</td>
+                    <td data-label="Amount"><span><b>${usdFmt(w.amount_usd)}</b> USDC</span></td>
+                    <td data-label="Network">${data.chains[w.chain] || w.chain}</td>
+                    <td data-label="Address"><code title="${w.address}">${shortAddr(w.address)}</code> <button class="btn-view" style="padding: 2px 8px;" onclick="navigator.clipboard.writeText('${w.address}'); showToast('Address copied', 'success');">Copy</button></td>
+                    <td data-label="Status"><span class="status-pill ${w.status.toLowerCase()}">${statusLabel(w.status === 'APPROVED' ? 'PAID' : w.status)}</span>${w.payout_hash ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;" title="${w.payout_hash}">tx ${shortAddr(w.payout_hash)}</div>` : ''}${w.note ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">${w.note}</div>` : ''}</td>
+                    <td data-label="Action">${w.status === 'PENDING' ? `
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                            <button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 12px;" onclick="processReferralWithdrawal(${w.id}, 'approve', '${usdFmt(w.amount_usd)}')">Approve</button>
+                            <button class="btn-secondary" style="width: auto; padding: 7px 14px; font-size: 12px;" onclick="processReferralWithdrawal(${w.id}, 'reject', '${usdFmt(w.amount_usd)}')">Reject</button>
+                        </div>` : '<span style="color: var(--text-secondary);">—</span>'}</td>
+                </tr>`).join('') : '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">No withdrawal requests yet.</td></tr>';
+
+            const rBody = document.getElementById('ref-referrers-body');
+            rBody.innerHTML = data.referrers.length ? data.referrers.map(r => `
+                <tr>
+                    <td data-label="Referrer">${r.email}</td>
+                    <td data-label="Code"><code>${r.code}</code></td>
+                    <td data-label="Fee">
+                        <div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end; flex-wrap: wrap;">
+                            <input type="number" class="ref-fee-input" id="ref-fee-${r.code}" value="${r.fee_percent}" step="0.01" min="0" max="10" aria-label="Fee for ${r.email}">%
+                            <button class="btn-view" style="padding: 4px 10px;" onclick="saveReferrerFee('${r.code}')">Save</button>
+                            ${r.fee_is_custom ? `<button class="btn-view" style="padding: 4px 10px;" title="Use the default fee" onclick="saveReferrerFee('${r.code}', true)">Reset</button>` : '<span style="font-size: 11px; color: var(--text-secondary);">default</span>'}
+                        </div>
+                    </td>
+                    <td data-label="Orders"><span>${r.completed_orders} <span style="color: var(--text-secondary);">/ ${r.referred_orders}</span></span></td>
+                    <td data-label="Volume">${usdFmt(r.volume_usd)}</td>
+                    <td data-label="Earned">${usdFmt(r.earned_usd)}</td>
+                    <td data-label="Balance"><b>${usdFmt(r.available_usd)}</b>${r.pending_usd > 0 ? `<div style="font-size: 11px; color: var(--text-secondary);">${usdFmt(r.pending_usd)} pending</div>` : ''}</td>
+                </tr>`).join('') : '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">No referrers yet.</td></tr>';
+        }
+
+        async function saveDefaultReferralFee() {
+            const fee = parseFloat(document.getElementById('ref-default-fee').value);
+            if (Number.isNaN(fee) || fee < 0 || fee > 10) { showToast('Fee must be between 0 and 10%', 'error'); return; }
+            try {
+                await adminPost('/api/admin/settings', { referral_fee: fee });
+                showToast('Default referral fee saved', 'success');
+                fetchReferrals();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        async function saveReferrerFee(code, reset = false) {
+            const fee = reset ? null : parseFloat(document.getElementById('ref-fee-' + code).value);
+            if (!reset && (Number.isNaN(fee) || fee < 0 || fee > 10)) { showToast('Fee must be between 0 and 10%', 'error'); return; }
+            try {
+                await adminPost('/api/admin/referrals/fee', { code, fee_percent: fee });
+                showToast(reset ? 'Fee reset to default' : 'Fee updated for new orders', 'success');
+                fetchReferrals();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        // Approving records the payout; send the USDC yourself first, then paste its tx hash.
+        async function processReferralWithdrawal(id, action, amount) {
+            let body = { action };
+            if (action === 'approve') {
+                const hash = prompt(`Approve ${amount} USDC payout?\n\nSend the USDC first, then paste the payout transaction hash (optional):`);
+                if (hash === null) return;
+                body.payout_hash = hash.trim();
+            } else {
+                const note = prompt(`Reject this ${amount} withdrawal? The amount returns to the referrer's balance.\n\nReason (optional, visible to admins):`);
+                if (note === null) return;
+                body.note = note.trim();
+            }
+            try {
+                await adminPost(`/api/admin/referral-withdrawals/${id}`, body);
+                showToast(action === 'approve' ? 'Withdrawal approved' : 'Withdrawal rejected', 'success');
+                fetchReferrals();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
         async function fetchAuditLog() {
             const body = document.getElementById('audit-log-body');
             if (body) body.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading audit logs...</td></tr>';
@@ -4302,6 +4462,9 @@
             }
             if (id === 'audit') {
                 fetchAuditLog();
+            }
+            if (id === 'referrals') {
+                fetchReferrals();
             }
             if (window.lucide) lucide.createIcons();
             closeSidebar();

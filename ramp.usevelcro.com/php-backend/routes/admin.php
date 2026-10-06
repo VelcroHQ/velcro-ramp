@@ -440,6 +440,13 @@ function registerAdminRoutes(Router $router): void
         if (isset($body['paj_usdt_enabled'])) {
             $settings['paj_usdt_enabled'] = (bool) $body['paj_usdt_enabled'];
         }
+        if (isset($body['referral_fee'])) {
+            $rFee = (float) $body['referral_fee'];
+            if ($rFee < 0 || $rFee > 10) {
+                jsonResponse(['success' => false, 'error' => 'Referral fee must be between 0 and 10%'], 400);
+            }
+            $settings['referral_fee'] = $rFee;
+        }
         if (isset($body['paj_usdc_enabled'])) {
             $settings['paj_usdc_enabled'] = (bool) $body['paj_usdc_enabled'];
         }

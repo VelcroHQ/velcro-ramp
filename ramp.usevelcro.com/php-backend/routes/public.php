@@ -440,7 +440,7 @@ function registerPublicRoutes(Router $router): void
                 'callback_url' => $callbackUrl,
                 'email' => $email !== '' ? $email : null,
                 'meta' => jsonEncodeNullable($d),
-            ]);
+            ] + referralFieldsFor(body($body, 'ref'), $email));
         } catch (Throwable $e) {
             // The Switch order already exists, so still hand the user their deposit details.
             // Log the full order so the missing row can be recovered by hand.

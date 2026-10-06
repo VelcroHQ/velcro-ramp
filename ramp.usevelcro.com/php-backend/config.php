@@ -170,6 +170,7 @@ function defaultSettings(): array
         'paj_email' => PAJ_EMAIL,
         'paj_usdt_enabled' => false,
         'paj_usdc_enabled' => false,
+        'referral_fee' => 0.3,
     ];
 }
 

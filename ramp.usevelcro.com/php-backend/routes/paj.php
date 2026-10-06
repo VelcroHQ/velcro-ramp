@@ -195,7 +195,7 @@ function registerPajRoutes(Router $router): void
                 'wallet_address' => $recipient,
                 'email' => $email ? strtolower(trim($email)) : null,
                 'meta' => jsonEncodeNullable($d),
-            ]);
+            ] + referralFieldsFor(body($body, 'ref'), $email));
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);
@@ -255,7 +255,7 @@ function registerPajRoutes(Router $router): void
                 'beneficiary' => jsonEncodeNullable(['bank' => $bank, 'accountNumber' => $accountNumber, 'holder_name' => $d['accountName'] ?? 'Customer']),
                 'email' => $email ? strtolower(trim($email)) : null,
                 'meta' => jsonEncodeNullable($d),
-            ]);
+            ] + referralFieldsFor(body($body, 'ref'), $email));
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);

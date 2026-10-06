@@ -59,11 +59,13 @@ require_once __DIR__ . '/routes/public.php';
 require_once __DIR__ . '/routes/admin.php';
 require_once __DIR__ . '/routes/paj.php';
 require_once __DIR__ . '/routes/webhooks.php';
+require_once __DIR__ . '/routes/referrals.php';
 
 registerPublicRoutes($router);
 registerAdminRoutes($router);
 registerPajRoutes($router);
 registerWebhookRoutes($router);
+registerReferralRoutes($router);
 
 $matched = $router->dispatch($method, $path);
 
