@@ -394,6 +394,20 @@ function registerAdminRoutes(Router $router): void
         }
     });
 
+    $router->post('/api/admin/clear-ratelimits', function () {
+        requireAdminAuth();
+        $dir = BASE_PATH . '/data/ratelimit';
+        $cleared = 0;
+        if (is_dir($dir)) {
+            foreach (glob($dir . '/*.json') ?: [] as $file) {
+                if (@unlink($file)) {
+                    $cleared++;
+                }
+            }
+        }
+        jsonResponse(['success' => true, 'cleared' => $cleared]);
+    });
+
     $router->post('/api/admin/withdraw', function () {
         requireAdminAuth();
         $ip = clientIp();
