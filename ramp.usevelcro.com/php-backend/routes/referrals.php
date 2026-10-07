@@ -333,6 +333,7 @@ function registerReferralRoutes(Router $router): void
 
     $router->get('/api/referral/me', function () {
         $email = referralEmailFrom(query('email'));
+        requireReferralAuth($email);
         try {
             ensureReferralSchema();
             $ref = referrerByEmail($email);
@@ -344,6 +345,7 @@ function registerReferralRoutes(Router $router): void
 
     $router->post('/api/referral/link', function () {
         $email = referralEmailFrom(body(getJsonBody(), 'email'));
+        requireReferralAuth($email);
         if (!rateLimitCheck('ref_link_' . clientIp(), 20, 3600)) {
             jsonResponse(errorResponse('Too many requests. Try again later.', 429), 429);
         }
