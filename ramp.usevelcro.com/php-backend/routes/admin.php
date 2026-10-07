@@ -357,6 +357,43 @@ function registerAdminRoutes(Router $router): void
         }
     });
 
+    $router->post('/api/admin/test-email', function () {
+        requireAdminAuth();
+        $ip = clientIp();
+        $body = getJsonBody();
+        $to = strtolower(trim((string) body($body, 'to', ADMIN_EMAIL)));
+        if (!isValidEmail($to)) {
+            $to = ADMIN_EMAIL;
+        }
+        if (!isValidEmail($to)) {
+            jsonResponse(['success' => false, 'error' => 'No valid admin email configured'], 400);
+        }
+        try {
+            [$html, $text] = renderEmail([
+                'preheader' => 'Velcro Ramp admin email delivery test',
+                'eyebrow' => 'System Test',
+                'title' => 'Admin Test Email',
+                'intro' => 'This is a test notification confirming that email delivery from your Velcro server is working properly.',
+                'code' => 'OK-' . strtoupper(substr(md5((string) time()), 0, 4)),
+                'rows' => [
+                    ['Recipient', $to, false],
+                    ['Server Time', gmdate('Y-m-d H:i:s') . ' UTC', false],
+                    ['Mail Mode', MAILHIVE_API_KEY !== '' ? 'Mailhive API' : (SMTP_HOST !== '' ? 'SMTP (' . SMTP_HOST . ')' : 'PHP mail()'), false],
+                ],
+                'outro' => 'If you received this email, receipts, withdrawal OTPs, and campaigns are working properly.',
+            ]);
+            $sent = sendEmailTo($to, 'Velcro Ramp — Admin Test Email', $html, $text);
+            auditLog('ADMIN_TEST_EMAIL', ['ip' => $ip, 'to' => $to, 'sent' => $sent]);
+            jsonResponse([
+                'success' => $sent,
+                'to' => $to,
+                'message' => $sent ? "Test email sent successfully to {$to}" : "Sending failed to {$to}. Check server mail logs.",
+            ], $sent ? 200 : 502);
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
     $router->post('/api/admin/withdraw', function () {
         requireAdminAuth();
         $ip = clientIp();
