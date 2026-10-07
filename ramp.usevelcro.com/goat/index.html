@@ -1486,11 +1486,14 @@
                 <div class="header-title">
                     <h1>Email campaigns</h1>
                     <p id="camp-audience">Loading audience…</p>
+                    <p id="camp-mail-status" style="margin-top: 6px; font-size: 13px;"></p>
                 </div>
                 <div class="header-actions">
                     <button class="refresh-btn" onclick="fetchCampaigns()"><i data-lucide="rotate-cw"></i></button>
                 </div>
             </header>
+
+            <pre id="camp-mail-detail" class="table-card" style="display: none; margin-bottom: 20px; white-space: pre-wrap; word-break: break-all; font-size: 12px;"></pre>
 
             <div class="camp-grid">
                 <div class="table-card camp-form">
@@ -4202,7 +4205,25 @@
             return { subject: v('camp-subject'), preheader: v('camp-preheader'), title: v('camp-title'), body: document.getElementById('camp-body').value.trim(), cta_label: v('camp-cta-label'), cta_url: v('camp-cta-url') };
         }
 
+        // Shows whether the server can send email; when it can't, the raw diagnostic (no secrets) is shown.
+        async function fetchMailStatus() {
+            const line = document.getElementById('camp-mail-status');
+            const detail = document.getElementById('camp-mail-detail');
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/mail-status`, { headers: { 'Authorization': adminKey } });
+                if (!res.ok) { line.innerText = ''; return; }
+                const d = scrub(await res.json());
+                const ok = d.mailhive_key_loaded || d.smtp_configured;
+                line.innerHTML = ok
+                    ? `<span style="color: var(--success);">●</span> Email sending via ${d.mailhive_key_loaded ? 'Mailhive (' + d.mailhive_key_hint + ')' : 'SMTP'}`
+                    : '<span style="color: var(--failed);">●</span> Email is not sending: the server has no Mailhive key loaded. Details below.';
+                detail.style.display = ok ? 'none' : 'block';
+                detail.textContent = ok ? '' : JSON.stringify(d, null, 2);
+            } catch (e) { line.innerText = ''; }
+        }
+
         async function fetchCampaigns() {
+            fetchMailStatus();
             try {
                 const res = await fetch(`${API_BASE}/api/admin/campaigns`, { headers: { 'Authorization': adminKey } });
                 const data = scrub(await res.json());

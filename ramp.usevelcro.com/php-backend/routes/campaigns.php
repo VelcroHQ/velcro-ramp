@@ -105,6 +105,40 @@ function registerCampaignRoutes(Router $router): void
 
     // ─── Admin ───
 
+    // Why isn't email sending? Reports how .env was read, without revealing secrets.
+    $router->get('/api/admin/mail-status', function () {
+        requireAdminAuth();
+        $envFile = BASE_PATH . '/.env';
+        $lines = is_readable($envFile) ? (file($envFile, FILE_IGNORE_NEW_LINES) ?: []) : [];
+        $keyLines = [];
+        foreach ($lines as $i => $line) {
+            if (stripos($line, 'MAILHIVE') === false) {
+                continue;
+            }
+            // Keep the line's shape (prefix, separator, quotes, odd characters) but hide the value.
+            $shape = preg_replace_callback('/(=\s*["\']?)([^"\'\s]+)/', static fn ($m) => $m[1] . '[' . strlen($m[2]) . ' chars hidden]', $line, 1);
+            $keyLines[] = [
+                'line' => $i + 1,
+                'shape' => preg_replace('/[^\x20-\x7E]/', '?', (string) $shape), // non-ASCII (BOM, smart quotes) shows as ?
+                'has_invisible_chars' => (bool) preg_match('/[^\x20-\x7E\t]/', $line),
+            ];
+        }
+        jsonResponse([
+            'env_file' => $envFile,
+            'env_exists' => is_file($envFile),
+            'env_readable' => is_readable($envFile),
+            'env_modified' => is_file($envFile) ? gmdate('Y-m-d H:i:s', (int) filemtime($envFile)) . ' UTC' : null,
+            'mailhive_key_loaded' => MAILHIVE_API_KEY !== '',
+            'mailhive_key_hint' => MAILHIVE_API_KEY !== '' ? substr(MAILHIVE_API_KEY, 0, 6) . '… (' . strlen(MAILHIVE_API_KEY) . ' chars)' : null,
+            'mailhive_lines_in_env' => $keyLines,
+            'set_by_server_environment' => getenv('MAILHIVE_API_KEY') !== false && !in_array('MAILHIVE_API_KEY', array_map(static fn ($l) => trim(explode('=', $l, 2)[0]), $lines), true),
+            'smtp_configured' => SMTP_HOST !== '' && SMTP_USER !== '' && SMTP_PASS !== '',
+            'php_mail_available' => function_exists('mail'),
+            'mail_from' => MAIL_FROM,
+            'admin_email' => ADMIN_EMAIL,
+        ]);
+    });
+
     $router->get('/api/admin/campaigns', function () {
         requireAdminAuth();
         jsonResponse(campaignOverview());
