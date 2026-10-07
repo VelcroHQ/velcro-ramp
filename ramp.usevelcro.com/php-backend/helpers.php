@@ -405,28 +405,47 @@ function rateLimitCheck(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $wi
 
 function mailConfigured(): bool
 {
-    return MAILHIVE_API_KEY !== '' || (SMTP_HOST !== '' && SMTP_USER !== '' && SMTP_PASS !== '');
+    return MAILHIVE_API_KEY !== '' || (SMTP_HOST !== '' && SMTP_USER !== '' && SMTP_PASS !== '') || function_exists('mail');
 }
 
-/** Sends one email: Mailhive Send API when MAILHIVE_API_KEY is set, otherwise SMTP. */
+/** Sends one email: Mailhive Send API when MAILHIVE_API_KEY is set, SMTP when configured, or PHP mail() fallback. */
 function sendEmailTo(string $to, string $subject, string $html, string $text): bool
 {
-    if (MAILHIVE_API_KEY === '') {
+    if (MAILHIVE_API_KEY !== '') {
+        try {
+            $res = httpRequest('POST', 'https://api.mailhive.africa/v1/send/emails', [
+                'headers' => ['Authorization: Bearer ' . MAILHIVE_API_KEY],
+                'body' => ['from' => 'Velcro <' . MAIL_FROM . '>', 'to' => $to, 'subject' => $subject, 'html' => $html, 'text' => $text],
+                'timeout' => 15,
+            ]);
+            // Mailhive accepts but skips addresses on its suppression list (bounces/complaints).
+            $suppressed = array_map('strtolower', (array) ($res['suppressed'] ?? []));
+            return !empty($res['id']) && !in_array(strtolower($to), $suppressed, true);
+        } catch (Throwable $e) {
+            error_log('Mailhive send failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+    if (SMTP_HOST !== '' && SMTP_USER !== '' && SMTP_PASS !== '') {
         return smtpSend($to, $subject, $html, $text);
     }
-    try {
-        $res = httpRequest('POST', 'https://api.mailhive.africa/v1/send/emails', [
-            'headers' => ['Authorization: Bearer ' . MAILHIVE_API_KEY],
-            'body' => ['from' => 'Velcro <' . MAIL_FROM . '>', 'to' => $to, 'subject' => $subject, 'html' => $html, 'text' => $text],
-            'timeout' => 15,
-        ]);
-        // Mailhive accepts but skips addresses on its suppression list (bounces/complaints).
-        $suppressed = array_map('strtolower', (array) ($res['suppressed'] ?? []));
-        return !empty($res['id']) && !in_array(strtolower($to), $suppressed, true);
-    } catch (Throwable $e) {
-        error_log('Mailhive send failed: ' . $e->getMessage());
-        return false;
+    if (function_exists('mail')) {
+        $boundary = md5(uniqid((string) time(), true));
+        $from = MAIL_FROM !== '' ? MAIL_FROM : (SMTP_FROM !== '' ? SMTP_FROM : 'noreply@usevelcro.com');
+        $headers = [
+            'From: "Velcro" <' . $from . '>',
+            'Reply-To: ' . $from,
+            'MIME-Version: 1.0',
+            'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+        ];
+        $body = "--{$boundary}\r\n"
+            . "Content-Type: text/plain; charset=UTF-8\r\n\r\n{$text}\r\n"
+            . "--{$boundary}\r\n"
+            . "Content-Type: text/html; charset=UTF-8\r\n\r\n{$html}\r\n"
+            . "--{$boundary}--";
+        return @mail($to, $subject, $body, implode("\r\n", $headers));
     }
+    return false;
 }
 
 function sendMail(string $subject, string $html, string $text): array
