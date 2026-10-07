@@ -232,6 +232,81 @@ function referralView(array $referrer): array
     ];
 }
 
+// ─── Email verification ───
+// Emails are self-declared, so the referral profile is gated behind a code sent to the inbox.
+// A verified browser gets a stateless HMAC token (email|expiry); the key lives in data/.app_key.
+
+/** OTP table keys are VARCHAR(100); hash the email so long addresses fit. */
+function referralOtpKey(string $purpose, string $email): string
+{
+    return $purpose . ':' . substr(hash('sha256', $email), 0, 40);
+}
+
+function referralAppKey(): string
+{
+    static $key = null;
+    if ($key !== null) {
+        return $key;
+    }
+    $file = BASE_PATH . '/data/.app_key';
+    if (!is_file($file)) {
+        $fp = @fopen($file, 'x'); // 'x' fails if another request created it first
+        if ($fp) {
+            fwrite($fp, bin2hex(random_bytes(32)));
+            fclose($fp);
+        }
+    }
+    $key = trim((string) @file_get_contents($file));
+    if (strlen($key) < 32) {
+        throw new RuntimeException('Referral signing key unavailable');
+    }
+    return $key;
+}
+
+function issueReferralToken(string $email): string
+{
+    $payload = $email . '|' . (time() + 30 * 86400);
+    return rtrim(strtr(base64_encode($payload), '+/', '-_'), '=') . '.' . hash_hmac('sha256', $payload, referralAppKey());
+}
+
+function referralTokenEmail(string $token): ?string
+{
+    [$b64, $sig] = array_pad(explode('.', $token, 2), 2, '');
+    $payload = base64_decode(strtr($b64, '-_', '+/'), true);
+    if ($payload === false || !hash_equals(hash_hmac('sha256', $payload, referralAppKey()), $sig)) {
+        return null;
+    }
+    [$email, $exp] = array_pad(explode('|', $payload, 2), 2, '0');
+    return (int) $exp > time() ? $email : null;
+}
+
+/** Ends the request with 401 unless the X-Ref-Token header was issued for this email. */
+function requireReferralAuth(string $email): void
+{
+    if (referralTokenEmail((string) ($_SERVER['HTTP_X_REF_TOKEN'] ?? '')) !== $email) {
+        jsonResponse(errorResponse('Verify your email to continue', 401), 401);
+    }
+}
+
+/** Sends a 6-digit code to $email. Ends the request with an error if mail isn't configured or fails. */
+function sendReferralCode(string $email, string $otpKey, string $subject, string $line): void
+{
+    if (!mailConfigured()) {
+        jsonResponse(errorResponse('Email codes are temporarily unavailable.', 503), 503);
+    }
+    $otp = generateOTP();
+    storeOTP($otpKey, $otp);
+    $sent = sendEmailTo(
+        $email,
+        $subject,
+        "<div style=\"font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px\"><h2 style=\"color:#0D0D59\">{$subject}</h2><p>{$line}</p><div style=\"font-size:32px;font-weight:700;letter-spacing:6px;color:#0D0D59;background:#f4f7fe;padding:16px;border-radius:10px;text-align:center\">{$otp}</div><p style=\"color:#64748b;font-size:13px\">Expires in 5 minutes. If you didn't request this, ignore this email.</p></div>",
+        "{$subject}: {$otp}\n{$line}\nExpires in 5 minutes."
+    );
+    if (!$sent) {
+        jsonResponse(errorResponse('Could not send the code. Try again shortly.', 502), 502);
+    }
+}
+
 /** Request email from the body/query, validated. Ends the request on bad input. */
 function referralEmailFrom(mixed $raw): string
 {
@@ -246,8 +321,36 @@ function registerReferralRoutes(Router $router): void
 {
     // ─── User ───
 
+    $router->post('/api/referral/verify/otp', function () {
+        $email = referralEmailFrom(body(getJsonBody(), 'email'));
+        if (!rateLimitCheck('ref_verify_' . $email, 5, 3600) || !rateLimitCheck('ref_verify_ip_' . clientIp(), 20, 3600)) {
+            jsonResponse(errorResponse('Too many code requests. Try again in an hour.', 429), 429);
+        }
+        try {
+            sendReferralCode($email, referralOtpKey('refauth', $email), 'Your Velcro verification code', 'Use this code to open your Velcro referral profile:');
+            jsonResponse(successResponse(['sent' => true], 'Code sent to ' . $email));
+        } catch (Throwable $e) {
+            jsonResponse(errorResponse(publicError($e)), 500);
+        }
+    });
+
+    $router->post('/api/referral/verify', function () {
+        $body = getJsonBody();
+        $email = referralEmailFrom(body($body, 'email'));
+        try {
+            $check = verifyOTP(referralOtpKey('refauth', $email), (string) body($body, 'otp', ''));
+            if (!$check['valid']) {
+                jsonResponse(errorResponse($check['reason']), 403);
+            }
+            jsonResponse(successResponse(['token' => issueReferralToken($email)], 'Email verified'));
+        } catch (Throwable $e) {
+            jsonResponse(errorResponse(publicError($e)), 500);
+        }
+    });
+
     $router->get('/api/referral/me', function () {
         $email = referralEmailFrom(query('email'));
+        requireReferralAuth($email);
         try {
             ensureReferralSchema();
             $ref = referrerByEmail($email);
@@ -259,6 +362,7 @@ function registerReferralRoutes(Router $router): void
 
     $router->post('/api/referral/link', function () {
         $email = referralEmailFrom(body(getJsonBody(), 'email'));
+        requireReferralAuth($email);
         if (!rateLimitCheck('ref_link_' . clientIp(), 20, 3600)) {
             jsonResponse(errorResponse('Too many requests. Try again later.', 429), 429);
         }
@@ -289,14 +393,12 @@ function registerReferralRoutes(Router $router): void
         }
     });
 
-    // Emails aren't verified, so payouts need a one-time code sent to the referrer's inbox.
+    // Payouts take a fresh code on top of the verified session, in case a stored token leaks.
     $router->post('/api/referral/withdraw/otp', function () {
         $email = referralEmailFrom(body(getJsonBody(), 'email'));
+        requireReferralAuth($email);
         if (!rateLimitCheck('ref_otp_' . $email, 5, 3600)) {
             jsonResponse(errorResponse('Too many code requests. Try again in an hour.', 429), 429);
-        }
-        if (SMTP_HOST === '' || SMTP_USER === '' || SMTP_PASS === '') {
-            jsonResponse(errorResponse('Withdrawals are temporarily unavailable.', 503), 503);
         }
         try {
             ensureReferralSchema();
@@ -311,18 +413,8 @@ function registerReferralRoutes(Router $router): void
             if ($summary['available_usd'] < REFERRAL_MIN_WITHDRAWAL_USD) {
                 jsonResponse(errorResponse('Minimum withdrawal is $' . number_format(REFERRAL_MIN_WITHDRAWAL_USD, 2)), 400);
             }
-            $otp = generateOTP();
-            storeOTP('refwd:' . $email, $otp);
             $amount = number_format($summary['available_usd'], 2);
-            $sent = smtpSend(
-                $email,
-                'Your Velcro withdrawal code',
-                "<div style=\"font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px\"><h2 style=\"color:#0D0D59\">Withdrawal code</h2><p>Use this code to withdraw \${$amount} USDC of referral earnings:</p><div style=\"font-size:32px;font-weight:700;letter-spacing:6px;color:#0D0D59;background:#f4f7fe;padding:16px;border-radius:10px;text-align:center\">{$otp}</div><p style=\"color:#64748b;font-size:13px\">Expires in 5 minutes. If you didn't request this, ignore this email.</p></div>",
-                "Your Velcro withdrawal code: {$otp}\nAmount: \${$amount} USDC\nExpires in 5 minutes."
-            );
-            if (!$sent) {
-                jsonResponse(errorResponse('Could not send the code. Try again shortly.', 502), 502);
-            }
+            sendReferralCode($email, referralOtpKey('refwd', $email), 'Your Velcro withdrawal code', "Use this code to withdraw \${$amount} USDC of referral earnings:");
             jsonResponse(successResponse(['sent' => true], 'Code sent to ' . $email));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);
@@ -332,6 +424,7 @@ function registerReferralRoutes(Router $router): void
     $router->post('/api/referral/withdraw', function () {
         $body = getJsonBody();
         $email = referralEmailFrom(body($body, 'email'));
+        requireReferralAuth($email);
         $chain = strtolower(trim((string) body($body, 'chain', '')));
         $address = trim((string) body($body, 'address', ''));
         if (!isset(REFERRAL_CHAINS[$chain])) {
@@ -346,7 +439,7 @@ function registerReferralRoutes(Router $router): void
             if (!$ref) {
                 jsonResponse(errorResponse('No referral account for this email', 404), 404);
             }
-            $otpCheck = verifyOTP('refwd:' . $email, (string) body($body, 'otp', ''));
+            $otpCheck = verifyOTP(referralOtpKey('refwd', $email), (string) body($body, 'otp', ''));
             if (!$otpCheck['valid']) {
                 jsonResponse(errorResponse($otpCheck['reason']), 403);
             }

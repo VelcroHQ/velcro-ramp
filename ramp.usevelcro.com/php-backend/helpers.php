@@ -403,16 +403,41 @@ function rateLimitCheck(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $wi
 
 // ─── Mail ───
 
-function sendMail(string $subject, string $html, string $text): array
+function mailConfigured(): bool
 {
-    if (SMTP_HOST === '' || SMTP_USER === '' || SMTP_PASS === '' || ADMIN_EMAIL === '') {
-        return ['sent' => false, 'reason' => 'SMTP not configured'];
+    return MAILHIVE_API_KEY !== '' || (SMTP_HOST !== '' && SMTP_USER !== '' && SMTP_PASS !== '');
+}
+
+/** Sends one email: Mailhive Send API when MAILHIVE_API_KEY is set, otherwise SMTP. */
+function sendEmailTo(string $to, string $subject, string $html, string $text): bool
+{
+    if (MAILHIVE_API_KEY === '') {
+        return smtpSend($to, $subject, $html, $text);
     }
     try {
-        // Try a direct SMTP submission first (works on most shared hosts).
-        $sent = smtpSend(ADMIN_EMAIL, $subject, $html, $text);
-        if ($sent) {
-            return ['sent' => true];
+        $res = httpRequest('POST', 'https://api.mailhive.africa/v1/send/emails', [
+            'headers' => ['Authorization: Bearer ' . MAILHIVE_API_KEY],
+            'body' => ['from' => 'Velcro <' . MAIL_FROM . '>', 'to' => $to, 'subject' => $subject, 'html' => $html, 'text' => $text],
+            'timeout' => 15,
+        ]);
+        // Mailhive accepts but skips addresses on its suppression list (bounces/complaints).
+        $suppressed = array_map('strtolower', (array) ($res['suppressed'] ?? []));
+        return !empty($res['id']) && !in_array(strtolower($to), $suppressed, true);
+    } catch (Throwable $e) {
+        error_log('Mailhive send failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
+function sendMail(string $subject, string $html, string $text): array
+{
+    if (!mailConfigured() || ADMIN_EMAIL === '') {
+        return ['sent' => false, 'reason' => 'Email not configured'];
+    }
+    try {
+        $sent = sendEmailTo(ADMIN_EMAIL, $subject, $html, $text);
+        if ($sent || MAILHIVE_API_KEY !== '') {
+            return ['sent' => $sent];
         }
         // Fallback to mail() if SMTP failed.
         $headers = [

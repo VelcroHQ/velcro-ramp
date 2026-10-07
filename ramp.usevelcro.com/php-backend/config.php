@@ -144,6 +144,9 @@ define('SMTP_USER', env('SMTP_USER', ''));
 define('SMTP_PASS', env('SMTP_PASS', ''));
 define('SMTP_FROM', env('SMTP_FROM', SMTP_USER));
 define('ADMIN_EMAIL', env('ADMIN_EMAIL', ''));
+// Mailhive Send (preferred over SMTP when set). The from-address domain must be verified in Mailhive.
+define('MAILHIVE_API_KEY', env('MAILHIVE_API_KEY', ''));
+define('MAIL_FROM', env('MAIL_FROM', 'noreply@usevelcro.com'));
 
 // ─── Auto Withdrawal ───
 define('AUTO_WITHDRAWAL_ENABLED', envBool('AUTO_WITHDRAWAL_ENABLED', false));

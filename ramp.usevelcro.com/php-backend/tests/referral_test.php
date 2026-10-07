@@ -86,5 +86,17 @@ check(!isValidPayoutAddress('solana', '0x52908400098527886E0F7030069857D2E4169EE
 check(isValidPayoutAddress('base', '0x52908400098527886E0F7030069857D2E4169EE7'), 'valid EVM address on Base');
 check(!isValidPayoutAddress('ethereum', '0x5290<script>'), 'garbage rejected');
 
+// ── Email verification tokens ──
+$token = issueReferralToken('amaka@example.com');
+check(referralTokenEmail($token) === 'amaka@example.com', 'token round-trips to its email');
+[$b64, $sig] = explode('.', $token);
+$forged = rtrim(strtr(base64_encode('thief@example.com|' . (time() + 3600)), '+/', '-_'), '=') . '.' . $sig;
+check(referralTokenEmail($forged) === null, 'token with a swapped email is rejected');
+$expiredPayload = 'amaka@example.com|' . (time() - 1);
+$expired = rtrim(strtr(base64_encode($expiredPayload), '+/', '-_'), '=') . '.' . hash_hmac('sha256', $expiredPayload, referralAppKey());
+check(referralTokenEmail($expired) === null, 'expired token is rejected');
+check(referralTokenEmail('') === null && referralTokenEmail('garbage') === null, 'empty/garbage token is rejected');
+check(strlen(referralOtpKey('refauth', str_repeat('a', 240) . '@example.com')) <= 100, 'OTP key fits the 100-char column for long emails');
+
 echo "\n" . ($failed === 0 ? 'All referral checks passed.' : "{$failed} check(s) failed.") . "\n";
 exit($failed === 0 ? 0 : 1);
