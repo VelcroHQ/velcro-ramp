@@ -242,38 +242,18 @@ function referralOtpKey(string $purpose, string $email): string
     return $purpose . ':' . substr(hash('sha256', $email), 0, 40);
 }
 
-function referralAppKey(): string
-{
-    static $key = null;
-    if ($key !== null) {
-        return $key;
-    }
-    $file = BASE_PATH . '/data/.app_key';
-    if (!is_file($file)) {
-        $fp = @fopen($file, 'x'); // 'x' fails if another request created it first
-        if ($fp) {
-            fwrite($fp, bin2hex(random_bytes(32)));
-            fclose($fp);
-        }
-    }
-    $key = trim((string) @file_get_contents($file));
-    if (strlen($key) < 32) {
-        throw new RuntimeException('Referral signing key unavailable');
-    }
-    return $key;
-}
 
 function issueReferralToken(string $email): string
 {
     $payload = $email . '|' . (time() + 30 * 86400);
-    return rtrim(strtr(base64_encode($payload), '+/', '-_'), '=') . '.' . hash_hmac('sha256', $payload, referralAppKey());
+    return rtrim(strtr(base64_encode($payload), '+/', '-_'), '=') . '.' . hash_hmac('sha256', $payload, appKey());
 }
 
 function referralTokenEmail(string $token): ?string
 {
     [$b64, $sig] = array_pad(explode('.', $token, 2), 2, '');
     $payload = base64_decode(strtr($b64, '-_', '+/'), true);
-    if ($payload === false || !hash_equals(hash_hmac('sha256', $payload, referralAppKey()), $sig)) {
+    if ($payload === false || !hash_equals(hash_hmac('sha256', $payload, appKey()), $sig)) {
         return null;
     }
     [$email, $exp] = array_pad(explode('|', $payload, 2), 2, '0');
@@ -296,12 +276,15 @@ function sendReferralCode(string $email, string $otpKey, string $subject, string
     }
     $otp = generateOTP();
     storeOTP($otpKey, $otp);
-    $sent = sendEmailTo(
-        $email,
-        $subject,
-        "<div style=\"font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px\"><h2 style=\"color:#0D0D59\">{$subject}</h2><p>{$line}</p><div style=\"font-size:32px;font-weight:700;letter-spacing:6px;color:#0D0D59;background:#f4f7fe;padding:16px;border-radius:10px;text-align:center\">{$otp}</div><p style=\"color:#64748b;font-size:13px\">Expires in 5 minutes. If you didn't request this, ignore this email.</p></div>",
-        "{$subject}: {$otp}\n{$line}\nExpires in 5 minutes."
-    );
+    [$html, $text] = renderEmail([
+        'preheader' => "Your code is {$otp}",
+        'eyebrow' => 'Verification',
+        'title' => $subject,
+        'intro' => $line,
+        'code' => $otp,
+        'outro' => "This code expires in 5 minutes. If you didn't request it, you can safely ignore this email.",
+    ]);
+    $sent = sendEmailTo($email, $subject, $html, $text);
     if (!$sent) {
         jsonResponse(errorResponse('Could not send the code. Try again shortly.', 502), 502);
     }
@@ -458,11 +441,14 @@ function registerReferralRoutes(Router $router): void
             ]);
             auditLog('REFERRAL_WITHDRAW_REQUESTED', ['email' => $email, 'amount_usd' => $summary['available_usd'], 'chain' => $chain, 'address' => $address]);
             $amount = number_format($summary['available_usd'], 2);
-            sendMail(
-                'Referral withdrawal request — $' . $amount,
-                "<p><b>{$email}</b> requested <b>\${$amount} USDC</b> on " . REFERRAL_CHAINS[$chain] . " to <code>{$address}</code>.</p><p>Approve or reject it in the admin dashboard under Referrals.</p>",
-                "{$email} requested \${$amount} USDC on " . REFERRAL_CHAINS[$chain] . " to {$address}. Review it in the admin dashboard under Referrals."
-            );
+            sendMail('Referral withdrawal request — $' . $amount, ...renderEmail([
+                'eyebrow' => 'Admin',
+                'title' => 'New referral withdrawal request',
+                'intro' => 'A referrer asked to withdraw their earnings. Send the USDC, then approve it in the dashboard.',
+                'amount' => ['Amount', '$' . $amount . ' USDC'],
+                'rows' => [['Referrer', $email], ['Network', REFERRAL_CHAINS[$chain]], ['Address', $address, true]],
+                'cta' => ['Review in admin', EMAIL_SITE_URL . '/goat/'],
+            ]));
             jsonResponse(successResponse(referralView($ref), 'Withdrawal requested'));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);

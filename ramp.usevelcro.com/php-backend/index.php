@@ -60,12 +60,34 @@ require_once __DIR__ . '/routes/admin.php';
 require_once __DIR__ . '/routes/paj.php';
 require_once __DIR__ . '/routes/webhooks.php';
 require_once __DIR__ . '/routes/referrals.php';
+require_once __DIR__ . '/routes/campaigns.php';
 
 registerPublicRoutes($router);
 registerAdminRoutes($router);
 registerPajRoutes($router);
 registerWebhookRoutes($router);
 registerReferralRoutes($router);
+registerCampaignRoutes($router);
+
+// Receipts and campaign batches: sent after the response is flushed, at most every 20s.
+register_shutdown_function(static function (): void {
+    $tick = BASE_PATH . '/data/.receipts_tick';
+    if (!mailConfigured() || (is_file($tick) && time() - filemtime($tick) < 20)) {
+        return;
+    }
+    @touch($tick);
+    if (function_exists('litespeed_finish_request')) {
+        litespeed_finish_request();
+    } elseif (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+    try {
+        sendPendingReceipts();
+        sendCampaignBatch(20);
+    } catch (Throwable $e) {
+        error_log('Receipt sending failed: ' . $e->getMessage());
+    }
+});
 
 $matched = $router->dispatch($method, $path);
 

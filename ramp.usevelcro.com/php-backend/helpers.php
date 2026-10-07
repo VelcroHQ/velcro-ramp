@@ -931,4 +931,4 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
     );
 }
 
-
+require_once __DIR__ . '/emails.php';

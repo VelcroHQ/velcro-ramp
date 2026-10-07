@@ -332,8 +332,15 @@ function registerAdminRoutes(Router $router): void
             storeOTP('withdraw', $otp);
             $maskedRecipient = substr(DEVELOPER_RECIPIENT, 0, 6) . '...' . substr(DEVELOPER_RECIPIENT, -6);
 
-            $emailText = "Velcro Admin — Withdrawal OTP\n\nCode: {$otp}\nRecipient: " . DEVELOPER_RECIPIENT . "\nExpires in 5 minutes.\n\nIf you did not request this, change your admin password immediately.";
-            $emailHtml = "<div style=\"font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px;\"><h2 style=\"color:#0D0D59;margin-bottom:8px;\">Velcro Admin</h2><p style=\"color:#64748b;font-size:14px;\">Withdrawal OTP</p><div style=\"background:#f4f7fe;padding:16px;border-radius:8px;text-align:center;margin:16px 0;\"><div style=\"font-size:32px;font-weight:700;color:#0D0D59;letter-spacing:4px;\">{$otp}</div><p style=\"font-size:12px;color:#94a3b8;margin-top:8px;\">Expires in 5 minutes</p></div><p style=\"font-size:13px;color:#64748b;\">Recipient: <code>" . DEVELOPER_RECIPIENT . "</code></p><p style=\"font-size:12px;color:#dc2626;margin-top:12px;\">If you did not request this, change your admin password immediately.</p></div>";
+            [$emailHtml, $emailText] = renderEmail([
+                'preheader' => "Your admin withdrawal code is {$otp}",
+                'eyebrow' => 'Admin',
+                'title' => 'Fee withdrawal code',
+                'intro' => 'Use this code to withdraw platform fees to:',
+                'code' => $otp,
+                'rows' => [['Recipient', DEVELOPER_RECIPIENT, true]],
+                'outro' => 'Expires in 5 minutes. If you did not request this, change your admin password immediately.',
+            ]);
 
             $mailResult = sendMail('Velcro Admin — Withdrawal OTP', $emailHtml, $emailText);
             auditLog('WITHDRAW_OTP_SENT', ['ip' => $ip, 'recipient' => DEVELOPER_RECIPIENT, 'emailSent' => $mailResult['sent']]);
@@ -673,12 +680,14 @@ function executeWithdrawal(string $asset, string $ip, string $source): array
 
     auditLog('WITHDRAW_INITIATED', ['ip' => $ip, 'recipient' => DEVELOPER_RECIPIENT, 'asset' => $asset, 'source' => $source]);
 
-    $time = gmdate('c');
-    sendMail(
-        "Velcro — Withdrawal Initiated ({$source})",
-        "<div style=\"font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px;\"><h2 style=\"color:#0D0D59;\">Withdrawal Initiated</h2><p>A fee withdrawal has been initiated ({$source}) to:</p><code>" . DEVELOPER_RECIPIENT . "</code><p style=\"color:#64748b;font-size:12px;margin-top:12px;\">Time: {$time}</p></div>",
-        "Velcro Admin — Withdrawal Initiated ({$source})\n\nRecipient: " . DEVELOPER_RECIPIENT . "\nTime: {$time}\n\nIf this was not you, change your password immediately."
-    );
+    $time = gmdate('j M Y, g:i A') . ' UTC';
+    sendMail("Velcro — Withdrawal Initiated ({$source})", ...renderEmail([
+        'eyebrow' => 'Admin',
+        'title' => 'Fee withdrawal started',
+        'intro' => "A platform fee withdrawal was started ({$source}).",
+        'rows' => [['Recipient', DEVELOPER_RECIPIENT, true], ['Time', $time]],
+        'outro' => 'If this was not you, change your admin password immediately.',
+    ]));
 
     try {
         $data = switchApi()->withdraw($asset, DEVELOPER_RECIPIENT);
@@ -691,19 +700,21 @@ function executeWithdrawal(string $asset, string $ip, string $source): array
         setLastWithdrawalTime((int) (microtime(true) * 1000));
         $hash = $data['data']['hash'] ?? 'N/A';
         auditLog('WITHDRAW_SUCCESS', ['ip' => $ip, 'recipient' => DEVELOPER_RECIPIENT, 'hash' => $hash, 'source' => $source]);
-        sendMail(
-            "Velcro — Withdrawal Successful ({$source})",
-            "<div style=\"font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;\"><h2 style=\"color:#166534;\">Withdrawal Successful</h2><p>Your fees have been withdrawn.</p><p><b>Hash:</b> <code>{$hash}</code></p><p><b>Recipient:</b> <code>" . DEVELOPER_RECIPIENT . "</code></p></div>",
-            "Velcro Admin — Withdrawal Successful ({$source})\n\nHash: {$hash}\nRecipient: " . DEVELOPER_RECIPIENT . "\nTime: {$time}"
-        );
+        sendMail("Velcro — Withdrawal Successful ({$source})", ...renderEmail([
+            'eyebrow' => 'Admin',
+            'title' => 'Fee withdrawal successful',
+            'intro' => 'Your platform fees have been withdrawn.',
+            'rows' => [['Transaction', (string) $hash, true], ['Recipient', DEVELOPER_RECIPIENT, true], ['Time', $time]],
+        ]));
         return ['success' => true, 'data' => $data['data'] ?? $data];
     }
 
     auditLog('WITHDRAW_FAILED', ['ip' => $ip, 'recipient' => DEVELOPER_RECIPIENT, 'error' => $data['message'] ?? 'Unknown error', 'source' => $source]);
-    sendMail(
-        "Velcro — Withdrawal Failed ({$source})",
-        "<div style=\"font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;border:1px solid #fecaca;border-radius:12px;background:#fef2f2;\"><h2 style=\"color:#dc2626;\">Withdrawal Failed</h2><p>Error: " . ($data['message'] ?? 'Unknown error') . "</p><p><b>Recipient:</b> <code>" . DEVELOPER_RECIPIENT . "</code></p></div>",
-        "Velcro Admin — Withdrawal Failed ({$source})\n\nError: " . ($data['message'] ?? 'Unknown error') . "\nRecipient: " . DEVELOPER_RECIPIENT . "\nTime: {$time}"
-    );
+    sendMail("Velcro — Withdrawal Failed ({$source})", ...renderEmail([
+        'eyebrow' => 'Admin',
+        'title' => 'Fee withdrawal failed',
+        'intro' => 'Error: ' . (string) ($data['message'] ?? 'Unknown error'),
+        'rows' => [['Recipient', DEVELOPER_RECIPIENT, true], ['Time', $time]],
+    ]));
     return ['success' => false, 'error' => $data['message'] ?? 'Unknown error', 'raw' => $data, 'statusCode' => 400];
 }

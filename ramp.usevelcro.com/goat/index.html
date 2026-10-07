@@ -433,6 +433,22 @@
         .cancelled { background: #f3f4f6; color: #4b5563; }
         .expired { background: #fff7ed; color: #c2410c; }
         .approved { background: rgba(168, 207, 69, 0.16); color: #5f7d17; }
+        .sending { background: #f0f9ff; color: #0369a1; }
+        .sent { background: rgba(168, 207, 69, 0.16); color: #5f7d17; }
+        .camp-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+        .camp-form input, .camp-form textarea { width: 100%; margin-bottom: 14px; padding: 11px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); color: var(--text-main); font: inherit; font-size: 14px; }
+        .camp-form textarea { resize: vertical; line-height: 1.6; }
+        .camp-label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
+        .camp-label span { text-transform: none; font-weight: 400; }
+        .camp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .camp-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px; }
+        .camp-actions .btn-secondary, .camp-actions .btn-primary { width: auto; padding: 11px 18px; }
+        .camp-test { display: flex; gap: 8px; flex: 1 1 260px; }
+        .camp-test input { margin-bottom: 0 !important; flex: 1; min-width: 0; }
+        .camp-note { margin-top: 12px; font-size: 12px; color: var(--text-secondary); }
+        #camp-preview-frame { display: none; width: 100%; height: 720px; border: 1px solid var(--border); border-radius: 14px; background: #f3f4f7; }
+        @media (max-width: 1100px) { .camp-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 640px) { .camp-row { grid-template-columns: 1fr; } #camp-preview-frame { height: 560px; } }
         .rejected { background: #fef2f2; color: #dc2626; }
         .ref-fee-input { width: 72px !important; padding: 6px 8px !important; margin: 0 !important; font-size: 13px !important; }
 
@@ -763,6 +779,8 @@
         .dark .cancelled { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
         .dark .expired { background: rgba(249, 115, 22, 0.15); color: #fdba74; }
         .dark .approved { background: rgba(168, 207, 69, 0.15); color: #c4e860; }
+        .dark .sending { background: rgba(14, 165, 233, 0.15); color: #7dd3fc; }
+        .dark .sent { background: rgba(168, 207, 69, 0.15); color: #c4e860; }
         .dark .rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; }
         .dark .user-profile-lg {
             background: #1e293b;
@@ -1219,6 +1237,9 @@
                 <li onclick="switchSection('api-tools')" id="nav-api-tools">
                     <i data-lucide="shield-check"></i> API Tools
                 </li>
+                <li onclick="switchSection('email')" id="nav-email">
+                    <i data-lucide="mail"></i> Email
+                </li>
                 <li onclick="switchSection('referrals')" id="nav-referrals">
                     <i data-lucide="gift"></i> Referrals
                 </li>
@@ -1460,6 +1481,58 @@
         </div>
 
         <!-- Audit Logs Content -->
+        <div id="section-email" class="view-content">
+            <header>
+                <div class="header-title">
+                    <h1>Email campaigns</h1>
+                    <p id="camp-audience">Loading audience…</p>
+                </div>
+                <div class="header-actions">
+                    <button class="refresh-btn" onclick="fetchCampaigns()"><i data-lucide="rotate-cw"></i></button>
+                </div>
+            </header>
+
+            <div class="camp-grid">
+                <div class="table-card camp-form">
+                    <h3 style="margin-bottom: 16px; font-size: 16px;">New campaign</h3>
+                    <label class="camp-label" for="camp-subject">Subject</label>
+                    <input id="camp-subject" maxlength="150" placeholder="Move money across Africa in minutes">
+                    <label class="camp-label" for="camp-preheader">Preview text <span>(shown next to the subject in the inbox)</span></label>
+                    <input id="camp-preheader" maxlength="200" placeholder="Optional">
+                    <label class="camp-label" for="camp-title">Headline</label>
+                    <input id="camp-title" maxlength="150" placeholder="Your money, without borders">
+                    <label class="camp-label" for="camp-body">Message <span>(blank line = new paragraph)</span></label>
+                    <textarea id="camp-body" rows="8" maxlength="5000" placeholder="Write your message…"></textarea>
+                    <div class="camp-row">
+                        <div><label class="camp-label" for="camp-cta-label">Button text</label><input id="camp-cta-label" maxlength="60" placeholder="Optional"></div>
+                        <div><label class="camp-label" for="camp-cta-url">Button link</label><input id="camp-cta-url" placeholder="https://ramp.usevelcro.com"></div>
+                    </div>
+                    <div class="camp-actions">
+                        <button class="btn-secondary" onclick="previewCampaign()">Preview</button>
+                        <div class="camp-test">
+                            <input id="camp-test-to" type="email" placeholder="Test email address">
+                            <button class="btn-secondary" onclick="sendTestCampaign(this)">Send test</button>
+                        </div>
+                        <button class="btn-primary" onclick="startCampaign(this)">Send to all</button>
+                    </div>
+                    <p class="camp-note">Every email includes an unsubscribe link. People who unsubscribe still get receipts and security codes.</p>
+                </div>
+                <div class="table-card camp-preview">
+                    <h3 style="margin-bottom: 12px; font-size: 16px;">Preview</h3>
+                    <iframe id="camp-preview-frame" sandbox="" title="Email preview"></iframe>
+                    <p id="camp-preview-empty" class="camp-note" style="text-align: center; padding: 40px 0;">Fill in the form and click Preview.</p>
+                </div>
+            </div>
+
+            <div class="table-card" style="margin-top: 20px;">
+                <h3 style="margin-bottom: 14px; font-size: 16px;">Sent campaigns</h3>
+                <table>
+                    <thead><tr><th>Started</th><th>Subject</th><th>Status</th><th>Progress</th><th>Action</th></tr></thead>
+                    <tbody id="camp-body-rows"><tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="section-referrals" class="view-content">
             <header>
                 <div class="header-title">
@@ -4121,6 +4194,94 @@
         }
 
         let currentAuditLogs = [];
+        // ─── Email campaigns ───
+        let campTickTimer = null;
+
+        function campaignFields() {
+            const v = id => document.getElementById(id).value.trim();
+            return { subject: v('camp-subject'), preheader: v('camp-preheader'), title: v('camp-title'), body: document.getElementById('camp-body').value.trim(), cta_label: v('camp-cta-label'), cta_url: v('camp-cta-url') };
+        }
+
+        async function fetchCampaigns() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/campaigns`, { headers: { 'Authorization': adminKey } });
+                const data = scrub(await res.json());
+                if (!res.ok) throw new Error(data.error || 'Failed to load campaigns');
+                renderCampaigns(data);
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        function renderCampaigns(data) {
+            document.getElementById('camp-audience').innerText = `${data.audience.toLocaleString()} subscribers · ${data.unsubscribed.toLocaleString()} unsubscribed`;
+            document.getElementById('camp-body-rows').innerHTML = data.campaigns.length ? data.campaigns.map(c => {
+                const total = Number(c.total) || 0, sent = Number(c.sent) || 0, failed = Number(c.failed) || 0;
+                const pct = total ? Math.round(((sent + failed) / total) * 100) : 0;
+                return `<tr>
+                    <td data-label="Started">${new Date(String(c.created_at).replace(' ', 'T')).toLocaleString()}</td>
+                    <td data-label="Subject">${c.subject}</td>
+                    <td data-label="Status"><span class="status-pill ${c.status.toLowerCase()}">${statusLabel(c.status)}</span></td>
+                    <td data-label="Progress"><span>${sent.toLocaleString()} / ${total.toLocaleString()} sent${failed ? ` · <span style="color: var(--failed);">${failed} failed</span>` : ''}${c.status === 'SENDING' ? ` · ${pct}%` : ''}</span></td>
+                    <td data-label="Action">${c.status === 'SENDING' ? `<button class="btn-secondary" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="cancelCampaign(${c.id})">Cancel</button>` : '<span style="color: var(--text-secondary);">—</span>'}</td>
+                </tr>`;
+            }).join('') : '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">No campaigns yet.</td></tr>';
+
+            // While a campaign is sending and this page is open, keep pushing batches out.
+            clearTimeout(campTickTimer);
+            if (data.campaigns.some(c => c.status === 'SENDING') && document.getElementById('section-email').classList.contains('active')) {
+                campTickTimer = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`${API_BASE}/api/admin/campaigns/tick`, { method: 'POST', headers: { 'Authorization': adminKey } });
+                        renderCampaigns(scrub(await res.json()));
+                    } catch (e) { /* next refresh retries */ }
+                }, 2500);
+            }
+        }
+
+        async function previewCampaign() {
+            try {
+                const data = await adminPost('/api/admin/campaigns/preview', campaignFields());
+                const frame = document.getElementById('camp-preview-frame');
+                frame.srcdoc = data.html;
+                frame.style.display = 'block';
+                document.getElementById('camp-preview-empty').style.display = 'none';
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        async function sendTestCampaign(btn) {
+            const to = document.getElementById('camp-test-to').value.trim();
+            if (!to) { showToast('Enter a test email address', 'error'); return; }
+            btn.disabled = true;
+            btn.innerText = 'Sending…';
+            try {
+                await adminPost('/api/admin/campaigns/test', { ...campaignFields(), to });
+                showToast(`Test sent to ${to}`, 'success');
+            } catch (e) { showToast(e.message, 'error'); }
+            btn.disabled = false;
+            btn.innerText = 'Send test';
+        }
+
+        async function startCampaign(btn) {
+            const fields = campaignFields();
+            const audience = (document.getElementById('camp-audience').innerText.match(/^[\d,]+/) || ['all'])[0];
+            if (!confirm(`Send "${fields.subject || '(no subject)'}" to ${audience} subscribers?\n\nThis can't be undone once emails go out. Send yourself a test first if you haven't.`)) return;
+            btn.disabled = true;
+            try {
+                const data = await adminPost('/api/admin/campaigns', fields);
+                showToast(`Sending to ${data.recipients.toLocaleString()} subscribers`, 'success');
+                fetchCampaigns();
+            } catch (e) { showToast(e.message, 'error'); }
+            btn.disabled = false;
+        }
+
+        async function cancelCampaign(id) {
+            if (!confirm('Stop this campaign? Emails already sent stay sent.')) return;
+            try {
+                await adminPost(`/api/admin/campaigns/${id}/cancel`, {});
+                showToast('Campaign cancelled', 'success');
+                fetchCampaigns();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
         // ─── Referrals ───
         const usdFmt = v => '$' + Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const shortAddr = a => a && a.length > 14 ? a.slice(0, 6) + '…' + a.slice(-6) : (a || '');
@@ -4465,6 +4626,9 @@
             }
             if (id === 'referrals') {
                 fetchReferrals();
+            }
+            if (id === 'email') {
+                fetchCampaigns();
             }
             if (window.lucide) lucide.createIcons();
             closeSidebar();
