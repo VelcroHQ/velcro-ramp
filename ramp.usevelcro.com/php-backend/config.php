@@ -17,6 +17,7 @@ if (!defined('BASE_PATH')) {
 $envFile = BASE_PATH . '/.env';
 if (file_exists($envFile) && is_readable($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $fromFile = [];
     foreach ($lines as $line) {
         $line = trim($line);
         if ($line === '' || str_starts_with($line, '#')) {
@@ -33,10 +34,12 @@ if (file_exists($envFile) && is_readable($envFile)) {
         if (strlen($value) >= 2 && (($value[0] === '"' && $value[-1] === '"') || ($value[0] === "'" && $value[-1] === "'"))) {
             $value = substr($value, 1, -1);
         }
-        // Standard dotenv behavior: do not overwrite existing environment variables
-        if (!array_key_exists($key, $_ENV) && getenv($key) === false) {
+        // Real environment variables win. Within the file a later line overrides an earlier one,
+        // but a blank value never replaces a real one (e.g. a placeholder copied from .env.example).
+        if (isset($fromFile[$key]) ? $value !== '' : (!array_key_exists($key, $_ENV) && getenv($key) === false)) {
             $_ENV[$key] = $value;
             putenv("{$key}={$value}");
+            $fromFile[$key] = true;
         }
     }
 }
