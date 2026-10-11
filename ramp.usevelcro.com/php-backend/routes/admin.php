@@ -655,6 +655,77 @@ function registerAdminRoutes(Router $router): void
             jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
         }
     });
+
+    $updateHashHandler = function () {
+        requireAdminAuth();
+        $ip = clientIp();
+        $body = getJsonBody();
+        $reference = trim((string) body($body, 'reference', ''));
+        $hash = trim((string) body($body, 'hash', ''));
+        $newStatus = strtoupper(trim((string) body($body, 'status', '')));
+
+        if ($reference === '') {
+            jsonResponse(['success' => false, 'error' => 'reference is required'], 400);
+        }
+
+        try {
+            $tx = Database::selectOne(
+                'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+                ['ref1' => $reference, 'ref2' => $reference]
+            );
+
+            if (!$tx) {
+                jsonResponse(['success' => false, 'error' => 'Transaction not found'], 404);
+            }
+
+            $explorerUrl = $tx['explorer_url'] ?? null;
+            if ($hash !== '') {
+                $explorerUrl = buildExplorerUrl($hash, $tx['asset'] ?? null);
+            }
+
+            $allowedStatuses = ['PENDING', 'AWAITING_DEPOSIT', 'DETECTED', 'PROCESSING', 'INITIATED', 'CONFIRMED', 'COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'];
+            $statusToSet = null;
+            if ($newStatus !== '' && in_array($newStatus, $allowedStatuses, true)) {
+                $statusToSet = $newStatus;
+            }
+
+            $sql = 'UPDATE `transactions` SET `hash` = COALESCE(NULLIF(:hash, ""), `hash`), `explorer_url` = COALESCE(NULLIF(:explorer_url, ""), `explorer_url`)';
+            $params = [
+                'hash' => $hash !== '' ? $hash : null,
+                'explorer_url' => $explorerUrl ?: null,
+                'id' => $tx['id'],
+            ];
+
+            if ($statusToSet !== null) {
+                $sql .= ', `status` = :status';
+                $params['status'] = $statusToSet;
+            }
+            $sql .= ', `updated_at` = NOW() WHERE `id` = :id';
+
+            Database::safeExecute($sql, $params);
+
+            auditLog('ADMIN_TX_HASH_UPDATED', [
+                'ip' => $ip,
+                'reference' => $reference,
+                'hash' => $hash !== '' ? $hash : ($tx['hash'] ?? null),
+                'status' => $statusToSet ?? $tx['status'],
+                'previous_status' => $tx['status'],
+            ]);
+
+            $updated = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
+
+            jsonResponse([
+                'success' => true,
+                'message' => 'Transaction updated successfully',
+                'transaction' => $updated,
+            ]);
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    };
+
+    $router->post('/api/admin/transactions/update-hash', $updateHashHandler);
+    $router->post('/api/admin/transactions/resolve', $updateHashHandler);
 }
 
 function executeWithdrawal(string $asset, string $ip, string $source): array

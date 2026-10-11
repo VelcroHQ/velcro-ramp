@@ -950,4 +950,39 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
     );
 }
 
+function buildExplorerUrl(string $hash, ?string $asset = null): string
+{
+    $hash = trim($hash);
+    if ($hash === '') {
+        return '';
+    }
+    $chain = 'solana';
+    if ($asset !== null && $asset !== '') {
+        $parts = explode(':', strtolower($asset));
+        $chain = $parts[0];
+    } elseif (str_starts_with($hash, '0x')) {
+        $chain = 'base';
+    }
+
+    $map = [
+        'solana' => "https://solscan.io/tx/{$hash}",
+        'sol' => "https://solscan.io/tx/{$hash}",
+        'ethereum' => "https://etherscan.io/tx/{$hash}",
+        'eth' => "https://etherscan.io/tx/{$hash}",
+        'bsc' => "https://bscscan.com/tx/{$hash}",
+        'binance' => "https://bscscan.com/tx/{$hash}",
+        'polygon' => "https://polygonscan.com/tx/{$hash}",
+        'matic' => "https://polygonscan.com/tx/{$hash}",
+        'arbitrum' => "https://arbiscan.io/tx/{$hash}",
+        'base' => "https://basescan.org/tx/{$hash}",
+        'tron' => "https://tronscan.org/#/transaction/{$hash}",
+        'trx' => "https://tronscan.org/#/transaction/{$hash}",
+        'optimism' => "https://optimistic.etherscan.io/tx/{$hash}",
+        'avalanche' => "https://snowtrace.io/tx/{$hash}",
+        'avax' => "https://snowtrace.io/tx/{$hash}",
+    ];
+
+    return $map[$chain] ?? (str_starts_with($hash, '0x') ? "https://basescan.org/tx/{$hash}" : "https://solscan.io/tx/{$hash}");
+}
+
 require_once __DIR__ . '/emails.php';

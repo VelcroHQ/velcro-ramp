@@ -139,6 +139,12 @@ assertEquals(75000.0, $offrampSwitchUsdt['ngn'], 'Switch OFFRAMP uses destinatio
 // ─── CORS origins ───
 assertTrue(is_array(CORS_ORIGINS), 'CORS_ORIGINS is an array');
 
+// ─── Explorer URL helper ───
+assertEquals('https://basescan.org/tx/0x123abc', buildExplorerUrl('0x123abc', 'base:usdc'), 'buildExplorerUrl handles Base');
+assertEquals('https://solscan.io/tx/4abc123', buildExplorerUrl('4abc123', 'solana:sol'), 'buildExplorerUrl handles Solana');
+assertEquals('https://etherscan.io/tx/0x999', buildExplorerUrl('0x999', 'eth:usdt'), 'buildExplorerUrl handles Ethereum');
+assertEquals('https://tronscan.org/#/transaction/trxhash123', buildExplorerUrl('trxhash123', 'tron:usdt'), 'buildExplorerUrl handles Tron');
+
 // ─── Summary ───
 echo "\n";
 if ($failed === 0) {

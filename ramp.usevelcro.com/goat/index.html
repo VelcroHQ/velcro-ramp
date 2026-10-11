@@ -2462,7 +2462,10 @@
             <div style="margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                     <label style="font-size: 12px; color: var(--text-secondary); margin: 0;">TX HASH</label>
-                    <button id="modal-copy-hash-btn" onclick="copyElementText('modal-hash-link')" class="btn-view" style="padding: 2px 8px; font-size: 11px;">Copy</button>
+                    <div style="display: flex; gap: 6px;">
+                        <button id="modal-copy-hash-btn" onclick="copyElementText('modal-hash-link')" class="btn-view" style="padding: 2px 8px; font-size: 11px;">Copy</button>
+                        <button id="modal-edit-hash-btn" onclick="toggleModalHashEdit()" class="btn-view" style="padding: 2px 8px; font-size: 11px; background: rgba(13,13,89,0.06); color: var(--velcro-navy);">✏️ Input / Edit Hash</button>
+                    </div>
                 </div>
                 <a id="modal-hash-link" href="#" target="_blank" style="color: var(--primary-link); font-size: 12px; word-break: break-all; display: block; margin-bottom: 4px;">-</a>
                 <a id="modal-wallet-explorer-link" href="#" target="_blank" style="color: var(--primary-link); font-size: 11px; word-break: break-all; display: none;">
@@ -2536,21 +2539,60 @@
                     <div id="modal-fees" style="font-size: 13px;">-</div>
                 </div>
             </div>
-            <!-- Admin Confirm Section -->
-            <div id="modal-confirm-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); display: none;">
-                <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 8px;">Admin Actions</label>
-                <div id="modal-hash-input-wrap" style="margin-bottom: 12px; display: none;">
-                    <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Transaction Hash (required for Sell)</label>
-                    <input type="text" id="modal-hash-input" placeholder="0x... or tx hash" style="margin-bottom: 0; font-family: monospace;">
+            <!-- Admin Actions / Confirm / Resolution Section -->
+            <div id="modal-confirm-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label id="modal-actions-label" style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin: 0;">Admin Actions</label>
                 </div>
-                <div class="modal-btn-row" style="display: flex; gap: 10px;">
+
+                <!-- Expired / Resolution Notice -->
+                <div id="modal-expired-notice" style="display: none; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; color: var(--text-main); line-height: 1.4;">
+                    <div id="modal-expired-notice-title" style="font-weight: 700; color: var(--failed); margin-bottom: 2px;">⚠️ Order is marked EXPIRED</div>
+                    <div id="modal-expired-notice-desc" style="color: var(--text-secondary); font-size: 11px;">If crypto was sent after expiry or payment settled manually, input the hash below and resolve it as completed.</div>
+                </div>
+
+                <!-- Hash input (always available) -->
+                <div id="modal-hash-input-wrap" style="margin-bottom: 12px;">
+                    <label id="modal-hash-input-label" style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Transaction Hash (TxID / Signature)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="modal-hash-input" placeholder="0x... or Solana signature" style="margin-bottom: 0; font-family: monospace; flex: 1;">
+                        <button type="button" id="modal-save-hash-btn" onclick="saveHashFromModal(false)" class="btn-view" style="padding: 0 14px; font-size: 12px; white-space: nowrap; height: auto;" title="Save hash without changing order status">Save Hash</button>
+                    </div>
+                </div>
+
+                <!-- Pending Confirmation Buttons -->
+                <div id="modal-pending-btn-row" class="modal-btn-row" style="display: flex; gap: 10px; margin-bottom: 8px;">
                     <button id="modal-confirm-btn" onclick="confirmTransactionFromModal()" class="btn-primary" style="padding: 12px; font-size: 13px;">
                         Confirm Transaction
                     </button>
-                    <button onclick="forceConfirmFromModal()" style="background: var(--input-bg); border: 1px solid var(--border); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-main);">
+                    <button id="modal-force-confirm-btn" onclick="forceConfirmFromModal()" style="background: var(--input-bg); border: 1px solid var(--border); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-main);">
                         Force Confirm
                     </button>
                 </div>
+
+                <!-- Expired / Resolution Action Buttons -->
+                <div id="modal-expired-btn-row" class="modal-btn-row" style="display: none; gap: 10px; margin-bottom: 8px;">
+                    <button id="modal-resolve-completed-btn" onclick="saveHashFromModal(true)" class="btn-primary" style="padding: 12px; font-size: 13px; flex: 1; background: #10b981; border-color: #10b981;">
+                        ✓ Save Hash & Mark Completed
+                    </button>
+                </div>
+
+                <!-- Status Override Row -->
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 11px;">
+                    <span style="color: var(--text-secondary);">Override status manually:</span>
+                    <div style="display: flex; gap: 6px;">
+                        <select id="modal-status-override-select" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border);">
+                            <option value="">Select status...</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="PROCESSING">PROCESSING</option>
+                            <option value="EXPIRED">EXPIRED</option>
+                            <option value="FAILED">FAILED</option>
+                            <option value="CANCELLED">CANCELLED</option>
+                        </select>
+                        <button type="button" onclick="applyStatusOverride()" class="btn-view" style="padding: 4px 10px; font-size: 11px;">Apply</button>
+                    </div>
+                </div>
+
                 <p id="modal-confirm-status" style="font-size: 12px; margin-top: 8px; display: none; word-break: break-word;"></p>
             </div>
         </div>
@@ -3778,25 +3820,49 @@
                 document.getElementById('modal-beneficiary-name').innerText = accountName;
             }
 
-            // Show confirm section only for pending/awaiting deposits
+            // Admin actions & hash input section
             const confirmSection = document.getElementById('modal-confirm-section');
-            const hashInputWrap = document.getElementById('modal-hash-input-wrap');
             const hashInput = document.getElementById('modal-hash-input');
             const confirmStatus = document.getElementById('modal-confirm-status');
+            const expiredNotice = document.getElementById('modal-expired-notice');
+            const pendingBtnRow = document.getElementById('modal-pending-btn-row');
+            const expiredBtnRow = document.getElementById('modal-expired-btn-row');
+            const actionsLabel = document.getElementById('modal-actions-label');
+            const statusOverrideSelect = document.getElementById('modal-status-override-select');
 
             confirmStatus.style.display = 'none';
-            hashInput.value = '';
+            confirmStatus.textContent = '';
+            hashInput.value = tx.hash || '';
+            if (statusOverrideSelect) statusOverrideSelect.value = '';
 
-            const canConfirm = ['AWAITING_DEPOSIT', 'PENDING', 'INITIATED', 'DETECTED'].includes(tx.status);
-            if (canConfirm) {
-                confirmSection.style.display = 'block';
-                if (tx.type === 'OFFRAMP') {
-                    hashInputWrap.style.display = 'block';
-                } else {
-                    hashInputWrap.style.display = 'none';
-                }
+            confirmSection.style.display = 'block';
+
+            const normStatus = (tx.status || '').toUpperCase();
+            if (normStatus === 'EXPIRED') {
+                actionsLabel.innerText = 'Admin Resolution (Expired Order)';
+                expiredNotice.style.display = 'block';
+                document.getElementById('modal-expired-notice-title').innerText = '⚠️ Order is marked EXPIRED';
+                document.getElementById('modal-expired-notice-desc').innerText = 'If crypto was sent after expiry or payment settled manually, input the hash below and resolve it as completed.';
+                pendingBtnRow.style.display = 'none';
+                expiredBtnRow.style.display = 'flex';
+            } else if (normStatus === 'FAILED' || normStatus === 'CANCELLED') {
+                actionsLabel.innerText = `Admin Resolution (${normStatus})`;
+                expiredNotice.style.display = 'block';
+                document.getElementById('modal-expired-notice-title').innerText = `⚠️ Order is marked ${normStatus}`;
+                document.getElementById('modal-expired-notice-desc').innerText = 'Input transaction hash below to record it and/or mark order as completed.';
+                pendingBtnRow.style.display = 'none';
+                expiredBtnRow.style.display = 'flex';
+            } else if (['AWAITING_DEPOSIT', 'PENDING', 'INITIATED', 'DETECTED'].includes(normStatus)) {
+                actionsLabel.innerText = 'Admin Actions (Pending Order)';
+                expiredNotice.style.display = 'none';
+                pendingBtnRow.style.display = 'flex';
+                expiredBtnRow.style.display = 'none';
             } else {
-                confirmSection.style.display = 'none';
+                // COMPLETED or other
+                actionsLabel.innerText = 'Transaction Hash & Management';
+                expiredNotice.style.display = 'none';
+                pendingBtnRow.style.display = 'none';
+                expiredBtnRow.style.display = 'none';
             }
 
             document.getElementById('tx-modal').style.display = 'flex';
@@ -3805,6 +3871,175 @@
             // If the transaction is pending, automatically check live provider
             if (!['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'].includes((tx.status || '').toUpperCase())) {
                 refreshTransactionStatus();
+            }
+        }
+
+        function toggleModalHashEdit() {
+            const hashInput = document.getElementById('modal-hash-input');
+            const confirmSection = document.getElementById('modal-confirm-section');
+            if (confirmSection) confirmSection.style.display = 'block';
+            if (hashInput) {
+                hashInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                hashInput.focus();
+                hashInput.select();
+            }
+        }
+
+        async function saveHashFromModal(markCompleted) {
+            if (!currentModalTx) return;
+            const hashInput = document.getElementById('modal-hash-input');
+            const statusEl = document.getElementById('modal-confirm-status');
+            const hash = (hashInput?.value || '').trim();
+
+            if (!hash && markCompleted) {
+                if (!confirm('No transaction hash entered. Do you still want to mark this transaction as COMPLETED?')) {
+                    if (hashInput) hashInput.focus();
+                    return;
+                }
+            }
+
+            statusEl.style.display = 'block';
+            statusEl.style.color = 'var(--text-secondary)';
+            statusEl.textContent = markCompleted ? 'Saving hash & marking COMPLETED...' : 'Saving transaction hash...';
+
+            try {
+                const body = {
+                    reference: currentModalTx.reference,
+                    hash: hash,
+                    status: markCompleted ? 'COMPLETED' : ''
+                };
+
+                const res = await fetch(`${API_BASE}/api/admin/transactions/update-hash`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    const updated = data.transaction || {};
+                    currentModalTx.hash = updated.hash || hash;
+                    if (markCompleted || updated.status) {
+                        currentModalTx.status = updated.status || 'COMPLETED';
+                    }
+                    if (updated.explorer_url) {
+                        currentModalTx.explorer_url = updated.explorer_url;
+                    }
+
+                    // Update local arrays
+                    const idx = currentTxs.findIndex(t => t.reference === currentModalTx.reference);
+                    if (idx !== -1) {
+                        currentTxs[idx] = { ...currentTxs[idx], ...currentModalTx };
+                        renderTransactions(currentTxs);
+                    }
+
+                    // Refresh modal UI in place
+                    document.getElementById('modal-status').innerText = statusLabel(currentModalTx.status);
+                    document.getElementById('modal-status').className = `status-pill ${currentModalTx.status.toLowerCase()}`;
+
+                    const hashLink = document.getElementById('modal-hash-link');
+                    const walletExplorerLink = document.getElementById('modal-wallet-explorer-link');
+                    if (currentModalTx.hash) {
+                        hashLink.innerText = currentModalTx.hash;
+                        hashLink.href = currentModalTx.explorer_url || getTxExplorerUrl(currentModalTx.hash, txChain(currentModalTx));
+                        walletExplorerLink.style.display = 'none';
+                    } else if (currentModalTx.wallet_address) {
+                        hashLink.innerText = 'No hash available';
+                        hashLink.href = '#';
+                        walletExplorerLink.href = getWalletExplorerUrl(currentModalTx.wallet_address, txChain(currentModalTx));
+                        walletExplorerLink.style.display = 'block';
+                    }
+
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--success)';
+                    statusEl.textContent = markCompleted ? '✓ Saved hash & marked as COMPLETED!' : '✓ Transaction hash saved successfully!';
+                    showToast(markCompleted ? 'Order marked COMPLETED!' : 'Transaction hash saved!', 'success');
+
+                    // If completed, update admin actions UI
+                    if (currentModalTx.status === 'COMPLETED') {
+                        document.getElementById('modal-expired-notice').style.display = 'none';
+                        document.getElementById('modal-expired-btn-row').style.display = 'none';
+                        document.getElementById('modal-pending-btn-row').style.display = 'none';
+                        document.getElementById('modal-actions-label').innerText = 'Transaction Hash & Management';
+                    }
+                } else {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--failed)';
+                    statusEl.textContent = data.error || 'Failed to save transaction hash.';
+                    showToast(data.error || 'Save failed', 'error');
+                }
+            } catch (err) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--failed)';
+                statusEl.textContent = err.message || 'Network error.';
+                showToast('Network error: ' + err.message, 'error');
+            }
+        }
+
+        async function applyStatusOverride() {
+            if (!currentModalTx) return;
+            const select = document.getElementById('modal-status-override-select');
+            const targetStatus = select?.value;
+            if (!targetStatus) {
+                showToast('Please select a target status first', 'warning');
+                return;
+            }
+
+            const hashInput = document.getElementById('modal-hash-input');
+            const statusEl = document.getElementById('modal-confirm-status');
+            const hash = (hashInput?.value || '').trim();
+
+            if (!confirm(`Are you sure you want to change order status from ${currentModalTx.status} to ${targetStatus}?`)) {
+                return;
+            }
+
+            statusEl.style.display = 'block';
+            statusEl.style.color = 'var(--text-secondary)';
+            statusEl.textContent = `Changing status to ${targetStatus}...`;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/transactions/update-hash`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reference: currentModalTx.reference,
+                        hash: hash,
+                        status: targetStatus
+                    })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    const updated = data.transaction || {};
+                    currentModalTx.status = targetStatus;
+                    if (hash) currentModalTx.hash = hash;
+                    if (updated.explorer_url) currentModalTx.explorer_url = updated.explorer_url;
+
+                    const idx = currentTxs.findIndex(t => t.reference === currentModalTx.reference);
+                    if (idx !== -1) {
+                        currentTxs[idx] = { ...currentTxs[idx], ...currentModalTx };
+                        renderTransactions(currentTxs);
+                    }
+
+                    document.getElementById('modal-status').innerText = statusLabel(targetStatus);
+                    document.getElementById('modal-status').className = `status-pill ${targetStatus.toLowerCase()}`;
+
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--success)';
+                    statusEl.textContent = `✓ Status successfully updated to ${targetStatus}!`;
+                    showToast(`Status updated to ${targetStatus}`, 'success');
+                    select.value = '';
+                } else {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--failed)';
+                    statusEl.textContent = data.error || 'Failed to update status.';
+                    showToast(data.error || 'Update failed', 'error');
+                }
+            } catch (err) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--failed)';
+                statusEl.textContent = err.message || 'Network error.';
+                showToast('Network error: ' + err.message, 'error');
             }
         }
 
@@ -3823,6 +4058,8 @@
                     statusEl.textContent = 'Transaction hash is required for sell (OFFRAMP) confirmations.';
                     return;
                 }
+            } else {
+                hash = (hashInput?.value || '').trim();
             }
 
             btn.innerText = 'Confirming...';
@@ -3844,7 +4081,7 @@
                     statusEl.style.color = 'var(--success)';
                     statusEl.textContent = 'Transaction confirmed successfully!';
                     btn.innerText = 'Confirmed ✓';
-                    // Refresh data after a short delay
+                    showToast('Transaction confirmed successfully!', 'success');
                     setTimeout(() => { closeTxModal(); fetchData(); }, 1500);
                 } else {
                     statusEl.style.display = 'block';
@@ -3864,15 +4101,20 @@
 
         async function forceConfirmFromModal() {
             if (!currentModalTx) return;
-            const btn = document.querySelector('#modal-confirm-section button:last-child');
+            const btn = document.getElementById('modal-force-confirm-btn') || document.querySelector('#modal-confirm-section button:last-child');
             const statusEl = document.getElementById('modal-confirm-status');
+            const hashInput = document.getElementById('modal-hash-input');
+            const hash = (hashInput?.value || '').trim();
 
             btn.innerText = 'Retrying...';
             try {
+                const body = { reference: currentModalTx.reference };
+                if (hash) body.hash = hash;
+
                 const res = await fetch(`${API_BASE}/api/confirm`, {
                     method: 'POST',
                     headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reference: currentModalTx.reference })
+                    body: JSON.stringify(body)
                 });
                 const data = await res.json();
 
@@ -3880,6 +4122,7 @@
                     statusEl.style.display = 'block';
                     statusEl.style.color = 'var(--success)';
                     statusEl.textContent = 'Force confirm successful!';
+                    showToast('Force confirm successful!', 'success');
                     setTimeout(() => { closeTxModal(); fetchData(); }, 1500);
                 } else {
                     statusEl.style.display = 'block';

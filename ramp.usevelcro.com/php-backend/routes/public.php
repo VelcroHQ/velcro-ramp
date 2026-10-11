@@ -492,6 +492,27 @@ function registerPublicRoutes(Router $router): void
         if (!$reference) {
             jsonResponse(errorResponse('reference is required'), 400);
         }
+
+        // Check if PAJ transaction
+        $isPaj = str_starts_with($reference, 'paj_');
+        $tx = Database::selectOne(
+            'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+            ['ref1' => $reference, 'ref2' => $reference]
+        );
+        if ($tx && ($tx['channel'] === 'PAJ' || str_starts_with((string)$tx['reference'], 'paj_'))) {
+            $isPaj = true;
+        }
+
+        if ($isPaj && $tx) {
+            $exp = $hash ? buildExplorerUrl($hash, $tx['asset'] ?? null) : $tx['explorer_url'];
+            Database::safeExecute(
+                "UPDATE `transactions` SET `status` = 'COMPLETED', `hash` = COALESCE(NULLIF(:hash, ''), `hash`), `explorer_url` = COALESCE(NULLIF(:exp, ''), `explorer_url`), `updated_at` = NOW() WHERE `id` = :id",
+                ['hash' => $hash ?: '', 'exp' => $exp ?: '', 'id' => $tx['id']]
+            );
+            $updated = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
+            jsonResponse(['success' => true, 'status' => 'COMPLETED', 'message' => 'PAJ payment confirmed', 'data' => $updated]);
+        }
+
         try {
             $data = switchApi()->confirmPayment($reference, $hash);
             $d = $data['data'] ?? [];
@@ -509,6 +530,14 @@ function registerPublicRoutes(Router $router): void
 
             if (!empty($d['status'])) {
                 updateSwitchTransactionFromData($reference, $d);
+            }
+
+            if ($hash && $tx) {
+                $exp = buildExplorerUrl($hash, $tx['asset'] ?? null);
+                Database::safeExecute(
+                    'UPDATE `transactions` SET `hash` = COALESCE(NULLIF(:hash, ""), `hash`), `explorer_url` = COALESCE(NULLIF(:exp, ""), `explorer_url`) WHERE `id` = :id',
+                    ['hash' => $hash, 'exp' => $exp ?: null, 'id' => $tx['id']]
+                );
             }
 
             jsonResponse($data);
