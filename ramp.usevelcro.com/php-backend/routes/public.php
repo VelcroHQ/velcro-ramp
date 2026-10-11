@@ -514,7 +514,15 @@ function registerPublicRoutes(Router $router): void
         }
 
         try {
-            $data = switchApi()->confirmPayment($reference, $hash);
+            try {
+                $data = switchApi()->confirmPayment($reference, $hash);
+            } catch (Throwable $e) {
+                if (str_contains($e->getMessage(), 'DUPLICATE_REQUEST_EXISTS')) {
+                    $data = switchApi()->getPaymentStatus($reference);
+                } else {
+                    throw $e;
+                }
+            }
             $d = $data['data'] ?? [];
             
             // Always query live status from Switch immediately after confirm to get authoritative status
