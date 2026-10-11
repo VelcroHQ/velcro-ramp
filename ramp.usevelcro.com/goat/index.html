@@ -3840,12 +3840,38 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    statusEl.style.display = 'block';
-                    statusEl.style.color = 'var(--success)';
-                    statusEl.textContent = 'Transaction confirmed successfully!';
-                    btn.innerText = 'Confirmed ✓';
-                    showToast('Transaction confirmed successfully!', 'success');
-                    setTimeout(() => { closeTxModal(); fetchData(); }, 1500);
+                    const txStatus = (data.data?.status || data.status || '').toUpperCase();
+                    if (txStatus === 'COMPLETED') {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = 'var(--success)';
+                        statusEl.textContent = 'Transaction confirmed and completed!';
+                        btn.innerText = 'Completed ✓';
+                        showToast('Transaction confirmed and completed!', 'success');
+                        setTimeout(() => { closeTxModal(); fetchData(); }, 1500);
+                    } else if (txStatus === 'PROCESSING') {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = '#3b82f6';
+                        statusEl.textContent = 'Hash submitted. Provider is processing payout...';
+                        btn.innerText = 'Processing...';
+                        showToast('Provider is processing payout', 'info');
+                        setTimeout(() => { closeTxModal(); fetchData(); }, 1500);
+                    } else if (txStatus === 'AWAITING_DEPOSIT') {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = '#f59e0b';
+                        statusEl.textContent = '⚠️ Hash submitted to provider, but status is still Awaiting Deposit. Payout has not been completed by provider.';
+                        btn.innerText = 'Confirm Transaction';
+                        btn.disabled = false;
+                        showToast('Provider status still Awaiting Deposit', 'warning');
+                        fetchData();
+                    } else {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = 'var(--text-secondary)';
+                        statusEl.textContent = `Provider status: ${txStatus || 'Submitted'}`;
+                        btn.innerText = 'Confirm Transaction';
+                        btn.disabled = false;
+                        showToast(`Provider status: ${txStatus || 'Submitted'}`, 'info');
+                        fetchData();
+                    }
                 } else {
                     statusEl.style.display = 'block';
                     statusEl.style.color = 'var(--failed)';
@@ -3882,11 +3908,34 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    statusEl.style.display = 'block';
-                    statusEl.style.color = 'var(--success)';
-                    statusEl.textContent = 'Force confirm successful!';
-                    showToast('Force confirm successful!', 'success');
-                    setTimeout(() => { closeTxModal(); fetchData(); }, 1500);
+                    const txStatus = (data.data?.status || data.status || '').toUpperCase();
+                    if (txStatus === 'COMPLETED') {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = 'var(--success)';
+                        statusEl.textContent = 'Force confirm completed!';
+                        showToast('Transaction confirmed and completed!', 'success');
+                        setTimeout(() => { closeTxModal(); fetchData(); }, 1500);
+                    } else if (txStatus === 'PROCESSING') {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = '#3b82f6';
+                        statusEl.textContent = 'Force confirm submitted. Provider is processing payout...';
+                        showToast('Provider is processing payout', 'info');
+                        setTimeout(() => { closeTxModal(); fetchData(); }, 1500);
+                    } else if (txStatus === 'AWAITING_DEPOSIT') {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = '#f59e0b';
+                        statusEl.textContent = '⚠️ Request sent, but provider status is still Awaiting Deposit.';
+                        btn.innerText = 'Force Confirm';
+                        showToast('Provider status still Awaiting Deposit', 'warning');
+                        fetchData();
+                    } else {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = 'var(--text-secondary)';
+                        statusEl.textContent = `Provider status: ${txStatus || 'Submitted'}`;
+                        btn.innerText = 'Force Confirm';
+                        showToast(`Provider status: ${txStatus || 'Submitted'}`, 'info');
+                        fetchData();
+                    }
                 } else {
                     statusEl.style.display = 'block';
                     statusEl.style.color = 'var(--failed)';
