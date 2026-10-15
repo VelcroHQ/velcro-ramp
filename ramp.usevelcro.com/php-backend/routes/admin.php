@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../switch_api.php';
 require_once __DIR__ . '/../paj_api.php';
 require_once __DIR__ . '/../poll_helpers.php';
+require_once __DIR__ . '/../emails.php';
 
 function registerAdminRoutes(Router $router): void
 {
@@ -113,7 +114,7 @@ function registerAdminRoutes(Router $router): void
     $router->get('/api/admin/transactions', function () {
         requireAdminAuth();
         try {
-            $rows = Database::safeSelect('SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `created_at`, `updated_at`, `beneficiary` FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
+            $rows = Database::safeSelect('SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `receipt_sent_at`, `created_at`, `updated_at`, `beneficiary` FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
             
             // Build wallet -> email lookup map from known transactions & developer recipient
             $walletToEmail = [];
@@ -714,6 +715,14 @@ function registerAdminRoutes(Router $router): void
 
             $updated = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
 
+            if ($statusToSet === 'COMPLETED' && $updated) {
+                try {
+                    sendTransactionReceiptNow($updated);
+                } catch (Throwable $e) {
+                    error_log('Failed to send receipt upon admin status update: ' . $e->getMessage());
+                }
+            }
+
             jsonResponse([
                 'success' => true,
                 'message' => 'Transaction updated successfully',
@@ -726,6 +735,50 @@ function registerAdminRoutes(Router $router): void
 
     $router->post('/api/admin/transactions/update-hash', $updateHashHandler);
     $router->post('/api/admin/transactions/resolve', $updateHashHandler);
+
+    $router->post('/api/admin/transactions/send-receipt', function () {
+        requireAdminAuth();
+        $body = json_decode((string) file_get_contents('php://input'), true) ?? [];
+        $reference = trim((string) ($body['reference'] ?? ''));
+        $targetEmail = trim((string) ($body['email'] ?? ''));
+
+        if ($reference === '') {
+            jsonResponse(['success' => false, 'error' => 'Transaction reference is required'], 400);
+        }
+
+        try {
+            $tx = Database::safeSelectOne(
+                'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
+                ['ref1' => $reference, 'ref2' => $reference],
+                null
+            );
+
+            if (!$tx) {
+                jsonResponse(['success' => false, 'error' => 'Transaction not found'], 404);
+            }
+
+            if ($targetEmail !== '' && filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
+                $tx['email'] = $targetEmail;
+                Database::safeExecute('UPDATE `transactions` SET `email` = :em WHERE `id` = :id', [
+                    'em' => $targetEmail,
+                    'id' => $tx['id'],
+                ]);
+            }
+
+            if (empty($tx['email'])) {
+                jsonResponse(['success' => false, 'error' => 'No email address on file for this transaction. Please provide an email.'], 400);
+            }
+
+            $sent = sendTransactionReceiptNow($tx, true);
+            if ($sent) {
+                jsonResponse(['success' => true, 'message' => "Receipt successfully dispatched to {$tx['email']}"]);
+            } else {
+                jsonResponse(['success' => false, 'error' => 'Email sending failed. Please check mail configuration.'], 500);
+            }
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
 }
 
 function executeWithdrawal(string $asset, string $ip, string $source): array

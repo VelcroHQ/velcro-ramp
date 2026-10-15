@@ -2455,9 +2455,18 @@
                 </div>
                 <code id="modal-ref" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; display: block; font-size: 13px;">-</code>
             </div>
-            <div style="margin-bottom: 20px; display: none;" id="modal-email-wrap">
-                <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">USER EMAIL</label>
-                <div id="modal-email" style="background: var(--code-bg); color: var(--text-main); padding: 8px; border-radius: 6px; font-size: 13px; font-weight: 600;">-</div>
+            <div style="margin-bottom: 20px;" id="modal-email-wrap">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-size: 12px; color: var(--text-secondary); margin: 0; font-weight: 600;">USER EMAIL &amp; RECEIPT</label>
+                    <span id="modal-receipt-badge" style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: rgba(100,100,100,0.1); color: var(--text-secondary);">Receipt: Not sent</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="email" id="modal-email-input" placeholder="Enter user email..." style="flex: 1; margin-bottom: 0; padding: 8px 12px; font-size: 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main);">
+                    <button id="modal-send-receipt-btn" onclick="sendReceiptFromModal()" class="btn-primary" style="padding: 8px 14px; font-size: 12px; height: auto; white-space: nowrap; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px;">
+                        <i data-lucide="mail" style="width: 14px; height: 14px;"></i> Send Receipt
+                    </button>
+                </div>
+                <p id="modal-receipt-status" style="font-size: 12px; margin-top: 6px; display: none;"></p>
             </div>
             <div style="margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -3607,16 +3616,7 @@
             currentModalTx = tx;
             document.getElementById('modal-ref').innerText = tx.reference;
             
-            const emailWrap = document.getElementById('modal-email-wrap');
-            const emailEl = document.getElementById('modal-email');
-            if (emailWrap && emailEl) {
-                if (tx.email) {
-                    emailWrap.style.display = 'block';
-                    emailEl.innerText = tx.email;
-                } else {
-                    emailWrap.style.display = 'none';
-                }
-            }
+            updateReceiptDisplay(tx);
 
             document.getElementById('modal-status').innerText = statusLabel(tx.status);
             document.getElementById('modal-status').className = `status-pill ${tx.status.toLowerCase()}`;
@@ -3947,6 +3947,95 @@
                 statusEl.style.color = 'var(--failed)';
                 statusEl.textContent = err.message || 'Network error.';
                 btn.innerText = 'Force Confirm';
+            }
+        }
+
+        function updateReceiptDisplay(tx) {
+            const emailInput = document.getElementById('modal-email-input');
+            const badge = document.getElementById('modal-receipt-badge');
+            const btn = document.getElementById('modal-send-receipt-btn');
+            const statusMsg = document.getElementById('modal-receipt-status');
+
+            if (emailInput) {
+                emailInput.value = tx.email || '';
+            }
+            if (statusMsg) {
+                statusMsg.style.display = 'none';
+                statusMsg.textContent = '';
+            }
+            if (badge) {
+                if (tx.receipt_sent_at) {
+                    const d = new Date(tx.receipt_sent_at);
+                    const dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : tx.receipt_sent_at;
+                    badge.textContent = `Receipt sent (${dateStr})`;
+                    badge.style.background = 'rgba(16, 185, 129, 0.15)';
+                    badge.style.color = 'var(--success)';
+                } else {
+                    badge.textContent = 'Receipt: Not sent';
+                    badge.style.background = 'rgba(245, 158, 11, 0.15)';
+                    badge.style.color = '#f59e0b';
+                }
+            }
+            if (btn) {
+                btn.innerHTML = `<i data-lucide="mail" style="width: 14px; height: 14px;"></i> ${tx.receipt_sent_at ? 'Resend Receipt' : 'Send Receipt'}`;
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        async function sendReceiptFromModal() {
+            if (!currentModalTx) return;
+            const btn = document.getElementById('modal-send-receipt-btn');
+            const statusEl = document.getElementById('modal-receipt-status');
+            const emailInput = document.getElementById('modal-email-input');
+            const email = (emailInput ? emailInput.value.trim() : '') || currentModalTx.email || '';
+
+            if (!email) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--failed)';
+                statusEl.textContent = 'Please enter a valid recipient email address.';
+                return;
+            }
+
+            const prevHtml = btn.innerHTML;
+            btn.innerHTML = 'Sending...';
+            btn.disabled = true;
+            statusEl.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/transactions/send-receipt`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reference: currentModalTx.reference, email: email })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--success)';
+                    statusEl.textContent = data.message || 'Receipt sent successfully!';
+                    showToast('Receipt sent successfully!', 'success');
+                    currentModalTx.receipt_sent_at = new Date().toISOString();
+                    currentModalTx.email = email;
+                    updateReceiptDisplay(currentModalTx);
+                    // Also update in currentTxs cache so table/refresh has it
+                    const cached = currentTxs.find(t => t.reference === currentModalTx.reference);
+                    if (cached) {
+                        cached.receipt_sent_at = currentModalTx.receipt_sent_at;
+                        cached.email = email;
+                    }
+                } else {
+                    statusEl.style.display = 'block';
+                    statusEl.style.color = 'var(--failed)';
+                    statusEl.textContent = data.error || data.message || 'Failed to send receipt.';
+                    showToast(statusEl.textContent, 'error');
+                }
+            } catch (e) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--failed)';
+                statusEl.textContent = 'Error: ' + e.message;
+            } finally {
+                btn.innerHTML = prevHtml;
+                btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
             }
         }
 

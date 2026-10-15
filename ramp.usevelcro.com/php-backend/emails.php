@@ -232,10 +232,137 @@ function ensureReceiptSchema(): void
     $done = true;
 }
 
+/** @return array{0: string, 1: string, 2: string} [subject, html, text] */
+function orderInitiatedEmail(array $t): array
+{
+    $asset = (string) ($t['asset'] ?? 'USDT');
+    $symbol = strtoupper(str_contains($asset, ':') ? explode(':', $asset)[1] : $asset);
+    $ngn = static fn ($v): string => '₦' . number_format((float) $v, 2);
+    $crypto = static fn ($v): string => rtrim(rtrim(number_format((float) $v, 6, '.', ','), '0'), '.') . ' ' . $symbol;
+    $short = static fn (string $s): string => strlen($s) > 18 ? substr($s, 0, 8) . '…' . substr($s, -6) : $s;
+    [$chainLabel] = receiptChain($t);
+    $ref = (string) $t['reference'];
+
+    if (strtoupper((string) $t['type']) === 'ONRAMP') {
+        $expected = (float) ($t['destination_amount'] ?? 0) > 0 ? $crypto($t['destination_amount']) : $symbol;
+        $fiatPay = $ngn($t['amount']);
+        $bankName = (string) ($t['deposit_bank_name'] ?? '-');
+        $accountNum = (string) ($t['deposit_account_number'] ?? '-');
+        $accountName = (string) ($t['deposit_account_name'] ?? 'Velcro Checkout');
+
+        $rows = [
+            ['Amount to transfer', $fiatPay],
+            ['Crypto to receive', $expected],
+            ['Bank Name', $bankName],
+            ['Account Number', $accountNum],
+            ['Account Name', $accountName],
+        ];
+        if (!empty($t['wallet_address'])) {
+            $rows[] = ['Receiving Wallet', $short((string) $t['wallet_address']), true];
+        }
+        $rows[] = ['Reference', $short($ref), true];
+
+        $subject = "Order Started: Pay {$fiatPay} for {$expected}";
+        [$html, $text] = renderEmail([
+            'preheader' => "Please transfer {$fiatPay} to complete your order.",
+            'eyebrow' => 'Order Started',
+            'title' => 'Complete your crypto purchase',
+            'intro' => "We've created your order. Please transfer {$fiatPay} to the dedicated bank account below. Once detected, {$expected} will be sent to your wallet automatically.",
+            'amount' => ['Transfer exactly', $fiatPay],
+            'rows' => $rows,
+            'cta' => ['View Order Status', EMAIL_SITE_URL],
+            'outro' => 'Make sure to transfer from an account in your name. Once your transfer is sent, your crypto will be delivered automatically.',
+        ]);
+        return [$subject, $html, $text];
+    }
+
+    // Sell / OFFRAMP
+    $cryptoAmt = (float) ($t['amount'] ?? 0) > 0 ? $crypto($t['amount']) : $symbol;
+    $payoutFiat = (float) ($t['destination_amount'] ?? 0) > 0 ? $ngn($t['destination_amount']) : 'NGN';
+    $depositAddress = (string) ($t['deposit_address'] ?? '-');
+
+    $ben = is_array($t['beneficiary'] ?? null) ? $t['beneficiary'] : (json_decode((string) ($t['beneficiary'] ?? ''), true) ?: []);
+    $bank = (string) ($ben['bank_name'] ?? $ben['bankName'] ?? $ben['institution'] ?? '');
+    $account = (string) ($ben['account_number'] ?? $ben['accountNumber'] ?? '');
+
+    $rows = [
+        ['Amount to send', $cryptoAmt],
+        ['Network', $chainLabel],
+        ['Deposit Address', $depositAddress, true],
+        ['Payout Amount', $payoutFiat],
+    ];
+    if ($bank !== '') {
+        $rows[] = ['Payout Bank', $bank];
+    }
+    if ($account !== '') {
+        $rows[] = ['Account', '•••• ' . substr($account, -4)];
+    }
+    $rows[] = ['Reference', $short($ref), true];
+
+    $subject = "Order Started: Send {$cryptoAmt} for {$payoutFiat} payout";
+    [$html, $text] = renderEmail([
+        'preheader' => "Send {$cryptoAmt} to deposit address to receive payout.",
+        'eyebrow' => 'Order Started',
+        'title' => 'Complete your cash payout',
+        'intro' => "We've created your sell order. Please send {$cryptoAmt} on the {$chainLabel} network to the deposit address below. Once confirmed, {$payoutFiat} will be sent directly to your bank account.",
+        'amount' => ['Send exactly', $cryptoAmt],
+        'rows' => $rows,
+        'cta' => ['View Order Status', EMAIL_SITE_URL],
+        'outro' => "Only send {$symbol} on the {$chainLabel} network. Sending to the wrong network may result in loss of funds.",
+    ]);
+    return [$subject, $html, $text];
+}
+
+/** Sends an immediate order initiation email to the user if email is valid. */
+function sendOrderInitiatedEmailNow(array $t): bool
+{
+    $email = strtolower(trim((string) ($t['email'] ?? '')));
+    if (!isValidEmail($email)) {
+        return false;
+    }
+    try {
+        [$subject, $html, $text] = orderInitiatedEmail($t);
+        $sent = sendEmailTo($email, $subject, $html, $text);
+        if ($sent) {
+            error_log("Order initiation email sent to {$email} for tx {$t['reference']}");
+        }
+        return $sent;
+    } catch (Throwable $e) {
+        error_log("Failed to send order initiation email for {$t['reference']}: " . $e->getMessage());
+        return false;
+    }
+}
+
+/** Sends an immediate completion receipt to the user. Marks receipt_sent_at on success. */
+function sendTransactionReceiptNow(array $t, bool $force = false): bool
+{
+    $email = strtolower(trim((string) ($t['email'] ?? '')));
+    if (!isValidEmail($email)) {
+        return false;
+    }
+    if (!$force && !empty($t['receipt_sent_at'])) {
+        return true;
+    }
+    try {
+        [$subject, $html, $text] = receiptEmail($t);
+        $sent = sendEmailTo($email, $subject, $html, $text);
+        if ($sent && !empty($t['id'])) {
+            Database::safeExecute(
+                'UPDATE `transactions` SET `receipt_sent_at` = NOW(), `updated_at` = `updated_at` WHERE `id` = :id',
+                ['id' => $t['id']]
+            );
+            error_log("Transaction receipt sent to {$email} for tx {$t['reference']}");
+        }
+        return $sent;
+    } catch (Throwable $e) {
+        error_log("Failed to send transaction receipt for {$t['reference']}: " . $e->getMessage());
+        return false;
+    }
+}
+
 /**
  * Emails a receipt for each newly completed order that has an email.
  * Each row is claimed with a conditional UPDATE first, so concurrent requests never double-send.
- * ponytail: a failed send is not retried (avoids looping on bounced addresses); add a retry counter if that matters.
  */
 function sendPendingReceipts(int $limit = 5): int
 {
@@ -248,18 +375,8 @@ function sendPendingReceipts(int $limit = 5): int
     );
     $sent = 0;
     foreach ($rows as $t) {
-        $claimed = Database::execute(
-            'UPDATE `transactions` SET `receipt_sent_at` = NOW(), `updated_at` = `updated_at` WHERE `id` = :id AND `receipt_sent_at` IS NULL',
-            ['id' => $t['id']]
-        );
-        if ($claimed !== 1) {
-            continue;
-        }
-        [$subject, $html, $text] = receiptEmail($t);
-        if (sendEmailTo((string) $t['email'], $subject, $html, $text)) {
+        if (sendTransactionReceiptNow($t)) {
             $sent++;
-        } else {
-            error_log("Receipt email failed for tx {$t['reference']}");
         }
     }
     return $sent;

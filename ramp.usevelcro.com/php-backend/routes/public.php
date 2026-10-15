@@ -441,6 +441,17 @@ function registerPublicRoutes(Router $router): void
                 'email' => $email !== '' ? $email : null,
                 'meta' => jsonEncodeNullable($d),
             ] + referralFieldsFor(body($body, 'ref'), $email));
+
+            if ($email !== '') {
+                try {
+                    $insertedTx = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :ref', ['ref' => $txRef]);
+                    if ($insertedTx) {
+                        sendOrderInitiatedEmailNow($insertedTx);
+                    }
+                } catch (Throwable $mailErr) {
+                    error_log('Failed sending initiation email in /api/initiate: ' . $mailErr->getMessage());
+                }
+            }
         } catch (Throwable $e) {
             // The Switch order already exists, so still hand the user their deposit details.
             // Log the full order so the missing row can be recovered by hand.
@@ -510,6 +521,9 @@ function registerPublicRoutes(Router $router): void
                 ['hash' => $hash ?: '', 'exp' => $exp ?: '', 'id' => $tx['id']]
             );
             $updated = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
+            if ($updated) {
+                sendTransactionReceiptNow($updated);
+            }
             jsonResponse(['success' => true, 'status' => 'COMPLETED', 'message' => 'PAJ payment confirmed', 'data' => $updated]);
         }
 

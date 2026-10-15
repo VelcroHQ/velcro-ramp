@@ -114,6 +114,12 @@ function registerWebhookRoutes(Router $router): void
                 );
                 if ($count > 0) {
                     error_log("✅ PAJ webhook updated tx {$txId} → {$mappedStatus}");
+                    if ($mappedStatus === 'COMPLETED') {
+                        $pajTx = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :id1 OR `switch_reference` = :id2', ['id1' => (string)$txId, 'id2' => (string)$txId]);
+                        if ($pajTx) {
+                            sendTransactionReceiptNow($pajTx);
+                        }
+                    }
                 } else {
                     error_log("⚠️ PAJ webhook: no tx updated for {$txId} (mapped status: {$mappedStatus})");
                 }

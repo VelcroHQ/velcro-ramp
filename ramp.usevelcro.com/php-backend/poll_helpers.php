@@ -8,6 +8,8 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/switch_api.php';
 require_once __DIR__ . '/paj_api.php';
 
+require_once __DIR__ . '/emails.php';
+
 function pollSingleTransaction(array $tx): void
 {
     if (($tx['channel'] ?? '') === 'PAJ') {
@@ -42,6 +44,16 @@ function pollSingleTransaction(array $tx): void
                     ]
                 );
                 error_log("[Poller] PAJ {$tx['reference']} → {$newStatus}");
+                if ($newStatus === 'COMPLETED') {
+                    $freshTx = Database::safeSelectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']], null);
+                    if ($freshTx) {
+                        try {
+                            sendTransactionReceiptNow($freshTx);
+                        } catch (Throwable $e) {
+                            error_log('[Poller] Failed to send receipt for PAJ ' . ($tx['reference'] ?? '') . ': ' . $e->getMessage());
+                        }
+                    }
+                }
             }
         } catch (Throwable $e) {
             error_log("[Poller] Failed PAJ {$tx['reference']}: " . $e->getMessage());

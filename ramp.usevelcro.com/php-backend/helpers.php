@@ -411,40 +411,71 @@ function mailConfigured(): bool
 /** Sends one email: Mailhive Send API when MAILHIVE_API_KEY is set, SMTP when configured, or PHP mail() fallback. */
 function sendEmailTo(string $to, string $subject, string $html, string $text): bool
 {
+    $to = strtolower(trim($to));
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        error_log("sendEmailTo skipped invalid email: {$to}");
+        return false;
+    }
+
+    // 1. Try Mailhive Send API when configured
     if (MAILHIVE_API_KEY !== '') {
         try {
+            $from = MAIL_FROM !== '' ? MAIL_FROM : 'noreply@usevelcro.com';
             $res = httpRequest('POST', 'https://api.mailhive.africa/v1/send/emails', [
                 'headers' => ['Authorization: Bearer ' . MAILHIVE_API_KEY],
-                'body' => ['from' => 'Velcro <' . MAIL_FROM . '>', 'to' => $to, 'subject' => $subject, 'html' => $html, 'text' => $text],
+                'body' => ['from' => 'Velcro <' . $from . '>', 'to' => $to, 'subject' => $subject, 'html' => $html, 'text' => $text],
                 'timeout' => 15,
             ]);
-            // Mailhive accepts but skips addresses on its suppression list (bounces/complaints).
             $suppressed = array_map('strtolower', (array) ($res['suppressed'] ?? []));
-            return !empty($res['id']) && !in_array(strtolower($to), $suppressed, true);
+            if (!empty($res['id']) && !in_array($to, $suppressed, true)) {
+                return true;
+            }
+            error_log("Mailhive suppressed or skipped delivery to {$to}: " . json_encode($res));
         } catch (Throwable $e) {
-            error_log('Mailhive send failed: ' . $e->getMessage());
-            return false;
+            error_log("Mailhive send failed for {$to}: " . $e->getMessage() . " — falling back to secondary transport");
         }
     }
+
+    // 2. Try SMTP when configured
     if (SMTP_HOST !== '' && SMTP_USER !== '' && SMTP_PASS !== '') {
-        return smtpSend($to, $subject, $html, $text);
+        try {
+            if (smtpSend($to, $subject, $html, $text)) {
+                return true;
+            }
+            error_log("SMTP send returned false for {$to} — falling back to mail()");
+        } catch (Throwable $e) {
+            error_log("SMTP send exception for {$to}: " . $e->getMessage() . " — falling back to mail()");
+        }
     }
+
+    // 3. Fallback to PHP mail()
     if (function_exists('mail')) {
         $boundary = md5(uniqid((string) time(), true));
         $from = MAIL_FROM !== '' ? MAIL_FROM : (SMTP_FROM !== '' ? SMTP_FROM : 'noreply@usevelcro.com');
+        $cleanFrom = filter_var($from, FILTER_VALIDATE_EMAIL) ? $from : 'noreply@usevelcro.com';
         $headers = [
-            'From: "Velcro" <' . $from . '>',
-            'Reply-To: ' . $from,
+            'From: "Velcro" <' . $cleanFrom . '>',
+            'Reply-To: ' . $cleanFrom,
+            'Return-Path: ' . $cleanFrom,
             'MIME-Version: 1.0',
             'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+            'X-Mailer: Velcro/1.2.0',
+            'Auto-Submitted: auto-generated',
         ];
         $body = "--{$boundary}\r\n"
             . "Content-Type: text/plain; charset=UTF-8\r\n\r\n{$text}\r\n"
             . "--{$boundary}\r\n"
             . "Content-Type: text/html; charset=UTF-8\r\n\r\n{$html}\r\n"
             . "--{$boundary}--";
-        return @mail($to, $subject, $body, implode("\r\n", $headers));
+        $ok = @mail($to, $subject, $body, implode("\r\n", $headers), '-f' . $cleanFrom);
+        if (!$ok) {
+            // Retry without the -f flag in case hosting disallows custom envelope parameters
+            $ok = @mail($to, $subject, $body, implode("\r\n", $headers));
+        }
+        return $ok;
     }
+
+    error_log("No email transport succeeded for recipient: {$to}");
     return false;
 }
 
@@ -940,14 +971,15 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
         );
     }
 
-    if ($tx && !empty($tx['id'])) {
-        return Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
+    $finalTx = ($tx && !empty($tx['id']))
+        ? Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']])
+        : Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2', ['ref1' => $reference, 'ref2' => $reference]);
+
+    if ($finalTx && $normalizedStatus === 'COMPLETED' && empty($finalTx['receipt_sent_at'])) {
+        sendTransactionReceiptNow($finalTx);
     }
 
-    return Database::selectOne(
-        'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
-        ['ref1' => $reference, 'ref2' => $reference]
-    );
+    return $finalTx;
 }
 
 function buildExplorerUrl(string $hash, ?string $asset = null): string
