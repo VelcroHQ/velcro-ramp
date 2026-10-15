@@ -244,6 +244,12 @@ function registerCampaignRoutes(Router $router): void
             jsonResponse(['success' => false, 'error' => 'Invalid image format. Allowed: PNG, JPG, WEBP, GIF'], 400);
         }
 
+        // Verify image integrity with getimagesize
+        $imgInfo = @getimagesize($file['tmp_name']);
+        if ($imgInfo === false) {
+            jsonResponse(['success' => false, 'error' => 'Uploaded file is not a valid image'], 400);
+        }
+
         $ext = $allowed[$mime];
         $filename = 'img_' . bin2hex(random_bytes(10)) . '.' . $ext;
         $destPath = $uploadDir . DIRECTORY_SEPARATOR . $filename;
@@ -266,6 +272,9 @@ function registerCampaignRoutes(Router $router): void
 
         $rawContent = '';
         if (!empty($_FILES['file']['tmp_name'])) {
+            if (($_FILES['file']['size'] ?? 0) > 10 * 1024 * 1024) {
+                jsonResponse(['success' => false, 'error' => 'File exceeds 10MB limit'], 400);
+            }
             $rawContent = (string) file_get_contents($_FILES['file']['tmp_name']);
         } else {
             $body = getJsonBody();
@@ -279,6 +288,7 @@ function registerCampaignRoutes(Router $router): void
         preg_match_all('/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/', $rawContent, $matches);
         $rawEmails = $matches[0] ?? [];
         $uniqueEmails = array_values(array_unique(array_filter(array_map('strtolower', array_map('trim', $rawEmails)), 'isValidEmail')));
+        $uniqueEmails = array_slice($uniqueEmails, 0, 50000);
 
         if (empty($uniqueEmails)) {
             jsonResponse(['success' => false, 'error' => 'No valid email addresses found in the uploaded text/file.'], 400);

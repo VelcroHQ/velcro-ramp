@@ -1,0 +1,12 @@
+# Disable script execution in uploads directory
+Options -ExecCGI -Indexes
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|php8|phps|cgi|pl|py|sh|bash|asp|aspx|shtml|jsp|htaccess)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Only serve static images
+<FilesMatch "(?i)\.(jpg|jpeg|png|gif|webp|svg|ico)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
