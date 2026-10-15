@@ -747,10 +747,9 @@ function registerAdminRoutes(Router $router): void
         }
 
         try {
-            $tx = Database::safeSelectOne(
+            $tx = Database::selectOne(
                 'SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2',
-                ['ref1' => $reference, 'ref2' => $reference],
-                null
+                ['ref1' => $reference, 'ref2' => $reference]
             );
 
             if (!$tx) {

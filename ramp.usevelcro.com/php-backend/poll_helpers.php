@@ -45,7 +45,7 @@ function pollSingleTransaction(array $tx): void
                 );
                 error_log("[Poller] PAJ {$tx['reference']} → {$newStatus}");
                 if ($newStatus === 'COMPLETED') {
-                    $freshTx = Database::safeSelectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']], null);
+                    $freshTx = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
                     if ($freshTx) {
                         try {
                             sendTransactionReceiptNow($freshTx);
