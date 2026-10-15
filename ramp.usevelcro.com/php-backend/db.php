@@ -159,6 +159,22 @@ class Database
     }
 
     /**
+     * Run a safe single-row read, returning default value or null on failure.
+     *
+     * @param array<string,mixed> $params
+     * @return array<string,mixed>|null
+     */
+    public static function safeSelectOne(string $sql, array $params = [], ?array $default = null): ?array
+    {
+        try {
+            return self::selectOne($sql, $params) ?? $default;
+        } catch (Throwable $e) {
+            error_log('DB safeSelectOne error: ' . $e->getMessage());
+            return $default;
+        }
+    }
+
+    /**
      * Run a safe write, returning row count or 0 on failure.
      *
      * @param array<string,mixed> $params
