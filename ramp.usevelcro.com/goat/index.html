@@ -1495,21 +1495,106 @@
 
             <pre id="camp-mail-detail" class="table-card" style="display: none; margin-bottom: 20px; white-space: pre-wrap; word-break: break-all; font-size: 12px;"></pre>
 
+            <!-- Audience Stats & Email List Import Card -->
+            <div class="table-card" style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                    <div>
+                        <h3 style="font-size: 16px; margin: 0 0 4px;">Audience &amp; Email Lists</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Upload customer lists or send to automatically captured transaction users.</p>
+                    </div>
+                    <button class="btn-secondary" style="width: auto; padding: 9px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;" onclick="toggleUploadListModal()">
+                        <i data-lucide="upload" style="width: 15px; height: 15px;"></i> Upload / Import Emails
+                    </button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                    <div style="background: var(--bg-light); border: 1px solid var(--border); border-radius: 12px; padding: 14px;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Total Active Audience</span>
+                        <div id="camp-stat-all" style="font-size: 20px; font-weight: 700; color: var(--text-main); margin-top: 4px;">0</div>
+                    </div>
+                    <div style="background: var(--bg-light); border: 1px solid var(--border); border-radius: 12px; padding: 14px;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Platform Transactions</span>
+                        <div id="camp-stat-tx" style="font-size: 20px; font-weight: 700; color: var(--velcro-navy); margin-top: 4px;">0</div>
+                    </div>
+                    <div style="background: var(--bg-light); border: 1px solid var(--border); border-radius: 12px; padding: 14px;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Uploaded Contacts</span>
+                        <div id="camp-stat-uploaded" style="font-size: 20px; font-weight: 700; color: var(--success); margin-top: 4px;">0</div>
+                    </div>
+                    <div style="background: var(--bg-light); border: 1px solid var(--border); border-radius: 12px; padding: 14px;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Unsubscribed</span>
+                        <div id="camp-stat-unsub" style="font-size: 20px; font-weight: 700; color: var(--text-secondary); margin-top: 4px;">0</div>
+                    </div>
+                </div>
+
+                <!-- Collapsible Email Import Panel -->
+                <div id="camp-import-panel" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label class="camp-label">Upload CSV or TXT File</label>
+                            <input type="file" id="camp-import-file" accept=".csv,.txt" style="margin-bottom: 6px; padding: 8px;">
+                            <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Any CSV, TXT, or exported sheet containing email addresses.</p>
+                        </div>
+                        <div>
+                            <label class="camp-label">Or Paste Email Addresses</label>
+                            <textarea id="camp-import-text" rows="3" placeholder="user1@example.com, user2@example.com&#10;user3@example.com" style="margin-bottom: 6px; font-family: monospace; font-size: 12px;"></textarea>
+                            <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Comma, space, or newline separated.</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 12px; align-items: center; flex-wrap: wrap;">
+                        <button class="btn-primary" id="btn-import-emails" onclick="importEmailsToList()" style="width: auto; padding: 10px 20px; font-size: 13px;">
+                            Import to Email List
+                        </button>
+                        <span id="camp-import-status" style="font-size: 12px; font-weight: 600;"></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="camp-grid">
                 <div class="table-card camp-form">
                     <h3 style="margin-bottom: 16px; font-size: 16px;">New campaign</h3>
+                    
+                    <label class="camp-label" for="camp-target-audience">Send To</label>
+                    <select id="camp-target-audience" style="width: 100%; margin-bottom: 14px; padding: 11px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); color: var(--text-main); font: inherit; font-size: 14px;">
+                        <option value="all">All Contacts (Transactions + Uploaded List)</option>
+                        <option value="uploaded">Uploaded List Only</option>
+                        <option value="transactions">Platform Transactions Only</option>
+                    </select>
+
                     <label class="camp-label" for="camp-subject">Subject</label>
-                    <input id="camp-subject" maxlength="150" placeholder="Move money across Africa in minutes">
+                    <input id="camp-subject" maxlength="150" placeholder="Move money across Africa in minutes" oninput="previewCampaignDebounced()">
+                    
                     <label class="camp-label" for="camp-preheader">Preview text <span>(shown next to the subject in the inbox)</span></label>
-                    <input id="camp-preheader" maxlength="200" placeholder="Optional">
-                    <label class="camp-label" for="camp-title">Headline</label>
-                    <input id="camp-title" maxlength="150" placeholder="Your money, without borders">
-                    <label class="camp-label" for="camp-body">Message <span>(blank line = new paragraph)</span></label>
-                    <textarea id="camp-body" rows="8" maxlength="5000" placeholder="Write your message…"></textarea>
-                    <div class="camp-row">
-                        <div><label class="camp-label" for="camp-cta-label">Button text</label><input id="camp-cta-label" maxlength="60" placeholder="Optional"></div>
-                        <div><label class="camp-label" for="camp-cta-url">Button link</label><input id="camp-cta-url" placeholder="https://ramp.usevelcro.com"></div>
+                    <input id="camp-preheader" maxlength="200" placeholder="Optional" oninput="previewCampaignDebounced()">
+                    
+                    <label class="camp-label" for="camp-image-url">Header / Banner Picture <span>(optional)</span></label>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                        <input id="camp-image-url" placeholder="https://... or upload a picture" style="flex: 1; margin-bottom: 0;" oninput="onCampaignImageChanged()">
+                        <label class="btn-secondary" style="width: auto; padding: 11px 16px; margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                            <i data-lucide="image" style="width: 15px; height: 15px;"></i> Upload Pic
+                            <input type="file" id="camp-image-file" accept="image/*" style="display: none;" onchange="uploadCampaignHeroImage(this)">
+                        </label>
                     </div>
+                    <div id="camp-image-preview-wrap" style="display: none; margin-bottom: 14px; position: relative; max-width: 280px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);">
+                        <img id="camp-image-preview" src="" alt="Banner preview" style="width: 100%; height: auto; display: block;">
+                        <button onclick="removeCampaignHeroImage()" title="Remove picture" style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.65); color: #fff; border: 0; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;">✕</button>
+                    </div>
+
+                    <label class="camp-label" for="camp-title">Headline</label>
+                    <input id="camp-title" maxlength="150" placeholder="Your money, without borders" oninput="previewCampaignDebounced()">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label class="camp-label" for="camp-body" style="margin: 0;">Message <span>(blank line = new paragraph)</span></label>
+                        <label style="cursor: pointer; font-size: 12px; color: var(--primary-link); display: inline-flex; align-items: center; gap: 4px; font-weight: 600;" title="Upload an image to insert directly into your message">
+                            <i data-lucide="image-plus" style="width: 14px; height: 14px;"></i> Insert Pic into Message
+                            <input type="file" id="camp-inline-image-file" accept="image/*" style="display: none;" onchange="uploadCampaignInlineImage(this)">
+                        </label>
+                    </div>
+                    <textarea id="camp-body" rows="8" maxlength="15000" placeholder="Write your message… (Tip: Use ![Description](url) to insert images anywhere)" oninput="previewCampaignDebounced()"></textarea>
+                    
+                    <div class="camp-row">
+                        <div><label class="camp-label" for="camp-cta-label">Button text</label><input id="camp-cta-label" maxlength="60" placeholder="Optional" oninput="previewCampaignDebounced()"></div>
+                        <div><label class="camp-label" for="camp-cta-url">Button link</label><input id="camp-cta-url" placeholder="https://ramp.usevelcro.com" oninput="previewCampaignDebounced()"></div>
+                    </div>
+                    
                     <div class="camp-actions">
                         <button class="btn-secondary" onclick="previewCampaign()">Preview</button>
                         <div class="camp-test">
@@ -4345,8 +4430,158 @@
         let campTickTimer = null;
 
         function campaignFields() {
-            const v = id => document.getElementById(id).value.trim();
-            return { subject: v('camp-subject'), preheader: v('camp-preheader'), title: v('camp-title'), body: document.getElementById('camp-body').value.trim(), cta_label: v('camp-cta-label'), cta_url: v('camp-cta-url') };
+            const v = id => (document.getElementById(id)?.value || '').trim();
+            return {
+                subject: v('camp-subject'),
+                preheader: v('camp-preheader'),
+                title: v('camp-title'),
+                image_url: v('camp-image-url'),
+                body: document.getElementById('camp-body')?.value || '',
+                cta_label: v('camp-cta-label'),
+                cta_url: v('camp-cta-url'),
+                audience_source: v('camp-target-audience') || 'all'
+            };
+        }
+
+        let campDebounceTimer = null;
+        function previewCampaignDebounced() {
+            clearTimeout(campDebounceTimer);
+            campDebounceTimer = setTimeout(previewCampaign, 400);
+        }
+
+        function onCampaignImageChanged() {
+            const url = document.getElementById('camp-image-url').value.trim();
+            const previewWrap = document.getElementById('camp-image-preview-wrap');
+            const previewImg = document.getElementById('camp-image-preview');
+            if (url) {
+                previewImg.src = url;
+                previewWrap.style.display = 'inline-block';
+            } else {
+                previewWrap.style.display = 'none';
+            }
+            previewCampaignDebounced();
+        }
+
+        function removeCampaignHeroImage() {
+            document.getElementById('camp-image-url').value = '';
+            document.getElementById('camp-image-preview-wrap').style.display = 'none';
+            previewCampaign();
+        }
+
+        async function uploadCampaignHeroImage(input) {
+            const file = input.files?.[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('image', file);
+            showToast('Uploading picture…', 'info');
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/campaigns/upload-image`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey },
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed');
+                document.getElementById('camp-image-url').value = data.url;
+                onCampaignImageChanged();
+                previewCampaign();
+                showToast('Picture uploaded!', 'success');
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                input.value = '';
+            }
+        }
+
+        async function uploadCampaignInlineImage(input) {
+            const file = input.files?.[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('image', file);
+            showToast('Uploading picture…', 'info');
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/campaigns/upload-image`, {
+                    method: 'POST',
+                    headers: { 'Authorization': adminKey },
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed');
+                const textarea = document.getElementById('camp-body');
+                const tag = `\n\n![Picture](${data.url})\n\n`;
+                const start = textarea.selectionStart || textarea.value.length;
+                textarea.value = textarea.value.substring(0, start) + tag + textarea.value.substring(start);
+                previewCampaign();
+                showToast('Picture inserted into message!', 'success');
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                input.value = '';
+            }
+        }
+
+        function toggleUploadListModal() {
+            const panel = document.getElementById('camp-import-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function importEmailsToList() {
+            const fileInput = document.getElementById('camp-import-file');
+            const textInput = document.getElementById('camp-import-text');
+            const statusEl = document.getElementById('camp-import-status');
+            const btn = document.getElementById('btn-import-emails');
+
+            const file = fileInput.files?.[0];
+            const text = textInput.value.trim();
+
+            if (!file && !text) {
+                showToast('Please select a file or paste email addresses', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Importing…';
+            statusEl.innerText = '';
+
+            try {
+                let res;
+                if (file) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    res = await fetch(`${API_BASE}/api/admin/campaigns/import-emails`, {
+                        method: 'POST',
+                        headers: { 'Authorization': adminKey },
+                        body: formData
+                    });
+                } else {
+                    res = await fetch(`${API_BASE}/api/admin/campaigns/import-emails`, {
+                        method: 'POST',
+                        headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ emails: text })
+                    });
+                }
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Import failed');
+
+                statusEl.style.color = 'var(--success)';
+                statusEl.innerText = `✓ Added ${data.newly_added} new (${data.already_present} already in list). Total: ${data.total_subscribers}`;
+                showToast(`Successfully imported ${data.newly_added} emails!`, 'success');
+                fileInput.value = '';
+                textInput.value = '';
+                if (data.overview) {
+                    renderCampaigns(data.overview);
+                } else {
+                    fetchCampaigns();
+                }
+            } catch (e) {
+                statusEl.style.color = 'var(--failed)';
+                statusEl.innerText = e.message;
+                showToast(e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Import to Email List';
+            }
         }
 
         // Shows whether the server can send email; when it can't, the raw diagnostic (no secrets) is shown.
@@ -4377,7 +4612,14 @@
         }
 
         function renderCampaigns(data) {
-            document.getElementById('camp-audience').innerText = `${data.audience.toLocaleString()} subscribers · ${data.unsubscribed.toLocaleString()} unsubscribed`;
+            document.getElementById('camp-audience').innerText = `${(data.audience || 0).toLocaleString()} subscribers · ${(data.unsubscribed || 0).toLocaleString()} unsubscribed`;
+            if (document.getElementById('camp-stat-all')) {
+                document.getElementById('camp-stat-all').innerText = (data.audience || 0).toLocaleString();
+                document.getElementById('camp-stat-tx').innerText = (data.audience_transactions || 0).toLocaleString();
+                document.getElementById('camp-stat-uploaded').innerText = (data.audience_uploaded || 0).toLocaleString();
+                document.getElementById('camp-stat-unsub').innerText = (data.unsubscribed || 0).toLocaleString();
+            }
+
             document.getElementById('camp-body-rows').innerHTML = data.campaigns.length ? data.campaigns.map(c => {
                 const total = Number(c.total) || 0, sent = Number(c.sent) || 0, failed = Number(c.failed) || 0;
                 const pct = total ? Math.round(((sent + failed) / total) * 100) : 0;
@@ -4427,12 +4669,21 @@
 
         async function startCampaign(btn) {
             const fields = campaignFields();
-            const audience = (document.getElementById('camp-audience').innerText.match(/^[\d,]+/) || ['all'])[0];
-            if (!confirm(`Send "${fields.subject || '(no subject)'}" to ${audience} subscribers?\n\nThis can't be undone once emails go out. Send yourself a test first if you haven't.`)) return;
+            let countLabel = document.getElementById('camp-stat-all')?.innerText || 'all';
+            let targetLabel = 'All Subscribers';
+            if (fields.audience_source === 'uploaded') {
+                targetLabel = 'Uploaded Contact List Only';
+                countLabel = document.getElementById('camp-stat-uploaded')?.innerText || countLabel;
+            } else if (fields.audience_source === 'transactions') {
+                targetLabel = 'Platform Transactions Only';
+                countLabel = document.getElementById('camp-stat-tx')?.innerText || countLabel;
+            }
+
+            if (!confirm(`Send "${fields.subject || '(no subject)'}" to ${targetLabel} (${countLabel} recipients)?\n\nThis cannot be undone once emails are dispatched. We recommend sending a test email first.`)) return;
             btn.disabled = true;
             try {
                 const data = await adminPost('/api/admin/campaigns', fields);
-                showToast(`Sending to ${data.recipients.toLocaleString()} subscribers`, 'success');
+                showToast(`Sending to ${data.recipients.toLocaleString()} recipients`, 'success');
                 fetchCampaigns();
             } catch (e) { showToast(e.message, 'error'); }
             btn.disabled = false;

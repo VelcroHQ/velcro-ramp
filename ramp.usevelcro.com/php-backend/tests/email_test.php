@@ -73,7 +73,7 @@ check(Database::selectOne('SELECT updated_at FROM transactions WHERE id = 2')['u
 
 // ── Campaigns ──
 file_put_contents($tmp . '/data/.campaign_schema_v1', 'test');
-$pdo->exec("CREATE TABLE email_campaigns (id INTEGER PRIMARY KEY, subject TEXT, preheader TEXT, title TEXT, body TEXT, cta_label TEXT, cta_url TEXT, status TEXT DEFAULT 'SENDING', created_at TEXT, finished_at TEXT)");
+$pdo->exec("CREATE TABLE email_campaigns (id INTEGER PRIMARY KEY, subject TEXT, preheader TEXT, title TEXT, body TEXT, image_url TEXT, cta_label TEXT, cta_url TEXT, status TEXT DEFAULT 'SENDING', created_at TEXT, finished_at TEXT)");
 $pdo->exec("CREATE TABLE email_campaign_recipients (id INTEGER PRIMARY KEY, campaign_id INTEGER, email TEXT, status TEXT DEFAULT 'PENDING', sent_at TEXT, UNIQUE(campaign_id, email))");
 $pdo->exec('CREATE TABLE email_unsubscribes (email TEXT PRIMARY KEY, created_at TEXT)');
 

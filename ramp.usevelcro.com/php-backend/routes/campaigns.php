@@ -14,6 +14,7 @@ function campaignFieldsFrom(array $body): array
         'subject' => trim((string) body($body, 'subject', '')),
         'preheader' => trim((string) body($body, 'preheader', '')),
         'title' => trim((string) body($body, 'title', '')),
+        'image_url' => trim((string) body($body, 'image_url', '')),
         'body' => trim((string) body($body, 'body', '')),
         'cta_label' => trim((string) body($body, 'cta_label', '')),
         'cta_url' => trim((string) body($body, 'cta_url', '')),
@@ -23,10 +24,12 @@ function campaignFieldsFrom(array $body): array
         $error = 'Subject is required (max 150 characters)';
     } elseif ($f['title'] === '' || mb_strlen($f['title']) > 150) {
         $error = 'Headline is required (max 150 characters)';
-    } elseif ($f['body'] === '' || mb_strlen($f['body']) > 5000) {
-        $error = 'Message is required (max 5,000 characters)';
+    } elseif ($f['body'] === '' || mb_strlen($f['body']) > 15000) {
+        $error = 'Message is required (max 15,000 characters)';
     } elseif (mb_strlen($f['preheader']) > 200) {
         $error = 'Preview text is too long (max 200 characters)';
+    } elseif ($f['image_url'] !== '' && !preg_match('#^https?://[^\s<>"]+$#i', $f['image_url'])) {
+        $error = 'Image link must start with http:// or https://';
     } elseif (($f['cta_label'] === '') !== ($f['cta_url'] === '')) {
         $error = 'Button needs both a label and a link';
     } elseif ($f['cta_url'] !== '' && !preg_match('#^https?://[^\s<>"]+$#i', $f['cta_url'])) {
@@ -54,7 +57,16 @@ function campaignOverview(): array
          GROUP BY c.`id` ORDER BY c.`id` DESC LIMIT 50"
     );
     $unsubscribed = (int) (Database::selectOne('SELECT COUNT(*) AS n FROM `email_unsubscribes`')['n'] ?? 0);
-    return ['audience' => count(campaignAudience()), 'unsubscribed' => $unsubscribed, 'campaigns' => $campaigns];
+    $allAudience = count(campaignAudience('all'));
+    $txAudience = count(campaignAudience('transactions'));
+    $uploadedAudience = count(campaignAudience('uploaded'));
+    return [
+        'audience' => $allAudience,
+        'audience_transactions' => $txAudience,
+        'audience_uploaded' => $uploadedAudience,
+        'unsubscribed' => $unsubscribed,
+        'campaigns' => $campaigns
+    ];
 }
 
 function unsubscribePage(string $title, string $message, string $form = ''): never
@@ -169,21 +181,147 @@ function registerCampaignRoutes(Router $router): void
     // Snapshot the audience now, then send in batches (request hook, cron, and the admin page's ticks).
     $router->post('/api/admin/campaigns', function () {
         requireAdminAuth();
-        $fields = campaignFieldsFrom(getJsonBody());
+        $body = getJsonBody();
+        $fields = campaignFieldsFrom($body);
         if (!mailConfigured()) {
             jsonResponse(['success' => false, 'error' => 'Email is not configured on the server'], 503);
         }
-        $audience = campaignAudience();
+        $audienceSource = trim((string) ($body['audience_source'] ?? 'all'));
+        $customEmails = $body['custom_emails'] ?? null;
+        if (is_array($customEmails) && !empty($customEmails)) {
+            $audience = array_values(array_filter(array_unique(array_map('strtolower', array_map('trim', $customEmails))), 'isValidEmail'));
+        } else {
+            $audience = campaignAudience($audienceSource);
+        }
         if (!$audience) {
-            jsonResponse(['success' => false, 'error' => 'No one to send to yet'], 400);
+            jsonResponse(['success' => false, 'error' => 'No recipients found for this audience selection'], 400);
         }
         $id = (int) Database::insert('email_campaigns', $fields);
-        // ponytail: one INSERT per recipient; batch the inserts if the audience gets very large.
         foreach ($audience as $email) {
-            Database::insert('email_campaign_recipients', ['campaign_id' => $id, 'email' => $email]);
+            Database::safeExecute('INSERT IGNORE INTO `email_campaign_recipients` (`campaign_id`, `email`) VALUES (:cid, :em)', [
+                'cid' => $id,
+                'em' => $email,
+            ]);
         }
-        auditLog('CAMPAIGN_STARTED', ['id' => $id, 'subject' => $fields['subject'], 'recipients' => count($audience)]);
+        auditLog('CAMPAIGN_STARTED', ['id' => $id, 'subject' => $fields['subject'], 'recipients' => count($audience), 'source' => $audienceSource]);
         jsonResponse(['success' => true, 'id' => $id, 'recipients' => count($audience)]);
+    });
+
+    $router->post('/api/admin/campaigns/upload-image', function () {
+        requireAdminAuth();
+        $uploadDir = realpath(__DIR__ . '/../../email-assets') . DIRECTORY_SEPARATOR . 'uploads';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $file = $_FILES['image'] ?? ($_FILES['file'] ?? null);
+        if (!$file || empty($file['tmp_name'])) {
+            jsonResponse(['success' => false, 'error' => 'No image file uploaded'], 400);
+        }
+
+        if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            jsonResponse(['success' => false, 'error' => 'Upload failed with error code ' . ($file['error'] ?? 0)], 400);
+        }
+
+        if (($file['size'] ?? 0) > 5 * 1024 * 1024) {
+            jsonResponse(['success' => false, 'error' => 'Image exceeds 5MB size limit'], 400);
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = $finfo ? finfo_file($finfo, $file['tmp_name']) : '';
+        if ($finfo) {
+            finfo_close($finfo);
+        }
+
+        $allowed = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+        ];
+
+        if (!isset($allowed[$mime])) {
+            jsonResponse(['success' => false, 'error' => 'Invalid image format. Allowed: PNG, JPG, WEBP, GIF'], 400);
+        }
+
+        $ext = $allowed[$mime];
+        $filename = 'img_' . bin2hex(random_bytes(10)) . '.' . $ext;
+        $destPath = $uploadDir . DIRECTORY_SEPARATOR . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+            jsonResponse(['success' => false, 'error' => 'Failed to save uploaded image on server'], 500);
+        }
+
+        $publicUrl = EMAIL_SITE_URL . '/email-assets/uploads/' . $filename;
+        jsonResponse([
+            'success' => true,
+            'url' => $publicUrl,
+            'filename' => $filename,
+        ]);
+    });
+
+    $router->post('/api/admin/campaigns/import-emails', function () {
+        requireAdminAuth();
+        ensureCampaignSchema();
+
+        $rawContent = '';
+        if (!empty($_FILES['file']['tmp_name'])) {
+            $rawContent = (string) file_get_contents($_FILES['file']['tmp_name']);
+        } else {
+            $body = getJsonBody();
+            $rawContent = (string) ($body['emails'] ?? ($body['content'] ?? ''));
+        }
+
+        if (trim($rawContent) === '') {
+            jsonResponse(['success' => false, 'error' => 'No emails provided. Paste text or upload a CSV/TXT file.'], 400);
+        }
+
+        preg_match_all('/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/', $rawContent, $matches);
+        $rawEmails = $matches[0] ?? [];
+        $uniqueEmails = array_values(array_unique(array_filter(array_map('strtolower', array_map('trim', $rawEmails)), 'isValidEmail')));
+
+        if (empty($uniqueEmails)) {
+            jsonResponse(['success' => false, 'error' => 'No valid email addresses found in the uploaded text/file.'], 400);
+        }
+
+        $added = 0;
+        $existing = 0;
+        foreach ($uniqueEmails as $em) {
+            $res = Database::safeExecute(
+                'INSERT IGNORE INTO `email_subscribers` (`email`, `source`) VALUES (:email, :source)',
+                ['email' => $em, 'source' => 'manual_upload']
+            );
+            if ($res > 0) {
+                $added++;
+            } else {
+                $existing++;
+            }
+        }
+
+        $totalSubscribers = (int) (Database::selectOne('SELECT COUNT(*) AS n FROM `email_subscribers`')['n'] ?? 0);
+        auditLog('CAMPAIGN_EMAILS_IMPORTED', ['parsed' => count($uniqueEmails), 'added' => $added, 'existing' => $existing]);
+
+        jsonResponse([
+            'success' => true,
+            'total_parsed' => count($uniqueEmails),
+            'newly_added' => $added,
+            'already_present' => $existing,
+            'total_subscribers' => $totalSubscribers,
+            'overview' => campaignOverview(),
+        ]);
+    });
+
+    $router->get('/api/admin/campaigns/subscribers', function () {
+        requireAdminAuth();
+        ensureCampaignSchema();
+        $rows = Database::safeSelect('SELECT `id`, `email`, `source`, `created_at` FROM `email_subscribers` ORDER BY `id` DESC LIMIT 500', [], []);
+        $total = (int) (Database::selectOne('SELECT COUNT(*) AS n FROM `email_subscribers`')['n'] ?? 0);
+        jsonResponse([
+            'success' => true,
+            'total' => $total,
+            'subscribers' => $rows,
+            'overview' => campaignOverview(),
+        ]);
     });
 
     $router->post('/api/admin/campaigns/tick', function () {

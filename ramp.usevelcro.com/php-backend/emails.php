@@ -29,12 +29,30 @@ function renderEmail(array $o): array
     if (!empty($o['eyebrow'])) {
         $body .= '<p style="margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6f8f1f;">' . $e($o['eyebrow']) . '</p>';
     }
+
+    if (!empty($o['image_url'])) {
+        $imgSrc = $e($o['image_url']);
+        $body .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;"><tr><td align="center">'
+            . '<img src="' . $imgSrc . '" alt="" style="width:100%;max-width:100%;height:auto;border-radius:12px;display:block;border:0;">'
+            . '</td></tr></table>';
+    }
+
     $body .= '<h1 style="margin:0;font-size:24px;line-height:1.3;font-weight:800;color:#0D0D59;">' . $e($o['title']) . '</h1>';
     if (!empty($o['intro'])) {
         $body .= '<p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:#4b5563;">' . $e($o['intro']) . '</p>';
     }
     foreach ($o['paragraphs'] ?? [] as $p) {
-        $body .= '<p style="margin:14px 0 0;font-size:15px;line-height:1.7;color:#374151;">' . nl2br($e($p)) . '</p>';
+        $trimmed = trim($p);
+        if (preg_match('/^!\[(.*?)\]\((https?:\/\/[^\s\)]+)\)$/i', $trimmed, $m)) {
+            $body .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td align="center">'
+                . '<img src="' . $e($m[2]) . '" alt="' . $e($m[1]) . '" style="max-width:100%;height:auto;border-radius:10px;display:block;border:0;">'
+                . '</td></tr></table>';
+        } else {
+            $parsed = preg_replace_callback('/!\[(.*?)\]\((https?:\/\/[^\s\)]+)\)/i', function ($m) use ($e) {
+                return '<img src="' . $e($m[2]) . '" alt="' . $e($m[1]) . '" style="max-width:100%;height:auto;border-radius:8px;display:inline-block;margin:6px 0;border:0;">';
+            }, $e($p));
+            $body .= '<p style="margin:14px 0 0;font-size:15px;line-height:1.7;color:#374151;">' . nl2br($parsed) . '</p>';
+        }
     }
     if (!empty($o['amount'])) {
         $body .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;"><tr><td align="center" style="padding:22px 16px;border-radius:16px;background:#f6f9ec;">'
@@ -82,7 +100,11 @@ function renderEmail(array $o): array
         . (!empty($o['unsubscribe']) ? '<br>Don\'t want these emails? <a href="' . $e($o['unsubscribe']) . '" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>' : '')
         . '</td></tr></table></td></tr></table></body></html>';
 
-    $text = [$o['title']];
+    $text = [];
+    if (!empty($o['image_url'])) {
+        $text[] = '[Image: ' . $o['image_url'] . ']';
+    }
+    $text[] = $o['title'];
     if (!empty($o['intro'])) {
         $text[] = $o['intro'];
     }
@@ -343,14 +365,16 @@ function sendTransactionReceiptNow(array $t, bool $force = false): bool
     if (!$force && !empty($t['receipt_sent_at'])) {
         return true;
     }
+    if (!empty($t['id'])) {
+        Database::safeExecute(
+            "UPDATE `transactions` SET `receipt_sent_at` = NOW(), `updated_at` = `updated_at` WHERE `id` = :id" . ($force ? '' : ' AND `receipt_sent_at` IS NULL'),
+            ['id' => $t['id']]
+        );
+    }
     try {
         [$subject, $html, $text] = receiptEmail($t);
         $sent = sendEmailTo($email, $subject, $html, $text);
-        if ($sent && !empty($t['id'])) {
-            Database::safeExecute(
-                'UPDATE `transactions` SET `receipt_sent_at` = NOW(), `updated_at` = `updated_at` WHERE `id` = :id',
-                ['id' => $t['id']]
-            );
+        if ($sent) {
             error_log("Transaction receipt sent to {$email} for tx {$t['reference']}");
         }
         return $sent;
@@ -375,8 +399,16 @@ function sendPendingReceipts(int $limit = 5): int
     );
     $sent = 0;
     foreach ($rows as $t) {
-        if (sendTransactionReceiptNow($t)) {
-            $sent++;
+        if (Database::execute("UPDATE `transactions` SET `receipt_sent_at` = NOW(), `updated_at` = `updated_at` WHERE `id` = :id AND `receipt_sent_at` IS NULL", ['id' => $t['id']]) !== 1) {
+            continue;
+        }
+        try {
+            [$subject, $html, $text] = receiptEmail($t);
+            if (sendEmailTo($t['email'], $subject, $html, $text)) {
+                $sent++;
+            }
+        } catch (Throwable $e) {
+            error_log('Failed sending receipt in batch for tx ' . ($t['id'] ?? '') . ': ' . $e->getMessage());
         }
     }
     return $sent;
@@ -421,61 +453,107 @@ function unsubscribeUrl(string $email): string
 function ensureCampaignSchema(): void
 {
     static $done = false;
-    $flag = BASE_PATH . '/data/.campaign_schema_v1';
-    if ($done || file_exists($flag)) {
-        $done = true;
+    if ($done) {
         return;
     }
+    $flag2 = BASE_PATH . '/data/.campaign_schema_v2';
     $pdo = Database::pdo();
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `email_campaigns` (
-        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        `subject` VARCHAR(150) NOT NULL,
-        `preheader` VARCHAR(200) DEFAULT NULL,
-        `title` VARCHAR(150) NOT NULL,
-        `body` TEXT NOT NULL,
-        `cta_label` VARCHAR(60) DEFAULT NULL,
-        `cta_url` VARCHAR(500) DEFAULT NULL,
-        `status` VARCHAR(20) NOT NULL DEFAULT 'SENDING',
-        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-        `finished_at` DATETIME DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `email_campaign_recipients` (
-        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        `campaign_id` INT UNSIGNED NOT NULL,
-        `email` VARCHAR(255) NOT NULL,
-        `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-        `sent_at` DATETIME DEFAULT NULL,
-        UNIQUE KEY `uniq_campaign_email` (`campaign_id`, `email`),
-        KEY `idx_status` (`status`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `email_unsubscribes` (
-        `email` VARCHAR(255) NOT NULL PRIMARY KEY,
-        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-    @file_put_contents($flag, gmdate('c'));
+    $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $isMysql = str_contains($driver, 'mysql');
+
+    if ($isMysql) {
+        if (!file_exists($flag2)) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `email_campaigns` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `subject` VARCHAR(150) NOT NULL,
+                `preheader` VARCHAR(200) DEFAULT NULL,
+                `title` VARCHAR(150) NOT NULL,
+                `body` TEXT NOT NULL,
+                `image_url` VARCHAR(500) DEFAULT NULL,
+                `cta_label` VARCHAR(60) DEFAULT NULL,
+                `cta_url` VARCHAR(500) DEFAULT NULL,
+                `status` VARCHAR(20) NOT NULL DEFAULT 'SENDING',
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `finished_at` DATETIME DEFAULT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            try {
+                $pdo->exec("ALTER TABLE `email_campaigns` ADD COLUMN `image_url` VARCHAR(500) DEFAULT NULL AFTER `body`");
+            } catch (Throwable $e) {}
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `email_campaign_recipients` (
+                `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `campaign_id` INT UNSIGNED NOT NULL,
+                `email` VARCHAR(255) NOT NULL,
+                `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                `sent_at` DATETIME DEFAULT NULL,
+                UNIQUE KEY `uniq_campaign_email` (`campaign_id`, `email`),
+                KEY `idx_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `email_unsubscribes` (
+                `email` VARCHAR(255) NOT NULL PRIMARY KEY,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `email_subscribers` (
+                `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `email` VARCHAR(255) NOT NULL,
+                `name` VARCHAR(150) DEFAULT NULL,
+                `source` VARCHAR(50) DEFAULT 'manual_upload',
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY `uniq_sub_email` (`email`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            @file_put_contents($flag2, gmdate('c'));
+        }
+    } else {
+        // SQLite (e.g. test environment)
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS email_subscribers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL UNIQUE,
+                name TEXT DEFAULT NULL,
+                source TEXT DEFAULT 'manual_upload',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )");
+        } catch (Throwable $e) {}
+    }
     $done = true;
 }
 
 /**
- * Everyone who gave us an email (orders + referrers), minus unsubscribes.
- * ponytail: loads the whole list into memory; page it if the audience reaches hundreds of thousands.
+ * Everyone who gave us an email (orders + referrers + uploaded subscribers), minus unsubscribes.
  *
+ * @param string $source 'all', 'transactions', or 'uploaded'
  * @return array<int,string>
  */
-function campaignAudience(): array
+function campaignAudience(string $source = 'all'): array
 {
     ensureCampaignSchema();
     $emails = [];
-    foreach (Database::select("SELECT DISTINCT LOWER(TRIM(`email`)) AS e FROM `transactions` WHERE `email` IS NOT NULL AND `email` <> ''") as $r) {
-        $emails[$r['e']] = true;
-    }
-    try {
-        foreach (Database::select('SELECT `email` AS e FROM `referrers`') as $r) {
-            $emails[strtolower($r['e'])] = true;
+
+    if ($source !== 'uploaded') {
+        foreach (Database::select("SELECT DISTINCT LOWER(TRIM(`email`)) AS e FROM `transactions` WHERE `email` IS NOT NULL AND `email` <> ''") as $r) {
+            $emails[$r['e']] = true;
         }
-    } catch (Throwable $e) {
-        // referral tables not created yet
+        try {
+            foreach (Database::select('SELECT `email` AS e FROM `referrers`') as $r) {
+                $emails[strtolower($r['e'])] = true;
+            }
+        } catch (Throwable $e) {
+            // referral tables not created yet
+        }
     }
+
+    if ($source !== 'transactions') {
+        try {
+            foreach (Database::select('SELECT `email` AS e FROM `email_subscribers`') as $r) {
+                $emails[strtolower($r['e'])] = true;
+            }
+        } catch (Throwable $e) {}
+    }
+
     foreach (Database::select('SELECT `email` AS e FROM `email_unsubscribes`') as $r) {
         unset($emails[strtolower($r['e'])]);
     }
@@ -483,15 +561,16 @@ function campaignAudience(): array
 }
 
 /**
- * @param array<string,mixed> $c campaign fields (subject, preheader, title, body, cta_label, cta_url)
+ * @param array<string,mixed> $c campaign fields (subject, preheader, title, body, image_url, cta_label, cta_url)
  * @return array{0: string, 1: string} [html, text]
  */
 function renderCampaign(array $c, string $email): array
 {
-    $paragraphs = array_values(array_filter(array_map('trim', preg_split('/\R\s*\R/', trim((string) $c['body'])) ?: [])));
+    $paragraphs = array_values(array_filter(array_map('trim', preg_split('/\R\s*\R/', trim((string) ($c['body'] ?? ''))) ?: [])));
     return renderEmail([
-        'preheader' => (string) ($c['preheader'] ?? '') ?: (string) $c['title'],
-        'title' => (string) $c['title'],
+        'preheader' => (string) ($c['preheader'] ?? '') ?: (string) ($c['title'] ?? ''),
+        'title' => (string) ($c['title'] ?? ''),
+        'image_url' => !empty($c['image_url']) ? (string) $c['image_url'] : null,
         'paragraphs' => $paragraphs,
         'cta' => !empty($c['cta_label']) && !empty($c['cta_url']) ? [(string) $c['cta_label'], (string) $c['cta_url']] : null,
         'unsubscribe' => unsubscribeUrl($email),
@@ -509,7 +588,7 @@ function sendCampaignBatch(int $limit = 20): int
     }
     ensureCampaignSchema();
     $rows = Database::select(
-        "SELECT r.`id` AS rid, r.`email`, c.`subject`, c.`preheader`, c.`title`, c.`body`, c.`cta_label`, c.`cta_url`
+        "SELECT r.`id` AS rid, r.`email`, c.`subject`, c.`preheader`, c.`title`, c.`body`, c.`image_url`, c.`cta_label`, c.`cta_url`
          FROM `email_campaign_recipients` r JOIN `email_campaigns` c ON c.`id` = r.`campaign_id`
          WHERE r.`status` = 'PENDING' AND c.`status` = 'SENDING' ORDER BY r.`id` LIMIT " . max(1, $limit)
     );
