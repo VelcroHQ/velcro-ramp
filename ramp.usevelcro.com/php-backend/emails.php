@@ -278,6 +278,7 @@ function orderInitiatedEmail(array $t): array
             ['Bank Name', $bankName],
             ['Account Number', $accountNum],
             ['Account Name', $accountName],
+            ['Validity Window', '60 minutes'],
         ];
         if (!empty($t['wallet_address'])) {
             $rows[] = ['Receiving Wallet', $short((string) $t['wallet_address']), true];
@@ -286,14 +287,14 @@ function orderInitiatedEmail(array $t): array
 
         $subject = "Order Started: Pay {$fiatPay} for {$expected}";
         [$html, $text] = renderEmail([
-            'preheader' => "Please transfer {$fiatPay} to complete your order.",
+            'preheader' => "Please transfer {$fiatPay} within 60 minutes to complete your order.",
             'eyebrow' => 'Order Started',
             'title' => 'Complete your crypto purchase',
-            'intro' => "We've created your order. Please transfer {$fiatPay} to the dedicated bank account below. Once detected, {$expected} will be sent to your wallet automatically.",
+            'intro' => "We've created your order. Please transfer {$fiatPay} to the dedicated bank account below within 60 minutes. Once detected, {$expected} will be sent to your wallet automatically.",
             'amount' => ['Transfer exactly', $fiatPay],
             'rows' => $rows,
             'cta' => ['View Order Status', EMAIL_SITE_URL],
-            'outro' => 'Make sure to transfer from an account in your name. Once your transfer is sent, your crypto will be delivered automatically.',
+            'outro' => 'Make sure to transfer from an account in your name within 60 minutes. Once your transfer is sent, your crypto will be delivered automatically.',
         ]);
         return [$subject, $html, $text];
     }
@@ -312,6 +313,7 @@ function orderInitiatedEmail(array $t): array
         ['Network', $chainLabel],
         ['Deposit Address', $depositAddress, true],
         ['Payout Amount', $payoutFiat],
+        ['Validity Window', '60 minutes'],
     ];
     if ($bank !== '') {
         $rows[] = ['Payout Bank', $bank];
@@ -323,14 +325,14 @@ function orderInitiatedEmail(array $t): array
 
     $subject = "Order Started: Send {$cryptoAmt} for {$payoutFiat} payout";
     [$html, $text] = renderEmail([
-        'preheader' => "Send {$cryptoAmt} to deposit address to receive payout.",
+        'preheader' => "Send {$cryptoAmt} to deposit address within 60 minutes to receive payout.",
         'eyebrow' => 'Order Started',
         'title' => 'Complete your cash payout',
-        'intro' => "We've created your sell order. Please send {$cryptoAmt} on the {$chainLabel} network to the deposit address below. Once confirmed, {$payoutFiat} will be sent directly to your bank account.",
+        'intro' => "We've created your sell order. Please send {$cryptoAmt} on the {$chainLabel} network to the deposit address below within 60 minutes. Once confirmed, {$payoutFiat} will be sent directly to your bank account.",
         'amount' => ['Send exactly', $cryptoAmt],
         'rows' => $rows,
         'cta' => ['View Order Status', EMAIL_SITE_URL],
-        'outro' => "Only send {$symbol} on the {$chainLabel} network. Sending to the wrong network may result in loss of funds.",
+        'outro' => "Please send within 60 minutes. Only send {$symbol} on the {$chainLabel} network. Sending to the wrong network may result in loss of funds.",
     ]);
     return [$subject, $html, $text];
 }

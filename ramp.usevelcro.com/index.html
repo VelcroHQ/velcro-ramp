@@ -1682,6 +1682,20 @@
                 <p class="text-xl font-bold text-gray-900"><span id="sell-confirm-amount">0.00</span> <span
                     id="sell-confirm-asset">USDT</span></p>
               </div>
+              <div id="sell-expiry-badge" class="bg-amber-50/90 border border-amber-200/80 rounded-xl p-3 mb-3 text-left flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-amber-900">Validity Window</p>
+                    <p class="text-[11px] text-amber-700 leading-tight">This address is valid for 60 minutes. Please send before expiry.</p>
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <span id="sell-timer" class="text-xs font-mono font-bold bg-amber-200/80 text-amber-900 px-2 py-1 rounded-md">60:00</span>
+                </div>
+              </div>
               <div class="bg-white rounded-xl border border-gray-200 p-4 mb-3 text-left">
                 <p class="text-xs text-gray-500 mb-2">Wallet Address</p>
                 <div class="flex items-center gap-2">
@@ -1914,6 +1928,20 @@
                 </div>
                 <p class="text-xl font-bold text-gray-900"><span id="buy-confirm-currency-symbol">&#8358;</span><span
                     id="buy-confirm-ngn">0.00</span></p>
+              </div>
+              <div id="buy-expiry-badge" class="bg-amber-50/90 border border-amber-200/80 rounded-xl p-3 mb-3 text-left flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-amber-900">Validity Window</p>
+                    <p class="text-[11px] text-amber-700 leading-tight">This account is valid for 60 minutes. Please transfer before expiry.</p>
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <span id="buy-timer" class="text-xs font-mono font-bold bg-amber-200/80 text-amber-900 px-2 py-1 rounded-md">60:00</span>
+                </div>
               </div>
               <div class="flex flex-col gap-3 mb-3">
                 <div
@@ -4546,6 +4574,7 @@
           });
 
           document.getElementById('sell-generated-address').classList.remove('hidden');
+          startExpiryCountdown('sell', 3600);
           btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Address Generated';
           btn.disabled = true;
           btn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -4630,6 +4659,7 @@
           }
         }
         document.getElementById('sell-generated-address').classList.remove('hidden');
+        startExpiryCountdown('sell', 3600);
         btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Address Generated';
         btn.disabled = true;
         btn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -4739,6 +4769,7 @@
           document.getElementById('buy-reference').textContent = data.id || '-';
           currentReference = data.id || '';
           document.getElementById('buy-generated-account').classList.remove('hidden');
+          startExpiryCountdown('buy', 3600);
           btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Account Generated';
           btn.disabled = true;
           btn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -4808,6 +4839,7 @@
         document.getElementById('buy-reference').textContent = data.reference || '-';
         currentReference = data.reference || '';
         document.getElementById('buy-generated-account').classList.remove('hidden');
+        startExpiryCountdown('buy', 3600);
         btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Account Generated';
         btn.disabled = true;
         btn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -4829,6 +4861,47 @@
         safeLucideInit();
         showToast(err.message || 'Failed to generate account', 'error');
       }
+    }
+
+    
+    let buyExpiryInterval = null;
+    let sellExpiryInterval = null;
+
+    function startExpiryCountdown(type, totalSeconds = 3600) {
+      const isBuy = (type === 'buy');
+      const timerEl = document.getElementById(isBuy ? 'buy-timer' : 'sell-timer');
+      if (isBuy && buyExpiryInterval) { clearInterval(buyExpiryInterval); buyExpiryInterval = null; }
+      if (!isBuy && sellExpiryInterval) { clearInterval(sellExpiryInterval); sellExpiryInterval = null; }
+
+      let remaining = totalSeconds;
+      const updateDisplay = () => {
+        if (!timerEl) return;
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        if (remaining <= 300) {
+          timerEl.className = 'text-xs font-mono font-bold bg-red-100 text-red-700 px-2 py-1 rounded-md';
+        } else {
+          timerEl.className = 'text-xs font-mono font-bold bg-amber-200/80 text-amber-900 px-2 py-1 rounded-md';
+        }
+      };
+
+      updateDisplay();
+      const interval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          if (timerEl) {
+            timerEl.textContent = 'Expired';
+            timerEl.className = 'text-xs font-mono font-bold bg-red-200 text-red-900 px-2 py-1 rounded-md';
+          }
+        } else {
+          updateDisplay();
+        }
+      }, 1000);
+
+      if (isBuy) buyExpiryInterval = interval;
+      else sellExpiryInterval = interval;
     }
 
     function startStatusPoll(reference, type = 'buy') {
@@ -5289,6 +5362,7 @@
       safeLucideInit();
       unlockSellForm();
       if (statusPollInterval) clearInterval(statusPollInterval);
+      if (sellExpiryInterval) { clearInterval(sellExpiryInterval); sellExpiryInterval = null; }
       currentReference = '';
       currentTxDetails = null;
     }
@@ -6049,6 +6123,8 @@
     }
 
     function showSuccessModal(type, data) {
+      if (buyExpiryInterval) { clearInterval(buyExpiryInterval); buyExpiryInterval = null; }
+      if (sellExpiryInterval) { clearInterval(sellExpiryInterval); sellExpiryInterval = null; }
       const modal = document.getElementById('success-modal');
       const title = document.getElementById('success-title');
       const subtitle = document.getElementById('success-subtitle');

@@ -414,6 +414,24 @@ function registerPublicRoutes(Router $router): void
         if (is_array($depositNote)) {
             $depositNote = implode("\n", $depositNote);
         }
+        if (is_string($depositNote)) {
+            $depositNote = str_replace(['30 minutes', '30 minute', '30-minute', '30 mins'], '60 minutes', $depositNote);
+        }
+        if (isset($data['data']['deposit'])) {
+            if (isset($data['data']['deposit']['note'])) {
+                if (is_array($data['data']['deposit']['note'])) {
+                    $data['data']['deposit']['note'] = array_map(
+                        static fn ($n) => is_string($n) ? str_replace(['30 minutes', '30 minute', '30-minute', '30 mins'], '60 minutes', $n) : $n,
+                        $data['data']['deposit']['note']
+                    );
+                } elseif (is_string($data['data']['deposit']['note'])) {
+                    $data['data']['deposit']['note'] = str_replace(['30 minutes', '30 minute', '30-minute', '30 mins'], '60 minutes', $data['data']['deposit']['note']);
+                }
+            }
+            if (!empty($data['data']['deposit']['expires_at'])) {
+                $data['data']['deposit']['expires_at'] = gmdate('Y-m-d\TH:i:s.v\Z', time() + 3600);
+            }
+        }
 
         try {
             Database::insert('transactions', [

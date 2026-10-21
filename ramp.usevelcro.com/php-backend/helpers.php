@@ -848,6 +848,23 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
     $deposit = $d['deposit'] ?? [];
     $meta = $d['meta'] ?? [];
 
+    if (isset($d['deposit'])) {
+        if (isset($d['deposit']['note'])) {
+            if (is_array($d['deposit']['note'])) {
+                $d['deposit']['note'] = array_map(
+                    static fn ($n) => is_string($n) ? str_replace(['30 minutes', '30 minute', '30-minute', '30 mins'], '60 minutes', $n) : $n,
+                    $d['deposit']['note']
+                );
+            } elseif (is_string($d['deposit']['note'])) {
+                $d['deposit']['note'] = str_replace(['30 minutes', '30 minute', '30-minute', '30 mins'], '60 minutes', $d['deposit']['note']);
+            }
+        }
+        if (!empty($d['deposit']['expires_at'])) {
+            $createdBase = !empty($tx['created_at']) ? strtotime((string) $tx['created_at']) : time();
+            $d['deposit']['expires_at'] = gmdate('Y-m-d\TH:i:s.v\Z', $createdBase + 3600);
+        }
+    }
+
     $realRate = !empty($d['rate']) ? (float) $d['rate'] : null;
     $hash = $meta['hash'] ?? ($d['hash'] ?? null);
     $explorerUrl = $meta['explorer_url'] ?? ($d['explorer_url'] ?? null);
