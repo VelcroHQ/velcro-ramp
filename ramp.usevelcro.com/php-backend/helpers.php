@@ -928,6 +928,19 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
         );
     } else {
         // ONRAMP (Buy crypto with NGN)
+        $storedMeta = $tx['meta'] ?? [];
+        if (is_string($storedMeta)) {
+            $storedMeta = json_decode($storedMeta, true) ?: [];
+        }
+        $feePercent = (is_array($storedMeta) && isset($storedMeta['_velcro_onramp_fee_percent']))
+            ? (float) $storedMeta['_velcro_onramp_fee_percent']
+            : getPlatformFee();
+
+        $d = normalizeSwitchOnrampAmount($d, $feePercent);
+        $d['_velcro_onramp_fee_percent'] = $feePercent;
+        $destination = $d['destination'] ?? [];
+        $feeDev = $d['developer_fee']['amount'] ?? ($d['fee']['developer'] ?? null);
+
         $realFiat = isset($source['amount']) && (float)$source['amount'] > 0 ? (float)$source['amount'] : null;
         $realCrypto = isset($destination['amount']) && (float)$destination['amount'] > 0 ? (float)$destination['amount'] : null;
 
@@ -940,6 +953,7 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
             'real_fiat' => $realFiat,
             'real_source_amount' => $realFiat,
             'real_crypto' => $realCrypto,
+            'fee_developer' => $feeDev !== null ? (float) $feeDev : null,
             'real_rate' => $realRate,
             'hash' => $hash,
             'explorer_url' => $explorerUrl,
@@ -961,6 +975,7 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
                 `amount` = COALESCE(:real_fiat, `amount`),
                 `source_amount` = COALESCE(:real_source_amount, `source_amount`, `amount`),
                 `destination_amount` = COALESCE(:real_crypto, `destination_amount`),
+                `fee_developer` = COALESCE(:fee_developer, `fee_developer`),
                 `rate` = COALESCE(:real_rate, `rate`),
                 `hash` = COALESCE(:hash, `hash`),
                 `explorer_url` = COALESCE(:explorer_url, `explorer_url`),
@@ -980,6 +995,30 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
     }
 
     return $finalTx;
+}
+
+/** Convert Switch's gross onramp destination to the customer amount once.
+ * Keep the fee snapshot in the stored payload so polling uses the order's fee.
+ */
+function normalizeSwitchOnrampAmount(array $data, float $feePercent): array
+{
+    if (isset($data['_velcro_onramp_fee_percent'])) {
+        return $data;
+    }
+    if (isset($data['destination']['amount']) && is_numeric($data['destination']['amount'])) {
+        $gross = (float) $data['destination']['amount'];
+        $factor = $feePercent > 0 && $feePercent < 100 ? 1 - $feePercent / 100 : 1;
+        $data['_velcro_onramp_gross_amount'] = $gross;
+        $data['_velcro_onramp_fee_percent'] = $feePercent;
+        $net = $gross * $factor;
+        if ($feePercent > 0 && abs($net - round($net, 2)) < 0.00001) {
+            $net = round($net, 2);
+        } else {
+            $net = round($net, 6);
+        }
+        $data['destination']['amount'] = $net;
+    }
+    return $data;
 }
 
 function buildExplorerUrl(string $hash, ?string $asset = null): string

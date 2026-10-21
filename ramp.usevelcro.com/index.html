@@ -4165,7 +4165,7 @@
         updateStepIndicators('ONRAMP');
         return;
       }
-      const feePercent = typeof currentPlatformFee === 'number' ? currentPlatformFee : 0.5;
+      const feePercent = currentFee;
       const feeFactor = feePercent > 0 && feePercent < 100 ? (1 - (feePercent / 100)) : 1;
       const receive = (amount * feeFactor) / rate;
       if (Number.isNaN(receive)) {
@@ -4250,7 +4250,7 @@
         const feeFactor = feePercent > 0 && feePercent < 100 ? (1 - (feePercent / 100)) : 1;
         ngn = approxRate > 0 ? ((crypto * approxRate) / feeFactor) : 0;
       } else {
-        const feePercent = typeof currentPlatformFee === 'number' ? currentPlatformFee : 0.5;
+        const feePercent = currentFee;
         const feeFactor = feePercent > 0 && feePercent < 100 ? (1 - (feePercent / 100)) : 1;
         ngn = currentRate.buy > 0 ? ((crypto * currentRate.buy) / feeFactor) : 0;
       }

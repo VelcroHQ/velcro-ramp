@@ -394,6 +394,10 @@ function registerPublicRoutes(Router $router): void
         }
 
         $d = $data['data'] ?? [];
+        if ($direction === 'ONRAMP') {
+            $d = normalizeSwitchOnrampAmount($d, getPlatformFee());
+            $data['data'] = $d;
+        }
         $dep = $d['deposit'] ?? [];
         $fee = $d['fee'] ?? [];
         $src = $d['source'] ?? [];
@@ -425,7 +429,7 @@ function registerPublicRoutes(Router $router): void
                 'rate' => $d['rate'] ?? null,
                 'fee_total' => $fee['total'] ?? null,
                 'fee_platform' => $fee['platform'] ?? null,
-                'fee_developer' => $fee['developer'] ?? null,
+                'fee_developer' => $d['developer_fee']['amount'] ?? ($fee['developer'] ?? null),
                 'source_amount' => $src['amount'] ?? null,
                 'source_currency' => $src['currency'] ?? null,
                 'destination_amount' => $dst['amount'] ?? null,
@@ -470,7 +474,11 @@ function registerPublicRoutes(Router $router): void
             $data = switchApi()->getPaymentStatus($reference);
             $d = $data['data'] ?? [];
             if (!empty($d['status'])) {
-                updateSwitchTransactionFromData($reference, $d);
+                $updatedTx = updateSwitchTransactionFromData($reference, $d);
+                if ($updatedTx && strtoupper((string) ($updatedTx['type'] ?? '')) === 'ONRAMP') {
+                    $d = normalizeSwitchOnrampAmount($d, getPlatformFee());
+                    $data['data'] = $d;
+                }
             }
             jsonResponse($data);
         } catch (Throwable $e) {

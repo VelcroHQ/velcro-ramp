@@ -146,6 +146,13 @@ assertEquals('https://etherscan.io/tx/0x999', buildExplorerUrl('0x999', 'eth:usd
 assertEquals('https://tronscan.org/#/transaction/trxhash123', buildExplorerUrl('trxhash123', 'tron:usdt'), 'buildExplorerUrl handles Tron');
 
 // ─── Summary ───
+$switchBuy = ['destination' => ['amount' => 603.015073, 'currency' => 'USDT']];
+$netBuy = normalizeSwitchOnrampAmount($switchBuy, 0.5);
+assertTrue(abs($netBuy['destination']['amount'] - 600) < 0.00001, 'Switch buy uses net receive amount for the reported reference');
+assertEquals($netBuy, normalizeSwitchOnrampAmount($netBuy, 0.5), 'Switch amount normalization does not deduct the fee twice');
+assertEquals(603.015073, normalizeSwitchOnrampAmount($switchBuy, 0)['destination']['amount'], 'Zero fee leaves receive amount unchanged');
+assertEquals([], normalizeSwitchOnrampAmount([], 0.5), 'Partial status payload does not invent a receive amount');
+
 echo "\n";
 if ($failed === 0) {
     echo "All {$passed} tests passed.\n";
