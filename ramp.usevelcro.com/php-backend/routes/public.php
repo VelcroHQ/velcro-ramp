@@ -345,6 +345,9 @@ function registerPublicRoutes(Router $router): void
     $router->post('/api/quote', $quoteHandler);
 
     $router->post('/api/initiate', function () {
+        if (!rateLimitCheck('order_initiate_' . clientIp(), 15, 600)) {
+            jsonResponse(errorResponse('Too many order attempts. Please wait a few minutes before trying again.'), 429);
+        }
         $body = getJsonBody();
         $direction = body($body, 'direction');
         $amount = body($body, 'amount');

@@ -357,6 +357,131 @@ function sendOrderInitiatedEmailNow(array $t): bool
     }
 }
 
+/** @return array{0: string, 1: string, 2: string} [subject, html, text] */
+function orderReminderEmail(array $t): array
+{
+    $asset = (string) ($t['asset'] ?? 'USDT');
+    $symbol = strtoupper(str_contains($asset, ':') ? explode(':', $asset)[1] : $asset);
+    $ngn = static fn ($v): string => '₦' . number_format((float) $v, 2);
+    $crypto = static fn ($v): string => rtrim(rtrim(number_format((float) $v, 6, '.', ','), '0'), '.') . ' ' . $symbol;
+    $short = static fn (string $s): string => strlen($s) > 18 ? substr($s, 0, 8) . '…' . substr($s, -6) : $s;
+    [$chainLabel] = receiptChain($t);
+    $ref = (string) $t['reference'];
+
+    if (strtoupper((string) $t['type']) === 'ONRAMP') {
+        $expected = (float) ($t['destination_amount'] ?? 0) > 0 ? $crypto($t['destination_amount']) : $symbol;
+        $fiatPay = $ngn($t['amount']);
+        $bankName = (string) ($t['deposit_bank_name'] ?? '-');
+        $accountNum = (string) ($t['deposit_account_number'] ?? '-');
+        $accountName = (string) ($t['deposit_account_name'] ?? 'Velcro Checkout');
+
+        $rows = [
+            ['Amount to transfer', $fiatPay],
+            ['Crypto you receive', $expected],
+            ['Bank Name', $bankName],
+            ['Account Number', $accountNum],
+            ['Account Name', $accountName],
+            ['Validity Window', '60 minutes'],
+            ['Reference', $short($ref), true],
+        ];
+
+        $subject = "Reminder: Complete your transfer for {$expected}";
+        [$html, $text] = renderEmail([
+            'preheader' => "Friendly reminder: your order of {$fiatPay} for {$expected} is awaiting payment.",
+            'eyebrow' => 'Action Required',
+            'title' => 'Your order is waiting for payment',
+            'intro' => "We noticed your purchase of {$expected} hasn't been completed yet. Transfer {$fiatPay} to the account below before your order window expires.",
+            'amount' => ['Transfer exactly', $fiatPay],
+            'rows' => $rows,
+            'cta' => ['Complete Order on Velcro', EMAIL_SITE_URL],
+            'outro' => 'If you have already sent the transfer, please allow a few moments for the bank network to confirm.',
+        ]);
+        return [$subject, $html, $text];
+    }
+
+    // Sell / OFFRAMP
+    $cryptoAmt = (float) ($t['amount'] ?? 0) > 0 ? $crypto($t['amount']) : $symbol;
+    $payoutFiat = (float) ($t['destination_amount'] ?? 0) > 0 ? $ngn($t['destination_amount']) : 'NGN';
+    $depositAddress = (string) ($t['deposit_address'] ?? '-');
+
+    $rows = [
+        ['Crypto to send', $cryptoAmt],
+        ['Network', $chainLabel],
+        ['Deposit Address', $depositAddress, true],
+        ['Payout Amount', $payoutFiat],
+        ['Validity Window', '60 minutes'],
+        ['Reference', $short($ref), true],
+    ];
+
+    $subject = "Reminder: Send {$cryptoAmt} for {$payoutFiat} payout";
+    [$html, $text] = renderEmail([
+        'preheader' => "Friendly reminder: your sell order for {$cryptoAmt} is waiting for deposit.",
+        'eyebrow' => 'Action Required',
+        'title' => 'Your cash payout is waiting',
+        'intro' => "We noticed you haven't deposited your {$cryptoAmt} yet. Send to the deposit address below before the order expires to receive {$payoutFiat} in your bank account.",
+        'amount' => ['Send exactly', $cryptoAmt],
+        'rows' => $rows,
+        'cta' => ['Complete Order on Velcro', EMAIL_SITE_URL],
+        'outro' => "Please ensure you send {$symbol} on the {$chainLabel} network. If you already sent the transfer, it will be credited once block confirmations complete.",
+    ]);
+    return [$subject, $html, $text];
+}
+
+/**
+ * Sends a reminder email for orders that have been pending/awaiting deposit for 15-50 minutes.
+ * Each order is claimed with a conditional UPDATE first to prevent duplicate sends.
+ */
+function sendAbandonedOrderReminders(int $limit = 10): int
+{
+    if (!mailConfigured()) {
+        return 0;
+    }
+    ensureReminderSchema();
+    $rows = Database::safeSelect(
+        "SELECT * FROM `transactions` 
+         WHERE `status` IN ('PENDING', 'AWAITING_DEPOSIT') 
+           AND `reminder_sent_at` IS NULL 
+           AND `email` IS NOT NULL AND `email` <> '' 
+         ORDER BY `id` DESC LIMIT 100",
+        [],
+        []
+    );
+
+    $now = time();
+    $sent = 0;
+    foreach ($rows as $t) {
+        $createdAt = strtotime((string) ($t['created_at'] ?? ''));
+        if ($createdAt <= 0) {
+            continue;
+        }
+        $ageMinutes = ($now - $createdAt) / 60;
+        if ($ageMinutes < 15 || $ageMinutes > 55) {
+            continue;
+        }
+
+        if (Database::execute(
+            "UPDATE `transactions` SET `reminder_sent_at` = NOW(), `updated_at` = `updated_at` WHERE `id` = :id AND `reminder_sent_at` IS NULL",
+            ['id' => $t['id']]
+        ) !== 1) {
+            continue;
+        }
+
+        try {
+            [$subject, $html, $text] = orderReminderEmail($t);
+            if (sendEmailTo($t['email'], $subject, $html, $text)) {
+                $sent++;
+            }
+        } catch (Throwable $e) {
+            error_log('Failed sending abandoned reminder for tx ' . ($t['id'] ?? '') . ': ' . $e->getMessage());
+        }
+
+        if ($sent >= $limit) {
+            break;
+        }
+    }
+    return $sent;
+}
+
 /** Sends an immediate completion receipt to the user. Marks receipt_sent_at on success. */
 function sendTransactionReceiptNow(array $t, bool $force = false): bool
 {

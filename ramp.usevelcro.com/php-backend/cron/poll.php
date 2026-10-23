@@ -30,7 +30,10 @@ if (!$fp || !flock($fp, LOCK_EX | LOCK_NB)) {
 try {
     echo "[" . gmdate('c') . "] Starting poll...\n";
     runBackgroundPoller();
-    echo "[" . gmdate('c') . "] Poll complete. Receipts sent: " . sendPendingReceipts(50) . ", campaign emails sent: " . sendCampaignBatch(100) . "\n";
+    $receipts = sendPendingReceipts(50);
+    $campaigns = sendCampaignBatch(100);
+    $reminders = sendAbandonedOrderReminders(20);
+    echo "[" . gmdate('c') . "] Poll complete. Receipts sent: {$receipts}, reminders sent: {$reminders}, campaign emails sent: {$campaigns}\n";
 } finally {
     flock($fp, LOCK_UN);
     fclose($fp);

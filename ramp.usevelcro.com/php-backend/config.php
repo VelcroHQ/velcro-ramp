@@ -151,6 +151,11 @@ define('ADMIN_EMAIL', env('ADMIN_EMAIL', defined('PAJ_EMAIL') && PAJ_EMAIL !== '
 define('MAILHIVE_API_KEY', env('MAILHIVE_API_KEY', ''));
 define('MAIL_FROM', env('MAIL_FROM', 'noreply@usevelcro.com'));
 
+// ─── Telegram Alerts ───
+define('TELEGRAM_BOT_TOKEN', env('TELEGRAM_BOT_TOKEN', ''));
+define('TELEGRAM_CHAT_ID', env('TELEGRAM_CHAT_ID', ''));
+define('TELEGRAM_ALERTS_ENABLED', envBool('TELEGRAM_ALERTS_ENABLED', false));
+
 // ─── Auto Withdrawal ───
 define('AUTO_WITHDRAWAL_ENABLED', envBool('AUTO_WITHDRAWAL_ENABLED', false));
 define('AUTO_WITHDRAWAL_SCHEDULE', env('AUTO_WITHDRAWAL_SCHEDULE', '0 0 * * *'));
@@ -177,6 +182,9 @@ function defaultSettings(): array
         'paj_usdt_enabled' => false,
         'paj_usdc_enabled' => false,
         'referral_fee' => 0.3,
+        'telegram_bot_token' => TELEGRAM_BOT_TOKEN,
+        'telegram_chat_id' => TELEGRAM_CHAT_ID,
+        'telegram_alerts_enabled' => TELEGRAM_ALERTS_ENABLED,
     ];
 }
 

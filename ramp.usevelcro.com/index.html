@@ -1682,6 +1682,15 @@
                 <p class="text-xl font-bold text-gray-900"><span id="sell-confirm-amount">0.00</span> <span
                     id="sell-confirm-asset">USDT</span></p>
               </div>
+              <div id="sell-gas-hint-box" class="bg-sky-50/80 border border-sky-200/70 rounded-xl p-3 mb-3 text-left flex items-start gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 shrink-0 mt-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold text-sky-900" id="sell-gas-hint-title">Network Gas Fee Notice</p>
+                  <p class="text-[11px] text-sky-700 leading-tight" id="sell-gas-hint-text">Make sure your wallet has sufficient native crypto for network gas/energy fees to send this transfer.</p>
+                </div>
+              </div>
               <div id="sell-expiry-badge" class="bg-amber-50/90 border border-amber-200/80 rounded-xl p-3 mb-3 text-left flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2.5 min-w-0">
                   <div class="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
@@ -1968,6 +1977,21 @@
               <div class="bg-white rounded-xl border border-gray-200 p-3 mb-3 text-left">
                 <p class="text-xs text-gray-500 mb-1">Reference</p>
                 <p class="text-sm font-mono text-gray-900" id="buy-reference">-</p>
+              </div>
+              <!-- USSD Quick Pay Helper -->
+              <div class="bg-white rounded-xl border border-gray-200 p-3 mb-3 text-left">
+                <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleUssdHelper()">
+                  <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">#</span>
+                    <span class="text-xs font-semibold text-gray-900">Pay via USSD Quick Code</span>
+                  </div>
+                  <span id="ussd-toggle-arrow" class="text-gray-400 text-xs">▼</span>
+                </div>
+                <div id="ussd-codes-container" class="hidden mt-3 pt-3 border-t border-gray-100 space-y-2 text-xs">
+                  <p class="text-[11px] text-gray-500 mb-1.5">Tap your bank to dial or copy transfer code:</p>
+                  <div class="grid grid-cols-2 gap-1.5" id="ussd-bank-buttons">
+                  </div>
+                </div>
               </div>
               <button onclick="copyAddress('buy-account-number')"
                 class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium transition-colors inline-flex items-center justify-center gap-2">
@@ -3809,6 +3833,7 @@
       document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
       currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
       if (currentSwitchAsset) fetchRate();
+      updateGasHint(id);
       updateStepIndicators('OFFRAMP');
       populateBanks();
     }
@@ -4592,6 +4617,8 @@
             accountName: accountName,
             provider: 'paj'
           };
+          saveRecentOrder(currentTxDetails);
+          updateGasHint('solana');
           startPajStatusPoll(data.id, 'sell');
         } catch (err) {
           btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address';
@@ -4678,6 +4705,8 @@
           asset: currentSellAsset,
           network: currentSellNetwork
         };
+        saveRecentOrder(currentTxDetails);
+        updateGasHint(currentSellNetwork);
         startStatusPoll(data.reference, 'sell');
       } catch (err) {
         btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Generate Wallet Address';
@@ -4785,6 +4814,7 @@
             walletAddress: wallet,
             provider: 'paj'
           };
+          saveRecentOrder(currentTxDetails);
           startPajStatusPoll(data.id);
         } catch (err) {
           btn.innerHTML = '<i data-lucide="landmark" class="w-5 h-5"></i> Generate Bank Account';
@@ -4855,6 +4885,7 @@
           network: currentBuyNetwork,
           walletAddress: wallet
         };
+        saveRecentOrder(currentTxDetails);
         startStatusPoll(data.reference, 'buy');
       } catch (err) {
         btn.innerHTML = '<i data-lucide="landmark" class="w-5 h-5"></i> Generate Bank Account';
@@ -5325,6 +5356,104 @@
         const line = document.getElementById(`line-${i + 1}`);
         if (dot) dot.className = 'step-dot ' + (steps[i] ? 'active' : 'inactive');
         if (line) line.className = 'step-line ' + (steps[i] ? 'active' : '');
+      }
+    }
+
+    function updateGasHint(network) {
+      const net = (network || currentSellNetwork || '').toLowerCase();
+      const titleEl = document.getElementById('sell-gas-hint-title');
+      const textEl = document.getElementById('sell-gas-hint-text');
+      if (!titleEl || !textEl) return;
+      if (net === 'tron') {
+        titleEl.textContent = 'TRON Gas (Energy / TRX)';
+        textEl.textContent = 'Ensure your sending wallet has ~15-30 TRX to cover TRC-20 energy/gas fee.';
+      } else if (net === 'ethereum') {
+        titleEl.textContent = 'Ethereum Gas (ETH)';
+        textEl.textContent = 'Ensure your sending wallet has sufficient ETH to cover ERC-20 network gas.';
+      } else if (net === 'solana') {
+        titleEl.textContent = 'Solana Gas (SOL)';
+        textEl.textContent = 'Ensure your sending wallet has ~0.001 SOL to cover network rent and fee.';
+      } else if (net === 'bsc' || net === 'binance') {
+        titleEl.textContent = 'BNB Smart Chain Gas (BNB)';
+        textEl.textContent = 'Ensure your sending wallet has ~0.0005 BNB for BEP-20 transfer fee.';
+      } else {
+        titleEl.textContent = 'Network Gas Notice';
+        textEl.textContent = 'Make sure you have native network tokens in your sending wallet to cover transaction fees.';
+      }
+    }
+
+    function toggleUssdHelper() {
+      const container = document.getElementById('ussd-codes-container');
+      const arrow = document.getElementById('ussd-toggle-arrow');
+      if (!container) return;
+      const isHidden = container.classList.contains('hidden');
+      if (isHidden) {
+        container.classList.remove('hidden');
+        if (arrow) arrow.textContent = '▲';
+        populateUssdButtons();
+      } else {
+        container.classList.add('hidden');
+        if (arrow) arrow.textContent = '▼';
+      }
+    }
+
+    function populateUssdButtons() {
+      const btnsContainer = document.getElementById('ussd-bank-buttons');
+      if (!btnsContainer) return;
+      const acct = (document.getElementById('buy-account-number')?.textContent || '').trim();
+      const amtStr = (document.getElementById('buy-amount-to-pay')?.textContent || '').replace(/[^0-9.]/g, '');
+      const amt = Math.round(parseFloat(amtStr) || 0);
+
+      const banks = [
+        { name: 'GTBank', code: `*737*1*${amt || 'AMOUNT'}*${acct}#` },
+        { name: 'Zenith', code: `*966*${amt || 'AMOUNT'}*${acct}#` },
+        { name: 'UBA', code: `*919*3*${acct}*${amt || 'AMOUNT'}#` },
+        { name: 'Access', code: `*901*1*${amt || 'AMOUNT'}*${acct}#` },
+        { name: 'FirstBank', code: `*894*${amt || 'AMOUNT'}*${acct}#` },
+        { name: 'Fidelity', code: `*770*${acct}*${amt || 'AMOUNT'}#` },
+        { name: 'Stanbic', code: `*909*22*${amt || 'AMOUNT'}*${acct}#` },
+        { name: 'Wema', code: `*945*1*${acct}*${amt || 'AMOUNT'}#` }
+      ];
+
+      btnsContainer.innerHTML = banks.map(b => `
+        <button type="button" onclick="handleUssdClick('${b.code}')" class="p-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-left transition-colors flex flex-col">
+          <span class="font-bold text-gray-800 text-[11px]">${b.name}</span>
+          <span class="font-mono text-[10px] text-gray-500 truncate">${b.code}</span>
+        </button>
+      `).join('');
+    }
+
+    function handleUssdClick(code) {
+      if (!code) return;
+      navigator.clipboard?.writeText(code).then(() => {
+        showToast('USSD code copied: ' + code, 'success');
+      }).catch(() => {
+        showToast('USSD code: ' + code, 'info');
+      });
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = 'tel:' + encodeURIComponent(code);
+      }
+    }
+
+    function saveRecentOrder(tx) {
+      if (!tx || !tx.reference) return;
+      try {
+        const list = JSON.parse(localStorage.getItem('velcro_recent_orders') || '[]');
+        const filtered = list.filter(item => item.reference !== tx.reference);
+        filtered.unshift({
+          reference: tx.reference,
+          type: (tx.type || 'buy').toUpperCase() === 'BUY' ? 'ONRAMP' : 'OFFRAMP',
+          status: 'AWAITING_DEPOSIT',
+          asset: tx.asset || 'USDT',
+          amount: tx.amount,
+          destination_amount: tx.destinationAmount,
+          wallet_address: tx.walletAddress,
+          created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+          meta: { network: tx.network }
+        });
+        localStorage.setItem('velcro_recent_orders', JSON.stringify(filtered.slice(0, 20)));
+      } catch (e) {
+        console.warn('Failed to save recent order locally', e);
       }
     }
 
@@ -6035,6 +6164,25 @@
       const list = document.getElementById('history-list');
 
       if (!email) {
+        let localTxs = [];
+        try {
+          localTxs = JSON.parse(localStorage.getItem('velcro_recent_orders') || '[]');
+        } catch (e) {}
+
+        if (localTxs.length > 0) {
+          userHistoryCache = scrub(localTxs);
+          updateHistoryTabCounts();
+          filterHistory(currentHistoryFilter || 'all');
+          const banner = document.createElement('div');
+          banner.className = 'mb-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/40 rounded-xl text-xs text-blue-800 dark:text-blue-300 flex items-center justify-between gap-2';
+          banner.innerHTML = `
+            <span>📱 Showing recent orders from this browser.</span>
+            <button onclick="hideHistoryModal(); promptLoginOverlay(showHistoryModal);" class="font-bold underline cursor-pointer shrink-0">Connect Email</button>
+          `;
+          list.prepend(banner);
+          return;
+        }
+
         list.innerHTML = `
           <div class="text-center py-12 px-4">
             <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-amber-500/10 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">

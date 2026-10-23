@@ -143,6 +143,9 @@ function registerPajRoutes(Router $router): void
         if (!pajApi()->isConfigured()) {
             jsonResponse(errorResponse('PAJ module not available'), 503);
         }
+        if (!rateLimitCheck('order_initiate_' . clientIp(), 15, 600)) {
+            jsonResponse(errorResponse('Too many order attempts. Please wait a few minutes before trying again.'), 429);
+        }
         $body = getJsonBody();
         $fiatAmount = body($body, 'fiatAmount');
         $recipient = body($body, 'recipient');
@@ -205,6 +208,9 @@ function registerPajRoutes(Router $router): void
     $router->post('/api/paj/sell', function () {
         if (!pajApi()->isConfigured()) {
             jsonResponse(errorResponse('PAJ module not available'), 503);
+        }
+        if (!rateLimitCheck('order_initiate_' . clientIp(), 15, 600)) {
+            jsonResponse(errorResponse('Too many order attempts. Please wait a few minutes before trying again.'), 429);
         }
         $body = getJsonBody();
         $fiatAmount = body($body, 'fiatAmount');

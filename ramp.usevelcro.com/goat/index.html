@@ -1864,6 +1864,45 @@
                     <button class="btn-primary" onclick="saveSettings()" style="width: 100%;">Save Configuration</button>
                 </div>
 
+                <!-- Telegram Alerts -->
+                <div class="table-card">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
+                        <div class="stat-icon-sm blue" style="background: #e0f2fe; color: #0284c7;"><i data-lucide="send"></i></div>
+                        <div>
+                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Telegram Real-Time Alerts</h3>
+                            <p style="font-size: 12px; color: var(--text-secondary);">Instant push alerts on every completed order</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; border-radius: 10px; background: var(--bg-light); border: 1px solid var(--border);">
+                            <input type="checkbox" id="telegram-alerts-toggle" style="width: 18px; height: 18px; accent-color: var(--success); cursor: pointer;">
+                            <div>
+                                <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Enable Telegram Alerts</div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">Receive notification when an order is completed</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Bot Token</label>
+                        <input type="password" id="telegram-bot-token" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" style="margin-bottom: 0;">
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">From @BotFather on Telegram.</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Chat ID or Group ID</label>
+                        <input type="text" id="telegram-chat-id" placeholder="e.g. 12345678 or -100123456789" style="margin-bottom: 0;">
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Your Telegram ID or group/channel ID.</p>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-primary" onclick="saveTelegramSettings()" style="flex: 1;">Save Telegram</button>
+                        <button class="btn-outline" onclick="testTelegramAlert()" style="padding: 0 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff;">Test Alert</button>
+                    </div>
+                    <div id="telegram-message" class="hidden" style="margin-top: 14px; padding: 10px 12px; border-radius: 10px; font-size: 12px; font-weight: 500;"></div>
+                </div>
+
                 <!-- PAJ Integration -->
                 <div class="table-card">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
@@ -2821,6 +2860,11 @@
                     document.getElementById('paj-email-input').value = settings.paj_email || '';
                     document.getElementById('paj-usdt-toggle').checked = !!settings.paj_usdt_enabled;
                     document.getElementById('paj-usdc-toggle').checked = !!settings.paj_usdc_enabled;
+                    if (document.getElementById('telegram-bot-token')) {
+                        document.getElementById('telegram-bot-token').value = settings.telegram_bot_token || '';
+                        document.getElementById('telegram-chat-id').value = settings.telegram_chat_id || '';
+                        document.getElementById('telegram-alerts-toggle').checked = !!settings.telegram_alerts_enabled;
+                    }
                 }
 
                 // 6. PAJ Session
@@ -4863,33 +4907,116 @@
         }
 
         function exportTransactionsCSV() {
-            if (!currentTxs || !currentTxs.length) {
-                showToast('No transactions to export', 'warning');
-                return;
+            try {
+                const status = (document.getElementById('filter-status')?.value || '').trim();
+                const type = (document.getElementById('filter-type')?.value || '').trim();
+                const key = encodeURIComponent(adminKey || '');
+                const url = `${API_BASE}/api/admin/transactions/export?key=${key}&status=${encodeURIComponent(status)}&type=${encodeURIComponent(type)}`;
+                window.open(url, '_blank');
+                showToast('Exporting transactions to CSV...', 'info');
+            } catch (e) {
+                if (!currentTxs || !currentTxs.length) {
+                    showToast('No transactions to export', 'warning');
+                    return;
+                }
+                const headers = ['Reference', 'User Email/Wallet', 'Type', 'Channel', 'Amount', 'Currency', 'Destination Amount', 'Rate', 'Status', 'Created At'];
+                const rows = currentTxs.map(t => [
+                    `"${t.reference || ''}"`,
+                    `"${t.email || t.wallet_address || ''}"`,
+                    `"${t.type || ''}"`,
+                    `"${isPajTx(t) ? 'PAJ' : 'Switch'}"`,
+                    safeNum(t.amount),
+                    `"${t.currency || ''}"`,
+                    safeNum(t.destination_amount),
+                    safeNum(t.rate),
+                    `"${t.status || ''}"`,
+                    `"${t.created_at || ''}"`
+                ]);
+                const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement('a');
+                link.setAttribute('href', encodedUri);
+                link.setAttribute('download', `velcro_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast('Transactions exported to CSV', 'success');
             }
-            const headers = ['Reference', 'User Email/Wallet', 'Type', 'Channel', 'Amount', 'Currency', 'Destination Amount', 'Rate', 'Status', 'Created At'];
-            const rows = currentTxs.map(t => [
-                `"${t.reference || ''}"`,
-                `"${t.email || t.wallet_address || ''}"`,
-                `"${t.type || ''}"`,
-                `"${isPajTx(t) ? 'PAJ' : 'Switch'}"`,
-                safeNum(t.amount),
-                `"${t.currency || ''}"`,
-                safeNum(t.destination_amount),
-                safeNum(t.rate),
-                `"${t.status || ''}"`,
-                `"${t.created_at || ''}"`
-            ]);
+        }
 
-            const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
-            link.setAttribute('download', `velcro_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast('Transactions exported to CSV', 'success');
+        async function saveTelegramSettings() {
+            const token = (document.getElementById('telegram-bot-token')?.value || '').trim();
+            const chatId = (document.getElementById('telegram-chat-id')?.value || '').trim();
+            const enabled = document.getElementById('telegram-alerts-toggle')?.checked || false;
+            const msgEl = document.getElementById('telegram-message');
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
+                    body: JSON.stringify({
+                        telegram_bot_token: token,
+                        telegram_chat_id: chatId,
+                        telegram_alerts_enabled: enabled
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (msgEl) {
+                        msgEl.innerText = 'Telegram settings saved successfully!';
+                        msgEl.style.background = '#ecfdf5'; msgEl.style.color = '#065f46';
+                        msgEl.classList.remove('hidden');
+                    }
+                    showToast('Telegram settings saved', 'success');
+                } else {
+                    if (msgEl) {
+                        msgEl.innerText = data.error || 'Failed to save';
+                        msgEl.style.background = '#fef2f2'; msgEl.style.color = '#991b1b';
+                        msgEl.classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                if (msgEl) {
+                    msgEl.innerText = 'Error: ' + e.message;
+                    msgEl.style.background = '#fef2f2'; msgEl.style.color = '#991b1b';
+                    msgEl.classList.remove('hidden');
+                }
+            }
+        }
+
+        async function testTelegramAlert() {
+            const token = (document.getElementById('telegram-bot-token')?.value || '').trim();
+            const chatId = (document.getElementById('telegram-chat-id')?.value || '').trim();
+            const msgEl = document.getElementById('telegram-message');
+            if (msgEl) {
+                msgEl.innerText = 'Sending test alert...';
+                msgEl.style.background = '#eff6ff'; msgEl.style.color = '#1e40af';
+                msgEl.classList.remove('hidden');
+            }
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/telegram/test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
+                    body: JSON.stringify({ telegram_bot_token: token, telegram_chat_id: chatId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (msgEl) {
+                        msgEl.innerText = '✅ Test alert delivered! Check your Telegram.';
+                        msgEl.style.background = '#ecfdf5'; msgEl.style.color = '#065f46';
+                    }
+                    showToast('Test alert sent to Telegram!', 'success');
+                } else {
+                    if (msgEl) {
+                        msgEl.innerText = '❌ Failed: ' + (data.error || 'Check Bot Token and Chat ID');
+                        msgEl.style.background = '#fef2f2'; msgEl.style.color = '#991b1b';
+                    }
+                }
+            } catch (e) {
+                if (msgEl) {
+                    msgEl.innerText = '❌ Error: ' + e.message;
+                    msgEl.style.background = '#fef2f2'; msgEl.style.color = '#991b1b';
+                }
+            }
         }
 
         function exportUsersCSV() {

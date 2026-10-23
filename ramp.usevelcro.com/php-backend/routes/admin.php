@@ -169,6 +169,76 @@ function registerAdminRoutes(Router $router): void
         }
     });
 
+    $router->get('/api/admin/transactions/export', function () {
+        requireAdminAuth();
+        try {
+            $limit = min(10000, max(1, (int) ($_GET['limit'] ?? 5000)));
+            $status = trim((string) ($_GET['status'] ?? ''));
+            $type = strtoupper(trim((string) ($_GET['type'] ?? '')));
+            
+            $where = [];
+            $params = [];
+            if ($status !== '' && $status !== 'all') {
+                $where[] = '`status` = :status';
+                $params['status'] = $status;
+            }
+            if ($type === 'ONRAMP' || $type === 'OFFRAMP') {
+                $where[] = '`type` = :type';
+                $params['type'] = $type;
+            }
+            $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
+            
+            $rows = Database::safeSelect(
+                "SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `fee_developer`, `deposit_bank_name`, `deposit_account_number`, `deposit_address`, `wallet_address`, `hash`, `email`, `created_at` 
+                 FROM `transactions` {$whereSql} ORDER BY `created_at` DESC LIMIT {$limit}",
+                $params,
+                []
+            );
+
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="velcro_transactions_' . gmdate('Y-m-d') . '.csv"');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+
+            $fp = fopen('php://output', 'w');
+            fprintf($fp, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($fp, [
+                'ID', 'Reference', 'Provider Ref', 'Type', 'Status', 'Country', 'Currency', 'Asset', 'Channel',
+                'Fiat / Source Amount', 'Rate', 'Destination Amount', 'Developer Fee',
+                'Deposit Bank', 'Deposit Account / Address', 'Customer Wallet', 'TX Hash', 'Customer Email', 'Created At'
+            ]);
+
+            foreach ($rows as $r) {
+                fputcsv($fp, [
+                    $r['id'],
+                    $r['reference'],
+                    $r['switch_reference'] ?? '',
+                    $r['type'],
+                    $r['status'],
+                    $r['country'],
+                    $r['currency'],
+                    $r['asset'],
+                    $r['channel'],
+                    $r['amount'],
+                    $r['rate'] ?? '',
+                    $r['destination_amount'] ?? '',
+                    $r['fee_developer'] ?? '',
+                    $r['deposit_bank_name'] ?? '',
+                    $r['deposit_account_number'] ?? ($r['deposit_address'] ?? ''),
+                    $r['wallet_address'] ?? '',
+                    $r['hash'] ?? '',
+                    $r['email'] ?? '',
+                    $r['created_at'],
+                ]);
+            }
+            fclose($fp);
+            exit(0);
+        } catch (Throwable $e) {
+            jsonResponse(['error' => $e->getMessage()], 500);
+        }
+    });
+
     $router->post('/api/admin/fix-paj-channels', function () {
         requireAdminAuth();
         try {
@@ -455,6 +525,15 @@ function registerAdminRoutes(Router $router): void
             }
             $settings['referral_fee'] = $rFee;
         }
+        if (isset($body['telegram_bot_token'])) {
+            $settings['telegram_bot_token'] = trim((string) $body['telegram_bot_token']);
+        }
+        if (isset($body['telegram_chat_id'])) {
+            $settings['telegram_chat_id'] = trim((string) $body['telegram_chat_id']);
+        }
+        if (isset($body['telegram_alerts_enabled'])) {
+            $settings['telegram_alerts_enabled'] = (bool) $body['telegram_alerts_enabled'];
+        }
         if (isset($body['paj_usdc_enabled'])) {
             $settings['paj_usdc_enabled'] = (bool) $body['paj_usdc_enabled'];
         }
@@ -464,6 +543,47 @@ function registerAdminRoutes(Router $router): void
             jsonResponse(['success' => true, ...$settings]);
         } else {
             jsonResponse(['success' => false, 'error' => 'Failed to save settings'], 500);
+        }
+    });
+
+    $router->post('/api/admin/telegram/test', function () {
+        requireAdminAuth();
+        try {
+            $body = getJsonBody();
+            $token = trim((string) ($body['telegram_bot_token'] ?? ''));
+            $chatId = trim((string) ($body['telegram_chat_id'] ?? ''));
+            if ($token === '' || $chatId === '') {
+                $settings = loadSettings();
+                $token = $token ?: (string) ($settings['telegram_bot_token'] ?? '');
+                $chatId = $chatId ?: (string) ($settings['telegram_chat_id'] ?? '');
+            }
+            if ($token === '' || $chatId === '') {
+                jsonResponse(['success' => false, 'error' => 'Please provide Bot Token and Chat ID'], 400);
+            }
+            $testMsg = "🚀 <b>Velcro Ramp Telegram Alerts</b>\n\n✅ Your Telegram notification integration is working perfectly!\nYou will receive real-time alerts whenever a customer completes an onramp or offramp order.";
+            $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode([
+                    'chat_id' => $chatId,
+                    'text' => $testMsg,
+                    'parse_mode' => 'HTML',
+                ]),
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 5,
+            ]);
+            $res = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($code === 200) {
+                jsonResponse(['success' => true, 'message' => 'Test alert sent successfully to Telegram!']);
+            } else {
+                $err = json_decode((string) $res, true);
+                jsonResponse(['success' => false, 'error' => $err['description'] ?? 'Telegram API error: ' . $code], 400);
+            }
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
         }
     });
 
