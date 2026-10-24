@@ -1,4 +1,4 @@
-# Velcro Ramp — production document root rules
+# Velcro Ramp — production document root rules (deployed 2026-10-24)
 DirectoryIndex index.html index.php
 ServerSignature Off
 

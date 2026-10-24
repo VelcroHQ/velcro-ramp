@@ -3,3 +3,5 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/velcrohq/ramp.usevelcro.com/
     - /bin/cp -a ramp.usevelcro.com/. $DEPLOYPATH
+    - /usr/bin/touch $DEPLOYPATH/.htaccess
+    - /usr/bin/pkill -u $(whoami) lsphp || true
