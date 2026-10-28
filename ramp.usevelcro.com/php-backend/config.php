@@ -128,7 +128,10 @@ if ($adminPasswordRaw === '') {
     define('ADMIN_PASSWORD_HASH', '');
 } else {
     $clean = preg_replace('/^Bearer\s+/i', '', trim($adminPasswordRaw));
-    if (str_starts_with($clean, 'sha256:')) {
+    if (preg_match('/^\$(2y|argon2i|argon2id)\$/', $clean)) {
+        // Output of password_hash(); generate with: php -r "echo password_hash('...', PASSWORD_DEFAULT);"
+        define('ADMIN_PASSWORD_HASH', $clean);
+    } elseif (str_starts_with($clean, 'sha256:')) {
         define('ADMIN_PASSWORD_HASH', substr($clean, 7));
     } else {
         define('ADMIN_PASSWORD_HASH', hash('sha256', $clean));

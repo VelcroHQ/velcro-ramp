@@ -1,40 +1,43 @@
-VELOCO RAMP — DEPLOYMENT SETUP
-================================
+VELCRO CONVERT — DEPLOYMENT SETUP
+=================================
 
-1. EXTRACT
-   Extract the contents of this zip into your hosting account's public_html/
-   folder. The result should look like:
+1. DEPLOY
+   Pushing to the cPanel git repo runs .cpanel.yml, which copies this folder
+   into the document root and removes dev-only files (tests, .env.test, etc.).
+   The result looks like:
 
-   public_html/
-   ├── index.html
-   ├── index.php
+   ramp.usevelcro.com/
+   ├── index.html        (page markup)
+   ├── css/app.css       (page styles; style.css is the Tailwind build)
+   ├── js/*.js           (page scripts, loaded in order by index.html)
+   ├── index.php         (API front controller)
    ├── .htaccess
-   ├── admin/
-   ├── php-backend/
-   │   ├── .env.example
-   │   ├── index.php
-   │   ├── config.php
-   │   ├── ...
-   │   └── data/   (will be created automatically)
-   └── ...
+   ├── goat/             (admin dashboard)
+   └── php-backend/
+       ├── .env          (you create this, see step 3)
+       └── data/         (created automatically)
 
 2. DATABASE
    - Create a MySQL database and user in your hosting control panel.
-   - Import php-backend/sql/schema.sql into that database.
+   - Import php-backend/sql/schema.sql into that database. Newer tables
+     (referrals, campaigns) are created automatically on first use.
 
 3. ENVIRONMENT FILE
-   - Rename php-backend/.env.example to php-backend/.env
+   - Copy php-backend/.env.example to php-backend/.env on the server.
    - Fill in ALL real values (database, Switch key, PAJ key, admin password,
      webhook secrets, callback URL, etc.).
+   - ADMIN_PASSWORD should be a password_hash() value, not the plain password:
+       php -r "echo password_hash('your-password', PASSWORD_DEFAULT), PHP_EOL;"
+     Plain text and sha256:<hex> values still work but are weaker.
+     Changing it logs out every admin session.
    - NEVER commit or share this .env file.
 
 4. PERMISSIONS
    Make php-backend/data/ writable by PHP (chmod 755 or 775).
 
 5. ADMIN DASHBOARD
-   The admin dashboard is in public_html/admin/. Protect it with an additional
-   password via your hosting panel, or configure admin/.htaccess with HTTP
-   Basic Auth before going live.
+   The admin dashboard is at /goat/. It trades the admin password for a
+   12-hour session token; the password itself is never stored in the browser.
 
 6. WEBHOOKS
    In your Switch and PAJ dashboards set:
@@ -52,4 +55,10 @@ VELOCO RAMP — DEPLOYMENT SETUP
 8. TEST
    Visit https://yourdomain.com/api/health — it should return dbConnected:true.
 
-For the full guide see DEPLOY.md in the source repository.
+9. LOCAL CHECKS (before pushing)
+   php php-backend/tests/unit_test.php
+   php php-backend/tests/email_test.php
+   php php-backend/tests/referral_test.php
+   php php-backend/tests/security_test.php
+   After adding Tailwind classes to index.html or js/, rebuild style.css
+   (command at the top of tailwind.config.js).

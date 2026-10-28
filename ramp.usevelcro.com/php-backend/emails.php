@@ -96,7 +96,7 @@ function renderEmail(array $o): array
         . '</td></tr>'
         . '<tr><td align="center" style="padding:26px 8px 0;">' . emailSocialRow() . '</td></tr>'
         . '<tr><td align="center" style="padding:14px 8px 0;' . $font . 'font-size:12px;line-height:1.6;color:#9ca3af;">'
-        . 'Velcro Ramp &middot; Move money &amp; spend globally<br><a href="' . EMAIL_SITE_URL . '" style="color:#6b7280;text-decoration:underline;">ramp.usevelcro.com</a>'
+        . 'Velcro Convert &middot; Buy &amp; sell crypto with Naira<br><a href="' . EMAIL_SITE_URL . '" style="color:#6b7280;text-decoration:underline;">ramp.usevelcro.com</a>'
         . (!empty($o['unsubscribe']) ? '<br>Don\'t want these emails? <a href="' . $e($o['unsubscribe']) . '" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>' : '')
         . '</td></tr></table></td></tr></table></body></html>';
 
@@ -126,7 +126,7 @@ function renderEmail(array $o): array
     if (!empty($o['outro'])) {
         $text[] = $o['outro'];
     }
-    $text[] = "--\nVelcro Ramp · Move money & spend globally\n" . EMAIL_SITE_URL . (!empty($o['unsubscribe']) ? "\nUnsubscribe: " . $o['unsubscribe'] : '');
+    $text[] = "--\nVelcro Convert · Buy & sell crypto with Naira\n" . EMAIL_SITE_URL . (!empty($o['unsubscribe']) ? "\nUnsubscribe: " . $o['unsubscribe'] : '');
 
     return [$html, implode("\n\n", $text)];
 }
@@ -542,27 +542,6 @@ function sendPendingReceipts(int $limit = 5): int
 }
 
 // ─── Signing key (referral tokens, unsubscribe links) ───
-
-function appKey(): string
-{
-    static $key = null;
-    if ($key !== null) {
-        return $key;
-    }
-    $file = BASE_PATH . '/data/.app_key';
-    if (!is_file($file)) {
-        $fp = @fopen($file, 'x'); // 'x' fails if another request created it first
-        if ($fp) {
-            fwrite($fp, bin2hex(random_bytes(32)));
-            fclose($fp);
-        }
-    }
-    $key = trim((string) @file_get_contents($file));
-    if (strlen($key) < 32) {
-        throw new RuntimeException('Signing key unavailable');
-    }
-    return $key;
-}
 
 function unsubscribeToken(string $email): string
 {

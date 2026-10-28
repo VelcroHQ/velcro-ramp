@@ -1,8 +1,8 @@
-// Builds ramp.usevelcro.com/style.css. Re-run after adding Tailwind classes to the HTML,
+// Builds ramp.usevelcro.com/style.css. Re-run after adding Tailwind classes to the HTML or js/,
 // otherwise new classes silently do nothing:
 //   npx tailwindcss@3.4.1 -c tailwind.config.js -i tailwind.css -o ramp.usevelcro.com/style.css --minify
 module.exports = {
-  content: ['./ramp.usevelcro.com/**/*.html'],
+  content: ['./ramp.usevelcro.com/**/*.html', './ramp.usevelcro.com/js/**/*.js'],
   darkMode: 'class',
   theme: {
     extend: {

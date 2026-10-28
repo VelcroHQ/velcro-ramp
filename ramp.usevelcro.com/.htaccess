@@ -54,6 +54,9 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     RewriteCond %{HTTP:Authorization} ^(.*)
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
 
+    # Backend internals are never served directly (tests, schema, runtime data)
+    RewriteRule ^php-backend/(tests|sql|data)(/|$) - [R=404,L]
+
     # Ensure /goat redirects to /goat/ cleanly
     RewriteRule ^goat$ /goat/ [R=301,L]
 

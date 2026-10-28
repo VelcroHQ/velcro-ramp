@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
 /**
  * Referral earnings checks against an in-memory SQLite DB (no MySQL needed).
  * Run with: php tests/referral_test.php

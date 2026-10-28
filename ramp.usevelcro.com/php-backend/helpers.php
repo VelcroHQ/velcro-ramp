@@ -145,11 +145,62 @@ function verifyAdminPassword(string $input): bool
         return false;
     }
     $clean = preg_replace('/^Bearer\s+/i', '', trim($input));
-    if (hash_equals(ADMIN_PASSWORD_HASH, hash('sha256', $clean))) {
+    // ADMIN_PASSWORD may be a password_hash() value ($2y$ / $argon2) or a legacy sha256 hex digest.
+    $ok = str_starts_with(ADMIN_PASSWORD_HASH, '$')
+        ? password_verify($clean, ADMIN_PASSWORD_HASH)
+        : hash_equals(ADMIN_PASSWORD_HASH, hash('sha256', $clean));
+    if ($ok) {
         return true;
     }
     rateLimitCheck($rlKey, 10, 900);
     return false;
+}
+
+const ADMIN_TOKEN_TTL = 12 * 3600;
+
+/**
+ * Short-lived admin session token, so the dashboard never has to keep the password.
+ * Signed over the password hash: changing ADMIN_PASSWORD logs every session out.
+ */
+function issueAdminToken(): array
+{
+    $exp = time() + ADMIN_TOKEN_TTL;
+    $sig = hash_hmac('sha256', 'admin|' . $exp . '|' . ADMIN_PASSWORD_HASH, appKey());
+    return ['token' => "adm1.{$exp}.{$sig}", 'expires_at' => $exp];
+}
+
+function verifyAdminToken(string $input): bool
+{
+    $clean = preg_replace('/^Bearer\s+/i', '', trim($input));
+    if (ADMIN_PASSWORD_HASH === '' || !preg_match('/^adm1\.(\d+)\.([a-f0-9]{64})$/', $clean, $m)) {
+        return false;
+    }
+    if ((int) $m[1] < time()) {
+        return false;
+    }
+    $expected = hash_hmac('sha256', 'admin|' . $m[1] . '|' . ADMIN_PASSWORD_HASH, appKey());
+    return hash_equals($expected, $m[2]);
+}
+
+function appKey(): string
+{
+    static $key = null;
+    if ($key !== null) {
+        return $key;
+    }
+    $file = BASE_PATH . '/data/.app_key';
+    if (!is_file($file)) {
+        $fp = @fopen($file, 'x'); // 'x' fails if another request created it first
+        if ($fp) {
+            fwrite($fp, bin2hex(random_bytes(32)));
+            fclose($fp);
+        }
+    }
+    $key = trim((string) @file_get_contents($file));
+    if (strlen($key) < 32) {
+        throw new RuntimeException('Signing key unavailable');
+    }
+    return $key;
 }
 
 function requireAdminAuth(): void
@@ -159,7 +210,7 @@ function requireAdminAuth(): void
         $headers = apache_request_headers();
         $auth = $headers['Authorization'] ?? '';
     }
-    if (!verifyAdminPassword($auth)) {
+    if (!verifyAdminToken($auth) && !verifyAdminPassword($auth)) {
         auditLog('ADMIN_AUTH_FAIL', ['ip' => clientIp(), 'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown']);
         jsonResponse(['error' => 'Unauthorized'], 401);
     }

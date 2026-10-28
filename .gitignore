@@ -20,3 +20,6 @@
 .DS_Store
 Thumbs.db
 **/__MACOSX/
+
+# Schema is DDL only (no data); needed to set up a fresh database
+!ramp.usevelcro.com/php-backend/sql/schema.sql

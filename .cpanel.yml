@@ -3,5 +3,9 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/velcrohq/ramp.usevelcro.com/
     - /bin/cp -a ramp.usevelcro.com/. $DEPLOYPATH
+    # Dev-only files must never be web-reachable. cp never deletes, so this also clears
+    # copies left on the server by earlier deploys.
+    - /bin/rm -rf $DEPLOYPATH/php-backend/tests $DEPLOYPATH/php-backend/.env.test $DEPLOYPATH/php-backend/.env.example $DEPLOYPATH/php-backend/README.md $DEPLOYPATH/SETUP.txt
+    - /bin/rm -f $DEPLOYPATH/clear.php $DEPLOYPATH/config.php $DEPLOYPATH/paj-session.php $DEPLOYPATH/goat/test-auth.php $DEPLOYPATH/php-backend/debug_logs.php
     - /usr/bin/touch $DEPLOYPATH/.htaccess
     - /usr/bin/pkill -u $(whoami) lsphp || true

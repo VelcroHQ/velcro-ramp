@@ -9,6 +9,17 @@ require_once __DIR__ . '/../emails.php';
 
 function registerAdminRoutes(Router $router): void
 {
+    // Trade the password for a session token once; the dashboard stores only the token.
+    $router->post('/api/admin/login', function () {
+        $password = (string) body(getJsonBody(), 'password', '');
+        if (!verifyAdminPassword($password)) {
+            auditLog('ADMIN_AUTH_FAIL', ['ip' => clientIp(), 'source' => 'login']);
+            jsonResponse(['error' => 'Unauthorized'], 401);
+        }
+        auditLog('ADMIN_LOGIN', ['ip' => clientIp()]);
+        jsonResponse(issueAdminToken());
+    });
+
     $router->get('/api/admin/stats', function () {
         requireAdminAuth();
         $ip = clientIp();

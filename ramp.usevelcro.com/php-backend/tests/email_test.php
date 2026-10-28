@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
 /**
  * Email template + receipt checks (SQLite, no MySQL or mail server needed).
  * Run with: php tests/email_test.php [dir-to-save-rendered-html]
@@ -26,7 +31,7 @@ function check(bool $ok, string $msg): void
 }
 
 $buy = ['id' => 1, 'reference' => '6ac02ee288a14b0c9e3f75bf35', 'type' => 'ONRAMP', 'channel' => 'PAJ', 'status' => 'COMPLETED', 'asset' => 'SOL', 'amount' => 3000, 'destination_amount' => 0.0171, 'wallet_address' => 'HFempdQ1nW3kq7x9yP2Lr8sM3MAbD', 'hash' => '5rdxWvMywQFuZCDUsknJ5rdxWvMywQFu', 'email' => 'ada@example.com', 'updated_at' => '2026-10-06 14:20:00'];
-$sell = ['id' => 2, 'reference' => 'fdbafb37-e743-4d76-bfa8-06707fce6d64', 'type' => 'OFFRAMP', 'channel' => 'BANK', 'status' => 'COMPLETED', 'asset' => 'solana:usdc', 'amount' => 7.600166, 'destination_amount' => 10166.83, 'beneficiary' => json_encode(['holder_name' => 'Oshiokpekhai Kamal Shehu', 'account_number' => '8107861652', 'bank_code' => '100004']), 'email' => 'kamal@example.com', 'updated_at' => '2026-10-06 12:55:00'];
+$sell = ['id' => 2, 'reference' => 'fdbafb37-e743-4d76-bfa8-06707fce6d64', 'type' => 'OFFRAMP', 'channel' => 'BANK', 'status' => 'COMPLETED', 'asset' => 'solana:usdc', 'amount' => 7.600166, 'destination_amount' => 10166.83, 'beneficiary' => json_encode(['holder_name' => 'Ada Lovelace', 'account_number' => '0123456789', 'bank_code' => '100004']), 'email' => 'kamal@example.com', 'updated_at' => '2026-10-06 12:55:00'];
 $pajSell = ['id' => 3, 'reference' => 'pj_abc', 'type' => 'OFFRAMP', 'channel' => 'PAJ', 'status' => 'COMPLETED', 'asset' => 'USDC', 'amount' => 26800, 'destination_amount' => null, 'beneficiary' => ['bank' => '999', 'accountNumber' => '0123456789', 'holder_name' => 'Customer'], 'email' => 'x@example.com', 'updated_at' => '2026-10-06 10:00:00'];
 
 [$subject, $html, $text] = receiptEmail($buy);
@@ -36,7 +41,7 @@ check(str_contains($text, 'You received: 0.0171 SOL'), 'buy receipt has a plain-
 
 [$subject, $html] = receiptEmail($sell);
 check($subject === 'Receipt: ₦10,166.83 sent to your bank', 'Switch sell: naira payout from destination_amount');
-check(str_contains($html, '7.600166 USDC') && str_contains($html, 'OPay') && str_contains($html, '•••• 1652') && !str_contains($html, '8107861652'), 'Switch sell: crypto sold, bank name, account masked to last 4');
+check(str_contains($html, '7.600166 USDC') && str_contains($html, 'OPay') && str_contains($html, '•••• 6789') && !str_contains($html, '0123456789'), 'Switch sell: crypto sold, bank name, account masked to last 4');
 
 [$subject, $html] = receiptEmail($pajSell);
 check($subject === 'Receipt: ₦26,800.00 sent to your bank' && !str_contains($html, 'Customer'), 'PAJ sell: naira from amount, placeholder holder name hidden');

@@ -544,16 +544,15 @@ function registerPublicRoutes(Router $router): void
         }
 
         if ($isPaj && $tx) {
-            $exp = $hash ? buildExplorerUrl($hash, $tx['asset'] ?? null) : $tx['explorer_url'];
-            Database::safeExecute(
-                "UPDATE `transactions` SET `status` = 'COMPLETED', `hash` = COALESCE(NULLIF(:hash, ''), `hash`), `explorer_url` = COALESCE(NULLIF(:exp, ''), `explorer_url`), `updated_at` = NOW() WHERE `id` = :id",
-                ['hash' => $hash ?: '', 'exp' => $exp ?: '', 'id' => $tx['id']]
-            );
-            $updated = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
-            if ($updated) {
-                sendTransactionReceiptNow($updated);
-            }
-            jsonResponse(['success' => true, 'status' => 'COMPLETED', 'message' => 'PAJ payment confirmed', 'data' => $updated]);
+            // The client cannot complete an order: re-check PAJ and take whatever status it reports.
+            pollSingleTransaction($tx);
+            $updated = Database::selectOne('SELECT `status` FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']]);
+            $status = (string) ($updated['status'] ?? $tx['status']);
+            jsonResponse([
+                'success' => true,
+                'status' => $status,
+                'message' => $status === 'COMPLETED' ? 'Payment confirmed' : 'We are still waiting for your payment to arrive',
+            ]);
         }
 
         try {
