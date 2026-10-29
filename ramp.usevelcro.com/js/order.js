@@ -765,7 +765,7 @@ function showHostfiStepDetail(type, progress) {
   const received = isBuy ? `${naira(p.amount)} received` : `${coin(p.amount, sym)} received`;
   let working = '';
   if (p.converted === 'pending') working = isBuy ? `Converting your naira to ${sym}…` : 'Converting to naira…';
-  else if (p.payout === 'pending' && p.payout_amount) working = isBuy ? `Sending ${coin(p.payout_amount, sym)} to your wallet…` : `Sending ${naira(p.payout_amount)} to your bank…`;
+  else if (p.payout === 'pending' && p.payout_amount) working = isBuy ? `Sending ${coin(p.payout_amount, sym)} to your wallet…` : `${naira(p.payout_amount)} sent to your bank. Waiting for the bank's final confirmation.`;
   else if (p.payout === 'review') working = "Being checked by our team. We'll email you.";
   else if (p.converted === 'done' && p.payout === 'waiting') working = isBuy ? `Converted to ${sym}` : 'Converted to naira';
   setStepDetail(document.getElementById(prefix + 'status-2'), received);
