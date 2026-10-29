@@ -264,6 +264,17 @@ try {
     $app_('GET', '/api/transactions/' . $res['data']['reference']);
     check($deposit('dep-7')['status'] === 'RECEIVED' && count($state()['swaps']) === $swapsBefore, 'status endpoint is read-only: no swap or payout triggered');
 
+    // ── Any amount: no amount on the order, the payout follows what arrives ──
+    [$code, $res] = $app_('POST', '/api/hostfi/sell', ['asset' => 'BTC', 'network' => 'BTC', 'bankCode' => '100004', 'bankName' => 'OPay', 'accountNumber' => '0123456789']);
+    $openRef = (string) ($res['data']['reference'] ?? '');
+    check($code === 200 && $openRef !== '' && array_key_exists('estimate_ngn', $res['data']) && $res['data']['estimate_ngn'] === null, 'sell with no amount: address issued, no estimate');
+    $payoutsBefore = count($state()['payouts']);
+    $mock_('/__test/deposit', ['reference' => 'dep-open', 'address' => $res['data']['address'], 'currency' => 'BTC', 'amount' => 0.002]);
+    $hook('dep-open', $res['data']['address'], 'BTC', 0.002);
+    $paid = array_values(array_slice($state()['payouts'], $payoutsBefore));
+    check(count($paid) === 1 && near((float) $paid[0]['amount']['value'], 298450) && near((float) $order($openRef)['amount'], 0.002, 1e-9),
+        'no-amount order: 0.002 BTC arrives, ₦298,450 paid (₦300,000 − 0.5% − ₦50), order records 0.002 BTC');
+
     // ── Admin toggles ──
     $app_('POST', '/api/admin/settings', ['hostfi_assets' => ['SOL' => true, 'BTC' => false]], $admin);
     [, $res] = $app_('GET', '/api/settings');

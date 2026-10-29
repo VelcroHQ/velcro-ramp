@@ -233,6 +233,10 @@
                 <input type="text" inputmode="decimal" id="sell-amount" aria-label="Amount to sell" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
+              <div id="sell-any-amount" class="hidden flex-1 min-w-0">
+                <p class="text-2xl sm:text-3xl font-bold text-gray-900">Any amount</p>
+                <p class="mt-1 text-xs text-gray-500">No need to enter one. Send what you want; we pay out exactly what arrives.</p>
+              </div>
               <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
                 <div class="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Coin</span>
@@ -269,7 +273,7 @@
           </div>
 
           <!-- Swap Button -->
-          <div class="flex justify-center -my-2 relative z-10">
+          <div id="sell-swap-wrap" class="flex justify-center -my-2 relative z-10">
             <button onclick="swapPanels('sell', this)" class="swap-btn" aria-label="Swap amount fields">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0D0D59" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -291,7 +295,8 @@
                 <span id="sell-fee-badge" class="text-[10px] text-gray-400 font-medium">0.5% fee</span>
               </div>
             </div>
-            <div class="flex flex-row items-center justify-between gap-3">
+            <p id="sell-receive-any" class="hidden text-sm text-gray-600">Naira at the live rate above, paid to your bank as soon as your deposit confirms.</p>
+            <div id="sell-receive-row" class="flex flex-row items-center justify-between gap-3">
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <span class="text-2xl sm:text-3xl font-bold text-gray-300" id="sell-receive-currency">&#8358;</span>
                 <input type="text" inputmode="decimal" id="sell-receive" aria-label="Naira you receive" placeholder="0.00"

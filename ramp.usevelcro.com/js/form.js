@@ -286,6 +286,7 @@ async function selectSellAsset(symbol, logo, name, provider) {
   document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
   document.getElementById('sell-amount-step').classList.add('opacity-50', 'pointer-events-none');
   currentSellChain = '';
+  setSellAnyAmount(currentProvider === 'hostfi');
 
   if (currentProvider === 'hostfi') {
     const a = hostfiAssets[symbol];
@@ -412,6 +413,17 @@ function selectSellNetwork(id, logo, name, optionEl) {
   }
   updateStepIndicators('OFFRAMP');
   populateBanks();
+}
+
+// HostFi coins take any amount (the payout follows what arrives), so the amount inputs are hidden.
+function setSellAnyAmount(on) {
+  ['sell-amount-step', 'sell-swap-wrap', 'sell-receive-row'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', on));
+  ['sell-any-amount', 'sell-receive-any'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', !on));
+  if (on) {
+    setFmt('sell-amount', '', 4);
+    setFmt('sell-receive', '', 2);
+    document.getElementById('sell-preview')?.classList.add('hidden');
+  }
 }
 
 function selectSellBank(name, switchCode, pajId, optionEl) {
@@ -621,16 +633,9 @@ function toggleSellInputMode() {
 function setPreviewRate(type, fiat, crypto, asset) {
   const el = document.getElementById(type + '-preview-rate');
   if (!el) return;
-  if (!(fiat > 0 && crypto > 0)) { el.textContent = ''; return; }
-  const fee = currentProvider === 'hostfi' ? hostfiFee : (currentProvider === 'paj' && typeof currentPajFee === 'number' ? currentPajFee : currentFee);
-  const usdPrice = type === 'sell' && currentProvider === 'hostfi' ? Number((hostfiAssets[currentSellAsset] || {}).usd_per_unit) || 0 : 0;
-  if (usdPrice > 0) {
-    // HostFi coins: show HostFi's real rate per dollar, then our fee in naira, so nothing is hidden.
-    const beforeFee = fee > 0 && fee < 100 ? fiat / (1 - fee / 100) : fiat;
-    const ngn = v => v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    el.textContent = `$1 = ₦${ngn(beforeFee / (crypto * usdPrice))} · Velcro fee ${fee}% (₦${ngn(beforeFee - fiat)}) · final amount set when your deposit confirms`;
-    return;
-  }
+  // HostFi sells show no rate line under the preview.
+  if (!(fiat > 0 && crypto > 0) || (type === 'sell' && currentProvider === 'hostfi')) { el.textContent = ''; return; }
+  const fee = currentProvider === 'paj' && typeof currentPajFee === 'number' ? currentPajFee : currentFee;
   el.textContent = `₦${(fiat / crypto).toLocaleString(undefined, { maximumFractionDigits: 2 })} per ${asset} · ${fee}% fee included`;
 }
 
@@ -643,15 +648,13 @@ function calculateSell() {
   
   let receiveAfterFee = 0;
   let cryptoToSend = 0;
-  let hostfiGross = null; // HostFi: naira before its payout charge, so the rate and fee line stay exact
 
   if (currentProvider === 'hostfi') {
     // ngn_per_unit already has the fee taken off; the $ field is converted at the coin's USD price.
     const a = hostfiAssets[currentSellAsset] || {};
     const usdPrice = Number(a.usd_per_unit) || 0;
     cryptoToSend = currentSellInputMode === 'USD' ? (usdPrice > 0 ? amount / usdPrice : 0) : amount;
-    hostfiGross = cryptoToSend * (Number(a.ngn_per_unit) || 0);
-    receiveAfterFee = Math.max(0, hostfiGross - (Number(a.payout_fee_ngn) || 0)); // HostFi's per-payout charge
+    receiveAfterFee = Math.max(0, cryptoToSend * (Number(a.ngn_per_unit) || 0) - (Number(a.payout_fee_ngn) || 0)); // minus HostFi's per-payout charge
   } else if (currentProvider === 'paj') {
     const activeFee = typeof currentPajFee === 'number' ? currentPajFee : currentFee;
     if (currentSellInputMode === 'USD') {
@@ -686,7 +689,7 @@ function calculateSell() {
   if (amount > 0 && cryptoToSend > 0) {
     previewCrypto.textContent = `${Number(cryptoToSend).toLocaleString(undefined, {maximumFractionDigits: 4})} ${currentSellAsset}`;
     previewFiat.textContent = `₦${receiveAfterFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-    setPreviewRate('sell', hostfiGross !== null ? hostfiGross : receiveAfterFee, cryptoToSend, currentSellAsset);
+    setPreviewRate('sell', receiveAfterFee, cryptoToSend, currentSellAsset);
     preview.classList.remove('hidden');
   } else {
     preview.classList.add('hidden');

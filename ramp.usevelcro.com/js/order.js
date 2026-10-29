@@ -191,8 +191,9 @@ async function generateWalletAddress() {
   if (!currentSellAsset) { showToast('Please select an asset', 'warning'); return; }
   const amount = getNum('sell-amount');
   const receive = getNum('sell-receive');
-  if (!amount || amount <= 0) { showToast('Please enter a valid amount', 'warning'); return; }
-  if (!validateSellLimit(amount)) { showToast(`Maximum sell amount is $${SELL_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
+  const anyAmount = currentProvider === 'hostfi'; // HostFi pays out whatever arrives
+  if (!anyAmount && (!amount || amount <= 0)) { showToast('Please enter a valid amount', 'warning'); return; }
+  if (!anyAmount && !validateSellLimit(amount)) { showToast(`Maximum sell amount is $${SELL_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
   
   const bankNum = document.getElementById('sell-bank-number').value.trim();
   const accountName = document.getElementById('sell-account-name').value.trim();
@@ -206,10 +207,8 @@ async function generateWalletAddress() {
 
   // Offramp flow
   if (currentProvider === 'hostfi') {
-    const a = hostfiAssets[currentSellAsset] || {};
-    const crypto = currentSellInputMode === 'USD' ? (Number(a.usd_per_unit) > 0 ? amount / Number(a.usd_per_unit) : 0) : amount;
     const resetBtn = () => { btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Get deposit address'; safeLucideInit(); };
-    if (!(crypto > 0) || !currentSellNetwork) { showToast('Please choose a coin and network', 'warning'); resetBtn(); return; }
+    if (!currentSellNetwork) { showToast('Please choose a coin and network', 'warning'); resetBtn(); return; }
     try {
       const res = await fetch(`${API_BASE}/api/hostfi/sell`, {
         method: 'POST',
@@ -217,7 +216,6 @@ async function generateWalletAddress() {
         body: JSON.stringify({
           asset: currentSellAsset,
           network: currentSellNetwork,
-          amount: Number(crypto.toFixed(8)),
           bankCode: currentBankSwitchCode || currentBankCode,
           bankName: currentBankName,
           accountNumber: bankNum,
@@ -231,7 +229,7 @@ async function generateWalletAddress() {
       currentReference = data.reference;
       document.getElementById('sell-wallet-address').textContent = data.address;
       document.getElementById('sell-reference').textContent = data.reference;
-      document.getElementById('sell-confirm-amount').textContent = Number(crypto).toLocaleString(undefined, { maximumFractionDigits: 8 });
+      document.getElementById('sell-confirm-amount').textContent = 'Any amount of';
       document.getElementById('sell-memo').classList.toggle('hidden', !data.memo);
       safeSetText('sell-memo-value', data.memo || '');
       const explorerLink = document.getElementById('sell-status-explorer-link');
@@ -260,8 +258,8 @@ async function generateWalletAddress() {
       currentTxDetails = {
         type: 'sell',
         reference: data.reference,
-        amount: crypto,
-        destinationAmount: data.estimate_ngn,
+        amount: null,
+        destinationAmount: null,
         asset: currentSellAsset,
         network: data.chain,
         bankName: data.bank_name || currentBankName,
@@ -1138,7 +1136,7 @@ function updateStepIndicators(direction) {
   const amount = direction === 'OFFRAMP' ? getNum('sell-amount') : getNum('buy-amount');
   const details = direction === 'OFFRAMP' ? currentBankCode : document.getElementById('buy-wallet').value.trim();
 
-  const steps = [!!asset, !!network, amount > 0, !!details];
+  const steps = [!!asset, !!network, amount > 0 || (direction === 'OFFRAMP' && currentProvider === 'hostfi'), !!details];
 
   for (let i = 0; i < 4; i++) {
     const dot = document.getElementById(`step-${i + 1}`);

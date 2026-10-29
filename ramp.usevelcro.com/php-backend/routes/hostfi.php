@@ -758,8 +758,10 @@ function registerHostfiRoutes(Router $router): void
         if (!in_array($symbol, hostfiEnabledAssets(), true)) {
             jsonResponse(errorResponse("{$symbol} sells are not available right now"), 400);
         }
-        if ($amount <= 0 || strlen($accountNumber) < 10) {
-            jsonResponse(errorResponse('amount and a valid accountNumber are required'), 400);
+        // No amount needed: the user sends any amount and the payout follows what arrives
+        // (deposits outside the sell limits are held for review). An amount, if given, is checked.
+        if ($amount < 0 || strlen($accountNumber) < 10) {
+            jsonResponse(errorResponse('A valid accountNumber is required'), 400);
         }
         if ($email !== '' && !isValidEmail($email)) {
             jsonResponse(errorResponse('Invalid email address'), 400);
@@ -772,10 +774,10 @@ function registerHostfiRoutes(Router $router): void
             $quote = hostfiQuote($symbol);
             $usd = $amount * $quote['usd_per_unit'];
             $s = loadSettings();
-            if ($usd < (float) ($s['sell_min_limit'] ?? 1) || $usd > (float) ($s['sell_max_limit'] ?? 10000)) {
+            if ($amount > 0 && $usd < (float) ($s['sell_min_limit'] ?? 1) || $usd > (float) ($s['sell_max_limit'] ?? 10000)) {
                 jsonResponse(errorResponse(sprintf('Sell amount must be between $%s and $%s', number_format((float) ($s['sell_min_limit'] ?? 1)), number_format((float) ($s['sell_max_limit'] ?? 10000)))), 400);
             }
-            if ($amount * $quote['ngn_per_unit'] <= HOSTFI_PAYOUT_FEE_NGN) {
+            if ($amount > 0 && $amount * $quote['ngn_per_unit'] <= HOSTFI_PAYOUT_FEE_NGN) {
                 jsonResponse(errorResponse('This amount is too small to sell'), 400);
             }
             $bank = hostfiApi()->matchBank((string) body($b, 'bankCode', ''), (string) body($b, 'bankName', ''));
@@ -796,7 +798,7 @@ function registerHostfiRoutes(Router $router): void
             }
             $chain = hostfiChain($network);
             $minutes = sellTimerMinutes($symbol);
-            $estimate = round($amount * $quote['ngn_per_unit'] - HOSTFI_PAYOUT_FEE_NGN, 2);
+            $estimate = $amount > 0 ? round($amount * $quote['ngn_per_unit'] - HOSTFI_PAYOUT_FEE_NGN, 2) : null;
             Database::insert('transactions', [
                 'reference' => $reference,
                 'type' => 'OFFRAMP',
