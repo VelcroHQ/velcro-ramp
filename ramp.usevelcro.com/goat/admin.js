@@ -2071,6 +2071,116 @@ async function adminPost(path, body) {
     return data;
 }
 
+// ─── HostFi ───
+
+const HOSTFI_SYMBOLS = ['BTC', 'ETH', 'SOL', 'USDT', 'USDC'];
+
+async function fetchHostfi() {
+    try {
+        const [hRes, sRes] = await Promise.all([
+            fetch(`${API_BASE}/api/admin/hostfi`, { headers: { 'Authorization': adminKey } }),
+            fetch(`${API_BASE}/api/admin/settings`, { headers: { 'Authorization': adminKey } })
+        ]);
+        const data = scrub(await hRes.json());
+        const settings = await sRes.json();
+        if (!hRes.ok) throw new Error(data.error || 'Failed to load HostFi');
+        renderHostfi(data, settings);
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+function renderHostfi(data, settings) {
+    const env = document.getElementById('hostfi-env');
+    env.className = 'status-pill ' + (!data.configured ? 'cancelled' : data.environment === 'live' ? 'completed' : 'pending');
+    env.innerText = !data.configured ? 'Not connected' : data.environment === 'live' ? 'Live' : 'Sandbox';
+    document.getElementById('hostfi-not-configured').style.display = data.configured ? 'none' : 'block';
+
+    const assets = settings.hostfi_assets || {};
+    HOSTFI_SYMBOLS.forEach(sym => { document.getElementById(`hostfi-toggle-${sym}`).checked = !!assets[sym]; });
+    const timers = settings.sell_timer_minutes || {};
+    document.getElementById('hostfi-fee-input').value = settings.hostfi_fee ?? 0.5;
+    document.getElementById('hostfi-timer-btc').value = timers.BTC ?? 120;
+    document.getElementById('hostfi-timer-default').value = timers.default ?? 60;
+
+    const fmt = (v, d = 8) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: d });
+    const balances = document.getElementById('hostfi-balances');
+    balances.innerHTML = data.balances && data.balances.length
+        ? data.balances.map(b => `<div class="hostfi-balance"><div class="hostfi-balance-code">${b.currency}</div><div class="hostfi-balance-value">${b.currency === 'NGN' ? '₦' + fmt(b.balance, 2) : fmt(b.balance)}</div></div>`).join('')
+        : `<p style="color: var(--text-secondary); font-size: 13px;">${data.error || (data.configured ? 'No wallets yet.' : 'Connect HostFi to see balances.')}</p>`;
+
+    const deposits = data.deposits || [];
+    const needsAction = ['REVIEW', 'PAYOUT_FAILED', 'PAYOUT_UNCERTAIN', 'SWAP_PENDING'];
+    const attention = deposits.filter(d => needsAction.includes(d.status)).length;
+    const badge = document.getElementById('hostfi-review-count');
+    badge.style.display = attention ? 'inline-block' : 'none';
+    badge.innerText = `${attention} need attention`;
+
+    document.getElementById('hostfi-deposits-body').innerHTML = deposits.length ? deposits.map(d => {
+        const actionable = needsAction.includes(d.status);
+        // The swap already happened when ngn_amount is set, so only the payout is retried.
+        const primary = d.status === 'SWAP_PENDING' ? 'Check swap'
+            : (d.status === 'PAYOUT_FAILED' || d.status === 'PAYOUT_UNCERTAIN' || d.ngn_amount) ? 'Retry payout' : 'Approve &amp; pay';
+        const label = `${fmt(d.amount)} ${d.currency}`;
+        return `
+        <tr>
+            <td data-label="Received">${new Date(String(d.created_at).replace(' ', 'T')).toLocaleString()}</td>
+            <td data-label="Customer">${d.email || '<span style="color: var(--text-secondary);">—</span>'}<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${d.order_ref || 'No order'}</div></td>
+            <td data-label="Deposit"><span><b>${fmt(d.amount)}</b> ${d.currency}</span>${d.tx_hash ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" title="${d.tx_hash}">tx ${shortAddr(d.tx_hash)}</div>` : ''}</td>
+            <td data-label="Payout">${d.payout_amount ? '₦' + fmt(d.payout_amount, 2) : '<span style="color: var(--text-secondary);">—</span>'}</td>
+            <td data-label="Status"><span class="status-pill ${String(d.status).toLowerCase()}">${statusLabel(d.status)}</span>${d.note ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; max-width: 260px;">${d.note}</div>` : ''}</td>
+            <td data-label="Action">${actionable ? `
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                    ${d.order_ref ? `<button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 12px;" onclick="hostfiDepositAction(${d.id}, 'retry', '${label}', '${primary}')">${primary}</button>` : ''}
+                    <button class="btn-secondary" style="width: auto; padding: 7px 14px; font-size: 12px;" onclick="hostfiDepositAction(${d.id}, 'resolve', '${label}')">Mark resolved</button>
+                </div>` : '<span style="color: var(--text-secondary);">—</span>'}</td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No HostFi deposits yet.</td></tr>';
+    if (window.lucide) lucide.createIcons();
+}
+
+async function saveHostfiSettings() {
+    const fee = parseFloat(document.getElementById('hostfi-fee-input').value);
+    const btcTimer = parseInt(document.getElementById('hostfi-timer-btc').value, 10);
+    const otherTimer = parseInt(document.getElementById('hostfi-timer-default').value, 10);
+    if (Number.isNaN(fee) || fee < 0 || fee > 10) { showToast('Fee must be between 0 and 10%', 'error'); return; }
+    if ([btcTimer, otherTimer].some(t => Number.isNaN(t) || t < 15 || t > 360)) { showToast('Timers must be between 15 and 360 minutes', 'error'); return; }
+    const hostfi_assets = {};
+    HOSTFI_SYMBOLS.forEach(sym => { hostfi_assets[sym] = document.getElementById(`hostfi-toggle-${sym}`).checked; });
+    const btn = document.getElementById('hostfi-save-btn');
+    btn.disabled = true;
+    try {
+        await adminPost('/api/admin/settings', { hostfi_assets, hostfi_fee: fee, sell_timer_minutes: { BTC: btcTimer, default: otherTimer } });
+        const on = HOSTFI_SYMBOLS.filter(sym => hostfi_assets[sym]);
+        showToast(on.length ? `Saved. Selling via HostFi: ${on.join(', ')}` : 'Saved. No coins are sold via HostFi', 'success');
+    } catch (e) {
+        showToast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function hostfiDepositAction(id, action, label, kind = '') {
+    const question = action !== 'retry' ? null
+        : kind === 'Check swap' ? `Ask HostFi whether the swap for the ${label} deposit has finished? If it has, the payout is sent.`
+        : kind === 'Retry payout' ? `Retry the payout for the ${label} deposit? HostFi is checked first; nothing is sent if the last payout went through or is still processing.`
+        : `Pay out the ${label} deposit to the customer's bank now? This skips the automatic checks.`;
+    if (!confirm(question || `Mark the ${label} deposit as resolved? Use this once you've handled it outside Velcro (refund or manual payout).`)) return;
+    try {
+        const body = action === 'resolve' ? { note: prompt('Note for the audit log (optional):') || 'Resolved manually' } : {};
+        const data = await adminPost(`/api/admin/hostfi/deposits/${id}/${action}`, body);
+        const st = data.deposit ? data.deposit.status : 'RESOLVED';
+        const bad = ['REVIEW', 'PAYOUT_FAILED', 'PAYOUT_UNCERTAIN'].includes(st);
+        const msg = data.outcome === 'already_paid' ? 'HostFi shows this payout already succeeded. Marked paid, nothing re-sent.'
+            : data.outcome === 'still_pending' ? 'HostFi is still processing the last payout. Nothing re-sent.'
+            : st === 'PAYOUT_PENDING' ? 'Payout sent' : `Deposit is now ${statusLabel(st)}`;
+        showToast(msg, bad ? 'error' : 'success');
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+    fetchHostfi();
+}
+
 async function fetchReferrals() {
     try {
         const res = await fetch(`${API_BASE}/api/admin/referrals`, { headers: { 'Authorization': adminKey } });
@@ -2487,6 +2597,9 @@ function switchSection(id) {
     }
     if (id === 'referrals') {
         fetchReferrals();
+    }
+    if (id === 'hostfi') {
+        fetchHostfi();
     }
     if (id === 'email') {
         fetchCampaigns();

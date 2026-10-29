@@ -154,8 +154,8 @@ function receiptChain(array $t): array
 {
     $asset = (string) $t['asset'];
     $chain = str_contains($asset, ':') ? strtolower(explode(':', $asset)[0]) : 'solana'; // PAJ assets are bare symbols on Solana
-    $labels = ['solana' => 'Solana', 'tron' => 'TRON', 'ethereum' => 'Ethereum', 'bsc' => 'BNB Chain', 'base' => 'Base', 'polygon' => 'Polygon', 'arbitrum' => 'Arbitrum', 'optimism' => 'Optimism', 'avalanche' => 'Avalanche'];
-    $explorers = ['solana' => 'https://solscan.io/tx/', 'ethereum' => 'https://etherscan.io/tx/', 'bsc' => 'https://bscscan.com/tx/', 'polygon' => 'https://polygonscan.com/tx/', 'arbitrum' => 'https://arbiscan.io/tx/', 'base' => 'https://basescan.org/tx/', 'tron' => 'https://tronscan.org/#/transaction/', 'optimism' => 'https://optimistic.etherscan.io/tx/', 'avalanche' => 'https://snowtrace.io/tx/'];
+    $labels = ['bitcoin' => 'Bitcoin', 'solana' => 'Solana', 'tron' => 'TRON', 'ethereum' => 'Ethereum', 'bsc' => 'BNB Chain', 'base' => 'Base', 'polygon' => 'Polygon', 'arbitrum' => 'Arbitrum', 'optimism' => 'Optimism', 'avalanche' => 'Avalanche'];
+    $explorers = ['bitcoin' => 'https://mempool.space/tx/', 'solana' => 'https://solscan.io/tx/', 'ethereum' => 'https://etherscan.io/tx/', 'bsc' => 'https://bscscan.com/tx/', 'polygon' => 'https://polygonscan.com/tx/', 'arbitrum' => 'https://arbiscan.io/tx/', 'base' => 'https://basescan.org/tx/', 'tron' => 'https://tronscan.org/#/transaction/', 'optimism' => 'https://optimistic.etherscan.io/tx/', 'avalanche' => 'https://snowtrace.io/tx/'];
     $hash = (string) ($t['hash'] ?? '');
     $url = (string) ($t['explorer_url'] ?? '') ?: ($hash !== '' && isset($explorers[$chain]) ? $explorers[$chain] . $hash : '');
     return [$labels[$chain] ?? ucfirst($chain), $url];
@@ -254,6 +254,14 @@ function ensureReceiptSchema(): void
     $done = true;
 }
 
+/** How long a sell order stays open: the HostFi order's own timer (BTC 2 hours), else 60 minutes. */
+function orderWindowLabel(array $t): string
+{
+    $meta = is_array($t['meta'] ?? null) ? $t['meta'] : (json_decode((string) ($t['meta'] ?? ''), true) ?: []);
+    $min = (int) ($meta['hostfi']['timer_minutes'] ?? 60);
+    return $min >= 120 && $min % 60 === 0 ? ($min / 60) . ' hours' : max(1, $min) . ' minutes';
+}
+
 /** @return array{0: string, 1: string, 2: string} [subject, html, text] */
 function orderInitiatedEmail(array $t): array
 {
@@ -303,6 +311,9 @@ function orderInitiatedEmail(array $t): array
     $cryptoAmt = (float) ($t['amount'] ?? 0) > 0 ? $crypto($t['amount']) : $symbol;
     $payoutFiat = (float) ($t['destination_amount'] ?? 0) > 0 ? $ngn($t['destination_amount']) : 'NGN';
     $depositAddress = (string) ($t['deposit_address'] ?? '-');
+    $window = orderWindowLabel($t);
+    $isHostfi = strtoupper((string) ($t['channel'] ?? '')) === 'HOSTFI';
+    $payoutWord = $isHostfi ? "about {$payoutFiat}" : $payoutFiat; // HostFi's final amount is set when the deposit confirms
 
     $ben = is_array($t['beneficiary'] ?? null) ? $t['beneficiary'] : (json_decode((string) ($t['beneficiary'] ?? ''), true) ?: []);
     $bank = (string) ($ben['bank_name'] ?? $ben['bankName'] ?? $ben['institution'] ?? '');
@@ -312,8 +323,9 @@ function orderInitiatedEmail(array $t): array
         ['Amount to send', $cryptoAmt],
         ['Network', $chainLabel],
         ['Deposit Address', $depositAddress, true],
-        ['Payout Amount', $payoutFiat],
-        ['Validity Window', '60 minutes'],
+        ...(!empty($t['deposit_note']) ? [['Memo / tag (required)', preg_replace('/^Memo:\s*/', '', (string) $t['deposit_note']), true]] : []),
+        [$isHostfi ? 'Estimated payout' : 'Payout Amount', $payoutFiat],
+        ['Validity Window', $window],
     ];
     if ($bank !== '') {
         $rows[] = ['Payout Bank', $bank];
@@ -325,14 +337,14 @@ function orderInitiatedEmail(array $t): array
 
     $subject = "Order Started: Send {$cryptoAmt} for {$payoutFiat} payout";
     [$html, $text] = renderEmail([
-        'preheader' => "Send {$cryptoAmt} to deposit address within 60 minutes to receive payout.",
+        'preheader' => "Send {$cryptoAmt} to deposit address within {$window} to receive payout.",
         'eyebrow' => 'Order Started',
         'title' => 'Complete your cash payout',
-        'intro' => "We've created your sell order. Please send {$cryptoAmt} on the {$chainLabel} network to the deposit address below within 60 minutes. Once confirmed, {$payoutFiat} will be sent directly to your bank account.",
+        'intro' => "We've created your sell order. Please send {$cryptoAmt} on the {$chainLabel} network to the deposit address below within {$window}. Once confirmed, {$payoutWord} will be sent directly to your bank account.",
         'amount' => ['Send exactly', $cryptoAmt],
         'rows' => $rows,
         'cta' => ['View Order Status', EMAIL_SITE_URL],
-        'outro' => "Please send within 60 minutes. Only send {$symbol} on the {$chainLabel} network. Sending to the wrong network may result in loss of funds.",
+        'outro' => "Please send within {$window}. Only send {$symbol} on the {$chainLabel} network. Sending to the wrong network may result in loss of funds.",
     ]);
     return [$subject, $html, $text];
 }
@@ -403,13 +415,17 @@ function orderReminderEmail(array $t): array
     $cryptoAmt = (float) ($t['amount'] ?? 0) > 0 ? $crypto($t['amount']) : $symbol;
     $payoutFiat = (float) ($t['destination_amount'] ?? 0) > 0 ? $ngn($t['destination_amount']) : 'NGN';
     $depositAddress = (string) ($t['deposit_address'] ?? '-');
+    $window = orderWindowLabel($t);
+    $isHostfi = strtoupper((string) ($t['channel'] ?? '')) === 'HOSTFI';
+    $payoutWord = $isHostfi ? "about {$payoutFiat}" : $payoutFiat; // HostFi's final amount is set when the deposit confirms
 
     $rows = [
         ['Crypto to send', $cryptoAmt],
         ['Network', $chainLabel],
         ['Deposit Address', $depositAddress, true],
-        ['Payout Amount', $payoutFiat],
-        ['Validity Window', '60 minutes'],
+        ...(!empty($t['deposit_note']) ? [['Memo / tag (required)', preg_replace('/^Memo:\s*/', '', (string) $t['deposit_note']), true]] : []),
+        [$isHostfi ? 'Estimated payout' : 'Payout Amount', $payoutFiat],
+        ['Validity Window', $window],
         ['Reference', $short($ref), true],
     ];
 
@@ -418,7 +434,7 @@ function orderReminderEmail(array $t): array
         'preheader' => "Friendly reminder: your sell order for {$cryptoAmt} is waiting for deposit.",
         'eyebrow' => 'Action Required',
         'title' => 'Your cash payout is waiting',
-        'intro' => "We noticed you haven't deposited your {$cryptoAmt} yet. Send to the deposit address below before the order expires to receive {$payoutFiat} in your bank account.",
+        'intro' => "We noticed you haven't deposited your {$cryptoAmt} yet. Send to the deposit address below before the order expires to receive {$payoutWord} in your bank account.",
         'amount' => ['Send exactly', $cryptoAmt],
         'rows' => $rows,
         'cta' => ['Complete Order on Velcro', EMAIL_SITE_URL],

@@ -48,9 +48,35 @@ async function fetchSettings() {
       if (typeof data.data.paj_usdc_enabled === 'boolean') {
         pajUsdcEnabled = data.data.paj_usdc_enabled;
       }
+      if (typeof data.data.hostfi_fee === 'number') hostfiFee = data.data.hostfi_fee;
+      if (data.data.sell_timer_minutes) sellTimerMinutes = data.data.sell_timer_minutes;
+      if (Array.isArray(data.data.hostfi_assets) && data.data.hostfi_assets.length) loadHostfiAssets();
     }
   } catch (err) {
     // Use defaults
+  }
+}
+
+// Coins sold through HostFi, with their networks and current naira price. A coin that fails to
+// load is simply left off the list.
+async function loadHostfiAssets() {
+  try {
+    const res = await fetch(`${API_BASE}/api/hostfi/assets`);
+    const json = await res.json();
+    if (!json.success) return;
+    hostfiAssets = {};
+    (json.data || []).forEach(a => { hostfiAssets[a.symbol] = a; });
+    renderSellAssetList();
+    // A default coin picked before this loaded (e.g. USDT via Switch) moves to HostFi if HostFi now sells it.
+    if (hostfiAssets[currentSellAsset] && sellProvider !== 'hostfi' && !currentReference) {
+      const onSell = !document.getElementById('form-sell').classList.contains('hidden');
+      await selectSellAsset(currentSellAsset, getAssetLogo(currentSellAsset), currentSellAsset, 'hostfi');
+      if (!onSell) currentProvider = buyProvider;
+    } else if (currentProvider === 'hostfi') {
+      updateRateDisplays();
+    }
+  } catch (e) {
+    console.error('Failed to load HostFi assets:', e);
   }
 }
 
@@ -206,12 +232,19 @@ function updateRateDisplays() {
   const pending = '<span class="w-2 h-2 rounded-full bg-gray-300 animate-pulse"></span><span class="text-gray-400">Fetching rate…</span>';
   const noAsset = '<span class="text-gray-400">Choose a coin to see the rate</span>';
 
-  const activeFee = currentProvider === 'paj' ? currentPajFee : currentFee;
+  const activeFee = currentProvider === 'paj' ? currentPajFee : (currentProvider === 'hostfi' ? hostfiFee : currentFee);
   if (sellBadge) sellBadge.textContent = `${activeFee}% fee`;
-  if (buyBadge) buyBadge.textContent = `${activeFee}% fee`;
+  if (buyBadge) buyBadge.textContent = `${currentProvider === 'paj' ? currentPajFee : currentFee}% fee`;
 
   if (sellRateEl) {
-    if (currentProvider === 'paj') {
+    if (currentProvider === 'hostfi') {
+      const a = hostfiAssets[currentSellAsset];
+      // HostFi's own rate per dollar of the coin; our fee is shown separately in the fee badge.
+      const gross = Number(a && (a.ngn_per_unit_gross || a.ngn_per_unit));
+      sellRateEl.innerHTML = gross > 0 && a.usd_per_unit > 0
+        ? `${pulse}Rate: $1 = ₦${(gross / Number(a.usd_per_unit)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : pending;
+    } else if (currentProvider === 'paj') {
       const pajDirect = currentRate.pajOfframp || currentRate.paj;
       if (pajDirect) {
         const formatted = Number(pajDirect).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});

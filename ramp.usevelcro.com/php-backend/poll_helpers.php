@@ -9,9 +9,19 @@ require_once __DIR__ . '/switch_api.php';
 require_once __DIR__ . '/paj_api.php';
 
 require_once __DIR__ . '/emails.php';
+require_once __DIR__ . '/routes/hostfi.php';
 
 function pollSingleTransaction(array $tx): void
 {
+    if (($tx['channel'] ?? '') === 'HOSTFI') {
+        // Webhooks drive every money step; polling only re-reads payouts a webhook may have missed.
+        try {
+            hostfiReconcileOrder((string) $tx['reference']);
+        } catch (Throwable $e) {
+            error_log("[Poller] Failed HostFi {$tx['reference']}: " . $e->getMessage());
+        }
+        return;
+    }
     if (($tx['channel'] ?? '') === 'PAJ') {
         if (!pajApi()->isConfigured()) {
             return;

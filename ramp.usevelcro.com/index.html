@@ -418,7 +418,7 @@
                   </div>
                   <div class="min-w-0">
                     <p class="text-xs font-semibold text-amber-900">Time left</p>
-                    <p class="text-[11px] text-amber-700 leading-tight">This address is valid for 60 minutes. Please send before expiry.</p>
+                    <p id="sell-expiry-text" class="text-[11px] text-amber-700 leading-tight">This address is valid for 60 minutes. Please send before expiry.</p>
                   </div>
                 </div>
                 <div class="text-right shrink-0">
@@ -435,6 +435,7 @@
                   </button>
                 </div>
               </div>
+              <p id="sell-memo" class="hidden mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 text-left">Include this memo with your transfer or the deposit can't be credited: <strong id="sell-memo-value" class="font-mono"></strong></p>
               <p class="mb-3 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 text-left">Send only <strong id="sell-warn-asset">USDT</strong> on <strong id="sell-warn-network">Solana</strong> to this address. Anything else will be lost.</p>
               <div class="bg-white rounded-xl border border-gray-200 p-3 mb-3 text-left">
                 <p class="text-xs text-gray-500 mb-1">Reference</p>
@@ -466,7 +467,7 @@
                       Check transaction on explorer
                     </a>
                     <p class="text-sm font-medium text-amber-700">Waiting for payment</p>
-                    <p class="text-xs text-gray-500 leading-relaxed">We usually detect deposits within a minute. You can close this page — we'll email your receipt.</p>
+                    <p id="sell-status-hint" class="text-xs text-gray-500 leading-relaxed">We usually detect deposits within a minute. You can close this page — we'll email your receipt.</p>
                     <p id="sell-support-hint" class="hidden text-xs text-gray-500 mt-1">Still waiting? <a href="https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab" target="_blank" rel="noopener noreferrer" class="font-semibold text-velcro-navy underline">Chat with support</a></p>
                   </div>
                   <button onclick="showManualConfirm('sell')"

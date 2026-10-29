@@ -431,7 +431,25 @@ tbody tr:hover {
 #camp-preview-frame { display: none; width: 100%; height: 720px; border: 1px solid var(--border); border-radius: 14px; background: #f3f4f7; }
 @media (max-width: 1100px) { .camp-grid { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .camp-row { grid-template-columns: 1fr; } #camp-preview-frame { height: 560px; } }
-.rejected { background: #fef2f2; color: #dc2626; }
+.rejected { background: #fef2f2; color: #dc2626; }
+/* HostFi deposits */
+.review, .payout_failed { background: #fef2f2; color: #dc2626; }
+.paid { background: rgba(168, 207, 69, 0.16); color: #5f7d17; }
+.swapping, .swapped, .paying, .payout_pending, .swap_pending { background: #f0f9ff; color: #0369a1; }
+.payout_uncertain { background: #fffbeb; color: #b45309; }
+.resolved { background: #f3f4f6; color: #4b5563; }
+.hostfi-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.hostfi-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 10px; background: var(--bg-light); border: 1px solid var(--border); }
+.hostfi-toggle input { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; margin: 0; }
+.hostfi-toggle-title { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.hostfi-toggle-sub { font-size: 11px; color: var(--text-secondary); }
+.hostfi-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.hostfi-balances { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.hostfi-balance { padding: 12px 14px; border-radius: 12px; background: var(--bg-light); border: 1px solid var(--border); }
+.hostfi-balance-code { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
+.hostfi-balance-value { margin-top: 4px; font-size: 16px; font-weight: 700; color: var(--text-main); word-break: break-all; }
+@media (max-width: 1100px) { .hostfi-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .hostfi-inputs { grid-template-columns: 1fr; } }
 .ref-fee-input { width: 72px !important; padding: 6px 8px !important; margin: 0 !important; font-size: 13px !important; }
 
 .btn-view {

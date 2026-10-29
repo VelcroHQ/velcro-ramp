@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../switch_api.php';
+require_once __DIR__ . '/hostfi.php';
 
 if (!function_exists('getPajFee')) {
     function getPajFee(): float
@@ -543,6 +544,14 @@ function registerPublicRoutes(Router $router): void
             $isPaj = true;
         }
 
+        if ($tx && ($tx['channel'] ?? '') === 'HOSTFI') {
+            jsonResponse([
+                'success' => true,
+                'status' => (string) $tx['status'],
+                'message' => 'We pay out automatically as soon as your deposit confirms on the network',
+            ]);
+        }
+
         if ($isPaj && $tx) {
             // The client cannot complete an order: re-check PAJ and take whatever status it reports.
             pollSingleTransaction($tx);
@@ -647,7 +656,7 @@ function registerPublicRoutes(Router $router): void
                     }
 
                     // Only proactively poll at most 1 very recent pending transaction (< 30 minutes old)
-                    if ($polledCount < 1 && $ageSeconds <= 1800 && ($row['channel'] ?? '') !== 'PAJ') {
+                    if ($polledCount < 1 && $ageSeconds <= 1800 && !in_array($row['channel'] ?? '', ['PAJ', 'HOSTFI'], true)) {
                         try {
                             $refToQuery = !empty($row['switch_reference']) ? (string)$row['switch_reference'] : (string)$row['reference'];
                             $live = switchApi()->getPaymentStatus($refToQuery, 3);
@@ -671,6 +680,9 @@ function registerPublicRoutes(Router $router): void
                         ?? ($meta['destination']['address'] ?? null)));
                 }
 
+                if (($row['channel'] ?? '') === 'HOSTFI') {
+                    $row['hostfi_rate'] = hostfiOrderRate($row);
+                }
                 // The email is not verified, so anyone can query any email here.
                 // Return only what the history UI needs: no raw provider payload, masked bank account.
                 // ponytail: real fix is email-OTP login; until then this list is enumerable by email.
@@ -689,6 +701,9 @@ function registerPublicRoutes(Router $router): void
                     }
                 }
                 unset($row['callback_url']);
+                if (($row['channel'] ?? '') === 'HOSTFI') {
+                    $row['hostfi_progress'] = hostfiProgress((string) $row['reference']);
+                }
             }
             unset($row);
             jsonResponse(successResponse($rows));
@@ -709,7 +724,9 @@ function registerPublicRoutes(Router $router): void
 
             // Proactively sync if in any non-terminal state
             $currentStatus = strtoupper((string)($row['status'] ?? ''));
-            if (!in_array($currentStatus, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true)) {
+            if (($row['channel'] ?? '') === 'HOSTFI') {
+                // Read-only: HostFi's webhooks move these orders along, never a status check.
+            } elseif (!in_array($currentStatus, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true)) {
                 if (($row['channel'] ?? '') === 'PAJ') {
                     if (pajApi()->isConfigured()) {
                         try {
@@ -752,6 +769,12 @@ function registerPublicRoutes(Router $router): void
                     ?? ($meta['recipient']
                     ?? ($meta['destination']['address'] ?? null)));
             }
+            if (($row['channel'] ?? '') === 'HOSTFI') {
+                // The payout bank stays server-side; the status page only needs coin and network.
+                $row['hostfi_rate'] = hostfiOrderRate($row);
+                $row['meta'] = ['network' => $row['meta']['hostfi']['network'] ?? null, 'chain' => explode(':', (string) $row['asset'])[0]];
+                $row['hostfi_progress'] = hostfiProgress((string) $row['reference']);
+            }
             jsonResponse(successResponse($row));
         } catch (Throwable $e) {
             $status = $e->getCode() >= 400 ? $e->getCode() : 500;
@@ -774,6 +797,9 @@ function registerPublicRoutes(Router $router): void
             'paj_usdt_enabled' => (bool) ($settings['paj_usdt_enabled'] ?? false),
             'paj_usdc_enabled' => (bool) ($settings['paj_usdc_enabled'] ?? false),
             'referral_fee' => (float) ($settings['referral_fee'] ?? 0.3),
+            'hostfi_assets' => hostfiEnabledAssets(),
+            'hostfi_fee' => hostfiFee(),
+            'sell_timer_minutes' => (object) ($settings['sell_timer_minutes'] ?? ['default' => 60]),
         ]));
     });
 }

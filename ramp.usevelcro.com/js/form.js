@@ -205,6 +205,7 @@ function filterSellAssets() {
 }
 
 function switchTab(tab) {
+  currentProvider = tab === 'sell' ? sellProvider : buyProvider;
   const indicator = document.getElementById('tab-indicator');
   const sellTab = document.getElementById('tab-sell');
   const buyTab = document.getElementById('tab-buy');
@@ -239,6 +240,13 @@ function switchTab(tab) {
   safeLucideInit();
 }
 
+// Display name for a HostFi network, e.g. {code: 'TRC20', chain: 'tron'} → "TRON (TRC20)".
+function hostfiNetworkName(n) {
+  const names = { bitcoin: 'Bitcoin', ethereum: 'Ethereum', tron: 'TRON', bsc: 'BNB Chain', solana: 'Solana', polygon: 'Polygon', base: 'Base', stellar: 'Stellar', arbitrum: 'Arbitrum', optimism: 'Optimism', avalanche: 'Avalanche' };
+  const name = names[n.chain] || n.code;
+  return ['bitcoin', 'solana'].includes(n.chain) || name === n.code ? name : `${name} (${n.code})`;
+}
+
 // Returning visitors land on the tab they used last; first-time visitors start on Sell.
 function initialTab() {
   try { return localStorage.getItem('velcro-tab') === 'buy' ? 'buy' : 'sell'; } catch (e) { return 'sell'; }
@@ -247,7 +255,7 @@ function initialTab() {
 async function selectSellAsset(symbol, logo, name, provider) {
   closeAllDropdowns(); // Clear everything first
   currentSellAsset = symbol;
-  currentProvider = provider || 'switch';
+  sellProvider = currentProvider = provider || 'switch';
   currentBankCode = currentProvider === 'paj' ? (currentBankPajId || currentBankCode) : (currentBankSwitchCode || currentBankCode);
   currentSellInputMode = 'USD';
   const prefix = document.getElementById('sell-currency-prefix');
@@ -277,8 +285,27 @@ async function selectSellAsset(symbol, logo, name, provider) {
   document.getElementById('sell-network-display').innerHTML = '<span class="text-gray-400 text-sm">Choose network</span>';
   document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
   document.getElementById('sell-amount-step').classList.add('opacity-50', 'pointer-events-none');
-  
-  if (currentProvider === 'paj') {
+  currentSellChain = '';
+
+  if (currentProvider === 'hostfi') {
+    const a = hostfiAssets[symbol];
+    const networks = (a && a.networks) || [];
+    currentRate.sell = a ? Number(a.ngn_per_unit) : 0;
+    const netOptions = document.getElementById('sell-network-options');
+    if (netOptions) {
+      netOptions.innerHTML = networks.map(n => {
+        const name = hostfiNetworkName(n);
+        return `<div class="custom-option" data-network="${escapeHtml(n.code)}" data-logo="${getChainLogo(n.chain)}" data-name="${escapeHtml(name)}"><img src="${getChainLogo(n.chain)}" class="w-6 h-6" alt="${escapeHtml(name)}"><span class="font-medium">${escapeHtml(name)}</span></div>`;
+      }).join('');
+    }
+    if (networks[0]) {
+      const first = netOptions && netOptions.querySelector('.custom-option');
+      selectSellNetwork(networks[0].code, getChainLogo(networks[0].chain), hostfiNetworkName(networks[0]), first);
+    }
+    updateRateDisplays();
+    if (!switchBanks || switchBanks.length === 0) fetchInstitutions();
+    populateBanks();
+  } else if (currentProvider === 'paj') {
     currentSellNetwork = 'solana';
     currentRate.sell = 0;
     document.getElementById('sell-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
@@ -359,7 +386,7 @@ async function fetchPajBanks() {
 function selectSellNetwork(id, logo, name, optionEl) {
   currentSellNetwork = id;
   if (id !== 'solana' && currentProvider === 'paj') {
-    currentProvider = 'switch';
+    sellProvider = currentProvider = 'switch';
   }
   document.getElementById('sell-network-display').innerHTML = `
     <img src="${logo}" class="w-5 h-5 rounded-full" alt="${name}">
@@ -375,8 +402,14 @@ function selectSellNetwork(id, logo, name, optionEl) {
   
   closeAllDropdowns();
   document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
-  currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
-  if (currentSwitchAsset) fetchRate();
+  if (currentProvider === 'hostfi') {
+    const n = ((hostfiAssets[currentSellAsset] || {}).networks || []).find(x => x.code === id);
+    currentSellChain = n ? n.chain : '';
+    currentSwitchAsset = '';
+  } else {
+    currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
+    if (currentSwitchAsset) fetchRate();
+  }
   updateStepIndicators('OFFRAMP');
   populateBanks();
 }
@@ -384,6 +417,7 @@ function selectSellNetwork(id, logo, name, optionEl) {
 function selectSellBank(name, switchCode, pajId, optionEl) {
   currentBankSwitchCode = switchCode || '';
   currentBankPajId = pajId || '';
+  currentBankName = name || '';
   currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
   document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${escapeHtml(name)}</span>`;
   
@@ -411,7 +445,15 @@ async function resolveAccountName() {
 
   try {
     let payload;
-    if (currentProvider === 'paj') {
+    if (currentProvider === 'hostfi') {
+      const res = await fetch(`${API_BASE}/api/hostfi/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bankCode: currentBankSwitchCode || currentBankCode, bankName: currentBankName, accountNumber: bankNum })
+      });
+      payload = await res.json();
+      if (!res.ok) throw new Error(payload.message || 'Could not resolve account name');
+    } else if (currentProvider === 'paj') {
       const bankId = currentBankPajId || currentBankCode;
       if (!bankId) { nameLoading.classList.add('hidden'); nameInput.classList.remove('hidden'); nameError.textContent = 'Selected bank is not supported for this asset'; nameError.classList.remove('hidden'); return; }
       const res = await fetch(`${API_BASE}/api/paj/resolve`, {
@@ -484,7 +526,7 @@ function validateAccount() {
 async function selectBuyAsset(symbol, logo, name, provider) {
   closeAllDropdowns(); // Clear everything first
   currentBuyAsset = symbol;
-  currentProvider = provider || 'switch';
+  buyProvider = currentProvider = provider || 'switch';
   document.getElementById('buy-asset-display').innerHTML = `
     <img src="${logo}" class="w-6 h-6" alt="${symbol}">
     <span class="font-bold text-sm sm:text-base">${symbol}</span>
@@ -547,7 +589,7 @@ async function selectBuyAsset(symbol, logo, name, provider) {
 function selectBuyNetwork(id, logo, name, optionEl) {
   currentBuyNetwork = id;
   if (id !== 'solana' && currentProvider === 'paj') {
-    currentProvider = 'switch';
+    buyProvider = currentProvider = 'switch';
   }
   document.getElementById('buy-network-display').innerHTML = `
     <img src="${logo}" class="w-5 h-5 rounded-full" alt="${name}">
@@ -580,7 +622,15 @@ function setPreviewRate(type, fiat, crypto, asset) {
   const el = document.getElementById(type + '-preview-rate');
   if (!el) return;
   if (!(fiat > 0 && crypto > 0)) { el.textContent = ''; return; }
-  const fee = currentProvider === 'paj' && typeof currentPajFee === 'number' ? currentPajFee : currentFee;
+  const fee = currentProvider === 'hostfi' ? hostfiFee : (currentProvider === 'paj' && typeof currentPajFee === 'number' ? currentPajFee : currentFee);
+  const usdPrice = type === 'sell' && currentProvider === 'hostfi' ? Number((hostfiAssets[currentSellAsset] || {}).usd_per_unit) || 0 : 0;
+  if (usdPrice > 0) {
+    // HostFi coins: show HostFi's real rate per dollar, then our fee in naira, so nothing is hidden.
+    const beforeFee = fee > 0 && fee < 100 ? fiat / (1 - fee / 100) : fiat;
+    const ngn = v => v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    el.textContent = `$1 = ₦${ngn(beforeFee / (crypto * usdPrice))} · Velcro fee ${fee}% (₦${ngn(beforeFee - fiat)}) · final amount set when your deposit confirms`;
+    return;
+  }
   el.textContent = `₦${(fiat / crypto).toLocaleString(undefined, { maximumFractionDigits: 2 })} per ${asset} · ${fee}% fee included`;
 }
 
@@ -593,8 +643,16 @@ function calculateSell() {
   
   let receiveAfterFee = 0;
   let cryptoToSend = 0;
+  let hostfiGross = null; // HostFi: naira before its payout charge, so the rate and fee line stay exact
 
-  if (currentProvider === 'paj') {
+  if (currentProvider === 'hostfi') {
+    // ngn_per_unit already has the fee taken off; the $ field is converted at the coin's USD price.
+    const a = hostfiAssets[currentSellAsset] || {};
+    const usdPrice = Number(a.usd_per_unit) || 0;
+    cryptoToSend = currentSellInputMode === 'USD' ? (usdPrice > 0 ? amount / usdPrice : 0) : amount;
+    hostfiGross = cryptoToSend * (Number(a.ngn_per_unit) || 0);
+    receiveAfterFee = Math.max(0, hostfiGross - (Number(a.payout_fee_ngn) || 0)); // HostFi's per-payout charge
+  } else if (currentProvider === 'paj') {
     const activeFee = typeof currentPajFee === 'number' ? currentPajFee : currentFee;
     if (currentSellInputMode === 'USD') {
       // Input is in USD ($)
@@ -628,7 +686,7 @@ function calculateSell() {
   if (amount > 0 && cryptoToSend > 0) {
     previewCrypto.textContent = `${Number(cryptoToSend).toLocaleString(undefined, {maximumFractionDigits: 4})} ${currentSellAsset}`;
     previewFiat.textContent = `₦${receiveAfterFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-    setPreviewRate('sell', receiveAfterFee, cryptoToSend, currentSellAsset);
+    setPreviewRate('sell', hostfiGross !== null ? hostfiGross : receiveAfterFee, cryptoToSend, currentSellAsset);
     preview.classList.remove('hidden');
   } else {
     preview.classList.add('hidden');
@@ -644,8 +702,13 @@ function calculateSellFromNgn() {
   const activeFee = currentProvider === 'paj' ? (typeof currentPajFee === 'number' ? currentPajFee : currentFee) : currentFee;
 
   const ngnBeforeFee = ngn / (1 - activeFee / 100);
-  
-  if (currentProvider === 'paj') {
+
+  if (currentProvider === 'hostfi') {
+    const a = hostfiAssets[currentSellAsset] || {};
+    const crypto = Number(a.ngn_per_unit) > 0 && ngn > 0 ? (ngn + (Number(a.payout_fee_ngn) || 0)) / Number(a.ngn_per_unit) : 0;
+    if (currentSellInputMode === 'USD') setFmt('sell-amount', crypto * (Number(a.usd_per_unit) || 0), 2);
+    else setFmt('sell-amount', crypto, 8);
+  } else if (currentProvider === 'paj') {
     if (currentSellInputMode === 'USD') {
       const usd = ngnBeforeFee / (pajRate > 0 ? pajRate : 1);
       setFmt('sell-amount', usd, 2);
@@ -716,8 +779,11 @@ function validateBuyLimit(amount) {
 }
 
 function validateSellLimit(amount) {
+  if (currentProvider === 'hostfi' && currentSellInputMode !== 'USD') {
+    amount = amount * (Number((hostfiAssets[currentSellAsset] || {}).usd_per_unit) || 0);
+  }
   const errorEl = document.getElementById('sell-limit-error');
-  const symbol = currentSellInputMode === 'USD' ? '$' : '';
+  const symbol = currentSellInputMode === 'USD' || currentProvider === 'hostfi' ? '$' : '';
   if (amount > 0 && amount < SELL_MIN_LIMIT) {
     if (errorEl) {
       errorEl.textContent = `Minimum sell amount is ${symbol}${SELL_MIN_LIMIT.toLocaleString()}.`;

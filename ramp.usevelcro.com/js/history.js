@@ -55,6 +55,61 @@ function toggleTxDetails(headerEl) {
   }
 }
 
+// HostFi sells: each deposit's steps (received → converted → paid) and, if the payout failed,
+// a retry button. The retry can only re-send to the bank on this order (see /api/hostfi/orders/…/retry).
+function hostfiProgressHtml(tx) {
+  const deps = Array.isArray(tx.hostfi_progress) ? tx.hostfi_progress : [];
+  const status = String(tx.status || '').toUpperCase();
+  if (!deps.length) {
+    return status === 'AWAITING_DEPOSIT'
+      ? '<p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Waiting for your deposit. We pay your bank automatically once it confirms on the network.</p>'
+      : '';
+  }
+  const ngn = v => `₦${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const dot = { done: 'bg-velcro-green', pending: 'bg-sky-500 animate-pulse', waiting: 'bg-gray-300 dark:bg-slate-600', failed: 'bg-red-500', review: 'bg-amber-500', stopped: 'bg-gray-300 dark:bg-slate-600', resolved: 'bg-gray-400' };
+  const step = (state, label, detail) => `
+    <li class="flex items-start gap-2.5">
+      <i class="mt-1.5 w-2 h-2 rounded-full shrink-0 ${dot[state] || dot.waiting}"></i>
+      <span class="min-w-0"><span class="block text-sm ${state === 'failed' ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-velcro-navy dark:text-gray-100 font-medium'}">${label}</span>${detail ? `<span class="block text-xs text-gray-500 dark:text-gray-400">${detail}</span>` : ''}</span>
+    </li>`;
+  return deps.map((d, i) => {
+    const payout = {
+      done: ['Paid to your bank', d.payout_amount ? ngn(d.payout_amount) : ''],
+      pending: ['Sending to your bank…', d.payout_amount ? ngn(d.payout_amount) : ''],
+      failed: ['Payout failed', d.can_retry ? 'Your naira is safe with us. Tap retry to send it again.' : "Our team will contact you to complete it."],
+      review: ['Being checked by our team', "We'll email you once it's paid."],
+      resolved: ['Handled by our team', ''],
+      waiting: ['Paid to your bank', 'Waiting'],
+    }[d.payout] || ['Paid to your bank', ''];
+    const converted = { done: 'Converted to naira', pending: 'Converting to naira…', waiting: 'Converting to naira', stopped: 'Converting to naira' }[d.converted] || 'Converting to naira';
+    return `
+      <div class="mt-3 rounded-xl border border-gray-200/80 dark:border-slate-800 p-3">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">${deps.length > 1 ? `Deposit ${i + 1} progress` : 'Progress'}</p>
+        <ol class="space-y-2">
+          ${step('done', 'Deposit received', `${Number(d.amount).toLocaleString(undefined, { maximumFractionDigits: 8 })} ${d.currency}`)}
+          ${step(d.converted === 'done' ? 'done' : d.converted === 'pending' ? 'pending' : 'waiting', converted, '')}
+          ${step(d.payout, payout[0], payout[1])}
+        </ol>
+        ${d.can_retry ? `<button type="button" onclick="event.stopPropagation(); retryHostfiPayout('${tx.reference}', this)"
+          class="mt-3 h-10 w-full rounded-xl bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy text-sm font-bold transition-colors">Retry payout</button>` : ''}
+      </div>`;
+  }).join('');
+}
+
+async function retryHostfiPayout(reference, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
+  try {
+    const res = await fetch(`${API_BASE}/api/hostfi/orders/${encodeURIComponent(reference)}/retry`, { method: 'POST' });
+    const payload = await res.json().catch(() => ({}));
+    showToast(payload.message || (res.ok ? 'Payout sent again' : 'Could not retry right now'), res.ok ? 'success' : 'error');
+  } catch (e) {
+    showToast('Could not retry right now. Please try again shortly.', 'error');
+  }
+  // Refresh whichever view the customer is on.
+  if (!document.getElementById('history-modal')?.classList.contains('hidden')) showHistoryModal();
+  if (btn) { btn.disabled = false; btn.textContent = 'Retry payout'; }
+}
+
 function renderHistoryList(txs) {
   const list = document.getElementById('history-list');
   if (!list) return;
@@ -166,8 +221,10 @@ function renderHistoryList(txs) {
         <div class="tx-details hidden px-4 pb-4 animate-fade-in">
           <dl class="success-receipt text-sm">
             ${row('You sent', `<span class="tabular-nums">${sent}</span>`)}
-            ${row('You received', `<span class="tabular-nums">${received}</span>`)}
-            ${tx.rate ? row('Rate', `<span class="tabular-nums">${ngn(tx.rate)}</span><span class="font-medium text-gray-500 dark:text-gray-400">/ ${assetName}</span>`) : ''}
+            ${row(tx.channel === 'HOSTFI' && status !== 'COMPLETED' ? "You'll receive" : 'You received', `<span class="tabular-nums">${received}</span>`)}
+            ${tx.hostfi_rate
+              ? row('Rate', `<span class="tabular-nums">$1 = ${ngn(tx.hostfi_rate.ngn_per_usd)}</span><span class="font-medium text-gray-500 dark:text-gray-400">· ${tx.hostfi_rate.fee_percent}% fee</span>`)
+              : (tx.rate ? row('Rate', `<span class="tabular-nums">${ngn(tx.rate)}</span><span class="font-medium text-gray-500 dark:text-gray-400">/ ${assetName}</span>`) : '')}
             ${row('Network', `${net.logo ? `<img src="${net.logo}" alt="">` : ''}${net.label}`)}
             ${isBuy
               ? (destWallet ? monoRow('Wallet', destWallet) : '')
@@ -177,6 +234,7 @@ function renderHistoryList(txs) {
             ${tx.hash ? monoRow('Transaction', tx.hash) : ''}
             ${monoRow('Reference', tx.reference)}
           </dl>
+          ${tx.channel === 'HOSTFI' ? hostfiProgressHtml(tx) : ''}
           ${explorer ? `
             <a href="${explorer}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
               class="mt-3 h-10 w-full rounded-xl border border-gray-200 dark:border-slate-700 hover:border-velcro-navy/30 hover:bg-gray-50 dark:hover:bg-slate-800 text-sm font-semibold text-velcro-navy dark:text-gray-100 transition-colors inline-flex items-center justify-center gap-2">
@@ -285,6 +343,7 @@ function formatFiatDigits(num, currency = 'NGN') {
 function networkInfo(net) {
   const n = String(net || '').toLowerCase();
   const known = [
+    ['bitcoin', 'Bitcoin', 'bitcoin'], ['btc', 'Bitcoin', 'bitcoin'],
     ['solana', 'Solana', 'solana'], ['tron', 'TRON', 'tron'], ['trx', 'TRON', 'tron'],
     ['arbitrum', 'Arbitrum', 'arbitrum'], ['optimism', 'Optimism', 'optimism'], ['avalanche', 'Avalanche', 'avalanche'],
     ['eth', 'Ethereum', 'ethereum'], ['erc20', 'Ethereum', 'ethereum'],

@@ -892,6 +892,16 @@ function calculateTxVolumes(array $t): array
     $usd = 0.0;
     $ngn = 0.0;
 
+    if ($channel === 'HOSTFI') {
+        // HostFi sell: amount is the crypto received, destination_amount the naira paid out.
+        // `rate` on these rows is naira per coin, so dollar value comes from the USD/NGN rate.
+        $ngn = $destAmount;
+        $isStable = in_array(explode(':', strtolower($asset))[1] ?? '', ['usdt', 'usdc'], true);
+        $usdNgn = function_exists('referralUsdNgnRate') ? referralUsdNgnRate() : 1500.0;
+        $usd = $isStable ? $amount : ($usdNgn > 0 ? $destAmount / $usdNgn : 0.0);
+        return ['usd' => round($usd, 2), 'ngn' => round($ngn, 2)];
+    }
+
     if ($type === 'ONRAMP') {
         // ONRAMP: User pays in fiat NGN (amount) to buy crypto
         $ngn = $amount;

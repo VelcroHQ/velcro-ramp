@@ -73,6 +73,9 @@
                 <li onclick="switchSection('email')" id="nav-email">
                     <i data-lucide="mail"></i> Email
                 </li>
+                <li onclick="switchSection('hostfi')" id="nav-hostfi">
+                    <i data-lucide="bitcoin"></i> HostFi
+                </li>
                 <li onclick="switchSection('referrals')" id="nav-referrals">
                     <i data-lucide="gift"></i> Referrals
                 </li>
@@ -450,6 +453,103 @@
                 <table>
                     <thead><tr><th>Started</th><th>Subject</th><th>Status</th><th>Progress</th><th>Action</th></tr></thead>
                     <tbody id="camp-body-rows"><tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="section-hostfi" class="view-content">
+            <header>
+                <div class="header-title">
+                    <h1>HostFi</h1>
+                    <p>Crypto sells paid out by HostFi: BTC and ETH, plus SOL, USDT and USDC when switched on.</p>
+                </div>
+                <div class="header-actions">
+                    <span id="hostfi-env" class="status-pill cancelled">Checking…</span>
+                    <button class="refresh-btn" onclick="fetchHostfi()"><i data-lucide="rotate-cw"></i></button>
+                </div>
+            </header>
+
+            <div id="hostfi-not-configured" class="table-card" style="display: none; margin-bottom: 20px;">
+                <h3 style="font-size: 16px; margin-bottom: 6px;">HostFi isn't connected yet</h3>
+                <p style="font-size: 13px; color: var(--text-secondary);">Add <code>HOSTFI_CLIENT_ID</code> and <code>HOSTFI_CLIENT_SECRET</code> to <code>php-backend/.env</code> on the server, then subscribe <code>https://ramp.usevelcro.com/webhook/hostfi</code> in the HostFi portal under Settings → Developers → Webhook Subscriptions. Until then no HostFi coins are shown to customers.</p>
+            </div>
+
+            <div class="hostfi-grid">
+                <div class="table-card">
+                    <h3 style="font-size: 16px; margin-bottom: 4px;">Coins</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">BTC and ETH are only sold through HostFi, so their switch hides the coin. SOL, USDT and USDC move from their current provider to HostFi when switched on.</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                        <label class="hostfi-toggle">
+                            <input type="checkbox" id="hostfi-toggle-BTC">
+                            <div>
+                                <div class="hostfi-toggle-title">Bitcoin (BTC)</div>
+                                <div class="hostfi-toggle-sub">Sell BTC via HostFi · off hides BTC</div>
+                            </div>
+                        </label>
+                        <label class="hostfi-toggle">
+                            <input type="checkbox" id="hostfi-toggle-ETH">
+                            <div>
+                                <div class="hostfi-toggle-title">Ethereum (ETH)</div>
+                                <div class="hostfi-toggle-sub">Sell ETH via HostFi · off hides ETH</div>
+                            </div>
+                        </label>
+                        <label class="hostfi-toggle">
+                            <input type="checkbox" id="hostfi-toggle-SOL">
+                            <div>
+                                <div class="hostfi-toggle-title">Solana (SOL)</div>
+                                <div class="hostfi-toggle-sub">On: HostFi · Off: PAJ</div>
+                            </div>
+                        </label>
+                        <label class="hostfi-toggle">
+                            <input type="checkbox" id="hostfi-toggle-USDT">
+                            <div>
+                                <div class="hostfi-toggle-title">Tether (USDT)</div>
+                                <div class="hostfi-toggle-sub">On: HostFi · Off: Switch / PAJ</div>
+                            </div>
+                        </label>
+                        <label class="hostfi-toggle">
+                            <input type="checkbox" id="hostfi-toggle-USDC">
+                            <div>
+                                <div class="hostfi-toggle-title">USD Coin (USDC)</div>
+                                <div class="hostfi-toggle-sub">On: HostFi · Off: Switch / PAJ</div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="hostfi-inputs">
+                        <div>
+                            <label class="camp-label" for="hostfi-fee-input">Fee (%)</label>
+                            <input type="number" id="hostfi-fee-input" step="0.01" min="0" max="10" style="margin-bottom: 0;">
+                        </div>
+                        <div>
+                            <label class="camp-label" for="hostfi-timer-btc">BTC timer (min)</label>
+                            <input type="number" id="hostfi-timer-btc" step="5" min="15" max="360" style="margin-bottom: 0;">
+                        </div>
+                        <div>
+                            <label class="camp-label" for="hostfi-timer-default">Other coins (min)</label>
+                            <input type="number" id="hostfi-timer-default" step="5" min="15" max="360" style="margin-bottom: 0;">
+                        </div>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 16px;">The fee comes off the naira HostFi pays for each coin. The timer is how long a customer has to send; deposits that arrive later are still paid at the rate when they confirm.</p>
+                    <button class="btn-primary" id="hostfi-save-btn" onclick="saveHostfiSettings()" style="width: 100%;">Save HostFi settings</button>
+                </div>
+
+                <div class="table-card">
+                    <h3 style="font-size: 16px; margin-bottom: 4px;">Wallet balances</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">Payouts come from the NGN wallet. Keep it funded above your largest expected sell.</p>
+                    <div id="hostfi-balances" class="hostfi-balances"><p style="color: var(--text-secondary); font-size: 13px;">Loading…</p></div>
+                </div>
+            </div>
+
+            <div class="table-card" style="margin-top: 20px;">
+                <h3 style="margin-bottom: 4px; font-size: 16px;">Deposits <span id="hostfi-review-count" class="status-pill failed" style="display: none; margin-left: 6px;"></span></h3>
+                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Deposits that need a decision are listed first. "Approve &amp; pay" skips the automatic checks. If a swap failed, check HostFi's History first so the coin isn't converted twice.</p>
+                <table>
+                    <thead>
+                        <tr><th>Received</th><th>Customer</th><th>Deposit</th><th>Payout</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="hostfi-deposits-body">
+                        <tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>

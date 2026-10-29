@@ -52,13 +52,25 @@ VELCRO CONVERT — DEPLOYMENT SETUP
    0 0 * * * /usr/bin/php /home/YOURUSER/public_html/php-backend/cron/auto_withdraw.php >> /home/YOURUSER/public_html/php-backend/data/withdraw.log 2>&1
    0 * * * * /usr/bin/php /home/YOURUSER/public_html/php-backend/cron/cleanup_otps.php >> /home/YOURUSER/public_html/php-backend/data/cleanup.log 2>&1
 
-8. TEST
+8. HOSTFI (BTC / ETH sells)
+   - Create a developer key in the HostFi portal (app.dev.hostcap.io for the
+     sandbox, app.hostcap.io for live) and set HOSTFI_CLIENT_ID,
+     HOSTFI_CLIENT_SECRET and HOSTFI_BASE_URL in php-backend/.env.
+   - Settings -> Developers -> Webhook Subscriptions: subscribe
+     https://yourdomain.com/webhook/hostfi to deposit and withdrawal events.
+   - Fund the HostFi NGN wallet: every payout is sent from it.
+   - Check Approvals in the HostFi portal: payouts that wait for manual
+     approval are not "instant".
+   - Coins, fee and timers are managed in /goat -> HostFi.
+
+9. TEST
    Visit https://yourdomain.com/api/health — it should return dbConnected:true.
 
-9. LOCAL CHECKS (before pushing)
+10. LOCAL CHECKS (before pushing)
    php php-backend/tests/unit_test.php
    php php-backend/tests/email_test.php
    php php-backend/tests/referral_test.php
    php php-backend/tests/security_test.php
+   php php-backend/tests/hostfi_test.php
    After adding Tailwind classes to index.html or js/, rebuild style.css
    (command at the top of tailwind.config.js).

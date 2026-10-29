@@ -26,7 +26,10 @@ var currentRate = { sell: 0, buy: 0, sellDirect: 0, buyDirect: 0, paj: 0, pajOff
 var currentSwitchAsset = '';
 var currentSellAsset = '';
 var currentBuyAsset = '';
-var currentProvider = 'switch'; // 'switch' or 'paj'
+var currentProvider = 'switch'; // provider of the visible tab: 'switch', 'paj' or 'hostfi'
+// Buy and sell each remember their own provider, so loading or using one tab never changes the other.
+var sellProvider = 'switch';
+var buyProvider = 'switch';
 var currentSellNetwork = '';
 var currentBuyNetwork = '';
 var currentBankCode = '';
@@ -56,6 +59,12 @@ var rateExpiryInterval = null;
 const RATE_EXPIRY_SECONDS = 300; // 5 minutes
 var currentSellInputMode = 'USD'; // 'USD' or 'ASSET'
 let switchAssetsData = null; // Dynamically fetched from Switch API
+// HostFi sells: coins switched on in admin, keyed by symbol (networks, naira and USD price per coin).
+let hostfiAssets = {};
+let hostfiFee = 0.5;
+let sellTimerMinutes = { default: 60 };
+let currentSellChain = ''; // chain slug of the selected HostFi network (bitcoin, ethereum, tron…)
+let currentBankName = '';
 
 function safeLucideInit() {
   if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -81,6 +90,7 @@ function getChainLogo(chain) {
 function getAssetLogo(symbol) {
   const known = {
     USDT: '/logos/usdt.png', USDC: '/logos/usdc.png', CNGN: '/logos/cngn.png?v=2',
+    BTC: '/logos/bitcoin.png', ETH: '/logos/ethereum.png',
     SOL: '/logos/solana.png', JUP: '/logos/jup.png',
     BONK: 'https://assets.coingecko.com/coins/images/28600/small/bonk.jpg',
     WIF: 'https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg',
@@ -213,10 +223,25 @@ function renderSellAssetList() {
   const container = document.getElementById('sell-asset-list');
   if (!container) return;
   
+  // Coins HostFi has taken over are shown once, as HostFi items, and dropped from Switch/PAJ.
+  const viaHostfi = sym => Object.prototype.hasOwnProperty.call(hostfiAssets, sym);
+  const hostfiItems = ['USDT', 'USDC', 'BTC', 'ETH', 'SOL'].filter(viaHostfi).map(sym => {
+    const a = hostfiAssets[sym];
+    const logo = getAssetLogo(sym);
+    const safeName = escapeHtml(a.name && a.name !== sym ? a.name : ({ BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana', USDT: 'Tether USD', USDC: 'USD Coin' }[sym] || sym));
+    return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${safeName}" onclick="selectSellAsset('${sym}', '${logo}', '${safeName}', 'hostfi')">
+          <img src="${logo}" class="asset-picker-logo" alt="${sym}">
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol">${sym}</div>
+            <div class="asset-picker-name">${safeName}</div>
+          </div>
+        </div>`;
+  }).join('');
+
   let switchItems = '';
   if (switchAssetsData) {
     const assets = switchAssetsData.offramp || {};
-    const symbols = sortAssets(Object.keys(assets));
+    const symbols = sortAssets(Object.keys(assets)).filter(sym => !viaHostfi(sym));
     switchItems = symbols.map(sym => {
       const asset = assets[sym];
       const logo = getAssetLogo(sym);
@@ -229,19 +254,19 @@ function renderSellAssetList() {
   // Append PAJ assets
   const pajItems = `
     <div class="asset-picker-divider">SOLANA</div>
-    <div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectSellAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
+    ${!viaHostfi('SOL') ? `<div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectSellAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
       <img src="/logos/solana.png" class="asset-picker-logo" alt="SOL">
       <div class="asset-picker-info"><div class="asset-picker-symbol">SOL</div><div class="asset-picker-name">Solana</div></div>
-    </div>
+    </div>` : ''}
     <div class="asset-picker-item" data-symbol="USDG" data-name="Global Dollar" onclick="selectSellAsset('USDG', '/logos/usdg.png', 'Global Dollar', 'paj')">
       <img src="/logos/usdg.png" class="asset-picker-logo" alt="USDG">
       <div class="asset-picker-info"><div class="asset-picker-symbol">USDG</div><div class="asset-picker-name">Global Dollar</div></div>
     </div>
-    ${pajUsdtEnabled ? `<div class="asset-picker-item" data-symbol="USDT" data-name="Tether USD" onclick="selectSellAsset('USDT', '/logos/usdt.png', 'Tether USD', 'paj')">
+    ${pajUsdtEnabled && !viaHostfi('USDT') ? `<div class="asset-picker-item" data-symbol="USDT" data-name="Tether USD" onclick="selectSellAsset('USDT', '/logos/usdt.png', 'Tether USD', 'paj')">
       <img src="/logos/usdt.png" class="asset-picker-logo" alt="USDT">
       <div class="asset-picker-info"><div class="asset-picker-symbol">USDT</div><div class="asset-picker-name">Tether USD</div></div>
     </div>` : ''}
-    ${pajUsdcEnabled ? `<div class="asset-picker-item" data-symbol="USDC" data-name="USD Coin" onclick="selectSellAsset('USDC', '/logos/usdc.png', 'USD Coin', 'paj')">
+    ${pajUsdcEnabled && !viaHostfi('USDC') ? `<div class="asset-picker-item" data-symbol="USDC" data-name="USD Coin" onclick="selectSellAsset('USDC', '/logos/usdc.png', 'USD Coin', 'paj')">
       <img src="/logos/usdc.png" class="asset-picker-logo" alt="USDC">
       <div class="asset-picker-info"><div class="asset-picker-symbol">USDC</div><div class="asset-picker-name">USD Coin</div></div>
     </div>` : ''}
@@ -262,7 +287,7 @@ function renderSellAssetList() {
       <div class="asset-picker-info"><div class="asset-picker-symbol">PYTH</div><div class="asset-picker-name">Pyth Network</div></div>
     </div>
   `;
-  container.innerHTML = switchItems + pajItems;
+  container.innerHTML = hostfiItems + switchItems + pajItems;
 }
 
 function renderBuyAssetList() {
@@ -382,7 +407,7 @@ async function setDefaults() {
     const onramp = switchAssetsData ? switchAssetsData.onramp : null;
 
     // Sell defaults: prefer USDT on Solana, fallback to first available
-    if (offramp && Object.keys(offramp).length > 0) {
+    if (offramp && Object.keys(offramp).length > 0 && !currentSellAsset) {
       const sellSym = offramp['USDT'] ? 'USDT' : Object.keys(offramp)[0];
       const sellAsset = offramp[sellSym];
       const sellChain = sellAsset.chains.includes('solana') ? 'solana' : sellAsset.chains[0];
@@ -413,7 +438,9 @@ async function setDefaults() {
     }
 
     // Buy defaults: prefer USDT on Solana via Switch, fallback to PAJ SOL if Switch is down
-    if (onramp && Object.keys(onramp).length > 0) {
+    if (currentBuyAsset) {
+      // The user already picked a coin while the asset list was loading; keep it.
+    } else if (onramp && Object.keys(onramp).length > 0) {
       const buySym = onramp['USDT'] ? 'USDT' : Object.keys(onramp)[0];
       const buyAsset = onramp[buySym];
       const buyChain = buyAsset.chains.includes('solana') ? 'solana' : buyAsset.chains[0];
@@ -423,7 +450,7 @@ async function setDefaults() {
 
       currentBuyAsset = buySym;
       currentBuyNetwork = buyChain;
-      currentProvider = 'switch';
+      buyProvider = 'switch';
       document.getElementById('buy-asset-display').innerHTML = `<img src="${buyLogo}" class="w-6 h-6" alt="${buySym}"><span class="font-medium">${buySym}</span><span class="text-gray-500 text-xs">${buyAsset.name}</span>`;
       document.getElementById('buy-amount-label').textContent = buySym;
       document.getElementById('buy-confirm-asset').textContent = buySym;
@@ -449,7 +476,7 @@ async function setDefaults() {
       const buyLogo = '/logos/solana.png';
       currentBuyAsset = buySym;
       currentBuyNetwork = 'solana';
-      currentProvider = 'paj';
+      buyProvider = 'paj';
       document.getElementById('buy-asset-display').innerHTML = `<img src="${buyLogo}" class="w-6 h-6" alt="${buySym}"><span class="font-medium">${buySym}</span><span class="text-gray-500 text-xs">Solana</span>`;
       document.getElementById('buy-amount-label').textContent = buySym;
       safeSetText('buy-confirm-asset', buySym);
@@ -468,6 +495,7 @@ async function setDefaults() {
       fetchPajRate();
     }
 
+    currentProvider = document.getElementById('form-sell').classList.contains('hidden') ? buyProvider : sellProvider;
     currentSwitchAsset = getSwitchAsset(currentSellAsset, currentSellNetwork);
     if (currentSwitchAsset) {
       await fetchRate('OFFRAMP');

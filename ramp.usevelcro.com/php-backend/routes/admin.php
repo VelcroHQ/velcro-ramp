@@ -6,6 +6,7 @@ require_once __DIR__ . '/../switch_api.php';
 require_once __DIR__ . '/../paj_api.php';
 require_once __DIR__ . '/../poll_helpers.php';
 require_once __DIR__ . '/../emails.php';
+require_once __DIR__ . '/hostfi.php';
 
 function registerAdminRoutes(Router $router): void
 {
@@ -547,6 +548,34 @@ function registerAdminRoutes(Router $router): void
         }
         if (isset($body['paj_usdc_enabled'])) {
             $settings['paj_usdc_enabled'] = (bool) $body['paj_usdc_enabled'];
+        }
+        if (isset($body['hostfi_assets']) && is_array($body['hostfi_assets'])) {
+            $assets = (array) ($settings['hostfi_assets'] ?? []);
+            foreach (HOSTFI_SYMBOLS as $sym) {
+                if (array_key_exists($sym, $body['hostfi_assets'])) {
+                    $assets[$sym] = (bool) $body['hostfi_assets'][$sym];
+                }
+            }
+            $settings['hostfi_assets'] = $assets;
+        }
+        if (isset($body['hostfi_fee'])) {
+            $hFee = (float) $body['hostfi_fee'];
+            if ($hFee < 0 || $hFee > 10) {
+                jsonResponse(['success' => false, 'error' => 'HostFi fee must be between 0 and 10%'], 400);
+            }
+            $settings['hostfi_fee'] = $hFee;
+        }
+        if (isset($body['sell_timer_minutes']) && is_array($body['sell_timer_minutes'])) {
+            $timers = (array) ($settings['sell_timer_minutes'] ?? []);
+            foreach ($body['sell_timer_minutes'] as $key => $mins) {
+                $key = $key === 'default' ? 'default' : strtoupper((string) $key);
+                $mins = (int) $mins;
+                if (!preg_match('/^(default|[A-Z]{2,6})$/', $key) || $mins < 15 || $mins > 360) {
+                    jsonResponse(['success' => false, 'error' => 'Sell timers must be between 15 and 360 minutes'], 400);
+                }
+                $timers[$key] = $mins;
+            }
+            $settings['sell_timer_minutes'] = $timers;
         }
 
         if (saveSettings($settings)) {

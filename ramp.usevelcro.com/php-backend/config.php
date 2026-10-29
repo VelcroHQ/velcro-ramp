@@ -105,6 +105,14 @@ define('PAJ_WEBHOOK_SECRET', env('PAJ_WEBHOOK_SECRET', ''));
 define('PAJ_EMAIL', env('PAJ_EMAIL', 'paj@usevelcro.com'));
 define('PAJ_BASE_URL', env('PAJ_BASE_URL', 'https://api.paj.cash'));
 
+// ─── HostFi (HostCap) ───
+// Sandbox by default; set HOSTFI_BASE_URL=https://api.hostcap.io for live.
+define('HOSTFI_BASE_URL', env('HOSTFI_BASE_URL', 'https://api.dev.hostcap.io'));
+define('HOSTFI_CLIENT_ID', env('HOSTFI_CLIENT_ID', ''));
+define('HOSTFI_CLIENT_SECRET', env('HOSTFI_CLIENT_SECRET', ''));
+// Chosen by us in the HostFi portal's webhook subscription; HostFi sends it back as `x-auth-secret`.
+define('HOSTFI_WEBHOOK_SECRET', env('HOSTFI_WEBHOOK_SECRET', ''));
+
 // ─── Developer Fee / Withdrawal ───
 define('DEVELOPER_FEE', envFloat('DEVELOPER_FEE', 0.5));
 define('DEVELOPER_RECIPIENT', env('DEVELOPER_RECIPIENT', ''));
@@ -184,6 +192,12 @@ function defaultSettings(): array
         'paj_email' => PAJ_EMAIL,
         'paj_usdt_enabled' => false,
         'paj_usdc_enabled' => false,
+        // HostFi sells. BTC/ETH have no other provider, so their switch is a kill switch;
+        // SOL/USDT/USDC move from their current provider to HostFi when switched on.
+        'hostfi_assets' => ['BTC' => true, 'ETH' => true, 'SOL' => false, 'USDT' => false, 'USDC' => false],
+        'hostfi_fee' => DEVELOPER_FEE,
+        // Minutes a user has to send crypto after getting an address.
+        'sell_timer_minutes' => ['BTC' => 120, 'default' => 60],
         'referral_fee' => 0.3,
         'telegram_bot_token' => TELEGRAM_BOT_TOKEN,
         'telegram_chat_id' => TELEGRAM_CHAT_ID,

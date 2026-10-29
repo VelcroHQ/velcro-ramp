@@ -205,6 +205,78 @@ async function generateWalletAddress() {
   btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
 
   // Offramp flow
+  if (currentProvider === 'hostfi') {
+    const a = hostfiAssets[currentSellAsset] || {};
+    const crypto = currentSellInputMode === 'USD' ? (Number(a.usd_per_unit) > 0 ? amount / Number(a.usd_per_unit) : 0) : amount;
+    const resetBtn = () => { btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Get deposit address'; safeLucideInit(); };
+    if (!(crypto > 0) || !currentSellNetwork) { showToast('Please choose a coin and network', 'warning'); resetBtn(); return; }
+    try {
+      const res = await fetch(`${API_BASE}/api/hostfi/sell`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          asset: currentSellAsset,
+          network: currentSellNetwork,
+          amount: Number(crypto.toFixed(8)),
+          bankCode: currentBankSwitchCode || currentBankCode,
+          bankName: currentBankName,
+          accountNumber: bankNum,
+          email: userEmail,
+          ref: localStorage.getItem('velcro_ref') || ''
+        })
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload.success) throw new Error(payload.message || 'Failed to create your deposit address');
+      const data = payload.data;
+      currentReference = data.reference;
+      document.getElementById('sell-wallet-address').textContent = data.address;
+      document.getElementById('sell-reference').textContent = data.reference;
+      document.getElementById('sell-confirm-amount').textContent = Number(crypto).toLocaleString(undefined, { maximumFractionDigits: 8 });
+      document.getElementById('sell-memo').classList.toggle('hidden', !data.memo);
+      safeSetText('sell-memo-value', data.memo || '');
+      const explorerLink = document.getElementById('sell-status-explorer-link');
+      if (explorerLink) explorerLink.href = getWalletExplorerUrl(data.address, data.chain);
+      const qr = document.getElementById('sell-qr-code');
+      qr.innerHTML = '';
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(qr, { text: data.address, width: 160, height: 160, colorDark: '#0D0D59', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+      }
+
+      // Bitcoin waits for confirmations, so it gets a longer window and different expectations.
+      const seconds = Number(data.expires_in) || 3600;
+      const sendWindow = seconds >= 7200 ? `${Math.round(seconds / 3600)} hours` : `${Math.round(seconds / 60)} minutes`;
+      safeSetText('sell-expiry-text', `Send within ${sendWindow}. If it arrives later, we still pay you at the rate when it confirms.`);
+      safeSetText('sell-status-hint', data.chain === 'bitcoin'
+        ? 'Bitcoin needs network confirmations, usually 10–60 minutes after you send. We pay your bank automatically once it confirms and email your receipt.'
+        : 'We pay your bank automatically as soon as your deposit confirms, usually within a few minutes, and email your receipt.');
+      document.getElementById('sell-generated-address').classList.remove('hidden');
+      startExpiryCountdown('sell', seconds);
+      startOrderHelp('sell', data.chain === 'bitcoin' ? 90 * 60 * 1000 : SUPPORT_HINT_DELAY_MS);
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Address ready';
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+      lockSellForm();
+      safeLucideInit();
+      currentTxDetails = {
+        type: 'sell',
+        reference: data.reference,
+        amount: crypto,
+        destinationAmount: data.estimate_ngn,
+        asset: currentSellAsset,
+        network: data.chain,
+        bankName: data.bank_name || currentBankName,
+        accountNumber: bankNum,
+        accountName: data.account_name || accountName,
+        provider: 'hostfi'
+      };
+      saveRecentOrder(currentTxDetails);
+      startStatusPoll(data.reference, 'sell', `/api/transactions/${encodeURIComponent(data.reference)}`);
+    } catch (err) {
+      resetBtn();
+      showToast(err.message || 'Failed to create your deposit address', 'error');
+    }
+    return;
+  }
   if (currentProvider === 'paj') {
     const mint = PAJ_MINTS[currentSellAsset];
     if (!mint) { showToast('Invalid asset selected', 'warning'); btn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Get deposit address'; safeLucideInit(); return; }
@@ -553,7 +625,7 @@ async function generateBankAccount() {
 // support if the payment still hasn't landed after 10 minutes.
 const SUPPORT_HINT_DELAY_MS = 10 * 60 * 1000;
 const supportHintTimers = {};
-function startOrderHelp(type) {
+function startOrderHelp(type, delayMs = SUPPORT_HINT_DELAY_MS) {
   if (type === 'sell') {
     safeSetText('sell-warn-asset', document.getElementById('sell-asset-name')?.textContent || '');
     safeSetText('sell-warn-network', document.getElementById('sell-network-name')?.textContent || '');
@@ -561,7 +633,7 @@ function startOrderHelp(type) {
   stopOrderHelp(type);
   supportHintTimers[type] = setTimeout(() => {
     document.getElementById(type + '-support-hint')?.classList.remove('hidden');
-  }, SUPPORT_HINT_DELAY_MS);
+  }, delayMs);
 }
 function stopOrderHelp(type) {
   clearTimeout(supportHintTimers[type]);
@@ -580,9 +652,11 @@ function startExpiryCountdown(type, totalSeconds = 3600) {
   let remaining = totalSeconds;
   const updateDisplay = () => {
     if (!timerEl) return;
-    const mins = Math.floor(remaining / 60);
+    const hours = Math.floor(remaining / 3600);
+    const mins = Math.floor((remaining % 3600) / 60);
     const secs = remaining % 60;
-    timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const mmss = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    timerEl.textContent = hours > 0 ? `${hours}:${mmss}` : mmss;
     if (remaining <= 300) {
       timerEl.className = 'text-xs font-mono font-bold bg-red-100 text-red-700 px-2 py-1 rounded-md';
     } else {
@@ -608,7 +682,26 @@ function startExpiryCountdown(type, totalSeconds = 3600) {
   else sellExpiryInterval = interval;
 }
 
-function startStatusPoll(reference, type = 'buy') {
+// statusUrl: Switch orders use /api/status; HostFi orders are read from our own order record.
+// HostFi order screen: a failed payout turns the "Processing payout" step into a retry. The
+// Switch "Confirm" button on that step means nothing for HostFi, so it is hidden otherwise.
+function applyHostfiProgress(reference, progress) {
+  const btn = document.getElementById('status-3-confirm');
+  const title = document.querySelector('#status-3 .text-sm');
+  const failed = progress.find(d => d.payout === 'failed');
+  if (title && title.firstChild) title.firstChild.textContent = failed ? 'Payout failed' : 'Processing payout';
+  if (!btn) return;
+  if (failed && failed.can_retry) {
+    btn.querySelector('.confirm-text').textContent = 'Retry payout';
+    btn.onclick = () => retryHostfiPayout(reference, null);
+    btn.classList.remove('hidden');
+  } else {
+    btn.classList.add('hidden');
+  }
+}
+
+function startStatusPoll(reference, type = 'buy', statusUrl = `/api/status?reference=${encodeURIComponent(reference)}`) {
+  let reviewNotified = false;
   if (statusPollInterval) { clearTimeout(statusPollInterval); clearInterval(statusPollInterval); statusPollInterval = null; }
   activePollReference = reference;
   activePollType = 'standard';
@@ -623,12 +716,18 @@ function startStatusPoll(reference, type = 'buy') {
     }
     pollCount++;
     try {
-      const res = await fetch(`${API_BASE}/api/status?reference=${encodeURIComponent(reference)}`);
+      const res = await fetch(`${API_BASE}${statusUrl}`);
       if (res.ok) {
         const payload = await res.json();
         const data = payload.data || {};
         const status = data.status || payload.status;
         updateStatusUI(status, type);
+        if (type === 'sell' && Array.isArray(data.hostfi_progress)) applyHostfiProgress(reference, data.hostfi_progress);
+        if (status === 'REVIEW' && !reviewNotified) {
+          reviewNotified = true;
+          showToast("Your deposit needs a quick manual check. We'll email you once it's paid.", 'info');
+          document.getElementById(type + '-support-hint')?.classList.remove('hidden');
+        }
 
         if (type === 'sell') {
           const sellExpLink = document.getElementById('sell-status-explorer-link');
@@ -902,7 +1001,7 @@ function updateStatusUI(status, type, stamp = true) {
   const statusMap = {
     'AWAITING_DEPOSIT': 1, 'PENDING': 1, 'INITIATED': 1,
     'DETECTED': 2, 'CONFIRMED': 2, 'RECEIVED': 2, 'VERIFIED': 2,
-    'PROCESSING': 3,
+    'PROCESSING': 3, 'REVIEW': 3,
     'COMPLETED': 4, 'FAILED': 4, 'EXPIRED': 4, 'CANCELLED': 4
   };
   const step = statusMap[status] || 1;
@@ -1161,6 +1260,10 @@ async function resetSellTransaction() {
   if (sellExpiryInterval) { clearInterval(sellExpiryInterval); sellExpiryInterval = null; }
   stopOrderHelp('sell');
   updateStatusUI('AWAITING_DEPOSIT', 'sell', false);
+  // Put back the default copy a HostFi order may have changed.
+  safeSetText('sell-expiry-text', 'This address is valid for 60 minutes. Please send before expiry.');
+  safeSetText('sell-status-hint', "We usually detect deposits within a minute. You can close this page — we'll email your receipt.");
+  document.getElementById('sell-memo')?.classList.add('hidden');
   currentReference = '';
   currentTxDetails = null;
 }
