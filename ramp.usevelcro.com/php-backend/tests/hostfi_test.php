@@ -338,7 +338,9 @@ try {
     $st2 = $state();
     check(count($st2['swaps']) === count($st['swaps']) && count($st2['payouts']) === count($st['payouts']), 'fiat webhook delivered twice: still one swap and one send');
 
-    $mock_('/__test/set', ['payout_overrides' => [$buy('pay-1')['send_client_ref'] => 'WITHDRAWAL_SUCCESS']]);
+    $app_('POST', '/webhook/hostfi', ['event' => 'CRYPTO_WITHDRAWAL', 'data' => ['clientReference' => $buy('pay-1')['send_client_ref'], 'status' => 'WITHDRAWAL_IN_PROGRESS']]);
+    check($buy('pay-1')['status'] === 'SEND_PENDING', 'crypto payout webhook "in progress": still sending');
+    // Like live HostFi: its API still says pending when the (secret-carrying) success webhook arrives.
     $app_('POST', '/webhook/hostfi', ['event' => 'CRYPTO_WITHDRAWAL', 'data' => ['clientReference' => $buy('pay-1')['send_client_ref'], 'status' => 'WITHDRAWAL_SUCCESS']]);
     $o = $order($buyRef);
     check($buy('pay-1')['status'] === 'SENT' && $o['status'] === 'COMPLETED' && near((float) $o['destination_amount'], 0.09649999, 1e-9) && near((float) $o['amount'], 30000)

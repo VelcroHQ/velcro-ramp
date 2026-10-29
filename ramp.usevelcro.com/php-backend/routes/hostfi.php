@@ -644,7 +644,7 @@ function hostfiSendPayout(array $dep, array $hf): void
  * records what HostFi says. An uncertain request HostFi still has no record of after 10 minutes
  * is treated as never created, which makes it safe for an admin to retry.
  */
-function hostfiCheckPayout(array $dep): void
+function hostfiCheckPayout(array $dep, bool $hookSaysSuccess = false): void
 {
     if (!in_array($dep['status'], ['PAYOUT_PENDING', 'PAYOUT_UNCERTAIN'], true) || empty($dep['payout_client_ref'])) {
         return;
@@ -657,7 +657,7 @@ function hostfiCheckPayout(array $dep): void
         }
         return;
     }
-    hostfiApplyPayoutStatus((int) $dep['id'], $res);
+    hostfiApplyPayoutStatus((int) $dep['id'], hostfiTrustHookSuccess($res, $hookSaysSuccess));
 }
 
 function hostfiApplyPayoutStatus(int $id, array $payout): void
@@ -1140,15 +1140,17 @@ function registerHostfiRoutes(Router $router): void
             hostfiSwapWebhook((array) ($payload['transactions'] ?? $data['transactions'] ?? []));
         } elseif (str_contains($event, 'WITHDRAWAL') || str_contains($event, 'PAYOUT')) {
             $clientRef = (string) ($data['clientReference'] ?? '');
+            // Only a webhook that proved it's from HostFi (our secret) may say "success" ahead of the API.
+            $hookSaysSuccess = HOSTFI_WEBHOOK_SECRET !== '' && in_array(strtoupper((string) ($data['status'] ?? '')), ['WITHDRAWAL_SUCCESS', 'SUCCESS'], true);
             $dep = $clientRef !== '' ? Database::selectOne('SELECT * FROM `hostfi_deposits` WHERE `payout_client_ref` = :c', ['c' => $clientRef]) : null;
             if ($dep) {
-                hostfiCheckPayout($dep); // re-fetched from HostFi, not taken from the payload
+                hostfiCheckPayout($dep, $hookSaysSuccess); // re-fetched from HostFi; the payload alone never decides
                 hostfiSyncOrder($dep['order_ref']);
             } elseif ($clientRef !== '') {
                 ensureHostfiBuySchema();
                 $buy = Database::selectOne('SELECT * FROM `hostfi_buys` WHERE `send_client_ref` = :c', ['c' => $clientRef]);
                 if ($buy) {
-                    hostfiBuyCheckSend($buy); // re-fetched from HostFi, not taken from the payload
+                    hostfiBuyCheckSend($buy, $hookSaysSuccess); // re-fetched from HostFi; the payload alone never decides
                     hostfiBuySyncOrder($buy['order_ref']);
                 }
             }

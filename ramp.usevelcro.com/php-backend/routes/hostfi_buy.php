@@ -499,7 +499,7 @@ function hostfiBuyResumeOrder(string $orderRef): void
 }
 
 /** Re-read a send from HostFi (payout webhook, poller safety net, admin). Read-only. */
-function hostfiBuyCheckSend(array $buy): void
+function hostfiBuyCheckSend(array $buy, bool $hookSaysSuccess = false): void
 {
     if (!in_array($buy['status'], ['SEND_PENDING', 'SEND_UNCERTAIN'], true) || empty($buy['send_client_ref'])) {
         return;
@@ -512,7 +512,22 @@ function hostfiBuyCheckSend(array $buy): void
         }
         return;
     }
-    hostfiBuyApplySendStatus((int) $buy['id'], $res);
+    hostfiBuyApplySendStatus((int) $buy['id'], hostfiTrustHookSuccess($res, $hookSaysSuccess));
+}
+
+/**
+ * HostFi's API can say "in progress" for minutes after its own webhook reported the send as
+ * successful (BTC: broadcast, waiting for a block). A success webhook that carried our secret
+ * counts, as long as HostFi's record exists and isn't failed. It only marks the order done;
+ * it never sends or re-sends anything.
+ */
+function hostfiTrustHookSuccess(array $live, bool $hookSaysSuccess): array
+{
+    $status = strtoupper((string) ($live['status'] ?? ''));
+    if ($hookSaysSuccess && $status !== '' && !str_ends_with($status, '_FAILED') && empty($live['wasReversed'])) {
+        $live['status'] = 'WITHDRAWAL_SUCCESS';
+    }
+    return $live;
 }
 
 function hostfiBuyApplySendStatus(int $id, array $payout): void
@@ -537,9 +552,42 @@ function hostfiBuyApplySendStatus(int $id, array $payout): void
     }
 }
 
-/** Whether a transaction is final on chain. Only Solana is checked; other chains wait for HostFi. */
+/**
+ * Whether a transaction is settled on chain: Solana finalized, Bitcoin 1 confirmation, Ethereum
+ * and Base mined successfully. Other chains wait for HostFi.
+ */
 function hostfiChainFinalized(string $chain, string $hash): bool
 {
+    if ($chain === 'bitcoin') {
+        if (!preg_match('/^[0-9a-f]{64}$/i', $hash)) {
+            return false;
+        }
+        foreach (['https://blockstream.info/api/tx/', 'https://mempool.space/api/tx/'] as $api) {
+            try {
+                $res = httpRequest('GET', $api . $hash . '/status', ['timeout' => 10]);
+                return ($res['confirmed'] ?? false) === true;
+            } catch (Throwable $e) {
+                // try the next explorer
+            }
+        }
+        return false;
+    }
+    $evm = ['ethereum' => 'https://ethereum-rpc.publicnode.com', 'base' => 'https://base-rpc.publicnode.com'][$chain] ?? null;
+    if ($evm) {
+        if (!preg_match('/^0x[0-9a-f]{64}$/i', $hash)) {
+            return false;
+        }
+        try {
+            $res = httpRequest('POST', $evm, [
+                'headers' => ['Accept: application/json'],
+                'body' => ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'eth_getTransactionReceipt', 'params' => [$hash]],
+                'timeout' => 10,
+            ]);
+        } catch (Throwable $e) {
+            return false;
+        }
+        return ($res['result']['status'] ?? '') === '0x1';
+    }
     if ($chain !== 'solana' || !preg_match('/^[1-9A-HJ-NP-Za-km-z]{60,100}$/', $hash)) {
         return false;
     }
