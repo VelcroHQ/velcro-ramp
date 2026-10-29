@@ -807,31 +807,33 @@ function registerHostfiBuyRoutes(Router $router): void
 {
     // Coins to buy through HostFi, with the networks HostFi can send them on and its fees.
     $router->get('/api/hostfi/buy-assets', function () {
-        $out = [];
-        foreach (hostfiEnabledAssets('buy') as $symbol) {
-            try {
-                $networks = array_map(fn ($n) => ['code' => $n['network'], 'chain' => hostfiChain($n['network']), 'fee' => $n['flat'], 'fee_percent' => $n['percent'], 'min' => $n['min']], hostfiApi()->cryptoSendNetworks($symbol));
-                $networks = array_values(array_filter($networks, fn ($n) => in_array($n['chain'], ['bitcoin', 'ethereum', 'base', 'bsc', 'solana', 'polygon', 'arbitrum', 'optimism'], true)));
-                if (!$networks) {
-                    continue;
+        jsonResponse(successResponse(hostfiCachedList('buy', static function (): array {
+            $out = [];
+            foreach (hostfiEnabledAssets('buy') as $symbol) {
+                try {
+                    $networks = array_map(fn ($n) => ['code' => $n['network'], 'chain' => hostfiChain($n['network']), 'fee' => $n['flat'], 'fee_percent' => $n['percent'], 'min' => $n['min']], hostfiApi()->cryptoSendNetworks($symbol));
+                    $networks = array_values(array_filter($networks, fn ($n) => in_array($n['chain'], ['bitcoin', 'ethereum', 'base', 'bsc', 'solana', 'polygon', 'arbitrum', 'optimism'], true)));
+                    if (!$networks) {
+                        continue;
+                    }
+                    $coinPerNgn = hostfiRate('NGN', $symbol);
+                    $quote = hostfiQuote($symbol);
+                    $out[] = [
+                        'symbol' => $symbol,
+                        'name' => (string) (hostfiApi()->walletAsset($symbol)['currency']['name'] ?? $symbol),
+                        'networks' => $networks,
+                        'coin_per_ngn' => $coinPerNgn * (1 - hostfiFee() / 100), // what the user gets per naira, before the network fee
+                        'ngn_per_unit_gross' => $coinPerNgn > 0 ? 1 / $coinPerNgn : 0, // HostFi's own price, shown to users
+                        'usd_per_unit' => $quote['usd_per_unit'],
+                        'timer_minutes' => HOSTFI_BUY_TIMER_MINUTES,
+                        'collection_fee_ngn' => HOSTFI_COLLECTION_FEE_NGN, // HostFi keeps this from each transfer
+                    ];
+                } catch (Throwable $e) {
+                    error_log("[HostFi] buy {$symbol} unavailable: " . $e->getMessage()); // hide the coin rather than fail the list
                 }
-                $coinPerNgn = hostfiRate('NGN', $symbol);
-                $quote = hostfiQuote($symbol);
-                $out[] = [
-                    'symbol' => $symbol,
-                    'name' => (string) (hostfiApi()->walletAsset($symbol)['currency']['name'] ?? $symbol),
-                    'networks' => $networks,
-                    'coin_per_ngn' => $coinPerNgn * (1 - hostfiFee() / 100), // what the user gets per naira, before the network fee
-                    'ngn_per_unit_gross' => $coinPerNgn > 0 ? 1 / $coinPerNgn : 0, // HostFi's own price, shown to users
-                    'usd_per_unit' => $quote['usd_per_unit'],
-                    'timer_minutes' => HOSTFI_BUY_TIMER_MINUTES,
-                    'collection_fee_ngn' => HOSTFI_COLLECTION_FEE_NGN, // HostFi keeps this from each transfer
-                ];
-            } catch (Throwable $e) {
-                error_log("[HostFi] buy {$symbol} unavailable: " . $e->getMessage()); // hide the coin rather than fail the list
             }
-        }
-        jsonResponse(successResponse($out));
+            return $out;
+        })));
     });
 
     $router->post('/api/hostfi/buy', function () {

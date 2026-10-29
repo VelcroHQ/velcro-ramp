@@ -116,6 +116,47 @@ function hostfiChain(string $network): string
  *
  * @return array{ngn_per_unit: float, usd_per_unit: float}
  */
+/**
+ * A public coin list, kept in data/ so page loads don't wait on HostFi (several calls, 1–3s).
+ * Under 60s old it's served as is; up to 5 minutes old it's served at once and rebuilt after the
+ * response. Any settings change (coin switches, fees, timers) rebuilds it. An empty list (HostFi
+ * down) is never kept.
+ */
+function hostfiCachedList(string $name, callable $build): array
+{
+    $file = BASE_PATH . '/data/.hostfi_list_' . $name . '.json';
+    $key = md5((string) json_encode(loadSettings()));
+    $cached = is_file($file) ? json_decode((string) @file_get_contents($file), true) : null;
+    $age = is_array($cached) && ($cached['key'] ?? '') === $key ? time() - (int) ($cached['at'] ?? 0) : PHP_INT_MAX;
+    $save = static function () use ($file, $key, $build): array {
+        $list = $build();
+        if ($list) {
+            @file_put_contents($file, json_encode(['key' => $key, 'at' => time(), 'list' => $list]), LOCK_EX);
+        }
+        return $list;
+    };
+    if ($age < 60) {
+        return $cached['list'];
+    }
+    if ($age < 300) {
+        @touch($file); // one rebuild at a time, not one per visitor
+        register_shutdown_function(static function () use ($save): void {
+            if (function_exists('litespeed_finish_request')) {
+                litespeed_finish_request();
+            } elseif (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            }
+            try {
+                $save();
+            } catch (Throwable $e) {
+                error_log('[HostFi] Coin list refresh failed: ' . $e->getMessage());
+            }
+        });
+        return $cached['list'];
+    }
+    return $save();
+}
+
 /** HostFi's rate (units of $to per one $from), cached for a minute. */
 function hostfiRate(string $from, string $to): float
 {
@@ -768,26 +809,28 @@ function registerHostfiRoutes(Router $router): void
     registerHostfiBuyRoutes($router);
 
     $router->get('/api/hostfi/assets', function () {
-        $out = [];
-        foreach (hostfiEnabledAssets() as $symbol) {
-            try {
-                $asset = hostfiApi()->walletAsset($symbol);
-                $networks = array_map(fn ($n) => ['code' => $n, 'chain' => hostfiChain($n)], HostfiApiClient::depositNetworks($asset));
-                if (!$networks) {
-                    continue;
+        jsonResponse(successResponse(hostfiCachedList('sell', static function (): array {
+            $out = [];
+            foreach (hostfiEnabledAssets() as $symbol) {
+                try {
+                    $asset = hostfiApi()->walletAsset($symbol);
+                    $networks = array_map(fn ($n) => ['code' => $n, 'chain' => hostfiChain($n)], HostfiApiClient::depositNetworks($asset));
+                    if (!$networks) {
+                        continue;
+                    }
+                    $out[] = [
+                        'symbol' => $symbol,
+                        'name' => (string) ($asset['currency']['name'] ?? $symbol),
+                        'networks' => $networks,
+                        'timer_minutes' => sellTimerMinutes($symbol),
+                        'payout_fee_ngn' => HOSTFI_PAYOUT_FEE_NGN,
+                    ] + hostfiQuote($symbol);
+                } catch (Throwable $e) {
+                    error_log("[HostFi] {$symbol} unavailable: " . $e->getMessage()); // hide the coin rather than fail the list
                 }
-                $out[] = [
-                    'symbol' => $symbol,
-                    'name' => (string) ($asset['currency']['name'] ?? $symbol),
-                    'networks' => $networks,
-                    'timer_minutes' => sellTimerMinutes($symbol),
-                    'payout_fee_ngn' => HOSTFI_PAYOUT_FEE_NGN,
-                ] + hostfiQuote($symbol);
-            } catch (Throwable $e) {
-                error_log("[HostFi] {$symbol} unavailable: " . $e->getMessage()); // hide the coin rather than fail the list
             }
-        }
-        jsonResponse(successResponse($out));
+            return $out;
+        })));
     });
 
     // Customer "Retry payout" from History or the order screen. Safe to expose without login:
