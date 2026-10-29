@@ -346,11 +346,12 @@ class HostfiApiClient
      *
      * @return array<int,array{network:string,flat:float,percent:float,min:float}>
      */
-    public function cryptoSendNetworks(string $currency): array
+    public function cryptoSendNetworks(string $currency, bool $fresh = false): array
     {
         $currency = strtoupper($currency);
         $file = BASE_PATH . '/data/.hostfi_send_' . strtolower($currency) . '.json';
-        if (is_file($file) && filemtime($file) > time() - 3600) {
+        // Network fees move with gas prices: 10 minutes for display, and $fresh right before a send.
+        if (!$fresh && is_file($file) && filemtime($file) > time() - 600) {
             $cached = json_decode((string) @file_get_contents($file), true);
             if (is_array($cached) && $cached) {
                 return $cached;
@@ -366,6 +367,8 @@ class HostfiApiClient
                 'network' => (string) $m['network'],
                 'flat' => (float) ($m['fee']['flat'] ?? 0),
                 'percent' => (float) ($m['fee']['percent'] ?? 0),
+                'fee_min' => (float) ($m['fee']['min'] ?? 0),
+                'fee_max' => (float) ($m['fee']['max'] ?? 0),
                 'min' => (float) ($m['limits']['min'] ?? 0),
             ];
         }

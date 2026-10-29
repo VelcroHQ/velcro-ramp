@@ -171,13 +171,17 @@ function hostfiBuyOrderFor(array $buy): array
  * HostFi rounds the fee UP to the coin's orderDecimals before checking the balance (SOL:
  * 0.00321063 → 0.003211), so sending "balance − listed fee" is refused for insufficient funds.
  */
-function hostfiSendFee(string $currency, string $network, float $coin): array
+function hostfiSendFee(string $currency, string $network, float $coin, bool $fresh = false): array
 {
-    foreach (hostfiApi()->cryptoSendNetworks($currency) as $n) {
+    foreach (hostfiApi()->cryptoSendNetworks($currency, $fresh) as $n) {
         if (strcasecmp($n['network'], $network) === 0) {
             $dp = (int) (hostfiApi()->walletAsset($currency)['currency']['orderDecimals'] ?? 8);
             $dp = max(0, min(8, $dp));
             $fee = $n['flat'] + $coin * $n['percent'] / 100;
+            $fee = max($fee, (float) ($n['fee_min'] ?? 0)); // HostFi's fee floor and cap, when it sets them
+            if ((float) ($n['fee_max'] ?? 0) > 0) {
+                $fee = min($fee, (float) $n['fee_max']);
+            }
             return ['fee' => ceil(round($fee * 10 ** $dp, 6)) / 10 ** $dp, 'min' => $n['min']];
         }
     }
@@ -403,7 +407,7 @@ function hostfiBuySend(array $buy): void
     // Amount plus HostFi's (rounded-up) fee must fit in what the swap produced; payments recorded
     // before the fee was rounded are trimmed here, never raised.
     try {
-        $fee = hostfiSendFee((string) $buy['currency'], (string) $buy['network'], (float) $buy['coin_amount'])['fee'];
+        $fee = hostfiSendFee((string) $buy['currency'], (string) $buy['network'], (float) $buy['coin_amount'], true)['fee'];
         $max = hostfiFloorCoin((float) $buy['coin_amount'] - $fee - HOSTFI_SEND_MARGIN);
         if ($max > 0 && $max < (float) $buy['send_amount']) {
             $buy['send_amount'] = $max;

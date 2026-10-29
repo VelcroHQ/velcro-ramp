@@ -752,8 +752,42 @@ function applyHostfiProgress(reference, progress) {
   }
 }
 
+// HostFi orders: say what's happening under each step, from the webhook-driven progress, so the
+// customer sees "₦4,000 received → Converting to SOL… → Sending 0.0249 SOL…" as it happens.
+function showHostfiStepDetail(type, progress) {
+  const p = progress[progress.length - 1];
+  if (!p) return;
+  const prefix = type === 'sell' ? '' : 'b';
+  const coin = (v, c) => `${Number(v).toLocaleString(undefined, { maximumFractionDigits: 8 })} ${c || ''}`.trim();
+  const naira = v => `₦${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  const isBuy = type === 'buy';
+  const sym = isBuy ? (p.payout_currency || '') : (p.currency || '');
+  const received = isBuy ? `${naira(p.amount)} received` : `${coin(p.amount, sym)} received`;
+  let working = '';
+  if (p.converted === 'pending') working = isBuy ? `Converting your naira to ${sym}…` : 'Converting to naira…';
+  else if (p.payout === 'pending' && p.payout_amount) working = isBuy ? `Sending ${coin(p.payout_amount, sym)} to your wallet…` : `Sending ${naira(p.payout_amount)} to your bank…`;
+  else if (p.payout === 'review') working = "Being checked by our team. We'll email you.";
+  else if (p.converted === 'done' && p.payout === 'waiting') working = isBuy ? `Converted to ${sym}` : 'Converted to naira';
+  setStepDetail(document.getElementById(prefix + 'status-2'), received);
+  if (working) setStepDetail(document.getElementById(prefix + 'status-3'), working);
+}
+
+function setStepDetail(stepEl, text) {
+  const title = stepEl?.querySelector('.text-sm');
+  if (!title) return;
+  let el = stepEl.querySelector('.hostfi-step-detail');
+  if (!el) {
+    el = document.createElement('p');
+    el.className = 'hostfi-step-detail text-xs text-gray-500 mt-0.5';
+    title.after(el);
+  }
+  el.textContent = text;
+}
+
 function startStatusPoll(reference, type = 'buy', statusUrl = `/api/status?reference=${encodeURIComponent(reference)}`) {
   let reviewNotified = false;
+  let inFlight = false; // payment in and being worked on: check often so no step is skipped
+  document.querySelectorAll('.hostfi-step-detail').forEach(el => el.remove());
   if (statusPollInterval) { clearTimeout(statusPollInterval); clearInterval(statusPollInterval); statusPollInterval = null; }
   activePollReference = reference;
   activePollType = 'standard';
@@ -778,6 +812,8 @@ function startStatusPoll(reference, type = 'buy', statusUrl = `/api/status?refer
         if (type === 'sell' && Array.isArray(data.hostfi_progress)) applyHostfiProgress(reference, data.hostfi_progress);
         // HostFi buys send by themselves; the Switch "Confirm" button means nothing for them.
         if (type === 'buy' && Array.isArray(data.hostfi_progress)) document.getElementById('bstatus-3-confirm')?.classList.add('hidden');
+        if (Array.isArray(data.hostfi_progress)) showHostfiStepDetail(type, data.hostfi_progress);
+        inFlight = ['DETECTED', 'CONFIRMED', 'RECEIVED', 'VERIFIED', 'PROCESSING'].includes(status);
         if (status === 'REVIEW' && !reviewNotified) {
           reviewNotified = true;
           showToast("Your deposit needs a quick manual check. We'll email you once it's paid.", 'info');
@@ -864,7 +900,11 @@ function startStatusPoll(reference, type = 'buy', statusUrl = `/api/status?refer
     } catch (e) { }
 
     let delay = 5000;
-    if (pollCount > 12) delay = 15000;
+    if (statusUrl.startsWith('/api/transactions/')) {
+      // HostFi: our own record, cheap to read. Every 3s once a payment is in, so no step is skipped.
+      if (inFlight) delay = 3000;
+      else if (pollCount > 60) delay = 15000; // still waiting for payment after ~5 minutes
+    } else if (pollCount > 12) delay = 15000;
     else if (pollCount > 6) delay = 10000;
     statusPollInterval = setTimeout(doPoll, delay);
   };
