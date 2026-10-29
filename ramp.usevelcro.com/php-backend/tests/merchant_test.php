@@ -121,23 +121,23 @@ try {
     check($c === 401, 'Google sign-in refused while no client ID is configured');
 
     // ── Store name ──
-    foreach (['admin' => false, 'velcro-shop' => false, 'my--shop' => false, 'ab' => false, 'Kamal_X' => false, 'binanceng' => false, 'kamal-x' => true] as $slug => $want) {
+    foreach (['admin' => false, 'velcro-shop' => false, 'my--shop' => false, 'ab' => false, 'Northline_X' => false, 'binanceng' => false, 'northline' => true] as $slug => $want) {
         [, $res] = $app_('GET', '/api/merchant/slug-check?slug=' . rawurlencode($slug));
         check(($res['data']['available'] ?? null) === $want, "store name '{$slug}': " . ($want ? 'available' : 'refused (' . ($res['data']['reason'] ?? '?') . ')'));
     }
 
     // ── Branding ──
-    [$c] = $app_('POST', '/api/merchant/brand', ['name' => 'Kamal Exchange', 'slug' => 'kamal-x', 'color' => 'red'], $auth($token));
+    [$c] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'color' => 'red'], $auth($token));
     check($c === 400, 'brand: invalid colour refused');
-    [$c] = $app_('POST', '/api/merchant/brand', ['name' => 'Kamal Exchange', 'slug' => 'kamal-x', 'logo' => 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='], $auth($token));
+    [$c] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'logo' => 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='], $auth($token));
     check($c === 400, 'brand: SVG logo refused (only PNG/JPG/WebP)');
-    [$c] = $app_('POST', '/api/merchant/brand', ['name' => 'Kamal Exchange', 'slug' => 'kamal-x', 'logo' => 'data:image/png;base64,' . base64_encode('not really a png')], $auth($token));
+    [$c] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'logo' => 'data:image/png;base64,' . base64_encode('not really a png')], $auth($token));
     check($c === 400, 'brand: a file that only claims to be a PNG is refused');
-    [$c, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Kamal Exchange', 'slug' => 'kamal-x', 'color' => '#6366F1', 'logo' => 'data:image/png;base64,' . base64_encode($png(64, 64))], $auth($token));
+    [$c, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'color' => '#6366F1', 'logo' => 'data:image/png;base64,' . base64_encode($png(64, 64))], $auth($token));
     $logo = (string) ($res['data']['brand']['logo'] ?? '');
     check($c === 200 && ($res['data']['brand']['color'] ?? '') === '#6366f1' && preg_match('#^/merchant/logos/\d+-[0-9a-f]{12}\.png$#', $logo) && is_file($tmp . '/logos/' . basename($logo))
         && ($res['data']['storefront_url'] ?? '') !== '' && ($res['data']['checklist']['branded'] ?? false) === true, 'brand: name, address, colour and a real PNG logo saved');
-    [$c, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Kamal Exchange', 'slug' => 'kamal-x', 'remove_logo' => true], $auth($token));
+    [$c, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'remove_logo' => true], $auth($token));
     clearstatcache(); // the earlier is_file() answer for this path is cached
     check($c === 200 && array_key_exists('logo', $res['data']['brand'] ?? []) && $res['data']['brand']['logo'] === null && !is_file($tmp . '/logos/' . basename($logo)), 'brand: removing the logo deletes the file');
 
@@ -155,8 +155,8 @@ try {
 
     // ── Verification (KYB) ──
     $kyb = [
-        'business_name' => 'Kamal Exchange Ltd', 'business_type' => 'registered', 'registration_number' => 'RC123456',
-        'contact_name' => 'Kamal Shehu', 'phone' => '+234 810 000 0000', 'monthly_volume' => '1m_10m', 'agree_terms' => true,
+        'business_name' => 'Northline Exchange Ltd', 'business_type' => 'registered', 'registration_number' => 'RC123456',
+        'contact_name' => 'Ada Obi', 'phone' => '+234 810 000 0000', 'monthly_volume' => '1m_10m', 'agree_terms' => true,
     ];
     [$c] = $app_('POST', '/api/merchant/verification', $kyb);
     check($c === 401, 'verification: needs sign-in');
@@ -165,17 +165,17 @@ try {
     [$c] = $app_('POST', '/api/merchant/verification', ['registration_number' => ''] + $kyb, $auth($token));
     check($c === 400, 'verification: a registered business needs its CAC number');
     [$c, $res] = $app_('POST', '/api/merchant/verification', $kyb, $auth($token));
-    check($c === 200 && ($res['data']['status'] ?? '') === 'PENDING' && ($res['data']['slug'] ?? '') === 'kamal-x' && ($res['data']['brand']['name'] ?? '') === 'Kamal Exchange',
+    check($c === 200 && ($res['data']['status'] ?? '') === 'PENDING' && ($res['data']['slug'] ?? '') === 'northline' && ($res['data']['brand']['name'] ?? '') === 'Northline Exchange',
         'verification: submitted with the store address already chosen; store name kept');
 
     // Someone else can't take the same store address.
     $other = 'other@example.com';
     [, $res] = $app_('POST', '/api/merchant/auth/signup', ['email' => $other, 'otp' => $code('merchsignup', $other), 'password' => 'OtherPass456']);
     $otherToken = (string) ($res['data']['token'] ?? '');
-    [, $res] = $app_('GET', '/api/merchant/slug-check?slug=kamal-x', null, $auth($otherToken));
-    [$c] = $app_('POST', '/api/merchant/brand', ['name' => 'Copycat', 'slug' => 'kamal-x'], $auth($otherToken));
+    [, $res] = $app_('GET', '/api/merchant/slug-check?slug=northline', null, $auth($otherToken));
+    [$c] = $app_('POST', '/api/merchant/brand', ['name' => 'Copycat', 'slug' => 'northline'], $auth($otherToken));
     check(($res['data']['available'] ?? null) === false && $c === 409, 'store address already taken: shown as taken, saving it refused');
-    [, $res] = $app_('GET', '/api/merchant/slug-check?slug=kamal-x', null, $auth($token));
+    [, $res] = $app_('GET', '/api/merchant/slug-check?slug=northline', null, $auth($token));
     check(($res['data']['available'] ?? null) === true, 'store address: still available to the merchant who holds it');
 
     // ── Admin review ──
@@ -199,8 +199,8 @@ try {
     check($c === 200 && ($res['data']['status'] ?? '') === 'PENDING', 'rejected merchant fixes the details: back to pending');
     $app_('POST', "/api/admin/merchants/{$id}/status", ['status' => 'APPROVED'], $admin);
     [$c] = $app_('POST', '/api/merchant/verification', $kyb, $auth($token));
-    [$cSlug] = $app_('POST', '/api/merchant/brand', ['name' => 'Kamal Exchange', 'slug' => 'kamal-x2'], $auth($token));
-    [$cName, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Kamal X', 'slug' => 'kamal-x'], $auth($token));
+    [$cSlug] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline-2'], $auth($token));
+    [$cName, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline X', 'slug' => 'northline'], $auth($token));
     check($c === 400 && $cSlug === 400 && $cName === 200 && ($res['data']['status'] ?? '') === 'APPROVED' && ($res['data']['checklist']['verified'] ?? false) === true,
         'approved: verification locked, address fixed, name and look still editable');
 } finally {

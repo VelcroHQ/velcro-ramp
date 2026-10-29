@@ -603,6 +603,62 @@ function registerMerchantRoutes(Router $router): void
         jsonResponse(successResponse(['slug' => $slug, 'available' => $problem === null, 'reason' => $problem]));
     });
 
+    // Public storefront data for customer orders (/m/{slug})
+    $router->get('/api/merchant/storefront/([a-z0-9-]+)', function (string $slug) {
+        ensureMerchantSchema();
+        $slug = strtolower(trim($slug));
+        $m = Database::selectOne('SELECT * FROM `merchants` WHERE `slug` = :s', ['s' => $slug]);
+        if (!$m) {
+            jsonResponse(errorResponse('Store not found', 404), 404);
+        }
+        $brand = merchantBrand($m);
+        $pricing = merchantPricing($m);
+
+        $authEmail = merchantTokenEmail((string) ($_SERVER['HTTP_X_MERCHANT_TOKEN'] ?? ''));
+        $isOwner = $authEmail && strtolower($authEmail) === strtolower($m['email']);
+
+        if ($m['status'] !== 'APPROVED' && !$isOwner) {
+            jsonResponse(errorResponse('This store is not live yet.', 404), 404);
+        }
+
+        $coins = [];
+        foreach (MERCHANT_COINS as $sym => $name) {
+            $coinConfig = $pricing[$sym] ?? ['buy' => 1.0, 'sell' => 1.0, 'buy_on' => true, 'sell_on' => true];
+            if (!$coinConfig['buy_on'] && !$coinConfig['sell_on']) {
+                continue;
+            }
+            $quote = function_exists('hostfiQuote') ? hostfiQuote($sym) : 0;
+            $buyMarkup = (float) ($coinConfig['buy'] ?? 1.0);
+            $sellMarkup = (float) ($coinConfig['sell'] ?? 1.0);
+
+            $customerBuyNgn = $quote > 0 ? round($quote * (1 + ($buyMarkup / 100)), 2) : null;
+            $customerSellNgn = $quote > 0 ? round($quote * (1 - ($sellMarkup / 100)), 2) : null;
+
+            $coins[$sym] = [
+                'symbol' => $sym,
+                'name' => $name,
+                'buy_on' => (bool) $coinConfig['buy_on'],
+                'sell_on' => (bool) $coinConfig['sell_on'],
+                'buy_markup_percent' => $buyMarkup,
+                'sell_markup_percent' => $sellMarkup,
+                'customer_buy_ngn' => $customerBuyNgn,
+                'customer_sell_ngn' => $customerSellNgn,
+            ];
+        }
+
+        jsonResponse(successResponse([
+            'store' => [
+                'name' => $brand['name'] ?: $m['business_name'] ?: 'Store',
+                'slug' => $m['slug'],
+                'color' => $brand['color'],
+                'logo' => $brand['logo'],
+                'status' => $m['status'],
+                'is_owner_preview' => $isOwner && $m['status'] !== 'APPROVED',
+            ],
+            'coins' => $coins,
+        ]));
+    });
+
     // Business verification (KYB). Submitting a DRAFT or REJECTED store, or editing a PENDING one,
     // sends it to Velcro for review.
     $router->post('/api/merchant/verification', function () {

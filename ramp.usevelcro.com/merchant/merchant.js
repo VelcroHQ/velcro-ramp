@@ -4,6 +4,7 @@
 
 const TOKEN_KEY = 'velcro_merchant_token';
 const TOUR_KEY = 'velcro_merchant_tour_done';
+const CLAIM_KEY = 'velcro_merchant_claim'; // store address picked on the landing page, used at set-up
 const COIN_LOGOS = { BTC: '/logos/bitcoin.png', ETH: '/logos/ethereum.png', SOL: '/logos/solana.png', USDT: '/logos/usdt.png', USDC: '/logos/usdc.png' };
 
 let token = '';
@@ -61,23 +62,40 @@ function paintLogo(el, brand, fallbackName) {
 // ── Landing ──
 
 function initLanding() {
-  const nav = $('m-nav');
-  const onScroll = () => nav.classList.toggle('is-solid', window.scrollY > 24);
+  const nav = $('l-nav');
+  const onScroll = () => nav.classList.toggle('is-solid', window.scrollY > 8);
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  const name = $('pv-name');
-  const renderPreview = () => {
-    const title = name.value.trim() || 'Your store';
-    $('pv-title').textContent = title;
-    $('pv-logo').textContent = title.charAt(0).toUpperCase();
-    $('pv-slug').textContent = slugify(title) || 'your-store';
+  // "Claim your store address": checked live, then carried into sign-up and store set-up.
+  const claim = $('claim-slug');
+  const msg = $('claim-msg');
+  const defaultMsg = msg.textContent;
+  let timer = null;
+  const check = async () => {
+    const slug = claim.value;
+    if (!slug) { msg.className = 'mt-2.5 text-sm text-[#7a7e96] min-h-[1.25rem]'; msg.textContent = defaultMsg; return null; }
+    try {
+      const r = await api('/api/merchant/slug-check?slug=' + encodeURIComponent(slug));
+      if (r.slug !== claim.value) return null;
+      msg.className = 'mt-2.5 text-sm min-h-[1.25rem] ' + (r.available ? 'is-ok' : 'is-bad');
+      msg.textContent = r.available ? `ramp.usevelcro.com/m/${r.slug} is available.` : r.reason;
+      return r.available;
+    } catch (e) { return null; }
   };
-  name.addEventListener('input', renderPreview);
-  document.querySelectorAll('.m-swatch').forEach(sw => sw.addEventListener('click', () => {
-    document.querySelectorAll('.m-swatch').forEach(x => x.classList.toggle('is-on', x === sw));
-    $('pv-store').style.setProperty('--brand', sw.dataset.color);
-  }));
+  claim.addEventListener('input', () => {
+    claim.value = claim.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    clearTimeout(timer);
+    timer = setTimeout(check, 350);
+  });
+  $('claim-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (claim.value) {
+      if ((await check()) === false) return claim.focus();
+      try { localStorage.setItem(CLAIM_KEY, claim.value); } catch (err) { /* ignore */ }
+    }
+    openAuth('signup');
+  });
 
   const vol = $('calc-vol');
   const mk = $('calc-mk');
@@ -411,7 +429,9 @@ async function savePrices() {
 // ── Settings: branding ──
 
 function renderSettings() {
-  brandDraft = { name: merchant.brand.name || merchant.business_name || '', slug: merchant.slug || '', color: merchant.brand.color, logo: merchant.brand.logo, logoData: null, removeLogo: false };
+  let claimed = '';
+  try { claimed = merchant.slug ? '' : (localStorage.getItem(CLAIM_KEY) || ''); } catch (e) { /* ignore */ }
+  brandDraft = { name: merchant.brand.name || merchant.business_name || '', slug: merchant.slug || claimed, color: merchant.brand.color, logo: merchant.brand.logo, logoData: null, removeLogo: false };
   $('b-name').value = brandDraft.name;
   $('b-slug').value = brandDraft.slug;
   const locked = ['APPROVED', 'SUSPENDED'].includes(merchant.status) && !!merchant.slug;
@@ -483,6 +503,7 @@ async function saveBrand(e) {
     if (brandDraft.logoData) body.logo = brandDraft.logoData;
     if (brandDraft.removeLogo) body.remove_logo = true;
     merchant = await api('/api/merchant/brand', { method: 'POST', body });
+    try { localStorage.removeItem(CLAIM_KEY); } catch (e2) { /* ignore */ }
     toast('Store saved');
     renderAll();
   } catch (ex) {

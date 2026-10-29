@@ -15,238 +15,167 @@
   <meta property="og:description" content="Sell crypto to your customers under your own brand. Velcro handles the naira accounts, the swaps and the payouts.">
   <meta property="og:image" content="https://ramp.usevelcro.com/og-image.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link href="/style.css?v=3" rel="stylesheet">
   <link href="/css/app.css?v=1" rel="stylesheet">
-  <link href="/merchant/merchant.css?v=2" rel="stylesheet">
+  <link href="/merchant/merchant.css?v=3" rel="stylesheet">
 </head>
 
-<body class="bg-white text-velcro-navy antialiased">
+<body class="bg-[#fbfaf6] text-velcro-navy antialiased">
 
   <!-- ═══════════ Landing ═══════════ -->
-  <div id="landing">
-    <header id="m-nav" class="fixed inset-x-0 top-0 z-40 transition-colors duration-300">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+  <div id="landing" class="l-page">
+    <header id="l-nav" class="l-nav">
+      <div class="l-wrap h-16 flex items-center justify-between">
         <a href="/merchant/" class="flex items-center gap-2.5 shrink-0" aria-label="Velcro Merchant home">
-          <img src="/velcro_logo.png" alt="Velcro" class="h-7 w-auto m-logo">
-          <span class="m-pill">Merchant</span>
+          <img src="/velcro_logo.png" alt="Velcro" class="h-7 w-auto">
+          <span class="l-tag">Merchant</span>
         </a>
-        <nav class="hidden md:flex items-center gap-7 text-sm font-medium m-navlinks">
-          <a href="#how">How it works</a>
-          <a href="#features">Features</a>
-          <a href="#earnings">Earnings</a>
-          <a href="#faq">FAQ</a>
+        <nav class="hidden md:flex items-center gap-8 text-[15px] text-[#4a4e69]">
+          <a href="#how" class="hover:text-velcro-navy">How it works</a>
+          <a href="#pricing" class="hover:text-velcro-navy">Pricing</a>
+          <a href="#faq" class="hover:text-velcro-navy">FAQ</a>
         </nav>
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="openAuth('signin')" class="m-btn-ghost">Sign in</button>
-          <button type="button" onclick="openAuth('signup')" class="m-btn-primary">Open your store</button>
+        <div class="flex items-center gap-1 sm:gap-2">
+          <button type="button" onclick="openAuth('signin')" class="l-btn-text">Sign in</button>
+          <button type="button" onclick="openAuth('signup')" class="l-btn">Get started</button>
         </div>
       </div>
     </header>
 
     <!-- Hero -->
-    <section class="m-hero relative overflow-hidden">
-      <div class="m-hero-glow" aria-hidden="true"></div>
-      <div class="m-grid-bg" aria-hidden="true"></div>
-      <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-20 sm:pt-36 sm:pb-28 grid lg:grid-cols-2 gap-12 lg:gap-10 items-center">
-        <div>
-          <span class="m-eyebrow"><span class="m-dot"></span> Velcro Merchant</span>
-          <h1 class="mt-5 text-4xl sm:text-5xl lg:text-[3.6rem] font-extrabold tracking-tight leading-[1.05] text-white">
-            Your own crypto exchange.<br><span class="m-gradient-text">Live in minutes.</span>
-          </h1>
-          <p class="mt-5 text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl">
-            Sell crypto to your customers under your own name, logo and prices. Velcro runs the naira accounts, the swaps and the bank payouts behind the scenes, so you never hold a kobo of their money.
-          </p>
-          <div class="mt-8 flex flex-col sm:flex-row gap-3">
-            <button type="button" onclick="openAuth('signup')" class="m-btn-primary m-btn-lg">Open your store <span aria-hidden="true">→</span></button>
-            <a href="#how" class="m-btn-outline m-btn-lg">See how it works</a>
-          </div>
-          <ul class="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
-            <li class="flex items-center gap-2"><span class="m-check"></span>No float needed</li>
-            <li class="flex items-center gap-2"><span class="m-check"></span>Your prices, your margin</li>
-            <li class="flex items-center gap-2"><span class="m-check"></span>Payouts to any Nigerian bank</li>
-          </ul>
-        </div>
+    <section class="l-wrap pt-14 sm:pt-20 pb-16 sm:pb-24 grid lg:grid-cols-[1.05fr_.95fr] gap-14 lg:gap-16 items-center">
+      <div>
+        <p class="l-overline">Velcro Merchant · for crypto sellers in Nigeria</p>
+        <h1 class="l-display mt-5">Run your own<br>crypto desk, <em>under your own name.</em></h1>
+        <p class="mt-6 text-[17px] sm:text-lg leading-relaxed text-[#4a4e69] max-w-[34rem]">
+          Your customers pay by bank transfer and receive BTC, ETH, SOL, USDT or USDC in their wallet, or sell and get paid straight to their bank. You set the price. Velcro does the banking, the conversion and the payouts.
+        </p>
 
-        <!-- Live storefront preview -->
-        <div class="relative">
-          <div class="m-preview-controls">
-            <label class="block">
-              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Try your store name</span>
-              <input id="pv-name" type="text" maxlength="30" value="Kamal Exchange" class="m-preview-input" aria-label="Store name for the preview">
-            </label>
-            <div class="mt-3 flex items-center gap-2" role="radiogroup" aria-label="Brand colour for the preview">
-              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-1">Colour</span>
-              <button type="button" class="m-swatch is-on" style="--sw:#a8cf45" data-color="#a8cf45" aria-label="Green"></button>
-              <button type="button" class="m-swatch" style="--sw:#6366f1" data-color="#6366f1" aria-label="Indigo"></button>
-              <button type="button" class="m-swatch" style="--sw:#f59e0b" data-color="#f59e0b" aria-label="Amber"></button>
-              <button type="button" class="m-swatch" style="--sw:#ec4899" data-color="#ec4899" aria-label="Pink"></button>
-              <button type="button" class="m-swatch" style="--sw:#14b8a6" data-color="#14b8a6" aria-label="Teal"></button>
-            </div>
-          </div>
-          <div id="pv-store" class="m-store" style="--brand:#a8cf45">
-            <div class="m-store-bar">
-              <span class="m-store-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="m-store-url">ramp.usevelcro.com/m/<b id="pv-slug">kamal-exchange</b></span>
-            </div>
-            <div class="p-5 sm:p-6">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                  <span id="pv-logo" class="m-store-logo">K</span>
-                  <span id="pv-title" class="font-bold text-velcro-navy">Kamal Exchange</span>
-                </div>
-                <span class="text-[11px] font-semibold text-slate-400">Powered by Velcro</span>
-              </div>
-              <div class="mt-5 grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 text-sm font-semibold">
-                <span class="m-store-tab is-on">Buy</span><span class="m-store-tab">Sell</span>
-              </div>
-              <div class="mt-4 space-y-2.5">
-                <div class="m-store-field"><span>You pay</span><b>₦250,000</b><em>NGN</em></div>
-                <div class="m-store-field"><span>You get</span><b id="pv-get">0.00194 BTC</b><em>BTC</em></div>
-              </div>
-              <p class="mt-3 text-xs text-slate-400">1 BTC = <span id="pv-rate">₦128,900,000</span> · your price</p>
-              <button type="button" class="m-store-cta" tabindex="-1">Buy BTC</button>
-              <div class="mt-4 flex items-center gap-2 text-[11px] text-slate-400">
-                <span class="m-store-coin">₿</span><span class="m-store-coin">Ξ</span><span class="m-store-coin">◎</span><span class="m-store-coin">₮</span><span class="m-store-coin">$</span>
-                <span class="ml-1">BTC · ETH · SOL · USDT · USDC</span>
-              </div>
-            </div>
-          </div>
-          <div class="m-float-card m-float-1" aria-hidden="true">
-            <span class="m-float-icon">₦</span>
-            <div><b>₦250,000 received</b><small>Payment detected · 2s ago</small></div>
-          </div>
-          <div class="m-float-card m-float-2" aria-hidden="true">
-            <span class="m-float-icon m-float-green">+</span>
-            <div><b>+₦2,500 earned</b><small>Your 1% markup</small></div>
-          </div>
-        </div>
+        <form id="claim-form" class="l-claim mt-9" novalidate>
+          <label for="claim-slug" class="sr-only">Choose your store address</label>
+          <span class="l-claim-prefix">ramp.usevelcro.com/m/</span>
+          <input id="claim-slug" maxlength="30" autocomplete="off" spellcheck="false" placeholder="your-store" class="l-claim-input">
+          <button type="submit" class="l-btn l-btn-lg">Claim it</button>
+        </form>
+        <p id="claim-msg" class="mt-2.5 text-sm text-[#7a7e96] min-h-[1.25rem]">Free to set up. You only earn, you don't pay.</p>
       </div>
+
+      <!-- A real order, step by step -->
+      <figure class="l-ticket" aria-label="Example order on a merchant store">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="l-ticket-logo">N</span>
+            <div><b class="block text-[15px]">Northline Exchange</b><span class="text-xs text-[#8a8ea6]">ramp.usevelcro.com/m/northline</span></div>
+          </div>
+          <span class="l-ticket-id">Order 4F21</span>
+        </div>
+        <ol class="l-steps mt-6">
+          <li class="is-done"><span class="l-step-time">10:02</span><div><b>₦250,000 received</b><small>Bank transfer to the order's account</small></div></li>
+          <li class="is-done"><span class="l-step-time">10:02</span><div><b>Converted to 0.00192 BTC</b><small>At your price: ₦130,189,000 per BTC</small></div></li>
+          <li class="is-done"><span class="l-step-time">10:03</span><div><b>Sent to the customer's wallet</b><small>bc1q…7xk2 · confirming on the network</small></div></li>
+          <li class="is-earn"><span class="l-step-time">10:03</span><div><b>You earned ₦2,475</b><small>Your 1% markup, added to your balance</small></div></li>
+        </ol>
+        <figcaption class="mt-5 pt-4 border-t border-[#ecebe4] text-xs text-[#8a8ea6]">An example order. Times are typical once the bank transfer lands.</figcaption>
+      </figure>
     </section>
 
-    <!-- Rails strip -->
-    <section class="border-b border-slate-100">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-7 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-sm font-semibold text-slate-500">
-        <span>Naira bank transfers</span><span class="m-sep"></span>
-        <span>BTC · ETH · SOL · USDT · USDC</span><span class="m-sep"></span>
-        <span>Payouts to any Nigerian bank</span><span class="m-sep"></span>
-        <span>Live order tracking</span><span class="m-sep"></span>
-        <span>Email receipts</span>
-      </div>
-    </section>
-
-    <!-- Who it's for -->
-    <section class="max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
-      <p class="m-kicker">Who it's for</p>
-      <h2 class="m-h2">Anyone who already has people asking them for crypto.</h2>
-      <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <article class="m-card">
-          <span class="m-card-icon">⇄</span>
-          <h3>P2P traders</h3>
-          <p>Stop matching orders by hand at 2am. Your customers pay, the crypto goes out, you keep your margin.</p>
-        </article>
-        <article class="m-card">
-          <span class="m-card-icon">✦</span>
-          <h3>Communities &amp; creators</h3>
-          <p>Give your followers a trusted place to buy, under your brand, and earn on every order they make.</p>
-        </article>
-        <article class="m-card">
-          <span class="m-card-icon">▣</span>
-          <h3>Fintechs &amp; wallets</h3>
-          <p>Add buy and sell to your product without building rails, banking partners or a treasury desk.</p>
-        </article>
-        <article class="m-card">
-          <span class="m-card-icon">↗</span>
-          <h3>Payments &amp; remittance</h3>
-          <p>Move value between naira and stablecoins for your clients, with every order tracked end to end.</p>
-        </article>
+    <!-- What you get -->
+    <section class="border-y border-[#ecebe4] bg-white">
+      <div class="l-wrap py-16 sm:py-20 grid md:grid-cols-3 gap-10 md:gap-12">
+        <div class="l-point">
+          <span class="l-num">01</span>
+          <h3>Your name on the door</h3>
+          <p>Your store name, logo and colours on every screen. Customers deal with you; Velcro sits quietly in the footer.</p>
+        </div>
+        <div class="l-point">
+          <span class="l-num">02</span>
+          <h3>Your price, your margin</h3>
+          <p>Add a markup per coin, separately for buying and selling. Switch any coin off when you don't want to quote it.</p>
+        </div>
+        <div class="l-point">
+          <span class="l-num">03</span>
+          <h3>No float, no 2am transfers</h3>
+          <p>Each customer pays into an account made for their order and gets paid automatically. You never hold their money or send anything by hand.</p>
+        </div>
       </div>
     </section>
 
     <!-- How it works -->
-    <section id="how" class="bg-slate-50 border-y border-slate-100">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
-        <p class="m-kicker">How it works</p>
-        <h2 class="m-h2">From sign-up to first sale in four steps.</h2>
-        <ol class="mt-12 grid md:grid-cols-4 gap-6 m-steps">
-          <li><span class="m-step-n">1</span><h3>Create your account</h3><p>Sign up with your email or Google and tell us about your business.</p></li>
-          <li><span class="m-step-n">2</span><h3>Get approved</h3><p>We review your business details, usually within a working day.</p></li>
-          <li><span class="m-step-n">3</span><h3>Make it yours</h3><p>Pick your store name, upload your logo, choose your colours and set your prices.</p></li>
-          <li><span class="m-step-n">4</span><h3>Share your link</h3><p>Customers buy and sell on your store. You earn your markup on every completed order.</p></li>
+    <section id="how" class="l-wrap py-20 sm:py-28">
+      <div class="grid lg:grid-cols-[.8fr_1.2fr] gap-12 lg:gap-20">
+        <div>
+          <h2 class="l-h2">How it works</h2>
+          <p class="mt-4 text-[#4a4e69] leading-relaxed max-w-sm">From sign-up to your first sale is usually a day, most of it waiting for us to check your business.</p>
+        </div>
+        <ol class="l-how">
+          <li><b>Create an account</b><p>With Google or your email. You're in your dashboard straight away.</p></li>
+          <li><b>Set up your store</b><p>Pick your store address, add your logo and colours, and set your markup on each coin.</p></li>
+          <li><b>Verify your business</b><p>Tell us who you are. We review within a working day, and your store goes live when you're approved.</p></li>
+          <li><b>Share your link</b><p>Send it to your customers, your group chat, your bio. Every completed order adds your markup to your balance, and you withdraw to your bank.</p></li>
         </ol>
       </div>
     </section>
 
-    <!-- Features -->
-    <section id="features" class="max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
-      <p class="m-kicker">Everything included</p>
-      <h2 class="m-h2">The exchange is yours. The plumbing is ours.</h2>
-      <div class="mt-12 grid md:grid-cols-3 gap-px rounded-3xl overflow-hidden bg-slate-200 border border-slate-200">
-        <div class="m-feature"><h3>Your brand</h3><p>Your store name, logo and colours on every page your customers see. Velcro stays in the background.</p></div>
-        <div class="m-feature"><h3>Your prices</h3><p>Set a markup per coin, separately for buys and sells. Your customers see one clean price.</p></div>
-        <div class="m-feature"><h3>Your customers</h3><p>Customers sign up on your store. Their orders and history belong to your dashboard.</p></div>
-        <div class="m-feature"><h3>No float, no custody</h3><p>Customers pay into a fresh bank account per order and crypto goes straight to their wallet. You never hold their funds.</p></div>
-        <div class="m-feature"><h3>Earnings you can withdraw</h3><p>Your markup lands in your balance on every completed order. Withdraw to your bank whenever you like.</p></div>
-        <div class="m-feature"><h3>Tracking that builds trust</h3><p>Live order steps, explorer links and email receipts, so customers know exactly where their money is.</p></div>
-      </div>
-    </section>
-
-    <!-- Earnings calculator -->
-    <section id="earnings" class="m-dark-band">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-24 grid lg:grid-cols-2 gap-12 items-center">
+    <!-- Pricing -->
+    <section id="pricing" class="bg-velcro-navy text-white">
+      <div class="l-wrap py-20 sm:py-24 grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
         <div>
-          <p class="m-kicker m-kicker-dark">Earnings</p>
-          <h2 class="m-h2 text-white">See what your store could earn.</h2>
-          <p class="mt-4 text-slate-300 leading-relaxed max-w-lg">Your markup is yours to set. Drag the sliders to see what a month could look like.</p>
+          <h2 class="l-h2 text-white">You set the price.<br>We keep it simple.</h2>
+          <p class="mt-4 text-[#c3c5dc] leading-relaxed max-w-md">There's no setup fee and no monthly fee. Your customers pay Velcro's rate plus your markup, and the markup is yours.</p>
+          <table class="l-example mt-9">
+            <caption class="sr-only">Example: one customer buys ₦250,000 of BTC</caption>
+            <tr><td>Velcro's BTC price</td><td>₦128,900,000</td></tr>
+            <tr><td>Your markup</td><td>+ 1.0%</td></tr>
+            <tr class="is-total"><td>Your customer pays</td><td>₦130,189,000</td></tr>
+            <tr class="is-earn"><td>You earn on a ₦250,000 order</td><td>₦2,475</td></tr>
+          </table>
+          <p class="mt-3 text-xs text-[#8b8eb0]">Illustrative prices. Live rates are on your dashboard.</p>
         </div>
-        <div class="m-calc">
-          <label class="block">
-            <span class="flex justify-between text-sm"><span class="text-slate-300">Monthly volume</span><b id="calc-vol-out" class="text-white">₦20,000,000</b></span>
-            <input id="calc-vol" type="range" min="1000000" max="200000000" step="1000000" value="20000000" class="m-range">
+        <div class="l-calc">
+          <p class="text-sm font-semibold text-[#c3c5dc]">What could a month look like?</p>
+          <label class="block mt-6">
+            <span class="flex justify-between text-sm"><span class="text-[#c3c5dc]">Monthly volume through your store</span><b id="calc-vol-out">₦20,000,000</b></span>
+            <input id="calc-vol" type="range" min="1000000" max="200000000" step="1000000" value="20000000" class="l-range">
           </label>
           <label class="block mt-6">
-            <span class="flex justify-between text-sm"><span class="text-slate-300">Your markup</span><b id="calc-mk-out" class="text-white">1.0%</b></span>
-            <input id="calc-mk" type="range" min="0.1" max="5" step="0.1" value="1" class="m-range">
+            <span class="flex justify-between text-sm"><span class="text-[#c3c5dc]">Your average markup</span><b id="calc-mk-out">1.0%</b></span>
+            <input id="calc-mk" type="range" min="0.1" max="5" step="0.1" value="1" class="l-range">
           </label>
           <div class="mt-8 pt-6 border-t border-white/10">
-            <p class="text-sm text-slate-400">You'd earn about</p>
-            <p class="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight m-gradient-text"><span id="calc-out">₦200,000</span><span class="text-lg text-slate-400 font-semibold"> / month</span></p>
-            <p class="mt-2 text-xs text-slate-500">An estimate before any fees. Actual earnings depend on your completed orders.</p>
+            <p class="text-sm text-[#c3c5dc]">You'd earn roughly</p>
+            <p class="l-calc-out"><span id="calc-out">₦200,000</span> <small>a month</small></p>
           </div>
         </div>
       </div>
     </section>
 
     <!-- FAQ -->
-    <section id="faq" class="max-w-3xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
-      <p class="m-kicker text-center">FAQ</p>
-      <h2 class="m-h2 text-center">Questions merchants ask us.</h2>
-      <div class="mt-10 divide-y divide-slate-200 border-y border-slate-200">
-        <details class="m-faq"><summary>Do I hold my customers' money?</summary><p>No. Each customer pays into a bank account made for their order, and crypto goes straight to their wallet (or naira straight to their bank when they sell). Your earnings collect in your Velcro balance.</p></details>
-        <details class="m-faq"><summary>How do I make money?</summary><p>You set a markup on top of Velcro's price for each coin, separately for buying and selling. Your customers see one price, and the markup on every completed order goes to your balance.</p></details>
-        <details class="m-faq"><summary>Which coins can my customers trade?</summary><p>BTC, ETH, SOL, USDT and USDC, bought with naira by bank transfer and sold for naira paid to any Nigerian bank.</p></details>
-        <details class="m-faq"><summary>Who verifies my customers?</summary><p>You do. Velcro verifies your business before your store goes live, and the merchant terms make you responsible for knowing your customers. Check the rules that apply to your business with your own adviser.</p></details>
-        <details class="m-faq"><summary>Can I use my own domain?</summary><p>Your store starts on a Velcro address you choose. Your own domain and your own subdomain on Velcro are coming next.</p></details>
-        <details class="m-faq"><summary>How long does approval take?</summary><p>Usually within one working day. We'll email you as soon as your store is approved, or tell you what we need if something's missing.</p></details>
+    <section id="faq" class="l-wrap py-20 sm:py-28 grid lg:grid-cols-[.8fr_1.2fr] gap-12 lg:gap-20">
+      <h2 class="l-h2">Questions</h2>
+      <div class="divide-y divide-[#e6e5dd] border-y border-[#e6e5dd]">
+        <details class="m-faq"><summary>Do I hold my customers' money?</summary><p>No. Each customer pays into a bank account made for their order, and their crypto goes straight to their wallet (or their naira to their bank when they sell). Only your markup collects in your balance.</p></details>
+        <details class="m-faq"><summary>What does it cost me?</summary><p>Nothing to set up and nothing monthly. You add a markup on top of Velcro's price and keep it.</p></details>
+        <details class="m-faq"><summary>Which coins can my customers trade?</summary><p>BTC, ETH, SOL, USDT and USDC. They buy with naira by bank transfer and sell for naira paid to any Nigerian bank.</p></details>
+        <details class="m-faq"><summary>Who verifies my customers?</summary><p>You do. We verify your business before your store goes live, and the merchant terms make you responsible for knowing your customers. Check the rules that apply to your business with your own adviser.</p></details>
+        <details class="m-faq"><summary>Can I use my own domain?</summary><p>Your store starts on a Velcro address. Your own domain, and your own subdomain on Velcro, are on the way.</p></details>
+        <details class="m-faq"><summary>How long does approval take?</summary><p>Usually within one working day. We email you as soon as you're approved, or tell you exactly what we need.</p></details>
       </div>
     </section>
 
-    <!-- Closing CTA -->
-    <section class="px-4 sm:px-6 pb-20 sm:pb-24">
-      <div class="m-cta max-w-6xl mx-auto">
-        <div class="m-hero-glow" aria-hidden="true"></div>
-        <div class="relative text-center px-6 py-16 sm:py-20">
-          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">Launch your store. Keep your brand.</h2>
-          <p class="mt-3 text-slate-300">It takes a few minutes to apply. You'll hear from us within a working day.</p>
-          <button type="button" onclick="openAuth('signup')" class="mt-8 m-btn-primary m-btn-lg">Open your store <span aria-hidden="true">→</span></button>
-        </div>
+    <!-- Closing -->
+    <section class="l-wrap pb-20 sm:pb-28">
+      <div class="l-close">
+        <h2 class="l-h2">Open your store today.</h2>
+        <p class="mt-3 text-[#4a4e69]">Set it up in a few minutes. Go live when we've checked your business.</p>
+        <button type="button" onclick="openAuth('signup')" class="l-btn l-btn-lg mt-7">Get started</button>
       </div>
     </section>
 
-    <footer class="border-t border-slate-100">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
+    <footer class="border-t border-[#ecebe4]">
+      <div class="l-wrap py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-[#7a7e96]">
         <div class="flex items-center gap-2"><img src="/velcro_logo.png" alt="Velcro" class="h-5 w-auto"><span>Merchant</span></div>
-        <div class="flex gap-5">
+        <div class="flex gap-6">
           <a href="/" class="hover:text-velcro-navy">Velcro Convert</a>
           <a href="/terms.html" class="hover:text-velcro-navy">Terms</a>
           <a href="/privacy.html" class="hover:text-velcro-navy">Privacy</a>
@@ -361,7 +290,7 @@
         <div class="mt-5 grid lg:grid-cols-[1fr_330px] gap-5">
           <form id="brand-form" class="d-card space-y-5" novalidate>
             <div><h2 class="d-h2">Your store</h2><p class="text-sm text-slate-500">How your store looks to your customers.</p></div>
-            <div><label class="m-label" for="b-name">Store name</label><input id="b-name" maxlength="60" class="m-input" placeholder="Kamal Exchange"></div>
+            <div><label class="m-label" for="b-name">Store name</label><input id="b-name" maxlength="60" class="m-input" placeholder="e.g. Northline Exchange"></div>
             <div>
               <label class="m-label" for="b-slug">Store address</label>
               <div class="m-slug-wrap"><span class="m-slug-prefix">ramp.usevelcro.com/m/</span><input id="b-slug" maxlength="30" autocomplete="off" spellcheck="false" placeholder="your-store" class="m-slug-input"></div>
@@ -484,7 +413,7 @@
 
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
-  <script src="/merchant/merchant.js?v=2"></script>
+  <script src="/merchant/merchant.js?v=3"></script>
 </body>
 
 </html>
