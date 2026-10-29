@@ -15,9 +15,16 @@ if [ "${1:-}" != "--no-pull" ]; then
 fi
 
 echo "== Deploying $(git log --oneline -1)"
+# Once files start changing, PHP must restart however this script ends: workers still holding the
+# old cached code next to new files take the whole API down ("Class Router not found").
+restart_php() {
+  pkill -u "$(whoami)" lsphp 2>/dev/null
+  echo "php restarted"
+}
+trap restart_php EXIT
 # cp can't keep times on folders PHP created (data, uploads) and says so; the files still copy.
 /bin/cp -R ramp.usevelcro.com/. "$DEPLOYPATH/" 2>/dev/null || /bin/cp -R ramp.usevelcro.com/. "$DEPLOYPATH/" || true
-if ! cmp -s ramp.usevelcro.com/php-backend/index.php "$DEPLOYPATH/php-backend/index.php"; then
+if [ "$(md5sum < ramp.usevelcro.com/php-backend/index.php)" != "$(md5sum < "$DEPLOYPATH/php-backend/index.php" 2>/dev/null)" ]; then
   echo "FAILED: files did not copy to $DEPLOYPATH"
   exit 1
 fi
@@ -30,8 +37,8 @@ rm -rf "$DEPLOYPATH/php-backend/tests" "$DEPLOYPATH/php-backend/.env.test" "$DEP
 echo "cleaned"
 
 touch "$DEPLOYPATH/.htaccess"
-pkill -u "$(whoami)" lsphp 2>/dev/null
-echo "php restarted"
+trap - EXIT
+restart_php
 # Belt and braces: also clear PHP's code cache through the site, if OPCACHE_FLUSH_KEY is set in .env.
 FLUSH_KEY=$(grep -E '^OPCACHE_FLUSH_KEY=' "$DEPLOYPATH/php-backend/.env" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d "\"'\r ")
 if [ -n "$FLUSH_KEY" ] && curl -s -m 20 "${SITE_URL:-https://ramp.usevelcro.com}/index.php?flush=$FLUSH_KEY" | grep -q opcache_reset; then
