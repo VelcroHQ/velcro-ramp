@@ -2236,12 +2236,14 @@ function renderHostfiBuys(buys, fmt) {
         const primary = b.status === 'SWAP_PENDING' ? 'Check swap'
             : (['SEND_FAILED', 'SEND_UNCERTAIN', 'SEND_WAITING'].includes(b.status) || Number(b.send_amount) > 0) ? 'Retry send' : 'Approve &amp; send';
         const sent = b.status === 'SENT' || b.status === 'SEND_PENDING';
-        const label = `₦${fmt(b.ngn_amount, 2)}`;
+        const paid = b.paid_ngn != null && b.paid_ngn !== '' ? b.paid_ngn : b.ngn_amount;
+        const label = `₦${fmt(paid, 2)}`;
+        const hostfiFee = Number(paid) - Number(b.ngn_amount);
         return `
         <tr>
             <td data-label="Paid">${new Date(String(b.created_at).replace(' ', 'T')).toLocaleString()}</td>
             <td data-label="Customer">${b.email || '<span style="color: var(--text-secondary);">—</span>'}<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${b.order_ref || 'No order'}</div></td>
-            <td data-label="Payment"><span><b>${label}</b></span>${b.currency ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">for ${b.currency} on ${b.network || '?'}</div>` : ''}</td>
+            <td data-label="Payment"><span><b>${label}</b></span>${hostfiFee > 0.004 ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">₦${fmt(b.ngn_amount, 2)} after HostFi's ₦${fmt(hostfiFee, 2)}</div>` : ''}${b.currency ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">for ${b.currency} on ${b.network || '?'}</div>` : ''}</td>
             <td data-label="Sent">${Number(b.send_amount) > 0 ? `<span><b>${fmt(b.send_amount)}</b> ${b.currency}</span>${sent ? '' : '<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">not sent yet</div>'}` : '<span style="color: var(--text-secondary);">—</span>'}${b.wallet ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" title="${b.wallet}">to ${shortAddr(b.wallet)}</div>` : ''}${b.tx_hash ? `<div style="font-size: 11px; color: var(--text-secondary);" title="${b.tx_hash}">tx ${shortAddr(b.tx_hash)}</div>` : ''}</td>
             <td data-label="Status" class="hostfi-status-cell"><span class="status-pill ${String(b.status).toLowerCase()}">${statusLabel(b.status)}</span>${hostfiNoteHtml(b.note)}</td>
             <td data-label="Action" class="hostfi-action-cell">${actionable ? `

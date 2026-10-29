@@ -96,6 +96,7 @@ switch (true) {
         $d ? $respond(200, [
             'reference' => $d['reference'], 'status' => $d['status'] ?? 'SUCCESS', 'type' => 'CREDIT', 'category' => 'CRYPTO_DEPOSIT',
             'amount' => ['currency' => $d['currency'], 'value' => $d['amount']],
+            'feeAmount' => ['currency' => $d['currency'], 'value' => $d['fee'] ?? 0],
             'recipientAccountNumber' => $d['recipientAccountNumber'] ?? null,
             'metadata' => ($d['currency'] === 'NGN')
                 ? array_values(array_filter([isset($d['customId']) ? ['name' => 'customId', 'value' => $d['customId']] : null]))

@@ -757,6 +757,7 @@ function startStatusPoll(reference, type = 'buy', statusUrl = `/api/status?refer
   activePollReference = reference;
   activePollType = 'standard';
   activePollTxType = type;
+  activePollUrl = statusUrl; // HostFi orders poll our own record, not /api/status
   pollCount = 0;
   isPollingPaused = false;
 

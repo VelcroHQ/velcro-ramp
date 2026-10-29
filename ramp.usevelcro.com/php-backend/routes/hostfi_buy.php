@@ -21,6 +21,9 @@ declare(strict_types=1);
  */
 
 const HOSTFI_BUY_TIMER_MINUTES = 60;
+// HostFi keeps this much of each naira transfer it receives (₦5,000 sent → ₦4,950 credited).
+// Used for estimates only; the real fee comes from HostFi's record of each payment.
+const HOSTFI_COLLECTION_FEE_NGN = 50.0;
 // HostFi holds swapped coin for a few minutes before it can be sent; past this, a person checks it.
 const HOSTFI_SEND_WAIT_MINUTES = 120;
 
@@ -30,6 +33,7 @@ function ensureHostfiBuySchema(): void
     $flag = BASE_PATH . '/data/.hostfi_buy_schema_v1';
     if ($done || file_exists($flag)) {
         $done = true;
+        ensureHostfiBuySchemaV2();
         return;
     }
     Database::pdo()->exec("CREATE TABLE IF NOT EXISTS `hostfi_buys` (
@@ -37,6 +41,7 @@ function ensureHostfiBuySchema(): void
         `payment_ref` VARCHAR(100) NOT NULL UNIQUE,
         `order_ref` VARCHAR(255) DEFAULT NULL,
         `ngn_amount` DECIMAL(24,2) NOT NULL,
+        `paid_ngn` DECIMAL(24,2) DEFAULT NULL,
         `currency` VARCHAR(20) DEFAULT NULL,
         `network` VARCHAR(40) DEFAULT NULL,
         `wallet` VARCHAR(255) DEFAULT NULL,
@@ -59,7 +64,57 @@ function ensureHostfiBuySchema(): void
         KEY `idx_send_client_ref` (`send_client_ref`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     @file_put_contents($flag, gmdate('c'));
+    @file_put_contents(BASE_PATH . '/data/.hostfi_buy_schema_v2', gmdate('c')); // created with paid_ngn
     $done = true;
+}
+
+/** v2: `paid_ngn`, what the customer sent before HostFi's fee (`ngn_amount` is what arrived). */
+function ensureHostfiBuySchemaV2(): void
+{
+    $flag = BASE_PATH . '/data/.hostfi_buy_schema_v2';
+    if (file_exists($flag)) {
+        return;
+    }
+    try {
+        Database::pdo()->exec('ALTER TABLE `hostfi_buys` ADD COLUMN `paid_ngn` DECIMAL(24,2) DEFAULT NULL AFTER `ngn_amount`');
+    } catch (Throwable $e) {
+        // already there
+    }
+    @file_put_contents($flag, gmdate('c'));
+}
+
+/** What the customer sent: what reached us plus HostFi's fee on it (from HostFi's record). */
+function hostfiPaidNgn(array $live): ?float
+{
+    $fee = $live['feeAmount'] ?? null;
+    if (!is_array($fee) || strtoupper((string) ($fee['currency'] ?? 'NGN')) !== 'NGN' || !is_numeric($fee['value'] ?? null)) {
+        return null;
+    }
+    return round((float) ($live['amount']['value'] ?? 0) + (float) $fee['value'], 2);
+}
+
+/** Customer-facing naira for a payment: what they sent, else what arrived. */
+function hostfiBuyPaid(array $b): float
+{
+    return $b['paid_ngn'] !== null && $b['paid_ngn'] !== '' ? (float) $b['paid_ngn'] : (float) $b['ngn_amount'];
+}
+
+/** Payments recorded before paid_ngn existed: read HostFi's fee once from its record. */
+function hostfiBuyBackfillPaid(array $rows): array
+{
+    foreach ($rows as &$r) {
+        if (($r['paid_ngn'] ?? null) !== null || empty($r['payment_ref'])) {
+            continue;
+        }
+        try {
+            $paid = hostfiPaidNgn(hostfiApi()->collectionTransaction((string) $r['payment_ref'])) ?? (float) $r['ngn_amount'];
+        } catch (Throwable $e) {
+            continue; // try again next time
+        }
+        Database::execute('UPDATE `hostfi_buys` SET `paid_ngn` = :p WHERE `id` = :id', ['p' => $paid, 'id' => $r['id']]);
+        $r['paid_ngn'] = $paid;
+    }
+    return $rows;
 }
 
 // ─── Rows ───
@@ -142,7 +197,7 @@ function hostfiValidWallet(string $chain, string $address): bool
 // ─── Pipeline ───
 
 /** Store a naira payment HostFi has confirmed. Idempotent on HostFi's reference. */
-function hostfiRecordPayment(string $ref, ?array $order, float $ngn): int
+function hostfiRecordPayment(string $ref, ?array $order, float $ngn, ?float $paid = null): int
 {
     ensureHostfiBuySchema();
     $meta = $order ? (json_decode((string) ($order['meta'] ?? ''), true) ?: []) : [];
@@ -151,6 +206,7 @@ function hostfiRecordPayment(string $ref, ?array $order, float $ngn): int
             'payment_ref' => $ref,
             'order_ref' => $order['reference'] ?? null,
             'ngn_amount' => $ngn,
+            'paid_ngn' => $paid ?? $ngn,
             'currency' => $meta['hostfi']['symbol'] ?? null,
             'network' => $meta['hostfi']['network'] ?? null,
             'wallet' => $order['wallet_address'] ?? null,
@@ -521,7 +577,7 @@ function hostfiBuySyncOrder(?string $orderRef): void
         return;
     }
     $order = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :r', ['r' => $orderRef]);
-    $rows = $order ? Database::select('SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r ORDER BY `id`', ['r' => $orderRef]) : [];
+    $rows = $order ? hostfiBuyBackfillPaid(Database::select('SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r ORDER BY `id`', ['r' => $orderRef])) : [];
     if (!$rows) {
         return;
     }
@@ -535,7 +591,7 @@ function hostfiBuySyncOrder(?string $orderRef): void
         default => 'REVIEW',
     };
     $counted = array_filter($rows, fn ($r) => !in_array($r['status'], ['REVIEW', 'RESOLVED'], true));
-    $ngn = array_sum(array_map(fn ($r) => (float) $r['ngn_amount'], $counted ?: $rows));
+    $ngn = array_sum(array_map(fn ($r) => hostfiBuyPaid($r), $counted ?: $rows)); // what the customer sent
     $coin = array_sum(array_map(fn ($r) => (float) $r['send_amount'], $counted));
     $hash = null;
     foreach ($rows as $r) {
@@ -602,7 +658,7 @@ function hostfiBuyProgress(string $orderRef): array
         };
         return [
             'kind' => 'buy',
-            'amount' => (float) $b['ngn_amount'],
+            'amount' => hostfiBuyPaid($b),
             'currency' => 'NGN',
             'tx_hash' => $b['tx_hash'],
             'received_at' => $b['created_at'],
@@ -628,7 +684,7 @@ function hostfiBuyNotify(int $id, string $status): void
     }
     [$order] = hostfiBuyOrderFor($buy);
     $coin = static fn ($v): string => $v !== null && (float) $v > 0 ? rtrim(rtrim(number_format((float) $v, 8, '.', ''), '0'), '.') . ' ' . $buy['currency'] : '-';
-    $paid = '₦' . number_format((float) $buy['ngn_amount'], 2);
+    $paid = '₦' . number_format(hostfiBuyPaid($buy), 2);
     try {
         sendMail("Velcro — HostFi buy {$labels[$status]} (" . ($buy['order_ref'] ?: 'no order') . ')', ...renderEmail([
             'eyebrow' => 'HostFi buy',
@@ -715,7 +771,7 @@ function hostfiHandleFiatDeposit(array $data): bool
             ['a' => $acct]
         );
     }
-    $id = hostfiRecordPayment((string) ($live['reference'] ?? $data['reference']), $order, (float) ($live['amount']['value'] ?? 0));
+    $id = hostfiRecordPayment((string) ($live['reference'] ?? $data['reference']), $order, (float) ($live['amount']['value'] ?? 0), hostfiPaidNgn($live));
     hostfiProcessPayment($id);
     return true;
 }
@@ -744,6 +800,7 @@ function registerHostfiBuyRoutes(Router $router): void
                     'ngn_per_unit_gross' => $coinPerNgn > 0 ? 1 / $coinPerNgn : 0, // HostFi's own price, shown to users
                     'usd_per_unit' => $quote['usd_per_unit'],
                     'timer_minutes' => HOSTFI_BUY_TIMER_MINUTES,
+                    'collection_fee_ngn' => HOSTFI_COLLECTION_FEE_NGN, // HostFi keeps this from each transfer
                 ];
             } catch (Throwable $e) {
                 error_log("[HostFi] buy {$symbol} unavailable: " . $e->getMessage()); // hide the coin rather than fail the list
@@ -789,10 +846,10 @@ function registerHostfiBuyRoutes(Router $router): void
                 jsonResponse(errorResponse("{$symbol} can't be sent on that network"), 400);
             }
             $coinPerNgn = hostfiRate('NGN', $symbol);
-            $grossCoin = $amount * (1 - hostfiFee() / 100) * $coinPerNgn;
+            $grossCoin = max(0, $amount - HOSTFI_COLLECTION_FEE_NGN) * (1 - hostfiFee() / 100) * $coinPerNgn;
             $estimate = hostfiFloorCoin($grossCoin - ($net['flat'] + $grossCoin * $net['percent'] / 100));
             if ($estimate < max($net['min'], 1e-8)) {
-                $minNgn = ceil(($net['min'] + $net['flat']) / ($coinPerNgn * (1 - hostfiFee() / 100) * (1 - $net['percent'] / 100)) / 100) * 100;
+                $minNgn = ceil((($net['min'] + $net['flat']) / ($coinPerNgn * (1 - hostfiFee() / 100) * (1 - $net['percent'] / 100)) + HOSTFI_COLLECTION_FEE_NGN) / 100) * 100;
                 jsonResponse(errorResponse('Minimum for ' . $symbol . ' on this network is ₦' . number_format($minNgn)), 400);
             }
 

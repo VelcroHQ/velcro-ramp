@@ -41,6 +41,7 @@ var statusPollInterval = null;
 var activePollReference = null;
 var activePollType = null; // 'standard' or 'paj'
 var activePollTxType = 'buy'; // 'buy' or 'sell'
+var activePollUrl = null; // status URL of the running poll, reused when the tab comes back
 var pollCount = 0;
 var isPollingPaused = false;
 var currentTxDetails = {}; // Stores details for success modal
@@ -490,7 +491,7 @@ document.addEventListener('visibilitychange', () => {
       if (activePollType === 'paj') {
         startPajStatusPoll(activePollReference, activePollTxType);
       } else if (activePollType === 'standard') {
-        startStatusPoll(activePollReference, activePollTxType);
+        startStatusPoll(activePollReference, activePollTxType, activePollUrl || undefined);
       }
     }
   }

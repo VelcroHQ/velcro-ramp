@@ -775,7 +775,7 @@ function hostfiBuyEstimate(ngn) {
   const a = hostfiBuyAssets[currentBuyAsset];
   const n = hostfiBuyNetwork();
   if (!a || !n || !(ngn > 0)) return 0;
-  const gross = ngn * Number(a.coin_per_ngn);
+  const gross = Math.max(0, ngn - Number(a.collection_fee_ngn || 0)) * Number(a.coin_per_ngn);
   const coin = gross - Number(n.fee) - gross * Number(n.fee_percent || 0) / 100;
   return coin > 0 ? Math.floor(Math.round(coin * 1e8 * 1e6) / 1e6) / 1e8 : 0;
 }
@@ -786,7 +786,7 @@ function getEffectiveBuyMinLimit() {
     const a = hostfiBuyAssets[currentBuyAsset];
     const n = hostfiBuyNetwork();
     if (!a || !n || !(Number(a.coin_per_ngn) > 0)) return BUY_MIN_LIMIT;
-    const ngn = (Number(n.min) + Number(n.fee)) / (Number(a.coin_per_ngn) * (1 - Number(n.fee_percent || 0) / 100));
+    const ngn = (Number(n.min) + Number(n.fee)) / (Number(a.coin_per_ngn) * (1 - Number(n.fee_percent || 0) / 100)) + Number(a.collection_fee_ngn || 0);
     return Math.max(BUY_MIN_LIMIT, Math.ceil(ngn / 100) * 100);
   }
   if (isUsdtOrUsdcOnTrxOrEth()) {

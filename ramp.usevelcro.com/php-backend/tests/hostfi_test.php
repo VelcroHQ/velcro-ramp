@@ -42,7 +42,7 @@ $pdo->exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, reference TEXT UN
 $pdo->exec('CREATE TABLE hostfi_deposits (id INTEGER PRIMARY KEY, deposit_ref TEXT NOT NULL UNIQUE, order_ref TEXT, address TEXT, currency TEXT, network TEXT, amount REAL, tx_hash TEXT,
     status TEXT DEFAULT \'RECEIVED\', ngn_amount REAL, payout_amount REAL, swap_ref TEXT, swap_pair_ref TEXT, payout_ref TEXT, payout_client_ref TEXT, payout_attempts INTEGER DEFAULT 0, note TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)');
-$pdo->exec("CREATE TABLE hostfi_buys (id INTEGER PRIMARY KEY, payment_ref TEXT NOT NULL UNIQUE, order_ref TEXT, ngn_amount REAL, currency TEXT, network TEXT, wallet TEXT,
+$pdo->exec("CREATE TABLE hostfi_buys (id INTEGER PRIMARY KEY, payment_ref TEXT NOT NULL UNIQUE, order_ref TEXT, ngn_amount REAL, paid_ngn REAL, currency TEXT, network TEXT, wallet TEXT,
     status TEXT DEFAULT 'RECEIVED', swap_ngn REAL, coin_amount REAL, fee_coin REAL, send_amount REAL, swap_ref TEXT, swap_pair_ref TEXT, send_ref TEXT, send_client_ref TEXT,
     send_attempts INTEGER DEFAULT 0, tx_hash TEXT, note TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
 $pdo->exec('CREATE TABLE referrers (id INTEGER PRIMARY KEY, email TEXT UNIQUE, code TEXT UNIQUE, fee_percent REAL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
@@ -312,8 +312,8 @@ try {
     [$code, $res] = $app_('POST', '/api/hostfi/buy', ['asset' => 'SOL', 'network' => 'SOL', 'wallet' => $solWallet, 'amount' => 30000, 'email' => 'ada@example.com']);
     $buyRef = (string) ($res['data']['reference'] ?? '');
     $acctNo = (string) ($res['data']['account_number'] ?? '');
-    check($code === 200 && $buyRef !== '' && strlen($acctNo) === 10 && near((float) ($res['data']['estimate'] ?? 0), 0.0965, 1e-9) && $order($buyRef)['type'] === 'ONRAMP',
-        'buy: naira account issued; estimate 0.0965 SOL (₦30,000 − 0.5% → 0.0995 − 0.003 fee)');
+    check($code === 200 && $buyRef !== '' && strlen($acctNo) === 10 && near((float) ($res['data']['estimate'] ?? 0), 0.09633416, 1e-9) && $order($buyRef)['type'] === 'ONRAMP',
+        "buy: naira account issued; estimate 0.09633416 SOL (₦30,000 − HostFi's ₦50 − 0.5% → 0.0993342 − 0.003 fee)");
 
     $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-fake', 'amount' => ['currency' => 'NGN', 'value' => 9999999]]]);
     check($pdo->query("SELECT COUNT(*) FROM hostfi_buys")->fetchColumn() == 0, 'fiat webhook HostFi does not confirm: nothing recorded, nothing swapped');
@@ -368,6 +368,21 @@ try {
     $mock_('/__test/deposit', ['reference' => 'pay-3', 'currency' => 'NGN', 'amount' => 500, 'customId' => $res['data']['reference']]);
     $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-3']]);
     check($buy('pay-3')['status'] === 'REVIEW' && count($state()['swaps']) === $swapsBefore, '₦500 payment: too small after the network fee, held for review, nothing swapped');
+
+    // HostFi keeps ₦50 of the transfer: the customer is shown the ₦5,000 they sent, ₦4,950 is converted.
+    [, $res] = $app_('POST', '/api/hostfi/buy', ['asset' => 'SOL', 'network' => 'SOL', 'wallet' => $solWallet, 'amount' => 5000]);
+    $buyRefFee = (string) $res['data']['reference'];
+    $mock_('/__test/deposit', ['reference' => 'pay-fee', 'currency' => 'NGN', 'amount' => 4950, 'fee' => 50, 'customId' => $buyRefFee]);
+    $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-fee']]);
+    $swaps = $state()['swaps'];
+    [, $res] = $app_('GET', '/api/transactions/' . $buyRefFee);
+    check(near((float) $buy('pay-fee')['paid_ngn'], 5000) && near((float) $buy('pay-fee')['ngn_amount'], 4950) && near((float) end($swaps)['value'], 4925.25)
+        && near((float) $order($buyRefFee)['amount'], 5000) && near((float) ($res['data']['hostfi_progress'][0]['amount'] ?? 0), 5000),
+        "HostFi's ₦50 receiving fee: order and progress show the ₦5,000 sent; ₦4,950 − 0.5% = ₦4,925.25 converted");
+    $pdo->exec("UPDATE hostfi_buys SET paid_ngn = NULL WHERE payment_ref = 'pay-fee'");
+    $app_('GET', '/api/transactions/' . $buyRefFee);
+    $app_('POST', '/webhook/hostfi', ['event' => 'CRYPTO_WITHDRAWAL', 'data' => ['clientReference' => $buy('pay-fee')['send_client_ref']]]);
+    check(near((float) $buy('pay-fee')['paid_ngn'], 5000), 'payment recorded before the fee was stored: fee read back from HostFi');
 
     // HostFi holds freshly swapped coin for a few minutes; the send waits, then goes by itself.
     [, $res] = $app_('POST', '/api/hostfi/buy', ['asset' => 'SOL', 'network' => 'SOL', 'wallet' => $solWallet, 'amount' => 30000]);
