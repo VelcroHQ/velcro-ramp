@@ -1,14 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/velcrohq/ramp.usevelcro.com/
-    # Force copy all files into DEPLOYPATH
-    - /bin/cp -Rf ramp.usevelcro.com/. $DEPLOYPATH 2>/dev/null || /bin/cp -R ramp.usevelcro.com/. $DEPLOYPATH || true
-    # Clean up dev-only files
-    - /bin/rm -rf $DEPLOYPATH/php-backend/tests $DEPLOYPATH/php-backend/.env.test $DEPLOYPATH/php-backend/.env.example $DEPLOYPATH/php-backend/README.md $DEPLOYPATH/SETUP.txt || true
-    - /bin/rm -f $DEPLOYPATH/clear.php $DEPLOYPATH/config.php $DEPLOYPATH/paj-session.php $DEPLOYPATH/goat/test-auth.php $DEPLOYPATH/php-backend/debug_logs.php || true
-    - touch $DEPLOYPATH/.htaccess || /usr/bin/touch $DEPLOYPATH/.htaccess || true
-    # LiteSpeed restart if pkill is permitted
-    - pkill -u $(whoami) lsphp 2>/dev/null || /usr/bin/pkill -u $(whoami) lsphp 2>/dev/null || true
-    # Stamp deployed version
-    - git rev-parse --short HEAD > $DEPLOYPATH/deploy-version.txt 2>/dev/null || /usr/bin/git rev-parse --short HEAD > $DEPLOYPATH/deploy-version.txt 2>/dev/null || /usr/local/cpanel/3rdparty/bin/git rev-parse --short HEAD > $DEPLOYPATH/deploy-version.txt 2>/dev/null || echo "deployed" > $DEPLOYPATH/deploy-version.txt
+    # Same steps as running deploy.sh by hand in cPanel → Terminal (see that file).
+    - export DEPLOYPATH=/home/velcrohq/ramp.usevelcro.com
+    - /bin/bash deploy.sh --no-pull
