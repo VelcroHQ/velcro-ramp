@@ -1200,59 +1200,6 @@ function updateStepIndicators(direction) {
   }
 }
 
-function toggleUssdHelper() {
-  const container = document.getElementById('ussd-codes-container');
-  const arrow = document.getElementById('ussd-toggle-arrow');
-  if (!container) return;
-  const isHidden = container.classList.contains('hidden');
-  if (isHidden) {
-    container.classList.remove('hidden');
-    if (arrow) arrow.textContent = '▲';
-    populateUssdButtons();
-  } else {
-    container.classList.add('hidden');
-    if (arrow) arrow.textContent = '▼';
-  }
-}
-
-function populateUssdButtons() {
-  const btnsContainer = document.getElementById('ussd-bank-buttons');
-  if (!btnsContainer) return;
-  const acct = (document.getElementById('buy-account-number')?.textContent || '').trim();
-  const amtStr = (document.getElementById('buy-amount-to-pay')?.textContent || '').replace(/[^0-9.]/g, '');
-  const amt = Math.round(parseFloat(amtStr) || 0);
-
-  const banks = [
-    { name: 'GTBank', code: `*737*1*${amt || 'AMOUNT'}*${acct}#` },
-    { name: 'Zenith', code: `*966*${amt || 'AMOUNT'}*${acct}#` },
-    { name: 'UBA', code: `*919*3*${acct}*${amt || 'AMOUNT'}#` },
-    { name: 'Access', code: `*901*1*${amt || 'AMOUNT'}*${acct}#` },
-    { name: 'FirstBank', code: `*894*${amt || 'AMOUNT'}*${acct}#` },
-    { name: 'Fidelity', code: `*770*${acct}*${amt || 'AMOUNT'}#` },
-    { name: 'Stanbic', code: `*909*22*${amt || 'AMOUNT'}*${acct}#` },
-    { name: 'Wema', code: `*945*1*${acct}*${amt || 'AMOUNT'}#` }
-  ];
-
-  btnsContainer.innerHTML = banks.map(b => `
-    <button type="button" onclick="handleUssdClick('${b.code}')" class="p-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-left transition-colors flex flex-col">
-      <span class="font-bold text-gray-800 text-[11px]">${b.name}</span>
-      <span class="font-mono text-[10px] text-gray-500 truncate">${b.code}</span>
-    </button>
-  `).join('');
-}
-
-function handleUssdClick(code) {
-  if (!code) return;
-  navigator.clipboard?.writeText(code).then(() => {
-    showToast('USSD code copied: ' + code, 'success');
-  }).catch(() => {
-    showToast('USSD code: ' + code, 'info');
-  });
-  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    window.location.href = 'tel:' + encodeURIComponent(code);
-  }
-}
-
 function saveRecentOrder(tx) {
   if (!tx || !tx.reference) return;
   try {
