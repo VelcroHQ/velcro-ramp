@@ -2171,7 +2171,11 @@ function renderHostfi(data, settings) {
     const fmt = (v, d = 8) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: d });
     const balances = document.getElementById('hostfi-balances');
     balances.innerHTML = data.balances && data.balances.length
-        ? data.balances.map(b => `<div class="hostfi-balance"><div class="hostfi-balance-code">${b.currency}</div><div class="hostfi-balance-value">${b.currency === 'NGN' ? '₦' + fmt(b.balance, 2) : fmt(b.balance)}</div></div>`).join('')
+        ? data.balances.map(b => {
+            const money = v => b.currency === 'NGN' ? '₦' + fmt(v, 2) : fmt(v);
+            const held = Number(b.on_hold) > 0 ? `<div class="hostfi-balance-held">${money(b.on_hold)} on hold</div>` : '';
+            return `<div class="hostfi-balance"><div class="hostfi-balance-code">${b.currency}</div><div class="hostfi-balance-value">${money(b.balance)}</div>${held}</div>`;
+        }).join('')
         : `<p style="color: var(--text-secondary); font-size: 13px;">${data.error || (data.configured ? 'No wallets yet.' : 'Connect HostFi to see balances.')}</p>`;
 
     const deposits = data.deposits || [];
@@ -2193,11 +2197,11 @@ function renderHostfi(data, settings) {
             <td data-label="Customer">${d.email || '<span style="color: var(--text-secondary);">—</span>'}<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${d.order_ref || 'No order'}</div></td>
             <td data-label="Deposit"><span><b>${fmt(d.amount)}</b> ${d.currency}</span>${d.tx_hash ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" title="${d.tx_hash}">tx ${shortAddr(d.tx_hash)}</div>` : ''}</td>
             <td data-label="Payout">${d.payout_amount ? '₦' + fmt(d.payout_amount, 2) : '<span style="color: var(--text-secondary);">—</span>'}</td>
-            <td data-label="Status"><span class="status-pill ${String(d.status).toLowerCase()}">${statusLabel(d.status)}</span>${d.note ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; max-width: 260px;">${d.note}</div>` : ''}</td>
-            <td data-label="Action">${actionable ? `
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
-                    ${d.order_ref ? `<button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 12px;" onclick="hostfiDepositAction(${d.id}, 'retry', '${label}', '${primary}')">${primary}</button>` : ''}
-                    <button class="btn-secondary" style="width: auto; padding: 7px 14px; font-size: 12px;" onclick="hostfiDepositAction(${d.id}, 'resolve', '${label}')">Mark resolved</button>
+            <td data-label="Status" class="hostfi-status-cell"><span class="status-pill ${String(d.status).toLowerCase()}">${statusLabel(d.status)}</span>${hostfiNoteHtml(d.note)}</td>
+            <td data-label="Action" class="hostfi-action-cell">${actionable ? `
+                <div class="hostfi-actions">
+                    ${d.order_ref ? `<button class="btn-primary" onclick="hostfiDepositAction(${d.id}, 'retry', '${label}', '${primary}')">${primary}</button>` : ''}
+                    <button class="btn-secondary" onclick="hostfiDepositAction(${d.id}, 'resolve', '${label}')">Mark resolved</button>
                 </div>` : '<span style="color: var(--text-secondary);">—</span>'}</td>
         </tr>`;
     }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No HostFi deposits yet.</td></tr>';
@@ -2205,29 +2209,45 @@ function renderHostfi(data, settings) {
     if (window.lucide) lucide.createIcons();
 }
 
+// HostFi's raw error notes, said plainly. The full text stays in the tooltip.
+function hostfiNoteText(note) {
+    const n = String(note || '');
+    if (/insufficient funds/i.test(n)) return "HostFi was still holding the coin from the swap, so the send was refused. Nothing went out. Retry once it's released.";
+    if (/no record of the send/i.test(n)) return 'HostFi never received the send. Safe to retry.';
+    return n;
+}
+
+function hostfiNoteHtml(note) {
+    if (!note) return '';
+    const safe = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    return `<div class="hostfi-note" title="${safe(note)}">${safe(hostfiNoteText(note))}</div>`;
+}
+
 function renderHostfiBuys(buys, fmt) {
     const needsAction = ['REVIEW', 'SEND_FAILED', 'SEND_UNCERTAIN', 'SWAP_PENDING'];
+    const canAct = [...needsAction, 'SEND_WAITING']; // waiting sends itself, but can be pushed by hand
     const attention = buys.filter(b => needsAction.includes(b.status)).length;
     const badge = document.getElementById('hostfi-buy-review-count');
     badge.style.display = attention ? 'inline-block' : 'none';
     badge.innerText = `${attention} need attention`;
     document.getElementById('hostfi-buys-body').innerHTML = buys.length ? buys.map(b => {
-        const actionable = needsAction.includes(b.status);
+        const actionable = canAct.includes(b.status);
         // Once the swap produced a send amount, only the send is retried.
         const primary = b.status === 'SWAP_PENDING' ? 'Check swap'
-            : (b.status === 'SEND_FAILED' || b.status === 'SEND_UNCERTAIN' || Number(b.send_amount) > 0) ? 'Retry send' : 'Approve &amp; send';
+            : (['SEND_FAILED', 'SEND_UNCERTAIN', 'SEND_WAITING'].includes(b.status) || Number(b.send_amount) > 0) ? 'Retry send' : 'Approve &amp; send';
+        const sent = b.status === 'SENT' || b.status === 'SEND_PENDING';
         const label = `₦${fmt(b.ngn_amount, 2)}`;
         return `
         <tr>
             <td data-label="Paid">${new Date(String(b.created_at).replace(' ', 'T')).toLocaleString()}</td>
             <td data-label="Customer">${b.email || '<span style="color: var(--text-secondary);">—</span>'}<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${b.order_ref || 'No order'}</div></td>
             <td data-label="Payment"><span><b>${label}</b></span>${b.currency ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">for ${b.currency} on ${b.network || '?'}</div>` : ''}</td>
-            <td data-label="Sent">${Number(b.send_amount) > 0 ? `<span><b>${fmt(b.send_amount)}</b> ${b.currency}</span>` : '<span style="color: var(--text-secondary);">—</span>'}${b.wallet ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" title="${b.wallet}">to ${shortAddr(b.wallet)}</div>` : ''}${b.tx_hash ? `<div style="font-size: 11px; color: var(--text-secondary);" title="${b.tx_hash}">tx ${shortAddr(b.tx_hash)}</div>` : ''}</td>
-            <td data-label="Status"><span class="status-pill ${String(b.status).toLowerCase()}">${statusLabel(b.status)}</span>${b.note ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; max-width: 260px;">${b.note}</div>` : ''}</td>
-            <td data-label="Action">${actionable ? `
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
-                    ${b.order_ref ? `<button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 12px;" onclick="hostfiBuyAction(${b.id}, 'retry', '${label}', '${primary}')">${primary}</button>` : ''}
-                    <button class="btn-secondary" style="width: auto; padding: 7px 14px; font-size: 12px;" onclick="hostfiBuyAction(${b.id}, 'resolve', '${label}')">Mark resolved</button>
+            <td data-label="Sent">${Number(b.send_amount) > 0 ? `<span><b>${fmt(b.send_amount)}</b> ${b.currency}</span>${sent ? '' : '<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">not sent yet</div>'}` : '<span style="color: var(--text-secondary);">—</span>'}${b.wallet ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" title="${b.wallet}">to ${shortAddr(b.wallet)}</div>` : ''}${b.tx_hash ? `<div style="font-size: 11px; color: var(--text-secondary);" title="${b.tx_hash}">tx ${shortAddr(b.tx_hash)}</div>` : ''}</td>
+            <td data-label="Status" class="hostfi-status-cell"><span class="status-pill ${String(b.status).toLowerCase()}">${statusLabel(b.status)}</span>${hostfiNoteHtml(b.note)}</td>
+            <td data-label="Action" class="hostfi-action-cell">${actionable ? `
+                <div class="hostfi-actions">
+                    ${b.order_ref ? `<button class="btn-primary" onclick="hostfiBuyAction(${b.id}, 'retry', '${label}', '${primary}')">${primary}</button>` : ''}
+                    <button class="btn-secondary" onclick="hostfiBuyAction(${b.id}, 'resolve', '${label}')">Mark resolved</button>
                 </div>` : '<span style="color: var(--text-secondary);">—</span>'}</td>
         </tr>`;
     }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No HostFi buys yet.</td></tr>';
@@ -2246,7 +2266,8 @@ async function hostfiBuyAction(id, action, label, kind = '') {
         const bad = ['REVIEW', 'SEND_FAILED', 'SEND_UNCERTAIN'].includes(st);
         const msg = data.outcome === 'already_paid' ? 'HostFi shows this send already succeeded. Marked sent, nothing re-sent.'
             : data.outcome === 'still_pending' ? 'HostFi is still processing the last send. Nothing re-sent.'
-            : st === 'SEND_PENDING' ? 'Coin sent' : `Payment is now ${statusLabel(st)}`;
+            : st === 'SEND_PENDING' ? 'Coin sent'
+            : st === 'SEND_WAITING' ? "HostFi is still holding the coin. It's sent automatically once released." : `Payment is now ${statusLabel(st)}`;
         showToast(msg, bad ? 'error' : 'success');
     } catch (e) {
         showToast(e.message, 'error');

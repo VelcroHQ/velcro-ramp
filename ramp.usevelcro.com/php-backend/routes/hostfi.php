@@ -984,7 +984,8 @@ function registerHostfiRoutes(Router $router): void
             try {
                 ensureHostfiSchema();
                 foreach (hostfiApi()->walletAssets() as $code => $a) {
-                    $out['balances'][] = ['currency' => $code, 'balance' => (float) ($a['balance'] ?? 0)];
+                    $held = (float) ($a['reservedBalance'] ?? 0) + (float) ($a['lienedBalance'] ?? 0) + (float) ($a['lockedBalance'] ?? 0);
+                    $out['balances'][] = ['currency' => $code, 'balance' => (float) ($a['balance'] ?? 0), 'on_hold' => $held];
                 }
             } catch (Throwable $e) {
                 $out['error'] = publicError($e);

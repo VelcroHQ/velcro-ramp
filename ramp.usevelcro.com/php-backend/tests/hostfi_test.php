@@ -359,6 +359,28 @@ try {
     $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-3']]);
     check($buy('pay-3')['status'] === 'REVIEW' && count($state()['swaps']) === $swapsBefore, '₦500 payment: too small after the network fee, held for review, nothing swapped');
 
+    // HostFi holds freshly swapped coin for a few minutes; the send waits, then goes by itself.
+    [, $res] = $app_('POST', '/api/hostfi/buy', ['asset' => 'SOL', 'network' => 'SOL', 'wallet' => $solWallet, 'amount' => 30000]);
+    $buyRef4 = (string) $res['data']['reference'];
+    $mock_('/__test/set', ['held' => ['SOL' => 1000]]);
+    $payoutsBefore = count($state()['payouts']);
+    $mock_('/__test/deposit', ['reference' => 'pay-4', 'currency' => 'NGN', 'amount' => 30000, 'customId' => $buyRef4]);
+    $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-4']]);
+    check($buy('pay-4')['status'] === 'SEND_WAITING' && count($state()['payouts']) === $payoutsBefore && $order($buyRef4)['status'] === 'PROCESSING',
+        'coin held by HostFi: send refused for funds → SEND_WAITING, nothing sent, order still processing');
+    [, $res] = $app_('GET', '/api/transactions/' . $buyRef4);
+    check(($res['data']['hostfi_progress'][0]['payout'] ?? '') === 'pending' && $buy('pay-4')['status'] === 'SEND_WAITING' && count($state()['payouts']) === $payoutsBefore,
+        'order viewed while still held: shows sending, nothing sent');
+    $mock_('/__test/set', ['held' => []]);
+    $app_('GET', '/api/transactions/' . $buyRef4);
+    $last = array_values($state()['payouts']);
+    $last = end($last);
+    check($buy('pay-4')['status'] === 'SEND_PENDING' && count($state()['payouts']) === $payoutsBefore + 1
+        && ($last['recipient']['accountNumber'] ?? '') === $solWallet && near((float) $last['amount']['value'], 0.0965, 1e-9),
+        "coin released: the next check sends the same 0.0965 SOL to the order's wallet");
+    $app_('GET', '/api/transactions/' . $buyRef4);
+    check(count($state()['payouts']) === $payoutsBefore + 1, 'viewing again never sends twice');
+
     // ── Route switches for the other providers ──
     $resetLimits();
     $app_('POST', '/api/admin/settings', ['routes' => ['buy:switch:USDT' => false]], $admin);

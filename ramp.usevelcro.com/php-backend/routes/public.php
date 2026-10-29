@@ -730,7 +730,16 @@ function registerPublicRoutes(Router $router): void
             // Proactively sync if in any non-terminal state
             $currentStatus = strtoupper((string)($row['status'] ?? ''));
             if (($row['channel'] ?? '') === 'HOSTFI') {
-                // Read-only: HostFi's webhooks move these orders along, never a status check.
+                // HostFi's webhooks move these orders along. The one exception: a buy whose coin HostFi
+                // was still holding is sent once it's free (same order, same wallet, same amount).
+                if (strtoupper((string) $row['type']) === 'ONRAMP' && $currentStatus === 'PROCESSING') {
+                    try {
+                        hostfiBuyResumeOrder((string) $row['reference']);
+                        $row = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $row['id']]) ?: $row;
+                    } catch (Throwable $e) {
+                        error_log('[HostFi] Resume send failed for ' . $row['reference'] . ': ' . $e->getMessage());
+                    }
+                }
             } elseif (!in_array($currentStatus, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true)) {
                 if (($row['channel'] ?? '') === 'PAJ') {
                     if (pajApi()->isConfigured()) {

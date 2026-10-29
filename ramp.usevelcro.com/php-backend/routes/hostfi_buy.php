@@ -21,6 +21,8 @@ declare(strict_types=1);
  */
 
 const HOSTFI_BUY_TIMER_MINUTES = 60;
+// HostFi holds swapped coin for a few minutes before it can be sent; past this, a person checks it.
+const HOSTFI_SEND_WAIT_MINUTES = 120;
 
 function ensureHostfiBuySchema(): void
 {
@@ -174,7 +176,7 @@ function hostfiBuyProblem(array $buy, ?array $order, array $hf): ?string
     }
     $sent = Database::selectOne(
         "SELECT `id` FROM `hostfi_buys` WHERE `order_ref` = :r AND `id` <> :id
-            AND `status` IN ('SWAPPING','SWAP_PENDING','SWAPPED','SENDING','SEND_PENDING','SEND_UNCERTAIN','SEND_FAILED','SENT')",
+            AND `status` IN ('SWAPPING','SWAP_PENDING','SWAPPED','SENDING','SEND_WAITING','SEND_PENDING','SEND_UNCERTAIN','SEND_FAILED','SENT')",
         ['r' => $order['reference'], 'id' => $buy['id']]
     );
     if ($sent) {
@@ -324,12 +326,69 @@ function hostfiBuySend(array $buy): void
         try {
             $res = hostfiApi()->payout($clientRef);
         } catch (Throwable $lookup) {
-            hostfiBuyClaim($id, ['SENDING'], 'SEND_UNCERTAIN', ['note' => 'Send request failed (' . substr($e->getMessage(), 0, 200) . '); waiting for HostFi to confirm before any retry']);
+            // A 4xx answer plus no record of the send means HostFi refused it outright: nothing went out.
+            $refused = $e->getCode() >= 400 && $e->getCode() < 500 && $lookup->getCode() === 404;
+            if ($refused && stripos($e->getMessage(), 'insufficient') !== false) {
+                // HostFi holds swapped coin for a few minutes; hostfiBuyResumeWaiting sends once it's free.
+                hostfiBuyClaim($id, ['SENDING'], 'SEND_WAITING', ['note' => "HostFi is still holding the {$buy['currency']} from the swap; it's sent automatically once released"]);
+            } elseif ($refused) {
+                hostfiBuyClaim($id, ['SENDING'], 'SEND_FAILED', ['note' => 'HostFi refused the send: ' . substr($e->getMessage(), 0, 200)]);
+            } else {
+                hostfiBuyClaim($id, ['SENDING'], 'SEND_UNCERTAIN', ['note' => 'Send request failed (' . substr($e->getMessage(), 0, 200) . '); waiting for HostFi to confirm before any retry']);
+            }
             return;
         }
     }
     hostfiBuyClaim($id, ['SENDING'], 'SEND_PENDING', ['send_ref' => (string) ($res['reference'] ?? '')]);
     hostfiBuyApplySendStatus($id, $res);
+}
+
+/**
+ * Send a SEND_WAITING payment once HostFi has released enough coin to cover it and the network
+ * fee. After HOSTFI_SEND_WAIT_MINUTES it goes to REVIEW so someone looks at it.
+ */
+function hostfiBuyResumeWaiting(array $buy): void
+{
+    if ($buy['status'] !== 'SEND_WAITING') {
+        return;
+    }
+    if (strtotime((string) $buy['updated_at']) < time() - HOSTFI_SEND_WAIT_MINUTES * 60) {
+        hostfiBuyClaim((int) $buy['id'], ['SEND_WAITING'], 'REVIEW', ['note' => 'HostFi held the ' . $buy['currency'] . ' for over ' . HOSTFI_SEND_WAIT_MINUTES . ' minutes; retry the send once it is released']);
+        hostfiBuySyncOrder($buy['order_ref']);
+        return;
+    }
+    try {
+        $wallet = hostfiApi()->walletAsset((string) $buy['currency']);
+        $need = (float) $buy['send_amount'] + hostfiSendFee((string) $buy['currency'], (string) $buy['network'], (float) $buy['send_amount'])['fee'];
+    } catch (Throwable $e) {
+        return; // try again on the next check
+    }
+    $free = (float) ($wallet['balance'] ?? 0) - (float) ($wallet['reservedBalance'] ?? 0) - (float) ($wallet['lienedBalance'] ?? 0) - (float) ($wallet['lockedBalance'] ?? 0);
+    if ($free + 1e-9 < $need || !hostfiBuyClaim((int) $buy['id'], ['SEND_WAITING'], 'SWAPPED')) {
+        return;
+    }
+    hostfiBuySend(hostfiBuy((int) $buy['id']));
+    hostfiBuySyncOrder($buy['order_ref']);
+}
+
+/**
+ * Move an order's sends along when its page is viewed: send payments HostFi was holding, and
+ * re-read sends in flight (read-only) so the order completes as soon as the coin lands.
+ */
+function hostfiBuyResumeOrder(string $orderRef): void
+{
+    ensureHostfiBuySchema();
+    $rows = Database::select("SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r AND `status` IN ('SEND_WAITING','SEND_PENDING')", ['r' => $orderRef]);
+    foreach ($rows as $buy) {
+        if ($buy['status'] === 'SEND_WAITING') {
+            hostfiBuyResumeWaiting($buy);
+        } elseif (strtotime((string) $buy['updated_at']) < time() - 60) {
+            hostfiBuyCheckSend($buy);
+        }
+    }
+    if ($rows) {
+        hostfiBuySyncOrder($orderRef);
+    }
 }
 
 /** Re-read a send from HostFi (payout webhook, poller safety net, admin). Read-only. */
@@ -360,7 +419,34 @@ function hostfiBuyApplySendStatus(int $id, array $payout): void
         hostfiBuyClaim($id, $from, 'SENT', $hash ? ['tx_hash' => $hash] : []);
     } elseif ($status !== '') {
         hostfiBuyClaim($id, ['SEND_UNCERTAIN'], 'SEND_PENDING'); // HostFi has it and is still working on it
+        $buy = hostfiBuy($id);
+        // HostFi can show "in progress" long after the coin landed. The hash comes from HostFi's own
+        // record, so a finalized, error-free transaction on chain is as good as its SUCCESS.
+        if ($buy && $hash && hostfiChainFinalized(hostfiChain((string) $buy['network']), (string) $hash)) {
+            hostfiBuyClaim($id, $from, 'SENT', ['tx_hash' => $hash, 'note' => 'Confirmed on chain while HostFi still showed ' . $status]);
+        } elseif ($buy && $hash && empty($buy['tx_hash'])) {
+            Database::execute('UPDATE `hostfi_buys` SET `tx_hash` = :h WHERE `id` = :id', ['h' => $hash, 'id' => $id]);
+        }
     }
+}
+
+/** Whether a transaction is final on chain. Only Solana is checked; other chains wait for HostFi. */
+function hostfiChainFinalized(string $chain, string $hash): bool
+{
+    if ($chain !== 'solana' || !preg_match('/^[1-9A-HJ-NP-Za-km-z]{60,100}$/', $hash)) {
+        return false;
+    }
+    try {
+        $res = httpRequest('POST', 'https://api.mainnet-beta.solana.com', [
+            'headers' => ['Accept: application/json'],
+            'body' => ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'getSignatureStatuses', 'params' => [[$hash], ['searchTransactionHistory' => true]]],
+            'timeout' => 10,
+        ]);
+    } catch (Throwable $e) {
+        return false;
+    }
+    $s = $res['result']['value'][0] ?? null;
+    return is_array($s) && ($s['confirmationStatus'] ?? '') === 'finalized' && ($s['err'] ?? null) === null;
 }
 
 /**
@@ -372,7 +458,7 @@ function hostfiBuyApplySendStatus(int $id, array $payout): void
 function hostfiBuyRetrySend(int $id): string
 {
     $buy = hostfiBuy($id);
-    $retryable = ['SEND_FAILED', 'SEND_UNCERTAIN'];
+    $retryable = ['SEND_FAILED', 'SEND_UNCERTAIN', 'SEND_WAITING'];
     if (!$buy || !(in_array($buy['status'], $retryable, true) || ($buy['status'] === 'REVIEW' && (float) $buy['send_amount'] > 0))) {
         throw new RuntimeException('This payment has nothing to re-send');
     }
@@ -420,7 +506,7 @@ function hostfiBuySyncOrder(?string $orderRef): void
     $any = static fn (array $want): bool => (bool) array_intersect($statuses, $want);
     $status = match (true) {
         $any(['SENT']) => 'COMPLETED',
-        $any(['SWAPPING', 'SWAP_PENDING', 'SWAPPED', 'SENDING', 'SEND_PENDING', 'SEND_UNCERTAIN', 'SEND_FAILED']) => 'PROCESSING',
+        $any(['SWAPPING', 'SWAP_PENDING', 'SWAPPED', 'SENDING', 'SEND_WAITING', 'SEND_PENDING', 'SEND_UNCERTAIN', 'SEND_FAILED']) => 'PROCESSING',
         $any(['RECEIVED']) => 'CONFIRMED',
         !array_diff($statuses, ['RESOLVED']) => 'CANCELLED', // an admin closed every payment by hand
         default => 'REVIEW',
@@ -450,7 +536,7 @@ function hostfiBuySyncOrder(?string $orderRef): void
 /** Poller safety net for missed webhooks. Read-only: re-reads sends stuck for 30+ minutes. */
 function hostfiBuyReconcileOrder(string $orderRef): void
 {
-    ensureHostfiBuySchema();
+    hostfiBuyResumeOrder($orderRef);
     $rows = Database::select(
         "SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r AND `status` IN ('SEND_PENDING','SEND_UNCERTAIN')",
         ['r' => $orderRef]
@@ -485,7 +571,7 @@ function hostfiBuyProgress(string $orderRef): array
         $converted = (float) $b['coin_amount'] > 0 ? 'done' : (in_array($s, ['SWAPPING', 'SWAP_PENDING'], true) ? 'pending' : ($s === 'RECEIVED' ? 'waiting' : 'stopped'));
         $payout = match ($s) {
             'SENT' => 'done',
-            'SENDING', 'SEND_PENDING', 'SEND_UNCERTAIN' => 'pending',
+            'SENDING', 'SEND_WAITING', 'SEND_PENDING', 'SEND_UNCERTAIN' => 'pending',
             'SEND_FAILED' => 'failed',
             'REVIEW' => 'review',
             'RESOLVED' => 'resolved',
@@ -759,7 +845,7 @@ function registerHostfiBuyRoutes(Router $router): void
         auditLog('HOSTFI_BUY_RETRY', ['id' => (int) $id, 'from' => $buy['status']]);
         $outcome = 'processed';
         try {
-            if (in_array($buy['status'], ['SEND_FAILED', 'SEND_UNCERTAIN'], true) || ($buy['status'] === 'REVIEW' && (float) $buy['send_amount'] > 0)) {
+            if (in_array($buy['status'], ['SEND_FAILED', 'SEND_UNCERTAIN', 'SEND_WAITING'], true) || ($buy['status'] === 'REVIEW' && (float) $buy['send_amount'] > 0)) {
                 $outcome = hostfiBuyRetrySend((int) $id); // swap already done: only the send is retried
             } elseif ($buy['status'] === 'SWAP_PENDING') {
                 hostfiBuyCheckSwap($buy);
@@ -780,7 +866,7 @@ function registerHostfiBuyRoutes(Router $router): void
         ensureHostfiBuySchema();
         $note = substr(trim((string) body(getJsonBody(), 'note', 'Resolved manually')), 0, 300);
         $buy = hostfiBuy((int) $id);
-        if (!$buy || !in_array($buy['status'], ['REVIEW', 'SEND_FAILED', 'SEND_UNCERTAIN', 'SWAP_PENDING'], true)) {
+        if (!$buy || !in_array($buy['status'], ['REVIEW', 'SEND_FAILED', 'SEND_UNCERTAIN', 'SEND_WAITING', 'SWAP_PENDING'], true)) {
             jsonResponse(['success' => false, 'error' => 'Only payments that need attention can be resolved'], 400);
         }
         hostfiBuySetStatus((int) $id, 'RESOLVED', $note);

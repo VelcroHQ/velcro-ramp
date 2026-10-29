@@ -30,9 +30,11 @@ $respond = static function (int $code, array $data) use (&$state, $fp): never {
     echo json_encode($data);
     exit;
 };
+// `held` (currency => amount) mimics HostFi holding freshly swapped coin: reserved, not sendable.
 $asset = static fn (string $code, array $networks) => [
     'id' => 'asset-' . strtolower($code),
     'balance' => 1000,
+    'reservedBalance' => (float) ($state['held'][$code] ?? 0),
     'currency' => ['code' => $code, 'name' => $code, 'networks' => array_map(fn ($n) => ['network' => $n, 'activities' => ['DEPOSIT', 'WITHDRAW']], $networks)],
 ];
 // Naira per coin. Like the live API, `rate` is toCurrency per one fromCurrency.
@@ -147,6 +149,9 @@ switch (true) {
         }
         if ($state['fail_payouts']) {
             $respond(503, ['code' => 'SERVER_ERROR', 'message' => 'Payout provider down']);
+        }
+        if (($state['held'][$body['currency']] ?? 0) > 0) {
+            $respond(400, ['code' => 'BAD_REQUEST', 'message' => "Insufficient funds to complete transaction, maximum amount you can withdraw is 0 {$body['currency']}"]);
         }
         $state['payouts'][$ref] = ['reference' => 'po-' . count($state['payouts']), 'clientReference' => $ref, 'amount' => ['value' => $body['amount'], 'currency' => $body['currency']], 'recipient' => $body['recipient'], 'status' => $state['payout_status'],
             'metadata' => [['name' => 'transactionId', 'value' => 'chain-tx-' . $ref]]];
