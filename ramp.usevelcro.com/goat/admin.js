@@ -176,8 +176,6 @@ async function fetchData() {
             document.getElementById('sell-min-input').value = settings.sell_min_limit;
             document.getElementById('sell-max-input').value = settings.sell_max_limit;
             document.getElementById('paj-email-input').value = settings.paj_email || '';
-            document.getElementById('paj-usdt-toggle').checked = !!settings.paj_usdt_enabled;
-            document.getElementById('paj-usdc-toggle').checked = !!settings.paj_usdc_enabled;
             if (document.getElementById('telegram-bot-token')) {
                 document.getElementById('telegram-bot-token').value = settings.telegram_bot_token || '';
                 document.getElementById('telegram-chat-id').value = settings.telegram_chat_id || '';
@@ -419,8 +417,6 @@ async function saveSettings() {
     btn.innerText = 'Saving...';
     btn.disabled = true;
     try {
-        const pajUsdt = document.getElementById('paj-usdt-toggle').checked;
-        const pajUsdc = document.getElementById('paj-usdc-toggle').checked;
         const res = await fetch(`${API_BASE}/api/admin/settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
@@ -430,9 +426,7 @@ async function saveSettings() {
                 paj_rate_margin: pajMargin,
                 buy_max_limit: buyMax,
                 sell_min_limit: sellMin,
-                sell_max_limit: sellMax,
-                paj_usdt_enabled: pajUsdt,
-                paj_usdc_enabled: pajUsdc
+                sell_max_limit: sellMax
             })
         });
         const data = await res.json();
@@ -2073,7 +2067,80 @@ async function adminPost(path, body) {
 
 // ─── HostFi ───
 
-const HOSTFI_SYMBOLS = ['BTC', 'ETH', 'SOL', 'USDT', 'USDC'];
+// ─── Coins & providers ───
+
+let routeRows = [];          // [{side, provider, symbol, enabled}] from the server
+const routeEdits = {};       // "side:provider:SYM" → bool, unsaved changes
+
+async function fetchRoutes() {
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/routes`, { headers: { 'Authorization': adminKey } });
+        const data = scrub(await res.json());
+        if (!res.ok) throw new Error(data.error || 'Failed to load coins');
+        routeRows = data.routes || [];
+        Object.keys(routeEdits).forEach(k => delete routeEdits[k]);
+        const warn = [];
+        if (data.switch_list_missing) warn.push("Switch's coin list hasn't loaded on the server yet. Open the site once, then refresh this page.");
+        if (!data.hostfi_configured) warn.push("HostFi isn't connected, so its switches have no effect until it is.");
+        const w = document.getElementById('coins-warning');
+        w.style.display = warn.length ? 'block' : 'none';
+        w.innerText = warn.join(' ');
+        renderRoutes();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+function renderRoutes() {
+    const q = (document.getElementById('coins-search').value || '').trim().toUpperCase();
+    const byCoin = {};
+    routeRows.forEach(r => { (byCoin[r.symbol] = byCoin[r.symbol] || {})[`${r.side}:${r.provider}`] = r.enabled; });
+    // Coins HostFi handles first, then alphabetical.
+    const hostfiFirst = ['BTC', 'ETH', 'SOL', 'USDT', 'USDC'];
+    const coins = Object.keys(byCoin).filter(c => !q || c.includes(q)).sort((a, b) => {
+        const ia = hostfiFirst.indexOf(a), ib = hostfiFirst.indexOf(b);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
+    });
+    const cols = ['buy:switch', 'buy:paj', 'buy:hostfi', 'sell:switch', 'sell:paj', 'sell:hostfi'];
+    const labels = { 'buy:switch': 'Buy · Switch', 'buy:paj': 'Buy · PAJ', 'buy:hostfi': 'Buy · HostFi', 'sell:switch': 'Sell · Switch', 'sell:paj': 'Sell · PAJ', 'sell:hostfi': 'Sell · HostFi' };
+    document.getElementById('coins-body').innerHTML = coins.length ? coins.map(coin => `
+        <tr>
+            <td data-label="Coin" class="coin-cell">${coin}</td>
+            ${cols.map(col => {
+                if (!(col in byCoin[coin])) return `<td data-label="${labels[col]}"><span class="route-none">—</span></td>`;
+                const key = `${col}:${coin}`;
+                const on = key in routeEdits ? routeEdits[key] : byCoin[coin][col];
+                return `<td data-label="${labels[col]}"><span class="route-cell${key in routeEdits ? ' changed' : ''}"><input type="checkbox" class="route-toggle" aria-label="${labels[col]} ${coin}" ${on ? 'checked' : ''} onchange="editRoute('${key}', this.checked)"></span></td>`;
+            }).join('')}
+        </tr>`).join('') : '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">No coins match.</td></tr>';
+    const btn = document.getElementById('coins-save-btn');
+    const n = Object.keys(routeEdits).length;
+    btn.innerText = n ? `Save ${n} change${n === 1 ? '' : 's'}` : 'Save changes';
+    btn.disabled = !n;
+}
+
+function editRoute(key, on) {
+    const [side, provider, symbol] = key.split(':');
+    const row = routeRows.find(r => r.side === side && r.provider === provider && r.symbol === symbol);
+    if (row && row.enabled === on) delete routeEdits[key];
+    else routeEdits[key] = on;
+    renderRoutes();
+}
+
+async function saveRoutes() {
+    const n = Object.keys(routeEdits).length;
+    if (!n) return;
+    const btn = document.getElementById('coins-save-btn');
+    btn.disabled = true;
+    try {
+        await adminPost('/api/admin/settings', { routes: { ...routeEdits } });
+        showToast(`Saved ${n} change${n === 1 ? '' : 's'}. The site picks them up on its next load.`, 'success');
+        await fetchRoutes();
+    } catch (e) {
+        showToast(e.message, 'error');
+        btn.disabled = false;
+    }
+}
 
 async function fetchHostfi() {
     try {
@@ -2096,8 +2163,6 @@ function renderHostfi(data, settings) {
     env.innerText = !data.configured ? 'Not connected' : data.environment === 'live' ? 'Live' : 'Sandbox';
     document.getElementById('hostfi-not-configured').style.display = data.configured ? 'none' : 'block';
 
-    const assets = settings.hostfi_assets || {};
-    HOSTFI_SYMBOLS.forEach(sym => { document.getElementById(`hostfi-toggle-${sym}`).checked = !!assets[sym]; });
     const timers = settings.sell_timer_minutes || {};
     document.getElementById('hostfi-fee-input').value = settings.hostfi_fee ?? 0.5;
     document.getElementById('hostfi-timer-btc').value = timers.BTC ?? 120;
@@ -2136,7 +2201,57 @@ function renderHostfi(data, settings) {
                 </div>` : '<span style="color: var(--text-secondary);">—</span>'}</td>
         </tr>`;
     }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No HostFi deposits yet.</td></tr>';
+    renderHostfiBuys(data.buys || [], fmt);
     if (window.lucide) lucide.createIcons();
+}
+
+function renderHostfiBuys(buys, fmt) {
+    const needsAction = ['REVIEW', 'SEND_FAILED', 'SEND_UNCERTAIN', 'SWAP_PENDING'];
+    const attention = buys.filter(b => needsAction.includes(b.status)).length;
+    const badge = document.getElementById('hostfi-buy-review-count');
+    badge.style.display = attention ? 'inline-block' : 'none';
+    badge.innerText = `${attention} need attention`;
+    document.getElementById('hostfi-buys-body').innerHTML = buys.length ? buys.map(b => {
+        const actionable = needsAction.includes(b.status);
+        // Once the swap produced a send amount, only the send is retried.
+        const primary = b.status === 'SWAP_PENDING' ? 'Check swap'
+            : (b.status === 'SEND_FAILED' || b.status === 'SEND_UNCERTAIN' || Number(b.send_amount) > 0) ? 'Retry send' : 'Approve &amp; send';
+        const label = `₦${fmt(b.ngn_amount, 2)}`;
+        return `
+        <tr>
+            <td data-label="Paid">${new Date(String(b.created_at).replace(' ', 'T')).toLocaleString()}</td>
+            <td data-label="Customer">${b.email || '<span style="color: var(--text-secondary);">—</span>'}<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${b.order_ref || 'No order'}</div></td>
+            <td data-label="Payment"><span><b>${label}</b></span>${b.currency ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">for ${b.currency} on ${b.network || '?'}</div>` : ''}</td>
+            <td data-label="Sent">${Number(b.send_amount) > 0 ? `<span><b>${fmt(b.send_amount)}</b> ${b.currency}</span>` : '<span style="color: var(--text-secondary);">—</span>'}${b.wallet ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" title="${b.wallet}">to ${shortAddr(b.wallet)}</div>` : ''}${b.tx_hash ? `<div style="font-size: 11px; color: var(--text-secondary);" title="${b.tx_hash}">tx ${shortAddr(b.tx_hash)}</div>` : ''}</td>
+            <td data-label="Status"><span class="status-pill ${String(b.status).toLowerCase()}">${statusLabel(b.status)}</span>${b.note ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; max-width: 260px;">${b.note}</div>` : ''}</td>
+            <td data-label="Action">${actionable ? `
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                    ${b.order_ref ? `<button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 12px;" onclick="hostfiBuyAction(${b.id}, 'retry', '${label}', '${primary}')">${primary}</button>` : ''}
+                    <button class="btn-secondary" style="width: auto; padding: 7px 14px; font-size: 12px;" onclick="hostfiBuyAction(${b.id}, 'resolve', '${label}')">Mark resolved</button>
+                </div>` : '<span style="color: var(--text-secondary);">—</span>'}</td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No HostFi buys yet.</td></tr>';
+}
+
+async function hostfiBuyAction(id, action, label, kind = '') {
+    const question = action !== 'retry' ? null
+        : kind === 'Check swap' ? `Ask HostFi whether the swap for the ${label} payment has finished? If it has, the coin is sent.`
+        : kind === 'Retry send' ? `Retry sending the coin for the ${label} payment? HostFi is checked first; nothing is sent if the last send went through or is still processing.`
+        : `Convert the ${label} payment and send the coin to the customer's wallet now? This skips the automatic checks.`;
+    if (!confirm(question || `Mark the ${label} payment as resolved? Use this once you've handled it outside Velcro (refund or manual send).`)) return;
+    try {
+        const body = action === 'resolve' ? { note: prompt('Note for the audit log (optional):') || 'Resolved manually' } : {};
+        const data = await adminPost(`/api/admin/hostfi/buys/${id}/${action}`, body);
+        const st = data.buy ? data.buy.status : 'RESOLVED';
+        const bad = ['REVIEW', 'SEND_FAILED', 'SEND_UNCERTAIN'].includes(st);
+        const msg = data.outcome === 'already_paid' ? 'HostFi shows this send already succeeded. Marked sent, nothing re-sent.'
+            : data.outcome === 'still_pending' ? 'HostFi is still processing the last send. Nothing re-sent.'
+            : st === 'SEND_PENDING' ? 'Coin sent' : `Payment is now ${statusLabel(st)}`;
+        showToast(msg, bad ? 'error' : 'success');
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+    fetchHostfi();
 }
 
 async function saveHostfiSettings() {
@@ -2145,14 +2260,11 @@ async function saveHostfiSettings() {
     const otherTimer = parseInt(document.getElementById('hostfi-timer-default').value, 10);
     if (Number.isNaN(fee) || fee < 0 || fee > 10) { showToast('Fee must be between 0 and 10%', 'error'); return; }
     if ([btcTimer, otherTimer].some(t => Number.isNaN(t) || t < 15 || t > 360)) { showToast('Timers must be between 15 and 360 minutes', 'error'); return; }
-    const hostfi_assets = {};
-    HOSTFI_SYMBOLS.forEach(sym => { hostfi_assets[sym] = document.getElementById(`hostfi-toggle-${sym}`).checked; });
     const btn = document.getElementById('hostfi-save-btn');
     btn.disabled = true;
     try {
-        await adminPost('/api/admin/settings', { hostfi_assets, hostfi_fee: fee, sell_timer_minutes: { BTC: btcTimer, default: otherTimer } });
-        const on = HOSTFI_SYMBOLS.filter(sym => hostfi_assets[sym]);
-        showToast(on.length ? `Saved. Selling via HostFi: ${on.join(', ')}` : 'Saved. No coins are sold via HostFi', 'success');
+        await adminPost('/api/admin/settings', { hostfi_fee: fee, sell_timer_minutes: { BTC: btcTimer, default: otherTimer } });
+        showToast('HostFi fee and timers saved', 'success');
     } catch (e) {
         showToast(e.message, 'error');
     } finally {
@@ -2600,6 +2712,9 @@ function switchSection(id) {
     }
     if (id === 'hostfi') {
         fetchHostfi();
+    }
+    if (id === 'coins') {
+        fetchRoutes();
     }
     if (id === 'email') {
         fetchCampaigns();

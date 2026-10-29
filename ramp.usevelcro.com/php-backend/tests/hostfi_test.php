@@ -17,7 +17,7 @@ $tmp = sys_get_temp_dir() . '/velcro_hostfi_test_' . getmypid();
 @mkdir($tmp . '/data', 0777, true);
 $mockState = $tmp . '/mock.json';
 file_put_contents($mockState, '');
-foreach (['.referral_schema_v1', '.receipt_schema_v1', '.hostfi_schema_v1'] as $flag) {
+foreach (['.referral_schema_v1', '.receipt_schema_v1', '.hostfi_schema_v1', '.hostfi_buy_schema_v1'] as $flag) {
     file_put_contents($tmp . '/data/' . $flag, 'test'); // MySQL DDL; tables built below instead
 }
 
@@ -41,6 +41,9 @@ $pdo->exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, reference TEXT UN
 $pdo->exec('CREATE TABLE hostfi_deposits (id INTEGER PRIMARY KEY, deposit_ref TEXT NOT NULL UNIQUE, order_ref TEXT, address TEXT, currency TEXT, network TEXT, amount REAL, tx_hash TEXT,
     status TEXT DEFAULT \'RECEIVED\', ngn_amount REAL, payout_amount REAL, swap_ref TEXT, swap_pair_ref TEXT, payout_ref TEXT, payout_client_ref TEXT, payout_attempts INTEGER DEFAULT 0, note TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)');
+$pdo->exec("CREATE TABLE hostfi_buys (id INTEGER PRIMARY KEY, payment_ref TEXT NOT NULL UNIQUE, order_ref TEXT, ngn_amount REAL, currency TEXT, network TEXT, wallet TEXT,
+    status TEXT DEFAULT 'RECEIVED', swap_ngn REAL, coin_amount REAL, fee_coin REAL, send_amount REAL, swap_ref TEXT, swap_pair_ref TEXT, send_ref TEXT, send_client_ref TEXT,
+    send_attempts INTEGER DEFAULT 0, tx_hash TEXT, note TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
 $pdo->exec('CREATE TABLE referrers (id INTEGER PRIMARY KEY, email TEXT UNIQUE, code TEXT UNIQUE, fee_percent REAL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
 $pdo->exec('CREATE TABLE audit_logs (id INTEGER PRIMARY KEY, action TEXT, ip TEXT, user_agent TEXT, details TEXT)');
 
@@ -84,6 +87,7 @@ function near(float $a, float $b, float $eps = 0.01): bool
 $app_ = static fn (string $method, string $path, ?array $body = null, string $auth = '') => call($GLOBALS['appPort'], $method, $path, $body, $auth, str_starts_with($path, '/webhook/') ? "x-auth-secret: hook-secret\r\n" : '');
 $mock_ = static fn (string $path, array $body = []) => call($GLOBALS['mockPort'], 'POST', $path, $body)[1];
 $deposit = static fn (string $ref) => $pdo->query("SELECT * FROM hostfi_deposits WHERE deposit_ref = " . $pdo->quote($ref))->fetch();
+$resetLimits = static fn () => array_map('unlink', glob($tmp . '/data/ratelimit/*') ?: []);
 $order = static fn (string $ref) => $pdo->query("SELECT * FROM transactions WHERE reference = " . $pdo->quote($ref))->fetch();
 $state = static fn () => $mock_('/__test/state');
 $hook = static fn (string $ref, string $address, string $currency = 'BTC', float $amount = 0.001) => $app_('POST', '/webhook/hostfi', [
@@ -274,6 +278,100 @@ try {
     $paid = array_values(array_slice($state()['payouts'], $payoutsBefore));
     check(count($paid) === 1 && near((float) $paid[0]['amount']['value'], 298450) && near((float) $order($openRef)['amount'], 0.002, 1e-9),
         'no-amount order: 0.002 BTC arrives, ₦298,450 paid (₦300,000 − 0.5% − ₦50), order records 0.002 BTC');
+
+    // ── Buys: naira in, SOL out (mock: 1 SOL = ₦300,000; network fee 0.003 SOL, min 0.006) ──
+    $resetLimits(); // this file makes more orders than one IP may in 10 minutes
+    $mock_('/__test/set', ['payout_status' => 'WITHDRAWAL_PENDING', 'fail_payouts' => false]);
+    $solWallet = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
+    $buy = static fn (string $ref) => $pdo->query("SELECT * FROM hostfi_buys WHERE payment_ref = " . $pdo->quote($ref))->fetch();
+    [, $res] = $app_('GET', '/api/settings');
+    check(($res['data']['hostfi_buy_assets'] ?? null) === [], 'buys: HostFi buys off until switched on');
+    [$code] = $app_('POST', '/api/admin/settings', ['routes' => ['buy:hostfi:SOL' => true]], $admin);
+    [, $res] = $app_('GET', '/api/settings');
+    check($code === 200 && ($res['data']['hostfi_buy_assets'] ?? null) === ['SOL'], 'admin switch: SOL buys on through HostFi');
+    [, $res] = $app_('GET', '/api/hostfi/buy-assets');
+    $solBuy = $res['data'][0] ?? [];
+    check(($solBuy['symbol'] ?? '') === 'SOL' && ($solBuy['networks'][0]['code'] ?? '') === 'SOL' && near((float) ($solBuy['networks'][0]['fee'] ?? 0), 0.003, 1e-9)
+        && near((float) ($solBuy['coin_per_ngn'] ?? 0), 0.995 / 300000, 1e-12), 'buy-assets: SOL, its network fee, and coins per naira after our 0.5%');
+    [$code] = $app_('POST', '/api/hostfi/buy', ['asset' => 'BTC', 'network' => 'BTC', 'wallet' => 'bc1qw4pgwsc7d9f9w55xjzqgtpnevrzp0x72j5hc6v', 'amount' => 30000]);
+    check($code === 400, 'buy: coin that is switched off is refused');
+    [$code] = $app_('POST', '/api/hostfi/buy', ['asset' => 'SOL', 'network' => 'SOL', 'wallet' => '0x12345', 'amount' => 30000]);
+    check($code === 400, 'buy: invalid wallet address refused');
+    [$code, $res] = $app_('POST', '/api/hostfi/buy', ['asset' => 'SOL', 'network' => 'SOL', 'wallet' => $solWallet, 'amount' => 500]);
+    check($code === 400 && str_contains((string) ($res['message'] ?? ''), 'Minimum'), 'buy: amount too small to cover the network fee is refused with the minimum');
+    [$code, $res] = $app_('POST', '/api/hostfi/buy', ['asset' => 'SOL', 'network' => 'SOL', 'wallet' => $solWallet, 'amount' => 30000, 'email' => 'ada@example.com']);
+    $buyRef = (string) ($res['data']['reference'] ?? '');
+    $acctNo = (string) ($res['data']['account_number'] ?? '');
+    check($code === 200 && $buyRef !== '' && strlen($acctNo) === 10 && near((float) ($res['data']['estimate'] ?? 0), 0.0965, 1e-9) && $order($buyRef)['type'] === 'ONRAMP',
+        'buy: naira account issued; estimate 0.0965 SOL (₦30,000 − 0.5% → 0.0995 − 0.003 fee)');
+
+    $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-fake', 'amount' => ['currency' => 'NGN', 'value' => 9999999]]]);
+    check($pdo->query("SELECT COUNT(*) FROM hostfi_buys")->fetchColumn() == 0, 'fiat webhook HostFi does not confirm: nothing recorded, nothing swapped');
+
+    $before = $state();
+    $mock_('/__test/deposit', ['reference' => 'pay-1', 'currency' => 'NGN', 'amount' => 30000, 'customId' => $buyRef]);
+    $hook2 = static fn () => $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-1', 'amount' => ['currency' => 'NGN', 'value' => 9999999]]]);
+    $hook2();
+    $st = $state();
+    $swap = end($st['swaps']);
+    $sent = array_values(array_slice($st['payouts'], count($before['payouts'])));
+    check(($swap['from'] ?? '') === 'NGN' && near((float) $swap['value'], 29850) && near((float) $swap['ngn'], 0.0995, 1e-9),
+        "buy payment: HostFi's ₦30,000 (not the payload's) recorded; ₦29,850 swapped to 0.0995 SOL, our 0.5% kept in naira");
+    check(count($sent) === 1 && near((float) $sent[0]['amount']['value'], 0.0965, 1e-9) && ($sent[0]['recipient']['accountNumber'] ?? '') === $solWallet
+        && ($sent[0]['recipient']['network'] ?? '') === 'SOL' && ($sent[0]['amount']['currency'] ?? '') === 'SOL', 'buy: 0.0965 SOL (swap − network fee) sent to the order\'s wallet on SOL');
+    check($buy('pay-1')['status'] === 'SEND_PENDING' && $order($buyRef)['status'] === 'PROCESSING', 'buy: send pending, order PROCESSING');
+    $hook2();
+    $st2 = $state();
+    check(count($st2['swaps']) === count($st['swaps']) && count($st2['payouts']) === count($st['payouts']), 'fiat webhook delivered twice: still one swap and one send');
+
+    $mock_('/__test/set', ['payout_overrides' => [$buy('pay-1')['send_client_ref'] => 'WITHDRAWAL_SUCCESS']]);
+    $app_('POST', '/webhook/hostfi', ['event' => 'CRYPTO_WITHDRAWAL', 'data' => ['clientReference' => $buy('pay-1')['send_client_ref'], 'status' => 'WITHDRAWAL_SUCCESS']]);
+    $o = $order($buyRef);
+    check($buy('pay-1')['status'] === 'SENT' && $o['status'] === 'COMPLETED' && near((float) $o['destination_amount'], 0.0965, 1e-9) && near((float) $o['amount'], 30000)
+        && str_starts_with((string) $o['hash'], 'chain-tx-'), 'crypto payout webhook: SENT, order COMPLETED with naira paid, SOL sent and on-chain hash');
+    [, $res] = $app_('GET', '/api/transactions/' . $buyRef);
+    $prog = $res['data']['hostfi_progress'][0] ?? [];
+    check(($prog['kind'] ?? '') === 'buy' && ($prog['payout'] ?? '') === 'done' && near((float) ($prog['payout_amount'] ?? 0), 0.0965, 1e-9) && !isset($prog['wallet']),
+        'buy progress: paid → converted → sent, in the sell shape');
+
+    // A second order, paid without our customId: matched by the account it was paid into.
+    [, $res] = $app_('POST', '/api/hostfi/buy', ['asset' => 'SOL', 'network' => 'SOL', 'wallet' => $solWallet, 'amount' => 30000]);
+    $buyRef2 = (string) $res['data']['reference'];
+    $mock_('/__test/set', ['fail_payouts' => false, 'payout_status' => 'WITHDRAWAL_FAILED']);
+    $mock_('/__test/deposit', ['reference' => 'pay-2', 'currency' => 'NGN', 'amount' => 30000, 'recipientAccountNumber' => $res['data']['account_number']]);
+    $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-2']]);
+    check($buy('pay-2')['order_ref'] === $buyRef2 && $buy('pay-2')['status'] === 'SEND_FAILED', 'payment matched by its account number; HostFi send failed → SEND_FAILED, nothing re-sent');
+    [, $res] = $app_('GET', '/api/transactions/' . $buyRef2);
+    check(($res['data']['hostfi_progress'][0]['can_retry'] ?? false) === true, 'buy progress offers a retry after a failed send');
+    $mock_('/__test/set', ['payout_status' => 'WITHDRAWAL_PENDING']);
+    $countBefore = count($state()['payouts']);
+    [$code] = $app_('POST', '/api/hostfi/orders/' . $buyRef2 . '/retry', ['wallet' => 'AttackerWa11etAddressXXXXXXXXXXXXXXXXXXXXXX', 'amount' => 99]);
+    $last = array_values($state()['payouts']);
+    $last = end($last);
+    check($code === 200 && count($state()['payouts']) === $countBefore + 1 && ($last['recipient']['accountNumber'] ?? '') === $solWallet && near((float) $last['amount']['value'], 0.0965, 1e-9)
+        && $buy('pay-2')['status'] === 'SEND_PENDING' && count($state()['swaps']) === count($st2['swaps']) + 1,
+        "customer retry: same 0.0965 SOL re-sent to the order's own wallet, no second swap; wallet/amount in the request ignored");
+
+    // A payment too small to send after the network fee is held, not swapped.
+    [, $res] = $app_('POST', '/api/hostfi/buy', ['asset' => 'SOL', 'network' => 'SOL', 'wallet' => $solWallet, 'amount' => 30000]);
+    $swapsBefore = count($state()['swaps']);
+    $mock_('/__test/deposit', ['reference' => 'pay-3', 'currency' => 'NGN', 'amount' => 500, 'customId' => $res['data']['reference']]);
+    $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-3']]);
+    check($buy('pay-3')['status'] === 'REVIEW' && count($state()['swaps']) === $swapsBefore, '₦500 payment: too small after the network fee, held for review, nothing swapped');
+
+    // ── Route switches for the other providers ──
+    $resetLimits();
+    $app_('POST', '/api/admin/settings', ['routes' => ['buy:switch:USDT' => false]], $admin);
+    [$code, $res] = $app_('POST', '/api/initiate', ['direction' => 'ONRAMP', 'amount' => 5000, 'country' => 'NG', 'asset' => 'base:usdt']);
+    check($code === 400 && str_contains((string) ($res['message'] ?? ''), 'not available'), 'Switch USDT buy switched off: order refused by the server');
+    [, $res] = $app_('GET', '/api/settings');
+    check(in_array('buy:switch:USDT', $res['data']['routes_off'] ?? [], true), 'settings: switched-off Switch route listed for the site to hide');
+    [$code] = $app_('POST', '/api/admin/settings', ['routes' => ['buy:bogus:USDT' => true]], $admin);
+    check($code === 400, 'admin: unknown route key rejected');
+    [, $res] = $app_('GET', '/api/admin/routes', null, $admin);
+    $find = static fn (string $side, string $prov, string $sym) => array_values(array_filter($res['routes'] ?? [], fn ($r) => $r['side'] === $side && $r['provider'] === $prov && $r['symbol'] === $sym))[0]['enabled'] ?? null;
+    check($find('buy', 'hostfi', 'SOL') === true && $find('buy', 'hostfi', 'BTC') === false && $find('sell', 'hostfi', 'BTC') === true && $find('buy', 'paj', 'SOL') === true,
+        'admin routes grid: every provider/side/coin with its current switch');
 
     // ── Admin toggles ──
     $app_('POST', '/api/admin/settings', ['hostfi_assets' => ['SOL' => true, 'BTC' => false]], $admin);

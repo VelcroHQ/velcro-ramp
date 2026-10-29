@@ -287,6 +287,67 @@ function saveSettings(array $settings): bool
     return $written !== false;
 }
 
+// ─── Route switches: one on/off per side × provider × coin, set in admin ───
+
+const ROUTE_SIDES = ['buy', 'sell'];
+const ROUTE_PROVIDERS = ['switch', 'paj', 'hostfi'];
+// Coins HostFi can handle on each side. Switch's list comes from its API, PAJ's from PajApiClient::ASSETS.
+const HOSTFI_ROUTE_COINS = ['buy' => ['BTC', 'ETH', 'SOL'], 'sell' => ['BTC', 'ETH', 'SOL', 'USDT', 'USDC']];
+
+function routeKey(string $side, string $provider, string $symbol): string
+{
+    return strtolower($side) . ':' . strtolower($provider) . ':' . strtoupper($symbol);
+}
+
+/**
+ * Whether a coin can be bought or sold through a provider. An admin switch wins; without one,
+ * Switch and PAJ coins are on and HostFi buys are off. The older single-purpose settings
+ * (PAJ USDT/USDC, HostFi sell coins) still give the starting value until the switch is touched.
+ */
+function routeEnabled(string $side, string $provider, string $symbol, ?array $settings = null): bool
+{
+    $s = $settings ?? loadSettings();
+    $key = routeKey($side, $provider, $symbol);
+    $routes = (array) ($s['routes'] ?? []);
+    if (array_key_exists($key, $routes)) {
+        return (bool) $routes[$key];
+    }
+    $sym = strtoupper($symbol);
+    return match (strtolower($provider)) {
+        'hostfi' => strtolower($side) === 'sell' && !empty(((array) ($s['hostfi_assets'] ?? []))[$sym]),
+        'paj' => in_array($sym, ['USDT', 'USDC'], true) ? !empty($s['paj_' . strtolower($sym) . '_enabled']) : true,
+        default => true,
+    };
+}
+
+/** Switch and PAJ routes that are off, as "side:provider:SYM" keys, for the site to hide. */
+function routesOff(): array
+{
+    $s = loadSettings();
+    $off = [];
+    foreach ((array) ($s['routes'] ?? []) as $key => $on) {
+        if (!$on && !str_contains((string) $key, ':hostfi:')) {
+            $off[] = (string) $key;
+        }
+    }
+    foreach (ROUTE_SIDES as $side) {
+        foreach (['USDT', 'USDC'] as $sym) {
+            if (!routeEnabled($side, 'paj', $sym, $s)) {
+                $off[] = routeKey($side, 'paj', $sym);
+            }
+        }
+    }
+    return array_values(array_unique($off));
+}
+
+/** Refuse an order on a route that is switched off. */
+function requireRouteEnabled(string $side, string $provider, string $symbol): void
+{
+    if ($symbol === '' || !routeEnabled($side, $provider, $symbol)) {
+        jsonResponse(errorResponse(strtoupper($symbol) . ($side === 'buy' ? ' buys' : ' sells') . ' are not available right now'), 400);
+    }
+}
+
 function getPlatformFee(): float
 {
     $settings = loadSettings();
@@ -892,6 +953,11 @@ function calculateTxVolumes(array $t): array
     $usd = 0.0;
     $ngn = 0.0;
 
+    if ($channel === 'HOSTFI' && $type === 'ONRAMP') {
+        // HostFi buy: amount is the naira paid, destination_amount the crypto sent.
+        $usdNgn = function_exists('referralUsdNgnRate') ? referralUsdNgnRate() : 1500.0;
+        return ['usd' => round($usdNgn > 0 ? $amount / $usdNgn : 0.0, 2), 'ngn' => round($amount, 2)];
+    }
     if ($channel === 'HOSTFI') {
         // HostFi sell: amount is the crypto received, destination_amount the naira paid out.
         // `rate` on these rows is naira per coin, so dollar value comes from the USD/NGN rate.

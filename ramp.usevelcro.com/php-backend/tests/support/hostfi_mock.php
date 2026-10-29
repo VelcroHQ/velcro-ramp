@@ -79,6 +79,10 @@ switch (true) {
             $usd = $usdRates[strtoupper($query['fromCurrency'] ?? '')] ?? null;
             $usd ? $respond(200, ['fromCurrency' => $query['fromCurrency'], 'toCurrency' => 'USD', 'rate' => (string) $usd]) : $respond(400, ['code' => 'BAD_REQUEST', 'message' => 'We could not find any matching rates for your selected currency pair']);
         }
+        if (strtoupper($query['fromCurrency'] ?? '') === 'NGN') {
+            $per = $ngnRates[strtoupper($query['toCurrency'] ?? '')] ?? null;
+            $per ? $respond(200, ['fromCurrency' => 'NGN', 'toCurrency' => $query['toCurrency'], 'rate' => (string) (1 / $per)]) : $respond(400, ['code' => 'CURRENCY_NOT_SUPPORTED', 'message' => 'No conversion was found']);
+        }
         $rate = $ngnRates[strtoupper($query['fromCurrency'] ?? '')] ?? null;
         $rate ? $respond(200, ['fromCurrency' => $query['fromCurrency'], 'toCurrency' => 'NGN', 'isMarketRate' => false, 'rate' => (string) $rate]) : $respond(400, ['code' => 'CURRENCY_NOT_SUPPORTED', 'message' => 'No conversion was found']);
 
@@ -90,15 +94,31 @@ switch (true) {
         $d ? $respond(200, [
             'reference' => $d['reference'], 'status' => $d['status'] ?? 'SUCCESS', 'type' => 'CREDIT', 'category' => 'CRYPTO_DEPOSIT',
             'amount' => ['currency' => $d['currency'], 'value' => $d['amount']],
-            'metadata' => [['name' => 'address', 'value' => $d['address']], ['name' => 'network', 'value' => $d['network'] ?? 'BTC'], ['name' => 'transactionId', 'value' => 'tx-' . $d['reference']]],
+            'recipientAccountNumber' => $d['recipientAccountNumber'] ?? null,
+            'metadata' => ($d['currency'] === 'NGN')
+                ? array_values(array_filter([isset($d['customId']) ? ['name' => 'customId', 'value' => $d['customId']] : null]))
+                : [['name' => 'address', 'value' => $d['address']], ['name' => 'network', 'value' => $d['network'] ?? 'BTC'], ['name' => 'transactionId', 'value' => 'tx-' . $d['reference']]],
         ]) : $respond(404, ['code' => 'RESOURCE_NOT_FOUND', 'message' => 'Not found']);
+
+    case $method === 'POST' && $path === '/v1/collections/fiat/channels':
+        $state['channels'][] = $body;
+        $respond(200, ['id' => 'chan-' . $body['customId'], 'reference' => 'chanref-' . $body['customId'], 'type' => 'BANK_TRANSFER', 'bankName' => 'Wema Bank',
+            'accountNumber' => (string) (9000000000 + count($state['channels'])), 'accountName' => 'VELCRO CHECKOUT', 'currency' => 'NGN']);
+
+    case $method === 'GET' && $path === '/v1/payout/methods':
+        $nets = ['SOL' => [['SOL', 0.003, 0.006]], 'BTC' => [['BTC', 0.00001, 0.000014]], 'ETH' => [['ERC20', 0.0003, 0.0001], ['BASE', 0.0004, 0.0001]]];
+        $cur = strtoupper($query['sourceCurrency'] ?? '');
+        $respond(200, ['methods' => array_map(fn ($n) => ['type' => 'CRYPTO', 'enabled' => true, 'network' => $n[0], 'sourceCurrency' => $cur, 'targetCurrency' => $cur,
+            'fee' => ['min' => 0, 'max' => 0, 'percent' => 0, 'flat' => $n[1]], 'limits' => ['min' => $n[2], 'max' => 1000000]], $nets[$cur] ?? [])]);
 
     case $method === 'POST' && $path === '/v1/assets/swap':
         $from = $body['source']['currency'];
+        $to = $body['target']['currency'];
         $value = (float) $body['amount']['value'];
-        $ngn = round($value * $ngnRates[$from], 2);
+        // Coin → naira for sells, naira → coin for buys.
+        $ngn = $from === 'NGN' ? round($value / $ngnRates[$to], 8) : round($value * $ngnRates[$from], 2);
         $n = count($state['swaps']) + 1;
-        $credit = ['reference' => "swap-c-{$n}", 'swapPairReference' => "pair-{$n}", 'type' => 'CREDIT', 'category' => 'SWAP', 'status' => $state['swap_status'] ?? 'SUCCESS', 'amount' => ['currency' => 'NGN', 'value' => $ngn]];
+        $credit = ['reference' => "swap-c-{$n}", 'swapPairReference' => "pair-{$n}", 'type' => 'CREDIT', 'category' => 'SWAP', 'status' => $state['swap_status'] ?? 'SUCCESS', 'amount' => ['currency' => $to, 'value' => $ngn]];
         $state['swaps'][] = ['from' => $from, 'value' => $value, 'ngn' => $ngn, 'credit' => $credit];
         $respond(200, ['transactions' => [
             $credit,
@@ -128,7 +148,8 @@ switch (true) {
         if ($state['fail_payouts']) {
             $respond(503, ['code' => 'SERVER_ERROR', 'message' => 'Payout provider down']);
         }
-        $state['payouts'][$ref] = ['reference' => 'po-' . count($state['payouts']), 'clientReference' => $ref, 'amount' => ['value' => $body['amount'], 'currency' => 'NGN'], 'recipient' => $body['recipient'], 'status' => $state['payout_status']];
+        $state['payouts'][$ref] = ['reference' => 'po-' . count($state['payouts']), 'clientReference' => $ref, 'amount' => ['value' => $body['amount'], 'currency' => $body['currency']], 'recipient' => $body['recipient'], 'status' => $state['payout_status'],
+            'metadata' => [['name' => 'transactionId', 'value' => 'chain-tx-' . $ref]]];
         $respond(200, $state['payouts'][$ref]);
 
     case $method === 'GET' && preg_match('#^/v1/payout/transactions/(.+)$#', $path, $m) === 1:

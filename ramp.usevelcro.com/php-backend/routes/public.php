@@ -358,6 +358,9 @@ function registerPublicRoutes(Router $router): void
         if (!$direction || !$amount || !$country || !$asset) {
             jsonResponse(errorResponse('direction, amount, country, and asset are required'), 400);
         }
+        // Switch assets look like "base:usdc".
+        $assetSymbol = strtoupper((string) (explode(':', (string) $asset)[1] ?? $asset));
+        requireRouteEnabled(strtoupper((string) $direction) === 'ONRAMP' ? 'buy' : 'sell', 'switch', $assetSymbol);
 
         // Always server-generated: a client-chosen reference could collide with another user's.
         $txRef = generateUuid();
@@ -548,7 +551,9 @@ function registerPublicRoutes(Router $router): void
             jsonResponse([
                 'success' => true,
                 'status' => (string) $tx['status'],
-                'message' => 'We pay out automatically as soon as your deposit confirms on the network',
+                'message' => strtoupper((string) $tx['type']) === 'ONRAMP'
+                    ? 'We send your crypto automatically as soon as your payment is confirmed'
+                    : 'We pay out automatically as soon as your deposit confirms on the network',
             ]);
         }
 
@@ -797,7 +802,10 @@ function registerPublicRoutes(Router $router): void
             'paj_usdt_enabled' => (bool) ($settings['paj_usdt_enabled'] ?? false),
             'paj_usdc_enabled' => (bool) ($settings['paj_usdc_enabled'] ?? false),
             'referral_fee' => (float) ($settings['referral_fee'] ?? 0.3),
-            'hostfi_assets' => hostfiEnabledAssets(),
+            'hostfi_assets' => hostfiEnabledAssets('sell'),
+            'hostfi_buy_assets' => hostfiEnabledAssets('buy'),
+            // Switch/PAJ coins switched off in admin, as "side:provider:SYM".
+            'routes_off' => routesOff(),
             'hostfi_fee' => hostfiFee(),
             'sell_timer_minutes' => (object) ($settings['sell_timer_minutes'] ?? ['default' => 60]),
         ]));

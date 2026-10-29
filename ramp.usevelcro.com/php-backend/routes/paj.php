@@ -20,6 +20,17 @@ if (!function_exists('getPajRateMargin')) {
     }
 }
 
+/** Coin symbol for a PAJ token mint ('' if unknown, which the route switch then refuses). */
+function pajSymbolForMint(string $mint): string
+{
+    foreach (PajApiClient::ASSETS as $a) {
+        if ($a['mint'] === $mint) {
+            return $a['symbol'];
+        }
+    }
+    return '';
+}
+
 function calculatePajDeveloperFee(float $fiatAmount, string $direction = 'ONRAMP'): float
 {
     $feePercent = getPajFee();
@@ -154,6 +165,7 @@ function registerPajRoutes(Router $router): void
         if ($fiatAmount === null || !$recipient || !$mint) {
             jsonResponse(errorResponse('fiatAmount, recipient, and mint are required'), 400);
         }
+        requireRouteEnabled('buy', 'paj', pajSymbolForMint((string) $mint));
         if ($email !== '' && !isValidEmail($email)) {
             jsonResponse(errorResponse('Invalid email address'), 400);
         }
@@ -221,6 +233,7 @@ function registerPajRoutes(Router $router): void
         if ($fiatAmount === null || !$mint || !$bank || !$accountNumber) {
             jsonResponse(errorResponse('fiatAmount, mint, bank, and accountNumber are required'), 400);
         }
+        requireRouteEnabled('sell', 'paj', pajSymbolForMint((string) $mint));
         if ($email !== '' && !isValidEmail($email)) {
             jsonResponse(errorResponse('Invalid email address'), 400);
         }

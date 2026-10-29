@@ -458,6 +458,30 @@ function registerAdminRoutes(Router $router): void
         jsonResponse($result, $statusCode);
     });
 
+    // Every coin each provider can buy or sell, with its switch, for the admin "Coins & providers" grid.
+    $router->get('/api/admin/routes', function () {
+        requireAdminAuth();
+        $settings = loadSettings();
+        $coins = ['switch' => ['buy' => [], 'sell' => []], 'paj' => ['buy' => [], 'sell' => []], 'hostfi' => HOSTFI_ROUTE_COINS];
+        // Switch's coins come from its asset list, cached by /api/assets.
+        $cache = json_decode((string) @file_get_contents(BASE_PATH . '/data/switch_assets_cache.json'), true) ?: [];
+        $coins['switch']['buy'] = array_keys((array) ($cache['onramp'] ?? []));
+        $coins['switch']['sell'] = array_keys((array) ($cache['offramp'] ?? []));
+        if (class_exists('PajApiClient')) {
+            $coins['paj']['buy'] = $coins['paj']['sell'] = array_column(PajApiClient::ASSETS, 'symbol');
+        }
+        $rows = [];
+        foreach ($coins as $provider => $sides) {
+            foreach ($sides as $side => $symbols) {
+                foreach ($symbols as $sym) {
+                    $sym = strtoupper((string) $sym);
+                    $rows[] = ['side' => $side, 'provider' => $provider, 'symbol' => $sym, 'enabled' => routeEnabled($side, $provider, $sym, $settings)];
+                }
+            }
+        }
+        jsonResponse(['success' => true, 'routes' => $rows, 'switch_list_missing' => !$coins['switch']['buy'] && !$coins['switch']['sell'], 'hostfi_configured' => hostfiApi()->isConfigured()]);
+    });
+
     $router->get('/api/admin/settings', function () {
         requireAdminAuth();
         jsonResponse(loadSettings());
@@ -529,6 +553,7 @@ function registerAdminRoutes(Router $router): void
         }
         if (isset($body['paj_usdt_enabled'])) {
             $settings['paj_usdt_enabled'] = (bool) $body['paj_usdt_enabled'];
+            $settings['routes']['buy:paj:USDT'] = $settings['routes']['sell:paj:USDT'] = (bool) $body['paj_usdt_enabled'];
         }
         if (isset($body['referral_fee'])) {
             $rFee = (float) $body['referral_fee'];
@@ -548,15 +573,29 @@ function registerAdminRoutes(Router $router): void
         }
         if (isset($body['paj_usdc_enabled'])) {
             $settings['paj_usdc_enabled'] = (bool) $body['paj_usdc_enabled'];
+            $settings['routes']['buy:paj:USDC'] = $settings['routes']['sell:paj:USDC'] = (bool) $body['paj_usdc_enabled'];
         }
         if (isset($body['hostfi_assets']) && is_array($body['hostfi_assets'])) {
             $assets = (array) ($settings['hostfi_assets'] ?? []);
             foreach (HOSTFI_SYMBOLS as $sym) {
                 if (array_key_exists($sym, $body['hostfi_assets'])) {
                     $assets[$sym] = (bool) $body['hostfi_assets'][$sym];
+                    $settings['routes'][routeKey('sell', 'hostfi', $sym)] = $assets[$sym];
                 }
             }
             $settings['hostfi_assets'] = $assets;
+        }
+        // One switch per side × provider × coin, e.g. {"buy:hostfi:SOL": true}.
+        if (isset($body['routes']) && is_array($body['routes'])) {
+            $routes = (array) ($settings['routes'] ?? []);
+            foreach ($body['routes'] as $key => $on) {
+                $key = (string) $key;
+                if (!preg_match('/^(buy|sell):(switch|paj|hostfi):[A-Z0-9]{2,12}$/', $key)) {
+                    jsonResponse(['success' => false, 'error' => "Unknown route {$key}"], 400);
+                }
+                $routes[$key] = (bool) $on;
+            }
+            $settings['routes'] = $routes;
         }
         if (isset($body['hostfi_fee'])) {
             $hFee = (float) $body['hostfi_fee'];

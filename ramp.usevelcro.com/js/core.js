@@ -50,8 +50,8 @@ let SELL_MAX_LIMIT = 10000; // Maximum sell amount per transaction (fetched from
 let currentFee = 0.5; // Platform fee percentage (fetched from /api/settings)
 let currentPajFee = 0.5; // PAJ fee percentage (fetched from /api/settings or /api/paj/rate)
 let currentPajMargin = 0.0; // PAJ rate margin
-let pajUsdtEnabled = false;
-let pajUsdcEnabled = false;
+// Switch/PAJ coins switched off in admin ("side:provider:SYM"), from /api/settings.
+let routesOff = [];
 let switchBanks = [];
 let pajBanks = [];
 var rateFetchedAt = null;
@@ -61,6 +61,9 @@ var currentSellInputMode = 'USD'; // 'USD' or 'ASSET'
 let switchAssetsData = null; // Dynamically fetched from Switch API
 // HostFi sells: coins switched on in admin, keyed by symbol (networks, naira and USD price per coin).
 let hostfiAssets = {};
+// HostFi buys: coins switched on in admin, keyed by symbol (send networks with fees, coins per naira).
+let hostfiBuyAssets = {};
+let currentBuyHostfiNet = ''; // HostFi network code of the selected buy network (SOL, ERC20, BASE…)
 let hostfiFee = 0.5;
 let sellTimerMinutes = { default: 60 };
 let currentSellChain = ''; // chain slug of the selected HostFi network (bitcoin, ethereum, tron…)
@@ -219,131 +222,59 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-function renderSellAssetList() {
-  const container = document.getElementById('sell-asset-list');
-  if (!container) return;
-  
-  // Coins HostFi has taken over are shown once, as HostFi items, and dropped from Switch/PAJ.
-  const viaHostfi = sym => Object.prototype.hasOwnProperty.call(hostfiAssets, sym);
-  const hostfiItems = ['USDT', 'USDC', 'BTC', 'ETH', 'SOL'].filter(viaHostfi).map(sym => {
-    const a = hostfiAssets[sym];
-    const logo = getAssetLogo(sym);
-    const safeName = escapeHtml(a.name && a.name !== sym ? a.name : ({ BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana', USDT: 'Tether USD', USDC: 'USD Coin' }[sym] || sym));
-    return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${safeName}" onclick="selectSellAsset('${sym}', '${logo}', '${safeName}', 'hostfi')">
+// PAJ's Solana tokens, in list order.
+const PAJ_TOKENS = [
+  ['SOL', 'Solana', '/logos/solana.png'],
+  ['USDG', 'Global Dollar', '/logos/usdg.png'],
+  ['USDT', 'Tether USD', '/logos/usdt.png'],
+  ['USDC', 'USD Coin', '/logos/usdc.png'],
+  ['JUP', 'Jupiter', '/logos/jup.png'],
+  ['BONK', 'Bonk', 'https://assets.coingecko.com/coins/images/28600/small/bonk.jpg'],
+  ['WIF', 'dogwifhat', 'https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg'],
+  ['PYTH', 'Pyth Network', 'https://assets.coingecko.com/coins/images/31924/small/pyth.png'],
+];
+const COIN_NAMES = { BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana', USDT: 'Tether USD', USDC: 'USD Coin' };
+
+// Admin switches: a Switch or PAJ coin listed in routesOff (e.g. "buy:paj:USDT") is hidden.
+function routeOn(side, provider, symbol) {
+  return !routesOff.includes(`${side}:${provider}:${String(symbol).toUpperCase()}`);
+}
+
+function assetPickerItem(side, symbol, name, logo, provider) {
+  const fn = side === 'sell' ? 'selectSellAsset' : 'selectBuyAsset';
+  const sym = escapeHtml(symbol);
+  const safeName = escapeHtml(name);
+  return `<div class="asset-picker-item" data-symbol="${sym}" data-name="${safeName}" onclick="${fn}('${sym}', '${logo}', '${safeName}', '${provider}')">
           <img src="${logo}" class="asset-picker-logo" alt="${sym}">
           <div class="asset-picker-info">
             <div class="asset-picker-symbol">${sym}</div>
             <div class="asset-picker-name">${safeName}</div>
           </div>
         </div>`;
-  }).join('');
-
-  let switchItems = '';
-  if (switchAssetsData) {
-    const assets = switchAssetsData.offramp || {};
-    const symbols = sortAssets(Object.keys(assets)).filter(sym => !viaHostfi(sym));
-    switchItems = symbols.map(sym => {
-      const asset = assets[sym];
-      const logo = getAssetLogo(sym);
-      const safeSym = escapeHtml(sym);
-      const safeName = escapeHtml(asset.name || sym);
-      return `<div class="asset-picker-item" data-symbol="${safeSym}" data-name="${safeName}" onclick="selectSellAsset('${safeSym}', '${logo}', '${safeName}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${safeSym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${safeSym}</div>\n            <div class="asset-picker-name">${safeName}</div>\n          </div>\n        </div>`;
-    }).join('');
-  }
-
-  // Append PAJ assets
-  const pajItems = `
-    <div class="asset-picker-divider">SOLANA</div>
-    ${!viaHostfi('SOL') ? `<div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectSellAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
-      <img src="/logos/solana.png" class="asset-picker-logo" alt="SOL">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">SOL</div><div class="asset-picker-name">Solana</div></div>
-    </div>` : ''}
-    <div class="asset-picker-item" data-symbol="USDG" data-name="Global Dollar" onclick="selectSellAsset('USDG', '/logos/usdg.png', 'Global Dollar', 'paj')">
-      <img src="/logos/usdg.png" class="asset-picker-logo" alt="USDG">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">USDG</div><div class="asset-picker-name">Global Dollar</div></div>
-    </div>
-    ${pajUsdtEnabled && !viaHostfi('USDT') ? `<div class="asset-picker-item" data-symbol="USDT" data-name="Tether USD" onclick="selectSellAsset('USDT', '/logos/usdt.png', 'Tether USD', 'paj')">
-      <img src="/logos/usdt.png" class="asset-picker-logo" alt="USDT">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">USDT</div><div class="asset-picker-name">Tether USD</div></div>
-    </div>` : ''}
-    ${pajUsdcEnabled && !viaHostfi('USDC') ? `<div class="asset-picker-item" data-symbol="USDC" data-name="USD Coin" onclick="selectSellAsset('USDC', '/logos/usdc.png', 'USD Coin', 'paj')">
-      <img src="/logos/usdc.png" class="asset-picker-logo" alt="USDC">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">USDC</div><div class="asset-picker-name">USD Coin</div></div>
-    </div>` : ''}
-    <div class="asset-picker-item" data-symbol="JUP" data-name="Jupiter" onclick="selectSellAsset('JUP', '/logos/jup.png', 'Jupiter', 'paj')">
-      <img src="/logos/jup.png" class="asset-picker-logo" alt="JUP">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">JUP</div><div class="asset-picker-name">Jupiter</div></div>
-    </div>
-    <div class="asset-picker-item" data-symbol="BONK" data-name="Bonk" onclick="selectSellAsset('BONK', 'https://assets.coingecko.com/coins/images/28600/small/bonk.jpg', 'Bonk', 'paj')">
-      <img src="https://assets.coingecko.com/coins/images/28600/small/bonk.jpg" class="asset-picker-logo" alt="BONK">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">BONK</div><div class="asset-picker-name">Bonk</div></div>
-    </div>
-    <div class="asset-picker-item" data-symbol="WIF" data-name="dogwifhat" onclick="selectSellAsset('WIF', 'https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg', 'dogwifhat', 'paj')">
-      <img src="https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg" class="asset-picker-logo" alt="WIF">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">WIF</div><div class="asset-picker-name">dogwifhat</div></div>
-    </div>
-    <div class="asset-picker-item" data-symbol="PYTH" data-name="Pyth Network" onclick="selectSellAsset('PYTH', 'https://assets.coingecko.com/coins/images/31924/small/pyth.png', 'Pyth Network', 'paj')">
-      <img src="https://assets.coingecko.com/coins/images/31924/small/pyth.png" class="asset-picker-logo" alt="PYTH">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">PYTH</div><div class="asset-picker-name">Pyth Network</div></div>
-    </div>
-  `;
-  container.innerHTML = hostfiItems + switchItems + pajItems;
 }
 
-function renderBuyAssetList() {
-  const container = document.getElementById('buy-asset-list');
+// One coin list per side. A coin HostFi handles is shown once, as a HostFi item, and dropped
+// from Switch/PAJ; anything switched off in admin is left out.
+function renderAssetList(side) {
+  const container = document.getElementById(`${side}-asset-list`);
   if (!container) return;
-
-  let switchItems = '';
-  if (switchAssetsData) {
-    const assets = switchAssetsData.onramp || {};
-    const symbols = sortAssets(Object.keys(assets));
-    switchItems = symbols.map(sym => {
-      const asset = assets[sym];
-      const logo = getAssetLogo(sym);
-      const safeSym = escapeHtml(sym);
-      const safeName = escapeHtml(asset.name || sym);
-      return `<div class="asset-picker-item" data-symbol="${safeSym}" data-name="${safeName}" onclick="selectBuyAsset('${safeSym}', '${logo}', '${safeName}', 'switch')">\n          <img src="${logo}" class="asset-picker-logo" alt="${safeSym}">\n          <div class="asset-picker-info">\n            <div class="asset-picker-symbol">${safeSym}</div>\n            <div class="asset-picker-name">${safeName}</div>\n          </div>\n        </div>`;
-    }).join('');
-  }
-  // Append static PAJ assets
-  const pajItems = `
-    <div class="asset-picker-divider">SOLANA</div>
-    <div class="asset-picker-item" data-symbol="SOL" data-name="Solana" onclick="selectBuyAsset('SOL', '/logos/solana.png', 'Solana', 'paj')">
-      <img src="/logos/solana.png" class="asset-picker-logo" alt="SOL">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">SOL</div><div class="asset-picker-name">Solana</div></div>
-    </div>
-    <div class="asset-picker-item" data-symbol="USDG" data-name="Global Dollar" onclick="selectBuyAsset('USDG', '/logos/usdg.png', 'Global Dollar', 'paj')">
-      <img src="/logos/usdg.png" class="asset-picker-logo" alt="USDG">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">USDG</div><div class="asset-picker-name">Global Dollar</div></div>
-    </div>
-    ${pajUsdtEnabled ? `<div class="asset-picker-item" data-symbol="USDT" data-name="Tether USD" onclick="selectBuyAsset('USDT', '/logos/usdt.png', 'Tether USD', 'paj')">
-      <img src="/logos/usdt.png" class="asset-picker-logo" alt="USDT">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">USDT</div><div class="asset-picker-name">Tether USD</div></div>
-    </div>` : ''}
-    ${pajUsdcEnabled ? `<div class="asset-picker-item" data-symbol="USDC" data-name="USD Coin" onclick="selectBuyAsset('USDC', '/logos/usdc.png', 'USD Coin', 'paj')">
-      <img src="/logos/usdc.png" class="asset-picker-logo" alt="USDC">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">USDC</div><div class="asset-picker-name">USD Coin</div></div>
-    </div>` : ''}
-    <div class="asset-picker-item" data-symbol="JUP" data-name="Jupiter" onclick="selectBuyAsset('JUP', '/logos/jup.png', 'Jupiter', 'paj')">
-      <img src="/logos/jup.png" class="asset-picker-logo" alt="JUP">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">JUP</div><div class="asset-picker-name">Jupiter</div></div>
-    </div>
-    <div class="asset-picker-item" data-symbol="BONK" data-name="Bonk" onclick="selectBuyAsset('BONK', 'https://assets.coingecko.com/coins/images/28600/small/bonk.jpg', 'Bonk', 'paj')">
-      <img src="https://assets.coingecko.com/coins/images/28600/small/bonk.jpg" class="asset-picker-logo" alt="BONK">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">BONK</div><div class="asset-picker-name">Bonk</div></div>
-    </div>
-    <div class="asset-picker-item" data-symbol="WIF" data-name="dogwifhat" onclick="selectBuyAsset('WIF', 'https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg', 'dogwifhat', 'paj')">
-      <img src="https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg" class="asset-picker-logo" alt="WIF">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">WIF</div><div class="asset-picker-name">dogwifhat</div></div>
-    </div>
-    <div class="asset-picker-item" data-symbol="PYTH" data-name="Pyth Network" onclick="selectBuyAsset('PYTH', 'https://assets.coingecko.com/coins/images/31924/small/pyth.png', 'Pyth Network', 'paj')">
-      <img src="https://assets.coingecko.com/coins/images/31924/small/pyth.png" class="asset-picker-logo" alt="PYTH">
-      <div class="asset-picker-info"><div class="asset-picker-symbol">PYTH</div><div class="asset-picker-name">Pyth Network</div></div>
-    </div>
-  `;
-  container.innerHTML = switchItems + pajItems;
+  const hostfi = side === 'sell' ? hostfiAssets : hostfiBuyAssets;
+  const viaHostfi = sym => Object.prototype.hasOwnProperty.call(hostfi, sym);
+  const hostfiItems = ['USDT', 'USDC', 'BTC', 'ETH', 'SOL'].filter(viaHostfi).map(sym => {
+    const a = hostfi[sym];
+    return assetPickerItem(side, sym, a.name && a.name !== sym ? a.name : (COIN_NAMES[sym] || sym), getAssetLogo(sym), 'hostfi');
+  }).join('');
+  const switchList = switchAssetsData ? (switchAssetsData[side === 'sell' ? 'offramp' : 'onramp'] || {}) : {};
+  const switchItems = sortAssets(Object.keys(switchList))
+    .filter(sym => !viaHostfi(sym) && routeOn(side, 'switch', sym))
+    .map(sym => assetPickerItem(side, sym, switchList[sym].name || sym, getAssetLogo(sym), 'switch')).join('');
+  const pajItems = PAJ_TOKENS.filter(([sym]) => !viaHostfi(sym) && routeOn(side, 'paj', sym))
+    .map(([sym, name, logo]) => assetPickerItem(side, sym, name, logo, 'paj')).join('');
+  container.innerHTML = hostfiItems + switchItems + (pajItems ? `<div class="asset-picker-divider">SOLANA</div>${pajItems}` : '');
 }
+
+function renderSellAssetList() { renderAssetList('sell'); }
+function renderBuyAssetList() { renderAssetList('buy'); }
 
 function renderSellNetworks(symbol) {
   if (!symbol) return;

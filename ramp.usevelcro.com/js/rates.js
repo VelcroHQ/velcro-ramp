@@ -42,18 +42,40 @@ async function fetchSettings() {
         const maxLabel = document.getElementById('sell-max-label');
         if (maxLabel) maxLabel.textContent = `Max: $${SELL_MAX_LIMIT.toLocaleString()}`;
       }
-      if (typeof data.data.paj_usdt_enabled === 'boolean') {
-        pajUsdtEnabled = data.data.paj_usdt_enabled;
-      }
-      if (typeof data.data.paj_usdc_enabled === 'boolean') {
-        pajUsdcEnabled = data.data.paj_usdc_enabled;
+      if (Array.isArray(data.data.routes_off)) {
+        routesOff = data.data.routes_off;
+        renderSellAssetList();
+        renderBuyAssetList();
       }
       if (typeof data.data.hostfi_fee === 'number') hostfiFee = data.data.hostfi_fee;
       if (data.data.sell_timer_minutes) sellTimerMinutes = data.data.sell_timer_minutes;
       if (Array.isArray(data.data.hostfi_assets) && data.data.hostfi_assets.length) loadHostfiAssets();
+      if (Array.isArray(data.data.hostfi_buy_assets) && data.data.hostfi_buy_assets.length) loadHostfiBuyAssets();
     }
   } catch (err) {
     // Use defaults
+  }
+}
+
+// Coins bought through HostFi, with the networks it can send them on (and their fees).
+async function loadHostfiBuyAssets() {
+  try {
+    const res = await fetch(`${API_BASE}/api/hostfi/buy-assets`);
+    const json = await res.json();
+    if (!json.success) return;
+    hostfiBuyAssets = {};
+    (json.data || []).forEach(a => { hostfiBuyAssets[a.symbol] = a; });
+    renderBuyAssetList();
+    // A default coin picked before this loaded moves to HostFi if HostFi now sells it.
+    if (hostfiBuyAssets[currentBuyAsset] && buyProvider !== 'hostfi' && !currentReference) {
+      const onBuy = !document.getElementById('form-buy').classList.contains('hidden');
+      await selectBuyAsset(currentBuyAsset, getAssetLogo(currentBuyAsset), currentBuyAsset, 'hostfi');
+      if (!onBuy) currentProvider = sellProvider;
+    } else if (buyProvider === 'hostfi') {
+      updateRateDisplays();
+    }
+  } catch (e) {
+    console.error('Failed to load HostFi buy assets:', e);
   }
 }
 
@@ -234,7 +256,7 @@ function updateRateDisplays() {
 
   const activeFee = currentProvider === 'paj' ? currentPajFee : (currentProvider === 'hostfi' ? hostfiFee : currentFee);
   if (sellBadge) sellBadge.textContent = `${activeFee}% fee`;
-  if (buyBadge) buyBadge.textContent = `${currentProvider === 'paj' ? currentPajFee : currentFee}% fee`;
+  if (buyBadge) buyBadge.textContent = `${buyProvider === 'hostfi' ? hostfiFee : (currentProvider === 'paj' ? currentPajFee : currentFee)}% fee`;
 
   if (sellRateEl) {
     if (currentProvider === 'hostfi') {
@@ -268,7 +290,13 @@ function updateRateDisplays() {
   }
 
   if (buyRateEl) {
-    if (currentProvider === 'paj') {
+    if (buyProvider === 'hostfi') {
+      const a = hostfiBuyAssets[currentBuyAsset];
+      const gross = Number(a && a.ngn_per_unit_gross);
+      buyRateEl.innerHTML = gross > 0 && a.usd_per_unit > 0
+        ? `${pulse}Rate: $1 = ₦${(gross / Number(a.usd_per_unit)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : pending;
+    } else if (currentProvider === 'paj') {
       const pajDirect = currentRate.pajOnramp || currentRate.paj;
       if (pajDirect) {
         const formatted = Number(pajDirect).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});

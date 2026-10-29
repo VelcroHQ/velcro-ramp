@@ -310,6 +310,82 @@ class HostfiApiClient
         ], false);
     }
 
+    // ─── Buys: naira in, crypto out ───
+
+    /**
+     * A naira bank account for one order (DYNAMIC: no KYC needed). Lives 24 hours (HostFi's minimum).
+     *
+     * @return array<string,mixed> id, reference, bankName, accountNumber, accountName, expiresAt
+     */
+    public function createNairaAccount(string $customId): array
+    {
+        return $this->request('POST', '/v1/collections/fiat/channels', [
+            'type' => 'DYNAMIC',
+            'method' => 'BANK_TRANSFER',
+            'assetId' => $this->walletAsset('NGN')['id'],
+            'countryCode' => 'NG',
+            'currency' => 'NGN',
+            'customId' => $customId,
+            'ttl' => 86400,
+        ], false);
+    }
+
+    /**
+     * Networks HostFi can send $currency out on, with its network fee and minimum (cached for an hour).
+     *
+     * @return array<int,array{network:string,flat:float,percent:float,min:float}>
+     */
+    public function cryptoSendNetworks(string $currency): array
+    {
+        $currency = strtoupper($currency);
+        $file = BASE_PATH . '/data/.hostfi_send_' . strtolower($currency) . '.json';
+        if (is_file($file) && filemtime($file) > time() - 3600) {
+            $cached = json_decode((string) @file_get_contents($file), true);
+            if (is_array($cached) && $cached) {
+                return $cached;
+            }
+        }
+        $res = $this->request('GET', '/v1/payout/methods?sourceCurrency=' . rawurlencode($currency) . '&targetCurrency=' . rawurlencode($currency));
+        $out = [];
+        foreach (($res['methods'] ?? []) as $m) {
+            if (strtoupper((string) ($m['type'] ?? '')) !== 'CRYPTO' || empty($m['network']) || (isset($m['enabled']) && !$m['enabled'])) {
+                continue;
+            }
+            $out[] = [
+                'network' => (string) $m['network'],
+                'flat' => (float) ($m['fee']['flat'] ?? 0),
+                'percent' => (float) ($m['fee']['percent'] ?? 0),
+                'min' => (float) ($m['limits']['min'] ?? 0),
+            ];
+        }
+        if ($out) {
+            @file_put_contents($file, json_encode($out), LOCK_EX);
+        }
+        return $out;
+    }
+
+    /**
+     * Send crypto to an external wallet. Never retried here: the caller re-checks by clientReference.
+     *
+     * @return array<string,mixed> WithdrawalTransaction
+     */
+    public function payoutToWallet(string $currency, float $amount, string $address, string $network, string $clientReference, ?string $memo = null): array
+    {
+        $currency = strtoupper($currency);
+        $recipient = ['type' => 'CRYPTO', 'method' => 'CRYPTO', 'currency' => $currency, 'accountNumber' => $address, 'network' => $network, 'sendInternal' => false];
+        if ($memo !== null && $memo !== '') {
+            $recipient['memo'] = $memo;
+        }
+        return $this->request('POST', '/v1/payout/transactions', [
+            'assetId' => $this->walletAsset($currency)['id'],
+            'methodId' => 'CRYPTO',
+            'amount' => $amount,
+            'currency' => $currency,
+            'clientReference' => $clientReference,
+            'recipient' => $recipient,
+        ], false);
+    }
+
     /** @return array<string,mixed> WithdrawalTransaction, looked up by HostFi reference or our clientReference */
     public function payout(string $reference): array
     {

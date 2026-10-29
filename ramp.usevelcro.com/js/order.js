@@ -453,6 +453,8 @@ function validateWalletAddress(address, network) {
   const evmRegex = /^0x[a-fA-F0-9]{40}$/;
   const solanaRegex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
   const tronRegex = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
+  const bitcoinRegex = /^(bc1[02-9ac-hj-np-z]{11,71}|[13][1-9A-HJ-NP-Za-km-z]{25,34})$/;
+  if (network === 'bitcoin') return bitcoinRegex.test(address);
   if (network === 'solana') return solanaRegex.test(address);
   if (network === 'tron') return tronRegex.test(address);
   // All other networks (including all EVM chains from Switch) use EVM address format
@@ -490,6 +492,57 @@ async function generateBankAccount() {
   btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
 
   // Onramp flow
+  if (currentProvider === 'hostfi') {
+    const resetBtn = () => { btn.innerHTML = '<i data-lucide="landmark" class="w-5 h-5"></i> Get payment details'; safeLucideInit(); };
+    if (!currentBuyHostfiNet) { showToast('Please select a network', 'warning'); resetBtn(); return; }
+    if (!validateWalletAddress(wallet, currentBuyNetwork)) { showToast(`Invalid ${currentBuyAsset} wallet address for this network`, 'warning'); resetBtn(); return; }
+    try {
+      const res = await fetch(`${API_BASE}/api/hostfi/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          asset: currentBuyAsset,
+          network: currentBuyHostfiNet,
+          wallet,
+          amount,
+          email: userEmail,
+          ref: localStorage.getItem('velcro_ref') || ''
+        })
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload.success) throw new Error(payload.message || 'Failed to create your payment account');
+      const data = payload.data;
+      document.getElementById('buy-bank-name').textContent = data.bank_name || '-';
+      document.getElementById('buy-account-number').textContent = data.account_number || '-';
+      document.getElementById('buy-account-name').textContent = data.account_name || 'Velcro Checkout';
+      document.getElementById('buy-reference').textContent = data.reference;
+      currentReference = data.reference;
+      document.getElementById('buy-generated-account').classList.remove('hidden');
+      startExpiryCountdown('buy', Number(data.expires_in) || 3600);
+      startOrderHelp('buy');
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Payment details ready';
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+      lockBuyForm();
+      safeLucideInit();
+      currentTxDetails = {
+        type: 'buy',
+        reference: data.reference,
+        amount,
+        destinationAmount: data.estimate,
+        asset: currentBuyAsset,
+        network: currentBuyNetwork,
+        walletAddress: wallet,
+        provider: 'hostfi'
+      };
+      saveRecentOrder(currentTxDetails);
+      startStatusPoll(data.reference, 'buy', `/api/transactions/${encodeURIComponent(data.reference)}`);
+    } catch (err) {
+      resetBtn();
+      showToast(err.message || 'Failed to create your payment account', 'error');
+    }
+    return;
+  }
   if (currentProvider === 'paj') {
     const mint = PAJ_MINTS[currentBuyAsset];
     if (!mint) { showToast('Invalid asset selected', 'warning'); btn.innerHTML = '<i data-lucide="landmark" class="w-5 h-5"></i> Get payment details'; safeLucideInit(); return; }

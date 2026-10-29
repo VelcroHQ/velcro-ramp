@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../hostfi_api.php';
 require_once __DIR__ . '/../emails.php';
 require_once __DIR__ . '/referrals.php';
+require_once __DIR__ . '/hostfi_buy.php';
 
 /*
  * HostFi sells (offramp): BTC and ETH, plus SOL/USDT/USDC when switched on in admin.
@@ -69,14 +70,14 @@ function ensureHostfiSchema(): void
 
 // ─── Settings ───
 
-/** Symbols currently sold through HostFi (switched on in admin and HostFi configured). */
-function hostfiEnabledAssets(): array
+/** Symbols HostFi currently handles on one side (switched on in admin and HostFi configured). */
+function hostfiEnabledAssets(string $side = 'sell'): array
 {
     if (!hostfiApi()->isConfigured()) {
         return [];
     }
-    $on = (array) (loadSettings()['hostfi_assets'] ?? []);
-    return array_values(array_filter(HOSTFI_SYMBOLS, fn ($s) => !empty($on[$s])));
+    $s = loadSettings();
+    return array_values(array_filter(HOSTFI_ROUTE_COINS[$side] ?? [], fn ($sym) => routeEnabled($side, 'hostfi', $sym, $s)));
 }
 
 function hostfiFee(): float
@@ -115,30 +116,33 @@ function hostfiChain(string $network): string
  *
  * @return array{ngn_per_unit: float, usd_per_unit: float}
  */
+/** HostFi's rate (units of $to per one $from), cached for a minute. */
+function hostfiRate(string $from, string $to): float
+{
+    $file = BASE_PATH . '/data/.hostfi_quotes.json';
+    $cache = is_file($file) ? (json_decode((string) @file_get_contents($file), true) ?: []) : [];
+    $key = strtoupper($from) . '/' . strtoupper($to);
+    if (isset($cache[$key]) && ($cache[$key]['at'] ?? 0) > time() - 60) {
+        return (float) $cache[$key]['rate'];
+    }
+    $rate = hostfiApi()->rate($from, $to);
+    $cache[$key] = ['rate' => $rate, 'at' => time()];
+    @file_put_contents($file, json_encode($cache), LOCK_EX);
+    return $rate;
+}
+
 function hostfiQuote(string $symbol): array
 {
     $symbol = strtoupper($symbol);
-    $file = BASE_PATH . '/data/.hostfi_quotes.json';
-    $cache = is_file($file) ? (json_decode((string) @file_get_contents($file), true) ?: []) : [];
-    $pair = static function (string $from, string $to) use (&$cache): float {
-        $key = "{$from}/{$to}";
-        if (isset($cache[$key]) && ($cache[$key]['at'] ?? 0) > time() - 60) {
-            return (float) $cache[$key]['rate'];
-        }
-        $rate = hostfiApi()->rate($from, $to);
-        $cache[$key] = ['rate' => $rate, 'at' => time()];
-        return $rate;
-    };
-    $ngn = $pair($symbol, 'NGN');
+    $ngn = hostfiRate($symbol, 'NGN');
     // Stablecoins count as exactly $1 (what users expect when typing a $ amount). Other coins use
     // HostFi's own dollar price; ETH has no USD pair there, so it goes via USDT.
     try {
-        $usd = in_array($symbol, HOSTFI_STABLES, true) ? 1.0 : $pair($symbol, 'USD');
+        $usd = in_array($symbol, HOSTFI_STABLES, true) ? 1.0 : hostfiRate($symbol, 'USD');
     } catch (Throwable $e) {
-        $usdtNgn = $pair('USDT', 'NGN');
+        $usdtNgn = hostfiRate('USDT', 'NGN');
         $usd = $usdtNgn > 0 ? $ngn / $usdtNgn : 0.0;
     }
-    @file_put_contents($file, json_encode($cache), LOCK_EX);
     return [
         'ngn_per_unit' => $ngn * (1 - hostfiFee() / 100), // what the user is paid per coin
         'ngn_per_unit_gross' => $ngn,                      // HostFi's own rate, shown to users
@@ -370,6 +374,15 @@ function hostfiSwapWebhook(array $legs): void
         );
         if ($dep) {
             hostfiCheckSwap($dep);
+            continue;
+        }
+        ensureHostfiBuySchema();
+        $buy = Database::selectOne(
+            "SELECT * FROM `hostfi_buys` WHERE `status` = 'SWAP_PENDING' AND (`swap_ref` = :r OR (`swap_pair_ref` <> '' AND `swap_pair_ref` = :p))",
+            ['r' => (string) $leg['reference'], 'p' => (string) ($leg['swapPairReference'] ?? '')]
+        );
+        if ($buy) {
+            hostfiBuyCheckSwap($buy);
         }
     }
 }
@@ -540,6 +553,10 @@ function hostfiSyncOrder(?string $orderRef): void
     if (!$order) {
         return;
     }
+    if (strtoupper((string) $order['type']) === 'ONRAMP') {
+        hostfiBuySyncOrder($orderRef);
+        return;
+    }
     $deps = Database::select('SELECT * FROM `hostfi_deposits` WHERE `order_ref` = :r ORDER BY `id`', ['r' => $orderRef]);
     if (!$deps) {
         return;
@@ -578,6 +595,11 @@ function hostfiSyncOrder(?string $orderRef): void
  */
 function hostfiReconcileOrder(string $orderRef): void
 {
+    $order = Database::selectOne('SELECT `type` FROM `transactions` WHERE `reference` = :r', ['r' => $orderRef]);
+    if (strtoupper((string) ($order['type'] ?? '')) === 'ONRAMP') {
+        hostfiBuyReconcileOrder($orderRef);
+        return;
+    }
     ensureHostfiSchema();
     $deps = Database::select(
         "SELECT * FROM `hostfi_deposits` WHERE `order_ref` = :r AND `status` IN ('PAYOUT_PENDING','PAYOUT_UNCERTAIN')",
@@ -610,6 +632,10 @@ function hostfiOrderRate(array $order): ?array
 
 function hostfiProgress(string $orderRef): array
 {
+    $buys = hostfiBuyProgress($orderRef);
+    if ($buys) {
+        return $buys;
+    }
     ensureHostfiSchema();
     $deps = Database::safeSelect('SELECT * FROM `hostfi_deposits` WHERE `order_ref` = :r ORDER BY `id`', ['r' => $orderRef], []);
     return array_map(static function (array $d): array {
@@ -658,6 +684,8 @@ function hostfiMeta(array $tx): array
 
 function registerHostfiRoutes(Router $router): void
 {
+    registerHostfiBuyRoutes($router);
+
     $router->get('/api/hostfi/assets', function () {
         $out = [];
         foreach (hostfiEnabledAssets() as $symbol) {
@@ -689,32 +717,44 @@ function registerHostfiRoutes(Router $router): void
         if (!rateLimitCheck('hostfi_retry_ip_' . clientIp(), 10, 3600) || !rateLimitCheck('hostfi_retry_' . $ref, 1, 300)) {
             jsonResponse(errorResponse('Please wait a few minutes before retrying again.'), 429);
         }
-        $order = Database::selectOne("SELECT `reference` FROM `transactions` WHERE `reference` = :r AND `channel` = 'HOSTFI'", ['r' => $ref]);
+        $order = Database::selectOne("SELECT `reference`, `type` FROM `transactions` WHERE `reference` = :r AND `channel` = 'HOSTFI'", ['r' => $ref]);
         if (!$order) {
             jsonResponse(errorResponse('Order not found'), 404);
         }
-        $failed = Database::select("SELECT * FROM `hostfi_deposits` WHERE `order_ref` = :r AND `status` = 'PAYOUT_FAILED'", ['r' => $ref]);
+        // Sells re-pay the order's bank; buys re-send to the order's wallet.
+        $isBuy = strtoupper((string) $order['type']) === 'ONRAMP';
+        if ($isBuy) {
+            ensureHostfiBuySchema();
+        }
+        $failed = $isBuy
+            ? Database::select("SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r AND `status` = 'SEND_FAILED'", ['r' => $ref])
+            : Database::select("SELECT * FROM `hostfi_deposits` WHERE `order_ref` = :r AND `status` = 'PAYOUT_FAILED'", ['r' => $ref]);
         if (!$failed) {
-            jsonResponse(errorResponse('There is no failed payout to retry on this order.'), 400);
+            jsonResponse(errorResponse($isBuy ? 'There is nothing to re-send on this order.' : 'There is no failed payout to retry on this order.'), 400);
         }
         $results = [];
-        foreach ($failed as $dep) {
-            if (hostfiCustomerRetriesLeft($dep) <= 0) {
-                hostfiSetStatus((int) $dep['id'], 'REVIEW', 'Payout still failing after customer retries');
+        foreach ($failed as $row) {
+            if (($isBuy ? hostfiBuyRetriesLeft($row) : hostfiCustomerRetriesLeft($row)) <= 0) {
+                if ($isBuy) {
+                    hostfiBuySetStatus((int) $row['id'], 'REVIEW', 'Send still failing after customer retries');
+                } else {
+                    hostfiSetStatus((int) $row['id'], 'REVIEW', 'Payout still failing after customer retries');
+                }
                 $results[] = 'review';
                 continue;
             }
-            auditLog('HOSTFI_CUSTOMER_RETRY', ['order' => $ref, 'deposit' => (int) $dep['id'], 'attempt' => (int) $dep['payout_attempts'] + 1]);
+            auditLog('HOSTFI_CUSTOMER_RETRY', ['order' => $ref, ($isBuy ? 'buy' : 'deposit') => (int) $row['id'], 'attempt' => (int) $row[$isBuy ? 'send_attempts' : 'payout_attempts'] + 1]);
             try {
-                $results[] = hostfiRetryPayout((int) $dep['id']);
+                $results[] = $isBuy ? hostfiBuyRetrySend((int) $row['id']) : hostfiRetryPayout((int) $row['id']);
             } catch (Throwable $e) {
                 $results[] = 'error';
             }
         }
         hostfiSyncOrder($ref);
-        $message = in_array('sent', $results, true) ? 'Payout sent again. We\'ll update you here and by email.'
-            : (in_array('already_paid', $results, true) ? 'Good news: your payout had already gone through.'
-            : (in_array('review', $results, true) ? 'This payout needs our team. We\'ll contact you by email.'
+        $what = $isBuy ? 'your crypto' : 'your payout';
+        $message = in_array('sent', $results, true) ? ($isBuy ? 'Crypto sent again.' : 'Payout sent again.') . ' We\'ll update you here and by email.'
+            : (in_array('already_paid', $results, true) ? "Good news: {$what} had already gone through."
+            : (in_array('review', $results, true) ? 'This needs our team. We\'ll contact you by email.'
             : 'We couldn\'t retry right now. Please try again in a few minutes.'));
         jsonResponse(successResponse(['progress' => hostfiProgress($ref), 'results' => $results], $message));
     });
@@ -909,6 +949,10 @@ function registerHostfiRoutes(Router $router): void
                 'tx_hash' => $liveMeta['transactionId'] ?? ($hookMeta['transactionId'] ?? null),
             ]);
             hostfiProcessDeposit($id);
+        } elseif ($event === 'FIAT_DEPOSIT') {
+            if (!hostfiHandleFiatDeposit($data)) {
+                jsonResponse(['received' => true, 'verified' => false]);
+            }
         } elseif (str_contains($event, 'SWAP') || isset($payload['transactions']) || isset($data['transactions'])) {
             // Asset Swap webhook: {transactions: [debit leg, credit leg]}. Re-fetched before use.
             hostfiSwapWebhook((array) ($payload['transactions'] ?? $data['transactions'] ?? []));
@@ -918,6 +962,13 @@ function registerHostfiRoutes(Router $router): void
             if ($dep) {
                 hostfiCheckPayout($dep); // re-fetched from HostFi, not taken from the payload
                 hostfiSyncOrder($dep['order_ref']);
+            } elseif ($clientRef !== '') {
+                ensureHostfiBuySchema();
+                $buy = Database::selectOne('SELECT * FROM `hostfi_buys` WHERE `send_client_ref` = :c', ['c' => $clientRef]);
+                if ($buy) {
+                    hostfiBuyCheckSend($buy); // re-fetched from HostFi, not taken from the payload
+                    hostfiBuySyncOrder($buy['order_ref']);
+                }
             }
         }
         jsonResponse(['received' => true]);
@@ -928,7 +979,7 @@ function registerHostfiRoutes(Router $router): void
     $router->get('/api/admin/hostfi', function () {
         requireAdminAuth();
         $configured = hostfiApi()->isConfigured();
-        $out = ['configured' => $configured, 'environment' => str_contains(HOSTFI_BASE_URL, '.dev.') ? 'sandbox' : 'live', 'balances' => [], 'deposits' => []];
+        $out = ['configured' => $configured, 'environment' => str_contains(HOSTFI_BASE_URL, '.dev.') ? 'sandbox' : 'live', 'balances' => [], 'deposits' => [], 'buys' => []];
         if ($configured) {
             try {
                 ensureHostfiSchema();
@@ -941,6 +992,13 @@ function registerHostfiRoutes(Router $router): void
             $out['deposits'] = Database::safeSelect(
                 "SELECT d.*, t.email, t.status AS order_status FROM `hostfi_deposits` d LEFT JOIN `transactions` t ON t.reference = d.order_ref
                  ORDER BY CASE WHEN d.status IN ('REVIEW','PAYOUT_FAILED') THEN 0 ELSE 1 END, d.id DESC LIMIT 50",
+                [],
+                []
+            );
+            ensureHostfiBuySchema();
+            $out['buys'] = Database::safeSelect(
+                "SELECT b.*, t.email, t.status AS order_status FROM `hostfi_buys` b LEFT JOIN `transactions` t ON t.reference = b.order_ref
+                 ORDER BY CASE WHEN b.status IN ('REVIEW','SEND_FAILED') THEN 0 ELSE 1 END, b.id DESC LIMIT 50",
                 [],
                 []
             );

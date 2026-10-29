@@ -553,7 +553,26 @@ async function selectBuyAsset(symbol, logo, name, provider) {
   safeSetText('buy-confirm-asset', symbol);
   safeSetSrc('buy-confirm-asset-img', logo);
 
-  if (currentProvider === 'paj') {
+  if (currentProvider === 'hostfi') {
+    const networks = (hostfiBuyAssets[symbol] || {}).networks || [];
+    currentRate.buy = 0;
+    currentBuyHostfiNet = '';
+    const netCol = document.getElementById('buy-network-col');
+    if (netCol) netCol.style.display = '';
+    const netOptions = document.getElementById('buy-network-options');
+    if (netOptions) {
+      // data-network is the chain slug (wallet checks, explorers); the HostFi code is looked up from it.
+      netOptions.innerHTML = networks.map(n => {
+        const name = hostfiNetworkName(n);
+        return `<div class="custom-option" data-network="${escapeHtml(n.chain)}" data-logo="${getChainLogo(n.chain)}" data-name="${escapeHtml(name)}"><img src="${getChainLogo(n.chain)}" class="w-6 h-6" alt="${escapeHtml(name)}"><span class="font-medium">${escapeHtml(name)}</span></div>`;
+      }).join('');
+    }
+    document.getElementById('buy-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
+    if (networks[0]) {
+      selectBuyNetwork(networks[0].chain, getChainLogo(networks[0].chain), hostfiNetworkName(networks[0]), netOptions && netOptions.querySelector('.custom-option'));
+    }
+    updateRateDisplays();
+  } else if (currentProvider === 'paj') {
     currentBuyNetwork = 'solana';
     currentRate.buy = 0;
     const netCol = document.getElementById('buy-network-col');
@@ -616,8 +635,16 @@ function selectBuyNetwork(id, logo, name, optionEl) {
   
   closeAllDropdowns();
   document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
-  currentSwitchAsset = getSwitchAsset(currentBuyAsset, currentBuyNetwork);
-  if (currentSwitchAsset) fetchRate();
+  if (currentProvider === 'hostfi') {
+    const picked = ((hostfiBuyAssets[currentBuyAsset] || {}).networks || []).find(x => x.chain === id);
+    currentBuyHostfiNet = picked ? picked.code : '';
+    currentSwitchAsset = '';
+    calculateBuy();
+    validateWalletInput();
+  } else {
+    currentSwitchAsset = getSwitchAsset(currentBuyAsset, currentBuyNetwork);
+    if (currentSwitchAsset) fetchRate();
+  }
   updateStepIndicators('ONRAMP');
 }
 
@@ -634,7 +661,7 @@ function setPreviewRate(type, fiat, crypto, asset) {
   const el = document.getElementById(type + '-preview-rate');
   if (!el) return;
   // HostFi sells show no rate line under the preview.
-  if (!(fiat > 0 && crypto > 0) || (type === 'sell' && currentProvider === 'hostfi')) { el.textContent = ''; return; }
+  if (!(fiat > 0 && crypto > 0) || currentProvider === 'hostfi') { el.textContent = ''; return; }
   const fee = currentProvider === 'paj' && typeof currentPajFee === 'number' ? currentPajFee : currentFee;
   el.textContent = `₦${(fiat / crypto).toLocaleString(undefined, { maximumFractionDigits: 2 })} per ${asset} · ${fee}% fee included`;
 }
@@ -738,7 +765,30 @@ function isUsdtOrUsdcOnTrxOrEth() {
   return isUsdToken && isTrxOrEthNet;
 }
 
+// The selected HostFi buy network: {code, chain, fee, fee_percent, min}.
+function hostfiBuyNetwork() {
+  return ((hostfiBuyAssets[currentBuyAsset] || {}).networks || []).find(n => n.code === currentBuyHostfiNet) || null;
+}
+
+// Coins a HostFi buy of `ngn` naira sends: HostFi's rate after our fee, minus its network fee.
+function hostfiBuyEstimate(ngn) {
+  const a = hostfiBuyAssets[currentBuyAsset];
+  const n = hostfiBuyNetwork();
+  if (!a || !n || !(ngn > 0)) return 0;
+  const gross = ngn * Number(a.coin_per_ngn);
+  const coin = gross - Number(n.fee) - gross * Number(n.fee_percent || 0) / 100;
+  return coin > 0 ? Math.floor(Math.round(coin * 1e8 * 1e6) / 1e6) / 1e8 : 0;
+}
+
 function getEffectiveBuyMinLimit() {
+  if (currentProvider === 'hostfi') {
+    // Enough naira to cover the network fee and HostFi's minimum send.
+    const a = hostfiBuyAssets[currentBuyAsset];
+    const n = hostfiBuyNetwork();
+    if (!a || !n || !(Number(a.coin_per_ngn) > 0)) return BUY_MIN_LIMIT;
+    const ngn = (Number(n.min) + Number(n.fee)) / (Number(a.coin_per_ngn) * (1 - Number(n.fee_percent || 0) / 100));
+    return Math.max(BUY_MIN_LIMIT, Math.ceil(ngn / 100) * 100);
+  }
   if (isUsdtOrUsdcOnTrxOrEth()) {
     const rate = Number(currentRate.buy) || Number(currentRate.paj) || 1500;
     const fiveUsdInNgn = Math.ceil(5 * rate);
@@ -754,7 +804,7 @@ function updateBuyMinLimitUI() {
     const minLimit = getEffectiveBuyMinLimit();
     minLabel.textContent = `Min: ₦${minLimit.toLocaleString()} ($5)`;
   } else {
-    minLabel.textContent = `Min: ₦${BUY_MIN_LIMIT.toLocaleString()}`;
+    minLabel.textContent = `Min: ₦${getEffectiveBuyMinLimit().toLocaleString()}`;
   }
 }
 
@@ -767,7 +817,7 @@ function validateBuyLimit(amount) {
     if (isUsdtOrUsdcOnTrxOrEth()) {
       errorEl.textContent = `Minimum buy amount for USDT/USDC on TRON/Ethereum is $5 worth (₦${minLimit.toLocaleString()}).`;
     } else {
-      errorEl.textContent = `Minimum buy amount is ₦${BUY_MIN_LIMIT.toLocaleString()}.`;
+      errorEl.textContent = `Minimum buy amount is ₦${minLimit.toLocaleString()}.`;
     }
     errorEl.classList.remove('hidden');
     return false;
@@ -820,6 +870,24 @@ let pajValueTimeout = null;
 function calculateBuy() {
   const amount = getNum('buy-amount');
   validateBuyLimit(amount);
+
+  if (currentProvider === 'hostfi') {
+    const coin = hostfiBuyEstimate(amount);
+    setFmt('buy-receive', coin > 0 ? coin : '', 8);
+    const preview = document.getElementById('buy-preview');
+    if (amount > 0 && coin > 0) {
+      const a = hostfiBuyAssets[currentBuyAsset] || {};
+      document.getElementById('buy-preview-fiat').textContent = `₦${amount.toLocaleString()}`;
+      document.getElementById('buy-preview-usd').textContent = a.usd_per_unit ? `(~$${(coin * Number(a.usd_per_unit)).toFixed(2)})` : '';
+      document.getElementById('buy-preview-crypto').textContent = `${coin.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${currentBuyAsset}`;
+      setPreviewRate('buy', amount, coin, currentBuyAsset);
+      preview.classList.remove('hidden');
+    } else {
+      preview.classList.add('hidden');
+    }
+    updateStepIndicators('ONRAMP');
+    return;
+  }
 
   // PAJ provider: use exact PAJ value only — no frontend calculations
   if (currentProvider === 'paj') {
@@ -920,7 +988,11 @@ function calculateBuyFromCrypto() {
     return;
   }
   let ngn = 0;
-  if (currentProvider === 'paj') {
+  if (currentProvider === 'hostfi') {
+    const a = hostfiBuyAssets[currentBuyAsset];
+    const n = hostfiBuyNetwork();
+    ngn = a && n && Number(a.coin_per_ngn) > 0 ? (crypto + Number(n.fee)) / (Number(a.coin_per_ngn) * (1 - Number(n.fee_percent || 0) / 100)) : 0;
+  } else if (currentProvider === 'paj') {
     const approxRate = computePajTokenRate(currentBuyAsset);
     const feePercent = typeof currentPajFee === 'number' ? currentPajFee : 0.5;
     // User inputs crypto -> Naira amount includes developer profit

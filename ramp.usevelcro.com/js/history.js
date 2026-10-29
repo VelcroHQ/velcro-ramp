@@ -55,14 +55,18 @@ function toggleTxDetails(headerEl) {
   }
 }
 
-// HostFi sells: each deposit's steps (received → converted → paid) and, if the payout failed,
-// a retry button. The retry can only re-send to the bank on this order (see /api/hostfi/orders/…/retry).
+// HostFi orders: each deposit's steps (sell: received → converted → paid to bank; buy: payment
+// received → converted → sent to wallet) and, if the last step failed, a retry button. The retry
+// can only re-send to the bank or wallet on this order (see /api/hostfi/orders/…/retry).
 function hostfiProgressHtml(tx) {
   const deps = Array.isArray(tx.hostfi_progress) ? tx.hostfi_progress : [];
   const status = String(tx.status || '').toUpperCase();
+  const isBuy = String(tx.type || '').toUpperCase() === 'ONRAMP';
   if (!deps.length) {
     return status === 'AWAITING_DEPOSIT'
-      ? '<p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Waiting for your deposit. We pay your bank automatically once it confirms on the network.</p>'
+      ? `<p class="mt-3 text-xs text-gray-500 dark:text-gray-400">${isBuy
+        ? 'Waiting for your payment. We send your crypto automatically once it arrives.'
+        : 'Waiting for your deposit. We pay your bank automatically once it confirms on the network.'}</p>`
       : '';
   }
   const ngn = v => `₦${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -72,7 +76,9 @@ function hostfiProgressHtml(tx) {
       <i class="mt-1.5 w-2 h-2 rounded-full shrink-0 ${dot[state] || dot.waiting}"></i>
       <span class="min-w-0"><span class="block text-sm ${state === 'failed' ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-velcro-navy dark:text-gray-100 font-medium'}">${label}</span>${detail ? `<span class="block text-xs text-gray-500 dark:text-gray-400">${detail}</span>` : ''}</span>
     </li>`;
+  const coin = (v, c) => `${Number(v).toLocaleString(undefined, { maximumFractionDigits: 8 })} ${c}`;
   return deps.map((d, i) => {
+    if (d.kind === 'buy') return hostfiBuyStepsHtml(tx, d, i, deps.length, step, ngn, coin);
     const payout = {
       done: ['Paid to your bank', d.payout_amount ? ngn(d.payout_amount) : ''],
       pending: ['Sending to your bank…', d.payout_amount ? ngn(d.payout_amount) : ''],
@@ -96,18 +102,44 @@ function hostfiProgressHtml(tx) {
   }).join('');
 }
 
+// One HostFi buy payment: received → converted → sent to the wallet on the order.
+function hostfiBuyStepsHtml(tx, d, i, count, step, ngn, coin) {
+  const sym = d.payout_currency || '';
+  const sent = {
+    done: ['Sent to your wallet', d.payout_amount ? coin(d.payout_amount, sym) : ''],
+    pending: ['Sending to your wallet…', d.payout_amount ? coin(d.payout_amount, sym) : ''],
+    failed: ['Sending failed', d.can_retry ? 'Your money is safe with us. Tap retry to send it again.' : 'Our team will contact you to complete it.'],
+    review: ['Being checked by our team', "We'll email you once it's sent."],
+    resolved: ['Handled by our team', ''],
+    waiting: ['Sent to your wallet', 'Waiting'],
+  }[d.payout] || ['Sent to your wallet', ''];
+  const converted = d.converted === 'pending' ? `Converting to ${sym}…` : `Converted to ${sym}`;
+  return `
+      <div class="mt-3 rounded-xl border border-gray-200/80 dark:border-slate-800 p-3">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">${count > 1 ? `Payment ${i + 1} progress` : 'Progress'}</p>
+        <ol class="space-y-2">
+          ${step('done', 'Payment received', ngn(d.amount))}
+          ${step(d.converted === 'done' ? 'done' : d.converted === 'pending' ? 'pending' : 'waiting', converted, '')}
+          ${step(d.payout, sent[0], sent[1])}
+        </ol>
+        ${d.can_retry ? `<button type="button" onclick="event.stopPropagation(); retryHostfiPayout('${tx.reference}', this)"
+          class="mt-3 h-10 w-full rounded-xl bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy text-sm font-bold transition-colors">Retry send</button>` : ''}
+      </div>`;
+}
+
 async function retryHostfiPayout(reference, btn) {
+  const label = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
   try {
     const res = await fetch(`${API_BASE}/api/hostfi/orders/${encodeURIComponent(reference)}/retry`, { method: 'POST' });
     const payload = await res.json().catch(() => ({}));
-    showToast(payload.message || (res.ok ? 'Payout sent again' : 'Could not retry right now'), res.ok ? 'success' : 'error');
+    showToast(payload.message || (res.ok ? 'Sent again' : 'Could not retry right now'), res.ok ? 'success' : 'error');
   } catch (e) {
     showToast('Could not retry right now. Please try again shortly.', 'error');
   }
   // Refresh whichever view the customer is on.
   if (!document.getElementById('history-modal')?.classList.contains('hidden')) showHistoryModal();
-  if (btn) { btn.disabled = false; btn.textContent = 'Retry payout'; }
+  if (btn) { btn.disabled = false; btn.textContent = label; }
 }
 
 function renderHistoryList(txs) {

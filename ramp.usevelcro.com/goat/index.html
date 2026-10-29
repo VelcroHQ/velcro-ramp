@@ -73,6 +73,9 @@
                 <li onclick="switchSection('email')" id="nav-email">
                     <i data-lucide="mail"></i> Email
                 </li>
+                <li onclick="switchSection('coins')" id="nav-coins">
+                    <i data-lucide="toggle-right"></i> Coins
+                </li>
                 <li onclick="switchSection('hostfi')" id="nav-hostfi">
                     <i data-lucide="bitcoin"></i> HostFi
                 </li>
@@ -457,11 +460,40 @@
             </div>
         </div>
 
+        <div id="section-coins" class="view-content">
+            <header>
+                <div class="header-title">
+                    <h1>Coins &amp; providers</h1>
+                    <p>Switch each coin on or off for buying and selling, per provider. The site and the order endpoints both follow these switches.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="refresh-btn" onclick="fetchRoutes()"><i data-lucide="rotate-cw"></i></button>
+                </div>
+            </header>
+
+            <div class="table-card">
+                <div class="coins-toolbar">
+                    <input type="search" id="coins-search" placeholder="Search coins" oninput="renderRoutes()" aria-label="Search coins">
+                    <button class="btn-primary" id="coins-save-btn" onclick="saveRoutes()">Save changes</button>
+                </div>
+                <p class="coins-note">If HostFi is on for a coin, customers get that coin through HostFi; Switch and PAJ are used when HostFi is off. "—" means the provider doesn't offer that coin.</p>
+                <p id="coins-warning" class="coins-warning" style="display: none;"></p>
+                <table>
+                    <thead>
+                        <tr><th>Coin</th><th>Buy · Switch</th><th>Buy · PAJ</th><th>Buy · HostFi</th><th>Sell · Switch</th><th>Sell · PAJ</th><th>Sell · HostFi</th></tr>
+                    </thead>
+                    <tbody id="coins-body">
+                        <tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="section-hostfi" class="view-content">
             <header>
                 <div class="header-title">
                     <h1>HostFi</h1>
-                    <p>Crypto sells paid out by HostFi: BTC and ETH, plus SOL, USDT and USDC when switched on.</p>
+                    <p>Buys and sells through HostFi. Turn coins on or off on the Coins page.</p>
                 </div>
                 <div class="header-actions">
                     <span id="hostfi-env" class="status-pill cancelled">Checking…</span>
@@ -476,45 +508,8 @@
 
             <div class="hostfi-grid">
                 <div class="table-card">
-                    <h3 style="font-size: 16px; margin-bottom: 4px;">Coins</h3>
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">BTC and ETH are only sold through HostFi, so their switch hides the coin. SOL, USDT and USDC move from their current provider to HostFi when switched on.</p>
-                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-                        <label class="hostfi-toggle">
-                            <input type="checkbox" id="hostfi-toggle-BTC">
-                            <div>
-                                <div class="hostfi-toggle-title">Bitcoin (BTC)</div>
-                                <div class="hostfi-toggle-sub">Sell BTC via HostFi · off hides BTC</div>
-                            </div>
-                        </label>
-                        <label class="hostfi-toggle">
-                            <input type="checkbox" id="hostfi-toggle-ETH">
-                            <div>
-                                <div class="hostfi-toggle-title">Ethereum (ETH)</div>
-                                <div class="hostfi-toggle-sub">Sell ETH via HostFi · off hides ETH</div>
-                            </div>
-                        </label>
-                        <label class="hostfi-toggle">
-                            <input type="checkbox" id="hostfi-toggle-SOL">
-                            <div>
-                                <div class="hostfi-toggle-title">Solana (SOL)</div>
-                                <div class="hostfi-toggle-sub">On: HostFi · Off: PAJ</div>
-                            </div>
-                        </label>
-                        <label class="hostfi-toggle">
-                            <input type="checkbox" id="hostfi-toggle-USDT">
-                            <div>
-                                <div class="hostfi-toggle-title">Tether (USDT)</div>
-                                <div class="hostfi-toggle-sub">On: HostFi · Off: Switch / PAJ</div>
-                            </div>
-                        </label>
-                        <label class="hostfi-toggle">
-                            <input type="checkbox" id="hostfi-toggle-USDC">
-                            <div>
-                                <div class="hostfi-toggle-title">USD Coin (USDC)</div>
-                                <div class="hostfi-toggle-sub">On: HostFi · Off: Switch / PAJ</div>
-                            </div>
-                        </label>
-                    </div>
+                    <h3 style="font-size: 16px; margin-bottom: 4px;">Fee &amp; timers</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">Coins are switched on or off on the <a href="#" onclick="switchSection('coins'); return false;">Coins</a> page.</p>
                     <div class="hostfi-inputs">
                         <div>
                             <label class="camp-label" for="hostfi-fee-input">Fee (%)</label>
@@ -529,13 +524,13 @@
                             <input type="number" id="hostfi-timer-default" step="5" min="15" max="360" style="margin-bottom: 0;">
                         </div>
                     </div>
-                    <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 16px;">The fee comes off the naira HostFi pays for each coin. The timer is how long a customer has to send; deposits that arrive later are still paid at the rate when they confirm.</p>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 16px;">The fee comes off each sell's naira and each buy's payment before conversion. The timer is how long a seller has to send; deposits that arrive later are still paid at the rate when they confirm. Buy accounts accept payment for 24 hours.</p>
                     <button class="btn-primary" id="hostfi-save-btn" onclick="saveHostfiSettings()" style="width: 100%;">Save HostFi settings</button>
                 </div>
 
                 <div class="table-card">
                     <h3 style="font-size: 16px; margin-bottom: 4px;">Wallet balances</h3>
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">Payouts come from the NGN wallet. Keep it funded above your largest expected sell.</p>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">Each sell is paid from its own swap and each buy sends the coin its payment bought, so no float is needed. Your fees stay here.</p>
                     <div id="hostfi-balances" class="hostfi-balances"><p style="color: var(--text-secondary); font-size: 13px;">Loading…</p></div>
                 </div>
             </div>
@@ -548,6 +543,19 @@
                         <tr><th>Received</th><th>Customer</th><th>Deposit</th><th>Payout</th><th>Status</th><th>Action</th></tr>
                     </thead>
                     <tbody id="hostfi-deposits-body">
+                        <tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-card" style="margin-top: 20px;">
+                <h3 style="margin-bottom: 4px; font-size: 16px;">Buys <span id="hostfi-buy-review-count" class="status-pill failed" style="display: none; margin-left: 6px;"></span></h3>
+                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Naira payments for buys, newest problems first. "Approve &amp; send" skips the automatic checks. A retry only goes to the wallet on the order, once HostFi confirms the last send failed.</p>
+                <table>
+                    <thead>
+                        <tr><th>Paid</th><th>Customer</th><th>Payment</th><th>Sent</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="hostfi-buys-body">
                         <tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr>
                     </tbody>
                 </table>
@@ -773,25 +781,7 @@
                         <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Offramp (sell) limits per transaction.</p>
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; display: block;">Fallback Assets (when Switch is down)</label>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 10px; background: var(--bg-light); border: 1px solid var(--border);">
-                                <input type="checkbox" id="paj-usdt-toggle" style="width: 18px; height: 18px; accent-color: var(--success); cursor: pointer;">
-                                <div>
-                                    <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Enable PAJ USDT</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">Show USDT on Solana via PAJ</div>
-                                </div>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 10px; background: var(--bg-light); border: 1px solid var(--border);">
-                                <input type="checkbox" id="paj-usdc-toggle" style="width: 18px; height: 18px; accent-color: var(--success); cursor: pointer;">
-                                <div>
-                                    <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Enable PAJ USDC</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">Show USDC on Solana via PAJ</div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Which coins each provider offers is set on the <a href="#" onclick="switchSection('coins'); return false;">Coins</a> page.</p>
 
                     <div id="settings-message" class="hidden" style="margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;"></div>
                     <button class="btn-primary" onclick="saveSettings()" style="width: 100%;">Save Configuration</button>
