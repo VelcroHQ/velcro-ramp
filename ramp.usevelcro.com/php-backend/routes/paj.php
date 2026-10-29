@@ -31,22 +31,33 @@ function pajSymbolForMint(string $mint): string
     return '';
 }
 
-function calculatePajDeveloperFee(float $fiatAmount, string $direction = 'ONRAMP'): float
+/** PAJ's live naira per USD for a direction (fallback 1350). */
+function pajLiveRate(string $direction = 'ONRAMP'): float
 {
-    $feePercent = getPajFee();
-    if ($feePercent <= 0 || $fiatAmount <= 0) {
-        return 0.0;
+    static $cache = [];
+    $key = strtolower($direction) === 'offramp' ? 'offramp' : 'onramp';
+    if (isset($cache[$key])) {
+        return $cache[$key];
     }
     $rate = 1350.0;
     try {
         $rates = pajApi()->getPajRate();
-        $key = strtolower($direction) === 'offramp' ? 'offramp' : 'onramp';
         if (!empty($rates[$key]['rate']) && is_numeric($rates[$key]['rate']) && (float) $rates[$key]['rate'] > 0) {
             $rate = (float) $rates[$key]['rate'];
         }
     } catch (Throwable $e) {
         error_log('Failed to fetch live PAJ rate for fee calculation: ' . $e->getMessage());
     }
+    return $cache[$key] = $rate;
+}
+
+function calculatePajDeveloperFee(float $fiatAmount, string $direction = 'ONRAMP'): float
+{
+    $feePercent = getPajFee();
+    if ($feePercent <= 0 || $fiatAmount <= 0) {
+        return 0.0;
+    }
+    $rate = pajLiveRate($direction);
     $fee = ($fiatAmount / $rate) * ($feePercent / 100);
     $feeRounded = round($fee, 2);
     return ($feeRounded < 0.01 && $fee > 0) ? 0.01 : $feeRounded;
@@ -184,7 +195,13 @@ function registerPajRoutes(Router $router): void
                 $businessUSDCFee = max(0.01, calculatePajDeveloperFee($totalInputAmount, 'ONRAMP'));
             }
 
-            $order = pajApi()->createOnrampOrder($totalInputAmount, $recipient, $mint, $businessUSDCFee);
+            // PAJ adds businessUSDCFee on top of fiatAmount. Take it out first, so the amount the
+            // customer typed is the amount they transfer.
+            $fiatForPaj = $totalInputAmount;
+            if ($businessUSDCFee !== null) {
+                $fiatForPaj = round($totalInputAmount - $businessUSDCFee * pajLiveRate('ONRAMP'), 2);
+            }
+            $order = pajApi()->createOnrampOrder($fiatForPaj, $recipient, $mint, $businessUSDCFee);
             $d = $order ?? [];
             $assetInfo = null;
             foreach (pajApi()->getAssets() as $a) {
