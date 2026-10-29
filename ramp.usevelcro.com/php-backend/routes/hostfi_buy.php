@@ -936,6 +936,10 @@ function hostfiHandleFiatDeposit(array $data): bool
             ['a' => $acct]
         );
     }
+    if (!$order) {
+        // Payment does not belong to any Velcro Ramp buy order: ignore foreign product transaction
+        return true;
+    }
     $id = hostfiRecordPayment((string) ($live['reference'] ?? $data['reference']), $order, (float) ($live['amount']['value'] ?? 0), hostfiPaidNgn($live));
     hostfiProcessPayment($id);
     return true;

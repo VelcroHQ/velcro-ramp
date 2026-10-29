@@ -344,17 +344,36 @@ function hostfiNotify(int $id, string $status): void
  *
  * @param array{ref:string,address:?string,currency:string,network:?string,amount:float,tx_hash:?string} $d
  */
-function hostfiRecordDeposit(array $d): int
+function hostfiRecordDeposit(array $d): ?int
 {
     ensureHostfiSchema();
-    $order = $d['address'] ? Database::selectOne(
-        "SELECT `reference` FROM `transactions` WHERE `channel` = 'HOSTFI' AND `deposit_address` = :a ORDER BY `id` DESC LIMIT 1",
-        ['a' => $d['address']]
-    ) : null;
+    $existing = Database::selectOne('SELECT `id` FROM `hostfi_deposits` WHERE `deposit_ref` = :r', ['r' => $d['ref']]);
+    if ($existing) {
+        return (int) $existing['id']; // webhook delivered twice
+    }
+    // Match by customId (the order reference we pass to HostFi) or by deposit address
+    $order = null;
+    $customId = trim((string) ($d['custom_id'] ?? ''));
+    if ($customId !== '') {
+        $order = Database::selectOne(
+            "SELECT `reference` FROM `transactions` WHERE `channel` = 'HOSTFI' AND `reference` = :r",
+            ['r' => $customId]
+        );
+    }
+    if (!$order && !empty($d['address'])) {
+        $order = Database::selectOne(
+            "SELECT `reference` FROM `transactions` WHERE `channel` = 'HOSTFI' AND `deposit_address` = :a ORDER BY `id` DESC LIMIT 1",
+            ['a' => $d['address']]
+        );
+    }
+    // Deposit does not belong to any order in Velcro Ramp: ignore cleanly (e.g. from another product sharing this HostFi account)
+    if (!$order) {
+        return null;
+    }
     try {
         return (int) Database::insert('hostfi_deposits', [
             'deposit_ref' => $d['ref'],
-            'order_ref' => $order['reference'] ?? null,
+            'order_ref' => $order['reference'],
             'address' => $d['address'],
             'currency' => strtoupper($d['currency']),
             'network' => $d['network'],
@@ -1119,14 +1138,21 @@ function registerHostfiRoutes(Router $router): void
             }
             $liveMeta = hostfiMeta($live);
             $hookMeta = hostfiMeta($data);
+            $field = static fn (string $k) => (string) ($live[$k] ?? $data[$k] ?? $liveMeta[$k] ?? $hookMeta[$k] ?? '');
+            $addr = ($liveMeta['address'] ?? '') !== '' ? $liveMeta['address'] : ($hookMeta['address'] ?? ($live['address'] ?? ($data['address'] ?? ($live['depositAddress'] ?? ($data['depositAddress'] ?? ($live['recipient'] ?? ($data['recipient'] ?? null)))))));
             $id = hostfiRecordDeposit([
                 'ref' => (string) ($live['reference'] ?? $data['reference']),
-                'address' => ($liveMeta['address'] ?? '') !== '' ? $liveMeta['address'] : ($hookMeta['address'] ?? null),
+                'custom_id' => $field('customId'),
+                'address' => $addr,
                 'currency' => (string) ($live['amount']['currency'] ?? $data['amount']['currency'] ?? ''),
                 'network' => $liveMeta['network'] ?? ($hookMeta['network'] ?? null),
                 'amount' => (float) ($live['amount']['value'] ?? 0),
                 'tx_hash' => $liveMeta['transactionId'] ?? ($hookMeta['transactionId'] ?? null),
             ]);
+            if ($id === null) {
+                // Deposit belongs to another product sharing this HostFi account: ignore cleanly without creating alerts
+                jsonResponse(['received' => true, 'ignored' => 'foreign_product']);
+            }
             hostfiProcessDeposit($id);
         } elseif ($event === 'FIAT_DEPOSIT') {
             if (!hostfiHandleFiatDeposit($data)) {
