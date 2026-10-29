@@ -62,40 +62,23 @@ function paintLogo(el, brand, fallbackName) {
 // ── Landing ──
 
 function initLanding() {
-  const nav = $('l-nav');
-  const onScroll = () => nav.classList.toggle('is-solid', window.scrollY > 8);
+  const nav = $('m-nav');
+  const onScroll = () => nav.classList.toggle('is-solid', window.scrollY > 24);
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  // "Claim your store address": checked live, then carried into sign-up and store set-up.
-  const claim = $('claim-slug');
-  const msg = $('claim-msg');
-  const defaultMsg = msg.textContent;
-  let timer = null;
-  const check = async () => {
-    const slug = claim.value;
-    if (!slug) { msg.className = 'mt-2.5 text-sm text-[#7a7e96] min-h-[1.25rem]'; msg.textContent = defaultMsg; return null; }
-    try {
-      const r = await api('/api/merchant/slug-check?slug=' + encodeURIComponent(slug));
-      if (r.slug !== claim.value) return null;
-      msg.className = 'mt-2.5 text-sm min-h-[1.25rem] ' + (r.available ? 'is-ok' : 'is-bad');
-      msg.textContent = r.available ? `ramp.usevelcro.com/m/${r.slug} is available.` : r.reason;
-      return r.available;
-    } catch (e) { return null; }
+  const name = $('pv-name');
+  const renderPreview = () => {
+    const title = name.value.trim() || 'Your store';
+    $('pv-title').textContent = title;
+    $('pv-logo').textContent = title.charAt(0).toUpperCase();
+    $('pv-slug').textContent = slugify(title) || 'your-store';
   };
-  claim.addEventListener('input', () => {
-    claim.value = claim.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    clearTimeout(timer);
-    timer = setTimeout(check, 350);
-  });
-  $('claim-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    if (claim.value) {
-      if ((await check()) === false) return claim.focus();
-      try { localStorage.setItem(CLAIM_KEY, claim.value); } catch (err) { /* ignore */ }
-    }
-    openAuth('signup');
-  });
+  name.addEventListener('input', renderPreview);
+  document.querySelectorAll('.m-swatch').forEach(sw => sw.addEventListener('click', () => {
+    document.querySelectorAll('.m-swatch').forEach(x => x.classList.toggle('is-on', x === sw));
+    $('pv-store').style.setProperty('--brand', sw.dataset.color);
+  }));
 
   const vol = $('calc-vol');
   const mk = $('calc-mk');
@@ -271,6 +254,7 @@ function renderAll() {
 
 function openTab(name) {
   if (!$('tab-' + name)) name = 'overview';
+  if (name === 'settings') openSettings(null);
   document.querySelectorAll('.d-tab').forEach(t => t.classList.toggle('hidden', t.id !== 'tab-' + name));
   document.querySelectorAll('.d-tabs button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === name));
   history.replaceState(null, '', '#' + name);
@@ -296,7 +280,7 @@ const BANNERS = {
   PENDING: ['is-pending', "We're reviewing your business.", "Usually within a working day. We'll email you as soon as you're approved.", 'View details', () => goToKyb()],
   REJECTED: ['is-bad', 'We need a few changes before your store can go live.', '', 'Fix details', () => goToKyb()],
   SUSPENDED: ['is-bad', 'Your store is suspended and offline.', '', 'Contact support', () => window.open('https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab', '_blank')],
-  APPROVED: ['is-live', 'Your business is verified.', '', 'Copy store link', () => shareStore()],
+  APPROVED: ['is-live', 'Your store is live.', '', 'Copy store link', () => shareStore()],
 };
 
 function renderOverview() {
@@ -309,7 +293,7 @@ function renderOverview() {
 
   const [cls, title, sub, btn, action] = BANNERS[merchant.status] || BANNERS.DRAFT;
   const note = merchant.review_note ? `Reason: ${merchant.review_note}` : sub;
-  const liveSub = merchant.status === 'APPROVED' ? (merchant.storefront_url ? 'Your store page is coming online soon. Your link is ready to share.' : 'Choose your store address to get your link.') : note;
+  const liveSub = merchant.status === 'APPROVED' ? (merchant.storefront_url ? 'Your store is live at ' + merchant.storefront_url.replace(/^https?:\/\//, '') + '. Share the link with your customers.' : 'Choose your store address to get your link.') : note;
   const banner = $('ov-banner');
   banner.className = 'd-banner mt-6 ' + cls;
   banner.innerHTML = `<div><b>${esc(title)}</b><small>${esc(liveSub)}</small></div><button type="button" class="d-banner-btn">${esc(btn)} →</button>`;
@@ -349,7 +333,92 @@ function renderOverview() {
 
 function goToKyb() {
   openTab('settings');
-  setTimeout(() => $('kyb-form').scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  openSettings('kyb');
+}
+
+// Settings: a home of cards, each opening one panel.
+const SETTINGS_PANELS = { store: 'panel-store', kyb: 'kyb-form', security: 'panel-security', support: 'panel-support' };
+
+function openSettings(panel) {
+  $('set-home').classList.toggle('hidden', !!panel);
+  $('set-panel').classList.toggle('hidden', !panel);
+  Object.entries(SETTINGS_PANELS).forEach(([key, id]) => $(id).classList.toggle('hidden', key !== panel));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+const STATUS_WORDS = { DRAFT: ['pending', 'Not verified yet'], PENDING: ['pending', 'Verification under review'], REJECTED: ['rejected', 'Changes needed'], APPROVED: ['approved', 'Verified'], SUSPENDED: ['suspended', 'Suspended'] };
+
+function renderSettingsHome() {
+  paintLogo($('set-logo'), merchant.brand, storeName());
+  $('set-name').textContent = storeName();
+  $('set-email').textContent = me.email;
+  const [cls, words] = STATUS_WORDS[merchant.status] || STATUS_WORDS.DRAFT;
+  $('set-badge').className = 'm-status-badge ' + cls;
+  $('set-badge').textContent = words;
+  const live = merchant.status === 'APPROVED' && merchant.storefront_url;
+  $('set-cta').textContent = live ? 'View store' : merchant.status === 'PENDING' ? 'View details' : 'Complete verification';
+  $('set-cta').onclick = () => (live ? window.open(merchant.storefront_url, '_blank') : openSettings('kyb'));
+  $('set-kyb-sub').textContent = {
+    DRAFT: 'Verify your business to put your store live.',
+    PENDING: "We're reviewing your details. Usually within a working day.",
+    REJECTED: 'We need a few changes. Open to see what.',
+    APPROVED: 'Your business is verified.',
+    SUSPENDED: 'Your store is suspended.',
+  }[merchant.status] || '';
+  $('sec-email').textContent = me.email;
+  $('sup-url').value = merchant.brand.support_url || '';
+}
+
+let secStep = 1;
+async function submitSecurity(e) {
+  e.preventDefault();
+  const btn = $('sec-btn');
+  const err = $('sec-error');
+  err.classList.add('hidden');
+  btn.disabled = true;
+  try {
+    if (secStep === 1) {
+      await api('/api/merchant/auth/reset/code', { method: 'POST', body: { email: me.email } });
+      secStep = 2;
+      $('sec-step2').classList.remove('hidden');
+      btn.textContent = 'Update password';
+      $('sec-code').focus();
+    } else {
+      const data = await api('/api/merchant/auth/reset', { method: 'POST', body: { email: me.email, otp: $('sec-code').value.trim(), password: $('sec-pass').value } });
+      setToken(data.token);
+      secStep = 1;
+      $('sec-step2').classList.add('hidden');
+      $('sec-code').value = '';
+      $('sec-pass').value = '';
+      btn.textContent = 'Email me a code';
+      toast('Password updated. Other devices were signed out.');
+      openSettings(null);
+    }
+  } catch (ex) {
+    err.textContent = ex.message;
+    err.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function submitSupport(e) {
+  e.preventDefault();
+  const btn = $('sup-btn');
+  const err = $('sup-error');
+  err.classList.add('hidden');
+  btn.disabled = true;
+  try {
+    merchant = await api('/api/merchant/support', { method: 'POST', body: { support_url: $('sup-url').value.trim() } });
+    toast($('sup-url').value.trim() ? 'Support link saved' : 'Support link removed');
+    renderAll();
+    openSettings(null);
+  } catch (ex) {
+    err.textContent = ex.message;
+    err.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function shareStore() {
@@ -464,6 +533,7 @@ function renderSettings() {
   $('brand-error').classList.add('hidden');
   paintBrand();
   renderKyb();
+  renderSettingsHome();
 }
 
 function paintBrand() {
@@ -666,6 +736,8 @@ document.addEventListener('DOMContentLoaded', () => {
   $('auth-form').addEventListener('submit', submitAuth);
   document.querySelectorAll('.d-tabs button').forEach(b => b.addEventListener('click', () => openTab(b.dataset.tab)));
   $('brand-form').addEventListener('submit', saveBrand);
+  $('panel-security').addEventListener('submit', submitSecurity);
+  $('panel-support').addEventListener('submit', submitSupport);
   $('kyb-form').addEventListener('submit', submitKyb);
   $('b-name').addEventListener('input', () => {
     brandDraft.name = $('b-name').value;

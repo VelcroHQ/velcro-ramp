@@ -15,6 +15,7 @@ function ensureStoreSchema(): void
     $flag = BASE_PATH . '/data/.store_schema_v1';
     if ($done || file_exists($flag)) {
         $done = true;
+        ensureStoreOrderColumns();
         return;
     }
     ensureMerchantSchema();
@@ -34,6 +35,73 @@ function ensureStoreSchema(): void
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     @file_put_contents($flag, gmdate('c'));
     $done = true;
+    ensureStoreOrderColumns();
+}
+
+/** v2: store orders carry their store, customer, the merchant's markup and Velcro's fee at order time. */
+function ensureStoreOrderColumns(): void
+{
+    $flag = BASE_PATH . '/data/.store_schema_v2';
+    if (file_exists($flag)) {
+        return;
+    }
+    foreach ([
+        'ADD COLUMN `merchant_id` INT UNSIGNED DEFAULT NULL',
+        'ADD COLUMN `store_customer_id` INT UNSIGNED DEFAULT NULL',
+        'ADD COLUMN `merchant_markup_percent` DECIMAL(6,3) DEFAULT NULL',
+        'ADD COLUMN `velcro_fee_percent` DECIMAL(6,3) DEFAULT NULL',
+        'ADD KEY `idx_merchant_id` (`merchant_id`)',
+    ] as $alter) {
+        try {
+            Database::pdo()->exec("ALTER TABLE `transactions` {$alter}");
+        } catch (PDOException $e) {
+            // 1060 duplicate column / 1061 duplicate key: already there
+            if (!in_array((int) ($e->errorInfo[1] ?? 0), [1060, 1061], true)) {
+                throw $e;
+            }
+        }
+    }
+    @file_put_contents($flag, gmdate('c'));
+}
+
+/**
+ * For an order placed on a store (request has `store` = slug): the store, the signed-in customer,
+ * and the merchant's markup for this coin and side. Null for a normal Velcro order. Ends the request
+ * if the store, the customer, the coin or the provider doesn't check out.
+ *
+ * @return array{merchant:array,customer:array,markup:float}|null
+ */
+function storeOrderContext(string $side, string $symbol, string $provider): ?array
+{
+    $slug = strtolower(trim((string) body(getJsonBody(), 'store', '')));
+    if ($slug === '') {
+        return null;
+    }
+    $m = storeBySlug($slug);
+    if ($m['status'] !== 'APPROVED') {
+        jsonResponse(errorResponse('This store is not taking orders yet.'), 403);
+    }
+    $customer = storeTokenCustomer($m);
+    if (!$customer) {
+        jsonResponse(errorResponse('Sign in to continue', 401), 401);
+    }
+    $symbol = strtoupper($symbol);
+    $p = merchantPricing($m)[$symbol] ?? null;
+    if (!$p || empty($p[$side . '_on']) || (MERCHANT_COIN_PROVIDERS[$symbol] ?? '') !== $provider) {
+        jsonResponse(errorResponse("This store isn't " . ($side === 'buy' ? 'selling' : 'buying') . " {$symbol} right now."), 400);
+    }
+    return ['merchant' => $m, 'customer' => $customer, 'markup' => (float) $p[$side]];
+}
+
+/** Columns that tag a store order. */
+function storeOrderFields(?array $ctx, float $velcroFee): array
+{
+    return $ctx ? [
+        'merchant_id' => (int) $ctx['merchant']['id'],
+        'store_customer_id' => (int) $ctx['customer']['id'],
+        'merchant_markup_percent' => $ctx['markup'],
+        'velcro_fee_percent' => $velcroFee,
+    ] : [];
 }
 
 /**
@@ -284,7 +352,14 @@ function registerStoreRoutes(Router $router): void
         if (!$c) {
             jsonResponse(errorResponse('Sign in to continue', 401), 401);
         }
-        jsonResponse(successResponse(['customer' => storeCustomerView($c), 'orders' => []]));
+        // The customer's orders on this store, newest first (status, amounts, and what to pay or send).
+        $orders = Database::select(
+            'SELECT `reference`, `type`, `status`, `asset`, `amount`, `destination_amount`, `destination_currency`, `source_currency`, `deposit_bank_name`,
+                    `deposit_account_number`, `deposit_account_name`, `deposit_address`, `wallet_address`, `hash`, `created_at`
+             FROM `transactions` WHERE `merchant_id` = :m AND `store_customer_id` = :c ORDER BY `id` DESC LIMIT 50',
+            ['m' => $m['id'], 'c' => $c['id']]
+        );
+        jsonResponse(successResponse(['customer' => storeCustomerView($c), 'orders' => $orders]));
     });
 
     // ─── The merchant's and admin's view of a store's customers ───

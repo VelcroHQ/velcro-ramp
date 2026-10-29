@@ -257,7 +257,7 @@ function hostfiBuyProblem(array $buy, ?array $order, array $hf): ?string
         return sprintf('Payment of ₦%s is over the ₦%s buy limit', number_format((float) $buy['ngn_amount'], 2), number_format($max));
     }
     try {
-        $coin = (float) $buy['ngn_amount'] * (1 - hostfiFee() / 100) * hostfiRate('NGN', (string) $hf['symbol']);
+        $coin = (float) $buy['ngn_amount'] * (1 - hostfiOrderFee($order) / 100) * hostfiRate('NGN', (string) $hf['symbol']);
         $send = hostfiSendFee((string) $hf['symbol'], (string) $hf['network'], $coin);
     } catch (Throwable $e) {
         return 'Could not price the payment: ' . substr($e->getMessage(), 0, 200);
@@ -296,7 +296,7 @@ function hostfiProcessPayment(int $id, bool $force = false): void
                 return;
             }
         } else {
-            $swapNgn = floor((float) $buy['ngn_amount'] * (1 - hostfiFee() / 100) * 100) / 100; // our fee stays in naira
+            $swapNgn = floor((float) $buy['ngn_amount'] * (1 - hostfiOrderFee($order) / 100) * 100) / 100; // our fee (and a store's markup) stays in naira
             if (!hostfiBuyClaim($id, [$buy['status']], 'SWAPPING', ['swap_ngn' => $swapNgn, 'currency' => $hf['symbol'], 'network' => $hf['network'], 'wallet' => $order['wallet_address']])) {
                 return;
             }
@@ -991,10 +991,15 @@ function registerHostfiBuyRoutes(Router $router): void
         $wallet = trim((string) body($b, 'wallet', ''));
         $amount = (float) body($b, 'amount', 0);
         $email = strtolower(trim((string) body($b, 'email', '')));
-
-        if (!in_array($symbol, hostfiEnabledAssets('buy'), true)) {
+        // A store order: the store decides the coins, the customer's email is used, and the
+        // merchant's markup is added to our fee.
+        $store = storeOrderContext('buy', $symbol, 'hostfi');
+        if ($store) {
+            $email = (string) $store['customer']['email'];
+        } elseif (!in_array($symbol, hostfiEnabledAssets('buy'), true)) {
             jsonResponse(errorResponse("{$symbol} buys are not available right now"), 400);
         }
+        $fee = hostfiFee() + ($store['markup'] ?? 0.0);
         if ($email !== '' && !isValidEmail($email)) {
             jsonResponse(errorResponse('Invalid email address'), 400);
         }
@@ -1017,10 +1022,10 @@ function registerHostfiBuyRoutes(Router $router): void
                 jsonResponse(errorResponse("{$symbol} can't be sent on that network"), 400);
             }
             $coinPerNgn = hostfiRate('NGN', $symbol);
-            $grossCoin = max(0, $amount - HOSTFI_COLLECTION_FEE_NGN) * (1 - hostfiFee() / 100) * $coinPerNgn;
+            $grossCoin = max(0, $amount - HOSTFI_COLLECTION_FEE_NGN) * (1 - $fee / 100) * $coinPerNgn;
             $estimate = hostfiFloorCoin($grossCoin - ($net['flat'] + $grossCoin * $net['percent'] / 100));
             if ($estimate < max($net['min'], 1e-8)) {
-                $minNgn = ceil((($net['min'] + $net['flat']) / ($coinPerNgn * (1 - hostfiFee() / 100) * (1 - $net['percent'] / 100)) + HOSTFI_COLLECTION_FEE_NGN) / 100) * 100;
+                $minNgn = ceil((($net['min'] + $net['flat']) / ($coinPerNgn * (1 - $fee / 100) * (1 - $net['percent'] / 100)) + HOSTFI_COLLECTION_FEE_NGN) / 100) * 100;
                 jsonResponse(errorResponse('Minimum for ' . $symbol . ' on this network is ₦' . number_format($minNgn)), 400);
             }
 
@@ -1058,9 +1063,9 @@ function registerHostfiBuyRoutes(Router $router): void
                     'expires_at' => time() + HOSTFI_BUY_TIMER_MINUTES * 60,
                     'timer_minutes' => HOSTFI_BUY_TIMER_MINUTES,
                     // Quote at order time, so History can show "$1 = ₦X" plus our fee.
-                    'quote' => ['ngn_per_usd' => $quote['usd_per_unit'] > 0 && $coinPerNgn > 0 ? (1 / $coinPerNgn) / $quote['usd_per_unit'] : null, 'fee_percent' => hostfiFee()],
-                ]]),
-            ] + referralFieldsFor(body($b, 'ref'), $email));
+                    'quote' => ['ngn_per_usd' => $quote['usd_per_unit'] > 0 && $coinPerNgn > 0 ? (1 / $coinPerNgn) / $quote['usd_per_unit'] : null, 'fee_percent' => $fee],
+                ] + ($store ? ['fee_percent' => $fee] : [])]), // store orders keep their fee (ours + markup) for the swap
+            ] + ($store ? storeOrderFields($store, hostfiFee()) : referralFieldsFor(body($b, 'ref'), $email)));
 
             if ($email !== '') {
                 try {

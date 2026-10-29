@@ -335,3 +335,36 @@ body { font-family: 'Inter', system-ui, sans-serif; }
 .d-choice small { display: block; margin-top: .2rem; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
 .d-choice em { display: block; margin-top: .2rem; font-style: normal; font-size: .8rem; color: #8a8fa0; }
 .d-choice:has(input:checked) { border-color: var(--navy); background: #f8f8fd; }
+
+/* ═══ Dashboard polish ═══ */
+.ico { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.d-tabs button .ico { width: 17px; height: 17px; opacity: .75; }
+.d-tabs button.is-on .ico { opacity: 1; }
+.d-action-icon .ico, .d-set-ico .ico { width: 20px; height: 20px; }
+.d-empty > span .ico { width: 28px; height: 28px; }
+.d-action-icon { background: #f1f2f8; color: var(--navy); }
+.d-action.is-done .d-action-icon { background: rgba(168, 207, 69, .28); }
+.d-empty > span { background: #f1f2f8; color: var(--navy); }
+.d-card, .d-action, .d-stat { border-color: #ebecf2; }
+.d-banner { border-radius: 16px; }
+
+/* Settings home */
+.d-profile { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.4rem; border-radius: 18px; background: linear-gradient(120deg, #f4f5ff, #f6faea); border: 1px solid #e9ebf3; }
+.d-profile > div { flex: 1; display: flex; flex-direction: column; gap: .15rem; }
+.d-profile b { font-size: 1.1rem; }
+.d-profile > div > span:not(.m-status-badge) { color: #6b7080; font-size: .88rem; overflow: hidden; text-overflow: ellipsis; }
+.d-profile .m-status-badge { align-self: flex-start; margin-top: .35rem; }
+@media (max-width: 560px) { .d-profile { flex-wrap: wrap; } .d-profile .m-btn-primary { width: 100%; } }
+.d-set-grid { display: grid; gap: .9rem; }
+@media (min-width: 640px) { .d-set-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .d-set-grid { grid-template-columns: repeat(3, 1fr); } }
+.d-set-card { text-align: left; display: flex; flex-direction: column; gap: .3rem; padding: 1.25rem; background: #fff; border: 1px solid #ebecf2; border-radius: 16px; transition: border-color .15s, box-shadow .15s, transform .15s; }
+button.d-set-card:hover { border-color: #cfd3e3; box-shadow: 0 14px 28px -22px rgba(13, 13, 89, .4); transform: translateY(-1px); }
+.d-set-ico { width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: #f1f2f8; color: var(--navy); margin-bottom: .55rem; }
+.d-set-card b { font-size: .98rem; }
+.d-set-card b em { font-style: normal; font-size: .7rem; font-weight: 700; color: #8a8fa0; background: #f1f2f7; padding: .15rem .45rem; border-radius: 99px; margin-left: .35rem; vertical-align: middle; }
+.d-set-card small { color: #6b7080; font-size: .85rem; line-height: 1.5; }
+.d-set-card.is-soon { opacity: .65; }
+.d-back { display: inline-flex; align-items: center; gap: .3rem; font-size: .88rem; font-weight: 600; color: #6b7080; }
+.d-back:hover { color: var(--navy); }
+.d-back .ico { width: 16px; height: 16px; }

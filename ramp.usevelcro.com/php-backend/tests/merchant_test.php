@@ -16,7 +16,7 @@ if (PHP_SAPI !== 'cli') {
 
 $tmp = sys_get_temp_dir() . '/velcro_merchant_test_' . getmypid();
 @mkdir($tmp . '/data', 0777, true);
-foreach (['.referral_schema_v1', '.merchant_schema_v1', '.store_schema_v1'] as $flag) {
+foreach (['.referral_schema_v1', '.merchant_schema_v1', '.store_schema_v1', '.store_schema_v2'] as $flag) {
     file_put_contents($tmp . '/data/' . $flag, 'test'); // MySQL DDL; tables built below instead
 }
 
@@ -28,6 +28,9 @@ putenv('PAJ_API_KEY=');
 putenv('MERCHANT_LOGO_DIR=' . $tmp . '/logos');
 
 $pdo = new PDO('sqlite:' . $tmp . '/test.db', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+$pdo->exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, reference TEXT UNIQUE, type TEXT, status TEXT, asset TEXT, channel TEXT, amount REAL, destination_amount REAL,
+    destination_currency TEXT, source_currency TEXT, deposit_bank_name TEXT, deposit_account_number TEXT, deposit_account_name TEXT, deposit_address TEXT, wallet_address TEXT,
+    hash TEXT, meta TEXT, email TEXT, merchant_id INTEGER, store_customer_id INTEGER, merchant_markup_percent REAL, velcro_fee_percent REAL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
 $pdo->exec('CREATE TABLE otps (otp_key TEXT PRIMARY KEY, code TEXT, expires_at INTEGER, attempts INTEGER DEFAULT 0)');
 $pdo->exec('CREATE TABLE audit_logs (id INTEGER PRIMARY KEY, action TEXT, ip TEXT, user_agent TEXT, details TEXT)');
 $pdo->exec("CREATE TABLE merchants (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, slug TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'DRAFT',

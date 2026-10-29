@@ -6,6 +6,8 @@ const SLUG = (location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/) || [])[1] |
 const TOKEN_KEY = 'velcro_store_' + SLUG;
 const MERCHANT_TOKEN_KEY = 'velcro_merchant_token'; // lets a merchant preview their own store before approval
 const COIN_LOGOS = { BTC: '/logos/bitcoin.png', ETH: '/logos/ethereum.png', SOL: '/logos/solana.png', USDT: '/logos/usdt.png', USDC: '/logos/usdc.png' };
+const BUY_CHIPS = [10000, 50000, 100000, 500000];
+const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
 const $ = id => document.getElementById(id);
 const store = { info: null, coins: {}, side: 'buy', coin: null };
@@ -83,10 +85,18 @@ async function loadStore() {
   document.documentElement.style.setProperty('--brand', s.color);
   document.documentElement.style.setProperty('--on-brand', onBrand(s.color));
   $('s-name').textContent = s.name;
+  $('s-title').textContent = s.name;
   $('s-foot-name').textContent = s.name;
   $('s-home').href = '/m/' + SLUG;
   paintLogo($('s-logo'));
+  paintLogo($('s-hero-logo'));
   paintLogo($('auth-logo'));
+  paintBoard();
+  if (s.support_url) {
+    $('s-support').href = s.support_url;
+    $('s-support').querySelector('span').textContent = `Need help? Chat with ${s.name}`;
+    $('s-support').hidden = false;
+  }
   $('s-preview').hidden = !s.is_owner_preview;
   $('s-loading').hidden = true;
   $('s-app').hidden = false;
@@ -108,17 +118,61 @@ function showMissing() {
   $('s-missing').hidden = false;
 }
 
+// Today's rates: per $1, what the store sells at (customers buy) and buys at (customers sell).
+function paintBoard() {
+  $('s-board-rows').innerHTML = Object.values(store.coins).map(c => {
+    const cell = (on, rate) => !on ? '<td class="is-off">—</td>' : `<td>${rate ? fmtNgn(rate) : '—'}</td>`;
+    return `<tr><td><span class="s-board-coin"><img src="${COIN_LOGOS[c.symbol]}" alt=""><span>${esc(c.symbol)}<small>${esc(c.name)}</small></span></span></td>${cell(c.buy_on, c.buy_rate)}${cell(c.sell_on, c.sell_rate)}</tr>`;
+  }).join('');
+}
+
 function setSide(side) {
   store.side = side;
   $('t-buy').setAttribute('aria-selected', String(side === 'buy'));
   $('t-sell').setAttribute('aria-selected', String(side === 'sell'));
   const available = Object.values(store.coins).filter(c => c[side + '_on']);
   if (!available.some(c => c.symbol === store.coin)) store.coin = available[0] ? available[0].symbol : null;
-  $('s-coins').innerHTML = available.map(c => `<button type="button" class="s-coin" role="radio" aria-checked="${c.symbol === store.coin}" data-sym="${c.symbol}"><img src="${COIN_LOGOS[c.symbol]}" alt="">${c.symbol}</button>`).join('')
-    || `<p class="s-note">No coins to ${side} right now.</p>`;
-  document.querySelectorAll('.s-coin').forEach(b => b.addEventListener('click', () => { store.coin = b.dataset.sym; setSide(store.side); }));
+  // Steps and details read differently for buying and selling.
+  const buying = side === 'buy';
+  $('how-2-title').textContent = buying ? 'Pay by bank transfer' : 'Send your crypto';
+  $('how-2-text').textContent = buying ? 'You get an account number for your order. Transfer from any Nigerian bank.' : 'You get a deposit address for your order. Send from any wallet or exchange.';
+  $('how-3-title').textContent = buying ? 'Receive your crypto' : 'Get paid in naira';
+  $('how-3-text').textContent = buying ? "It's sent to your wallet automatically. Follow every step and get a receipt by email." : 'Naira goes to your bank account automatically. Follow every step and get a receipt by email.';
+  $('s-dest-label').textContent = buying ? 'Delivered to' : 'Paid to';
+  $('s-dest').textContent = buying ? 'Your wallet' : 'Your bank account';
+  $('s-chips').innerHTML = buying ? BUY_CHIPS.map(v => `<button type="button" data-v="${v}">₦${v >= 1000 ? (v / 1000) + 'k' : v}</button>`).join('') : '';
+  document.querySelectorAll('#s-chips button').forEach(b => b.addEventListener('click', () => { $('f-in').value = Number(b.dataset.v).toLocaleString('en-NG'); render(); }));
   $('f-in').value = '';
+  paintCoin(available);
   render();
+}
+
+function paintCoin(available) {
+  const c = store.coins[store.coin];
+  $('s-coin-btn').disabled = !c;
+  if (c) {
+    $('s-coin-img').src = COIN_LOGOS[c.symbol];
+    $('s-coin-sym').textContent = c.symbol;
+    $('s-coin-name').textContent = c.name;
+  }
+  const side = store.side;
+  $('s-coin-list').innerHTML = (available || Object.values(store.coins).filter(x => x[side + '_on'])).map(x => {
+    const rate = side === 'buy' ? x.buy_rate : x.sell_rate;
+    return `<li><button type="button" role="option" aria-selected="${x.symbol === store.coin}" data-sym="${x.symbol}"><img src="${COIN_LOGOS[x.symbol]}" alt=""><span><b>${esc(x.symbol)}</b><small>${esc(x.name)}</small></span><em>${rate ? '$1 = ' + fmtNgn(rate) : ''}</em></button></li>`;
+  }).join('');
+  document.querySelectorAll('#s-coin-list button').forEach(b => b.addEventListener('click', () => {
+    store.coin = b.dataset.sym;
+    toggleCoins(false);
+    paintCoin();
+    render();
+  }));
+}
+
+function toggleCoins(open) {
+  const list = $('s-coin-list');
+  const show = typeof open === 'boolean' ? open : list.hidden;
+  list.hidden = !show;
+  $('s-coin-btn').setAttribute('aria-expanded', String(show));
 }
 
 function render() {
@@ -130,10 +184,14 @@ function render() {
   $('f-out-cur').textContent = buying ? (c ? c.symbol : '') : 'NGN';
   $('s-go').textContent = c ? `${buying ? 'Buy' : 'Sell'} ${c.symbol}` : 'Continue';
   $('s-note').textContent = '';
-  if (!c) return;
+  if (!c) {
+    $('s-note').textContent = `No coins to ${store.side} right now.`;
+    $('s-go').disabled = true;
+    return;
+  }
   const rate = buying ? c.buy_rate : c.sell_rate;
   if (!rate || !c.usd_price) {
-    $('s-rate').textContent = 'Rate unavailable right now. Try again in a minute.';
+    $('s-rate').textContent = 'Unavailable right now';
     $('f-out').textContent = '0';
     $('s-go').disabled = true;
     return;
@@ -142,9 +200,10 @@ function render() {
   // The merchant chooses: one final rate, or Velcro's rate plus their markup.
   const base = buying ? c.velcro_buy_rate : c.velcro_sell_rate;
   const pct = buying ? c.buy_markup_percent : c.sell_markup_percent;
-  $('s-rate').innerHTML = store.info.rate_display === 'breakdown' && base
-    ? `Rate: <b>$1 = ${fmtNgn(base)}</b> + ${pct}% fee`
-    : `Rate: <b>$1 = ${fmtNgn(rate)}</b>`;
+  $('s-rate').textContent = store.info.rate_display === 'breakdown' && base
+    ? `$1 = ${fmtNgn(base)} + ${pct}% fee`
+    : `$1 = ${fmtNgn(rate)}`;
+  $('s-time').textContent = buying ? (c.symbol === 'BTC' ? '10–60 minutes' : 'A few minutes') : (c.symbol === 'BTC' ? '20–60 minutes' : 'A few minutes');
   const amount = Number(String($('f-in').value).replace(/,/g, '')) || 0;
   if (buying) {
     // naira → $ at the store's rate → coin at its $ price
@@ -184,6 +243,7 @@ async function loadMe() {
 
 function paintAccount() {
   $('s-signin').hidden = !!me;
+  $('s-join').hidden = !!me;
   $('s-me').hidden = !me;
   if (me) {
     $('s-avatar').textContent = (me.name || me.email).trim().charAt(0).toUpperCase();
@@ -309,6 +369,10 @@ document.addEventListener('DOMContentLoaded', () => {
   $('f-in').addEventListener('input', render);
   $('auth-form').addEventListener('submit', submitAuth);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAuth(); });
-  document.addEventListener('click', e => { if (!e.target.closest('#s-me')) { const m = $('s-menu'); if (m) m.hidden = true; } });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#s-me')) { const m = $('s-menu'); if (m) m.hidden = true; }
+    if (!e.target.closest('.s-select')) toggleCoins(false);
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleCoins(false); });
   loadStore();
 });

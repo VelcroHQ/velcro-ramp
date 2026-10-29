@@ -17,7 +17,7 @@ $tmp = sys_get_temp_dir() . '/velcro_hostfi_test_' . getmypid();
 @mkdir($tmp . '/data', 0777, true);
 $mockState = $tmp . '/mock.json';
 file_put_contents($mockState, '');
-foreach (['.referral_schema_v1', '.receipt_schema_v1', '.hostfi_schema_v1', '.hostfi_buy_schema_v1'] as $flag) {
+foreach (['.referral_schema_v1', '.receipt_schema_v1', '.hostfi_schema_v1', '.hostfi_buy_schema_v1', '.merchant_schema_v1', '.store_schema_v1', '.store_schema_v2'] as $flag) {
     file_put_contents($tmp . '/data/' . $flag, 'test'); // MySQL DDL; tables built below instead
 }
 
@@ -34,10 +34,21 @@ putenv('ADMIN_PASSWORD=correct-horse');
 putenv('PAJ_API_KEY=');
 
 $pdo = new PDO('sqlite:' . $tmp . '/test.db', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+// Velcro Merchant: one approved store, its customers, and sign-up codes.
+$pdo->exec("CREATE TABLE merchants (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, slug TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'DRAFT', business_name TEXT, business_type TEXT,
+    registration_number TEXT, contact_name TEXT, phone TEXT, website TEXT, monthly_volume TEXT, description TEXT, brand TEXT, pricing TEXT, terms_accepted_at TEXT, terms_ip TEXT,
+    review_note TEXT, reviewed_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+$pdo->exec("INSERT INTO merchants (id, email, slug, status, business_name, brand, pricing) VALUES (1, 'shop@example.com', 'shop1', 'APPROVED', 'Shop One Ltd',
+    '{\"name\":\"Shop One\",\"color\":\"#0e7c66\"}', '{\"BTC\":{\"buy\":1,\"sell\":1,\"buy_on\":true,\"sell_on\":true},\"ETH\":{\"buy\":1,\"sell\":1,\"buy_on\":false,\"sell_on\":true}}')");
+$pdo->exec('CREATE TABLE store_customers (id INTEGER PRIMARY KEY, merchant_id INTEGER NOT NULL, email TEXT NOT NULL, password_hash TEXT, google_sub TEXT, name TEXT,
+    token_version INTEGER NOT NULL DEFAULT 1, last_login_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, UNIQUE (merchant_id, email), UNIQUE (merchant_id, google_sub))');
+$pdo->exec('CREATE TABLE merchant_accounts (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT, google_sub TEXT UNIQUE, name TEXT, token_version INTEGER NOT NULL DEFAULT 1, last_login_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
+$pdo->exec('CREATE TABLE otps (otp_key TEXT PRIMARY KEY, code TEXT, expires_at INTEGER, attempts INTEGER DEFAULT 0)');
 $pdo->exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, reference TEXT UNIQUE, switch_reference TEXT, type TEXT, status TEXT, country TEXT, currency TEXT, asset TEXT, channel TEXT,
     amount REAL, rate REAL, fee_total REAL, fee_platform REAL, fee_developer REAL, source_amount REAL, source_currency TEXT, destination_amount REAL, destination_currency TEXT,
     deposit_address TEXT, deposit_bank_name TEXT, deposit_account_number TEXT, deposit_account_name TEXT, deposit_note TEXT, beneficiary TEXT, wallet_address TEXT, hash TEXT,
     explorer_url TEXT, callback_url TEXT, meta TEXT, email TEXT, referrer_code TEXT, referral_fee_percent REAL, receipt_sent_at TEXT,
+    merchant_id INTEGER, store_customer_id INTEGER, merchant_markup_percent REAL, velcro_fee_percent REAL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)');
 $pdo->exec('CREATE TABLE hostfi_deposits (id INTEGER PRIMARY KEY, deposit_ref TEXT NOT NULL UNIQUE, order_ref TEXT, address TEXT, currency TEXT, network TEXT, amount REAL, tx_hash TEXT,
     status TEXT DEFAULT \'RECEIVED\', ngn_amount REAL, payout_amount REAL, swap_ref TEXT, swap_pair_ref TEXT, payout_ref TEXT, payout_client_ref TEXT, payout_attempts INTEGER DEFAULT 0, note TEXT,
@@ -434,6 +445,35 @@ try {
     check($code === 200 && str_contains((string) ($res['message'] ?? ''), 'passed your transaction') && ($meta['hostfi']['reported_hashes'][0]['hash'] ?? '') === $txHash
         && $order($hashRef)['status'] === 'AWAITING_DEPOSIT' && count($state()['payouts']) === $payoutsBefore,
         'deposit hash report: stored on the order for the admin, order and money untouched');
+
+    // ── A store order (Velcro Merchant): BTC through HostFi with the merchant's 1% on top of our 0.5% ──
+    $shopper = 'shopper@example.com';
+    $pdo->prepare('INSERT INTO otps (otp_key, code, expires_at, attempts) VALUES (?, ?, ?, 0)')
+        ->execute(['stsu1:' . substr(hash('sha256', $shopper), 0, 40), '123456', (int) (microtime(true) * 1000) + 300000]);
+    [, $res] = $app_('POST', '/api/store/shop1/auth/signup', ['email' => $shopper, 'otp' => '123456', 'password' => 'Shopper123']);
+    $shopToken = (string) ($res['data']['token'] ?? '');
+    $btcWallet = 'bc1qw4pgwsc7d9f9w55xjzqgtpnevrzp0x72j5hc6v';
+    $storeBuy = ['store' => 'shop1', 'asset' => 'BTC', 'network' => 'BTC', 'wallet' => $btcWallet, 'amount' => 30000];
+    [$c] = $app_('POST', '/api/hostfi/buy', $storeBuy);
+    check($c === 401, 'store order: needs the store customer to be signed in');
+    $shopCall = static fn (array $body) => call($GLOBALS['appPort'], 'POST', '/api/hostfi/buy', $body, '', "X-Store-Token: {$shopToken}\r\n");
+    [$c] = $shopCall(['asset' => 'SOL', 'network' => 'SOL', 'wallet' => $solWallet] + $storeBuy);
+    [$c2] = $shopCall(['asset' => 'ETH', 'network' => 'ERC20', 'wallet' => '0x' . str_repeat('ab', 20)] + $storeBuy);
+    check($c === 400 && $c2 === 400, 'store order: SOL refused (PAJ coin on stores), ETH refused (store switched ETH buys off)');
+    [$c, $res] = $shopCall($storeBuy);
+    $storeRef = (string) ($res['data']['reference'] ?? '');
+    $so = $order($storeRef);
+    $soMeta = json_decode((string) ($so['meta'] ?? ''), true) ?: [];
+    check($c === 200 && (int) $so['merchant_id'] === 1 && (int) $so['store_customer_id'] > 0 && (float) $so['merchant_markup_percent'] == 1.0 && (float) $so['velcro_fee_percent'] == 0.5
+        && $so['email'] === $shopper && (float) ($soMeta['hostfi']['fee_percent'] ?? 0) == 1.5,
+        'store order: tagged with store, customer, 1% markup and 0.5% Velcro fee; customer email used; 1.5% kept on the order');
+    $swapsBefore = count($state()['swaps']);
+    $mock_('/__test/deposit', ['reference' => 'pay-store', 'currency' => 'NGN', 'amount' => 30000, 'customId' => $storeRef]);
+    $app_('POST', '/webhook/hostfi', ['event' => 'FIAT_DEPOSIT', 'data' => ['reference' => 'pay-store']]);
+    $sw = array_values($state()['swaps']);
+    check(count($sw) === $swapsBefore + 1 && near((float) end($sw)['value'], 29550), "store payment: ₦30,000 − (0.5% + 1%) = ₦29,550 swapped; the ₦450 stays with Velcro (₦300 owed to the store)");
+    [, $res] = call($GLOBALS['appPort'], 'GET', '/api/store/shop1/me', null, '', "X-Store-Token: {$shopToken}\r\n");
+    check(($res['data']['orders'][0]['reference'] ?? '') === $storeRef, "store customer sees the order in their orders");
 
     // ── Route switches for the other providers ──
     $resetLimits();

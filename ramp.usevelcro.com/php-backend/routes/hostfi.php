@@ -86,6 +86,17 @@ function hostfiFee(): float
     return ($fee >= 0 && $fee <= 10) ? $fee : DEVELOPER_FEE;
 }
 
+/**
+ * The fee % kept from an order's swap: the total recorded on the order (Velcro's fee + the store's
+ * markup, for store orders), otherwise today's HostFi fee setting.
+ */
+function hostfiOrderFee(?array $order): float
+{
+    $meta = $order ? (json_decode((string) ($order['meta'] ?? ''), true) ?: []) : [];
+    $fee = $meta['hostfi']['fee_percent'] ?? null;
+    return is_numeric($fee) && $fee >= 0 && $fee <= 15 ? (float) $fee : hostfiFee();
+}
+
 function sellTimerMinutes(string $symbol): int
 {
     $t = (array) (loadSettings()['sell_timer_minutes'] ?? []);
@@ -536,7 +547,8 @@ function hostfiSwapSucceeded(int $id, array $credit): void
         return;
     }
     // Whole naira: HostFi drops the kobo on NGN payouts (₦3,630.97 is sent as ₦3,630).
-    $payout = floor(round($ngn * (1 - hostfiFee() / 100), 6)) - HOSTFI_PAYOUT_FEE_NGN;
+    $fee = hostfiOrderFee(hostfiOrderFor(hostfiDeposit($id))[0] ?? null);
+    $payout = floor(round($ngn * (1 - $fee / 100), 6)) - HOSTFI_PAYOUT_FEE_NGN;
     if ($payout <= 0) {
         hostfiClaim($id, ['SWAPPING', 'SWAP_PENDING'], 'REVIEW', ['ngn_amount' => $ngn, 'note' => 'Too small to cover the payout fee']);
         return;

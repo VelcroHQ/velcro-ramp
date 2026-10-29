@@ -129,6 +129,7 @@ function merchantBrand(array $m): array
         'name' => (string) ($b['name'] ?? ($m['business_name'] ?? '')),
         'color' => preg_match('/^#[0-9a-f]{6}$/i', (string) ($b['color'] ?? '')) ? strtolower($b['color']) : MERCHANT_DEFAULT_COLOR,
         'logo' => $b['logo'] ?? null,
+        'support_url' => $b['support_url'] ?? null,
     ];
 }
 
@@ -662,7 +663,7 @@ function registerMerchantRoutes(Router $router): void
         try {
             Database::execute('UPDATE `merchants` SET `slug` = :s, `brand` = :b WHERE `id` = :id', [
                 's' => $slug,
-                'b' => json_encode(['name' => $name, 'color' => $color, 'logo' => $logo]),
+                'b' => json_encode(['name' => $name, 'color' => $color, 'logo' => $logo, 'support_url' => $brand['support_url']]),
                 'id' => $m['id'],
             ]);
         } catch (PDOException $e) {
@@ -675,6 +676,21 @@ function registerMerchantRoutes(Router $router): void
             merchantDeleteLogo($brand['logo']);
         }
         jsonResponse(successResponse(merchantView(merchantByEmail($email)), 'Store updated'));
+    });
+
+    // Where the store's customers get help: a WhatsApp, Telegram or website link. Empty removes it.
+    $router->post('/api/merchant/support', function () {
+        $email = requireMerchantAuth();
+        $url = trim((string) body(getJsonBody(), 'support_url', ''));
+        if ($url !== '' && !preg_match('#^https://[^\s<>"]{4,250}$#i', $url)) {
+            jsonResponse(errorResponse('Use a full link starting with https://, like https://wa.me/2348012345678'), 400);
+        }
+        ensureMerchantSchema();
+        $m = merchantFor($email);
+        $brand = merchantBrand($m);
+        $brand['support_url'] = $url !== '' ? $url : null;
+        Database::execute('UPDATE `merchants` SET `brand` = :b WHERE `id` = :id', ['b' => json_encode($brand), 'id' => $m['id']]);
+        jsonResponse(successResponse(merchantView(merchantByEmail($email)), $url !== '' ? 'Support link saved' : 'Support link removed'));
     });
 
     // Markup % per coin and side (0–MERCHANT_MAX_MARKUP), and which ones are switched on.
@@ -790,6 +806,7 @@ function registerMerchantRoutes(Router $router): void
                 'status' => $m['status'],
                 'is_owner_preview' => $isOwner && $m['status'] !== 'APPROVED',
                 'rate_display' => merchantRateDisplay($m),
+                'support_url' => $brand['support_url'],
             ],
             'google_client_id' => GOOGLE_CLIENT_ID !== '' ? GOOGLE_CLIENT_ID : null,
             'coins' => $coins,

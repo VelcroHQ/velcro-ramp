@@ -10,22 +10,24 @@
   <link rel="icon" type="image/png" href="/velcro_favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="/store/store.css?v=1" rel="stylesheet">
+  <link href="/store/store.css?v=2" rel="stylesheet">
 </head>
 
 <body>
-  <div id="s-loading" class="s-center">Loading store…</div>
+  <div id="s-loading" class="s-center"><span class="s-spinner" aria-hidden="true"></span>Loading store…</div>
   <div id="s-missing" class="s-center" hidden>
     <div><h1>This store isn't available</h1><p>Check the link, or ask the business that shared it with you.</p><a href="/">Go to Velcro</a></div>
   </div>
 
   <div id="s-app" hidden>
-    <div id="s-preview" class="s-preview" hidden>Preview: only you can see this store until it's approved.</div>
+    <div id="s-preview" class="s-preview" hidden>Preview · only you can see this store until it's approved</div>
+
     <header class="s-top">
       <div class="s-wrap s-top-in">
         <a id="s-home" class="s-brand" href="#"><span id="s-logo" class="s-logo"></span><span id="s-name"></span></a>
         <div class="s-account">
-          <button type="button" id="s-signin" class="s-link" onclick="openAuth('signin')">Sign in</button>
+          <button type="button" id="s-signin" class="s-btn-quiet" onclick="openAuth('signin')">Sign in</button>
+          <button type="button" id="s-join" class="s-btn-brand s-btn-sm" onclick="openAuth('signup')">Create account</button>
           <div id="s-me" class="s-me" hidden>
             <button type="button" id="s-avatar" class="s-avatar" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()"></button>
             <div id="s-menu" class="s-menu" role="menu" hidden>
@@ -37,41 +39,74 @@
       </div>
     </header>
 
-    <main class="s-wrap s-main">
-      <section class="s-trade" aria-label="Buy or sell crypto">
-        <div class="s-tabs" role="tablist">
-          <button type="button" role="tab" id="t-buy" aria-selected="true" onclick="setSide('buy')">Buy</button>
-          <button type="button" role="tab" id="t-sell" aria-selected="false" onclick="setSide('sell')">Sell</button>
+    <section class="s-hero">
+      <div class="s-wrap s-hero-grid">
+        <div class="s-intro">
+          <span id="s-hero-logo" class="s-logo s-logo-xl"></span>
+          <h1 id="s-title"></h1>
+          <p class="s-lede">Buy and sell crypto with naira. Pay by bank transfer, get paid to any Nigerian bank.</p>
+
+          <div class="s-board" aria-label="Today's rates">
+            <div class="s-board-head"><span>Today's rates</span><span class="s-live"><i></i>Live</span></div>
+            <table>
+              <thead><tr><th>Coin</th><th>We sell at</th><th>We buy at</th></tr></thead>
+              <tbody id="s-board-rows"></tbody>
+            </table>
+            <p class="s-board-note">Per $1. Prices update every minute.</p>
+          </div>
         </div>
 
-        <div class="s-coins" id="s-coins" role="radiogroup" aria-label="Coin"></div>
+        <section class="s-trade" aria-label="Buy or sell crypto">
+          <div class="s-tabs" role="tablist">
+            <button type="button" role="tab" id="t-buy" aria-selected="true" onclick="setSide('buy')">Buy</button>
+            <button type="button" role="tab" id="t-sell" aria-selected="false" onclick="setSide('sell')">Sell</button>
+          </div>
 
-        <label class="s-field">
-          <span id="f-in-label">You pay</span>
-          <span class="s-field-row"><input id="f-in" inputmode="decimal" autocomplete="off" placeholder="0"><b id="f-in-cur">NGN</b></span>
-        </label>
-        <div class="s-field s-field-out">
-          <span id="f-out-label">You get</span>
-          <span class="s-field-row"><output id="f-out">0</output><b id="f-out-cur">BTC</b></span>
-        </div>
+          <label class="s-label" for="s-coin-btn">Coin</label>
+          <div class="s-select">
+            <button type="button" id="s-coin-btn" class="s-select-btn" aria-haspopup="listbox" aria-expanded="false" onclick="toggleCoins()">
+              <img id="s-coin-img" alt=""><span><b id="s-coin-sym"></b><small id="s-coin-name"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <ul id="s-coin-list" class="s-select-list" role="listbox" hidden></ul>
+          </div>
 
-        <p class="s-rate" id="s-rate"></p>
-        <p class="s-note" id="s-note"></p>
-        <button type="button" id="s-go" class="s-go" onclick="goTrade()">Continue</button>
-      </section>
+          <label class="s-field" for="f-in">
+            <span id="f-in-label">You pay</span>
+            <span class="s-field-row"><input id="f-in" inputmode="decimal" autocomplete="off" placeholder="0"><b id="f-in-cur">NGN</b></span>
+          </label>
+          <div class="s-chips" id="s-chips"></div>
+          <div class="s-field s-field-out">
+            <span id="f-out-label">You get</span>
+            <span class="s-field-row"><output id="f-out">0</output><b id="f-out-cur">BTC</b></span>
+          </div>
 
-      <ul class="s-facts">
-        <li>Pay by bank transfer</li>
-        <li>Paid to any Nigerian bank</li>
-        <li>Live order tracking</li>
-        <li>Receipt by email</li>
-      </ul>
-    </main>
+          <dl class="s-details">
+            <div><dt>Rate</dt><dd id="s-rate">—</dd></div>
+            <div><dt id="s-dest-label">Delivered to</dt><dd id="s-dest">Your wallet</dd></div>
+            <div><dt>Usually takes</dt><dd id="s-time">A few minutes</dd></div>
+          </dl>
+
+          <p class="s-note" id="s-note"></p>
+          <button type="button" id="s-go" class="s-btn-brand s-go" onclick="goTrade()">Continue</button>
+          <p class="s-trust"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are handled by Velcro. You never send money to a person.</p>
+          <a id="s-support" class="s-support" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg><span></span></a>
+        </section>
+      </div>
+    </section>
+
+    <section class="s-wrap s-how" aria-label="How it works">
+      <h2>How a trade works</h2>
+      <ol>
+        <li><b>Choose an amount</b><span>Pick a coin and see exactly what you'll get before you start.</span></li>
+        <li><b id="how-2-title">Pay by bank transfer</b><span id="how-2-text">You get an account number for your order. Transfer from any Nigerian bank.</span></li>
+        <li><b id="how-3-title">Receive your crypto</b><span id="how-3-text">It's sent to your wallet automatically. You can follow every step and get a receipt by email.</span></li>
+      </ol>
+    </section>
 
     <footer class="s-foot">
       <div class="s-wrap s-foot-in">
         <span><span id="s-foot-name"></span> · Powered by <a href="/" target="_blank" rel="noopener">Velcro</a></span>
-        <span><a href="/terms.html" target="_blank" rel="noopener">Terms</a> · <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></span>
+        <span><a href="/terms.html" target="_blank" rel="noopener">Terms</a><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></span>
       </div>
     </footer>
   </div>
@@ -80,7 +115,7 @@
   <div id="auth" class="s-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" hidden>
     <div class="s-modal-bg" onclick="closeAuth()"></div>
     <div class="s-card">
-      <button type="button" class="s-x" onclick="closeAuth()" aria-label="Close">✕</button>
+      <button type="button" class="s-x" onclick="closeAuth()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       <span id="auth-logo" class="s-logo s-logo-lg"></span>
       <h2 id="auth-title">Sign in</h2>
       <p id="auth-sub"></p>
@@ -101,15 +136,15 @@
           <p id="a-pass-hint" class="s-hint" hidden>At least 8 characters, with letters and numbers.</p>
         </div>
         <p id="auth-error" class="s-error" hidden></p>
-        <button type="submit" id="auth-btn" class="s-go">Sign in</button>
+        <button type="submit" id="auth-btn" class="s-btn-brand s-go">Sign in</button>
       </form>
       <p id="auth-switch" class="s-switch"></p>
-      <p class="s-fine">By continuing you agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. Powered by Velcro.</p>
+      <p class="s-fine">By continuing you agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
     </div>
   </div>
 
   <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
-  <script src="/store/store.js?v=1"></script>
+  <script src="/store/store.js?v=2"></script>
 </body>
 
 </html>
