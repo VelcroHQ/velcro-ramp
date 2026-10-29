@@ -1,0 +1,103 @@
+/* Merchant store page. The merchant's colour drives --brand; everything else stays neutral so any
+   brand colour looks at home. */
+:root {
+  --brand: #0d0d59;
+  --on-brand: #fff;
+  --ink: #14142b;
+  --muted: #6b6f85;
+  --line: #e7e7ee;
+  --bg: #f7f7f9;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+
+.s-wrap { max-width: 64rem; margin: 0 auto; padding: 0 1.25rem; }
+.s-center { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted); padding: 2rem; }
+.s-center h1 { font-size: 1.4rem; color: var(--ink); margin: 0 0 .5rem; }
+.s-center a { display: inline-block; margin-top: 1.25rem; font-weight: 600; color: var(--ink); }
+.s-preview { background: #fff7e6; color: #8a4b06; font-size: .85rem; font-weight: 600; text-align: center; padding: .55rem 1rem; border-bottom: 1px solid #f3dfb6; }
+
+/* Header */
+.s-top { background: #fff; border-bottom: 1px solid var(--line); }
+.s-top-in { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.s-brand { display: flex; align-items: center; gap: .65rem; text-decoration: none; font-weight: 700; font-size: 1.05rem; min-width: 0; }
+.s-brand span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-logo { width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; background: var(--brand) center / cover no-repeat; color: var(--on-brand); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+.s-logo.has-img { background-color: #fff; color: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.s-logo-lg { width: 48px; height: 48px; border-radius: 14px; font-size: 1.25rem; }
+.s-link { font-weight: 600; font-size: .92rem; padding: .5rem .75rem; border-radius: 9px; }
+.s-link:hover { background: #f1f1f5; }
+.s-me { position: relative; }
+.s-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: var(--on-brand); font-weight: 700; }
+.s-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 220px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: .35rem; box-shadow: 0 18px 36px -18px rgba(20, 20, 43, .3); z-index: 10; }
+.s-menu p { margin: 0; padding: .55rem .7rem; font-size: .82rem; color: var(--muted); border-bottom: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; }
+.s-menu button { display: block; width: 100%; text-align: left; padding: .55rem .7rem; border-radius: 8px; font-size: .9rem; font-weight: 600; }
+.s-menu button:hover { background: #f4f4f7; }
+
+/* Trade card */
+.s-main { padding-top: 2.5rem; padding-bottom: 3rem; display: flex; flex-direction: column; align-items: center; }
+.s-trade { width: 100%; max-width: 440px; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 1.25rem; }
+@media (min-width: 480px) { .s-trade { padding: 1.5rem; } }
+.s-tabs { display: grid; grid-template-columns: 1fr 1fr; background: #f2f2f6; border-radius: 11px; padding: 4px; }
+.s-tabs button { padding: .6rem; border-radius: 8px; font-weight: 600; color: var(--muted); }
+.s-tabs button[aria-selected="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(20, 20, 43, .1); }
+.s-coins { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1rem 0; }
+.s-coin { display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .7rem .4rem .45rem; border: 1px solid var(--line); border-radius: 999px; font-weight: 600; font-size: .88rem; }
+.s-coin img { width: 20px; height: 20px; border-radius: 50%; }
+.s-coin[aria-checked="true"] { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
+.s-field { display: block; border: 1px solid var(--line); border-radius: 12px; padding: .7rem .9rem; margin-top: .6rem; }
+.s-field:focus-within { border-color: var(--brand); }
+.s-field > span:first-child { display: block; font-size: .78rem; color: var(--muted); }
+.s-field-row { display: flex; align-items: center; gap: .5rem; margin-top: .15rem; }
+.s-field-row input, .s-field-row output { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; padding: 0; }
+.s-field-row b { font-size: .85rem; font-weight: 700; background: #f2f2f6; border-radius: 999px; padding: .25rem .6rem; }
+.s-field-out { background: #fafafc; }
+.s-rate { margin: .85rem 0 0; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.s-rate b { color: var(--ink); }
+.s-note { margin: .35rem 0 0; font-size: .8rem; color: #b42318; min-height: 1rem; }
+.s-go { width: 100%; margin-top: .9rem; padding: .85rem 1rem; border-radius: 12px; background: var(--brand); color: var(--on-brand); font-weight: 700; font-size: 1rem; transition: filter .15s; }
+.s-go:hover { filter: brightness(1.06); }
+.s-go:disabled { opacity: .5; cursor: not-allowed; }
+.s-facts { list-style: none; padding: 0; margin: 1.5rem 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: .4rem 1.25rem; font-size: .82rem; color: var(--muted); }
+.s-facts li::before { content: '✓'; margin-right: .35rem; color: var(--ink); }
+
+.s-foot { border-top: 1px solid var(--line); background: #fff; }
+.s-foot-in { min-height: 56px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; padding-top: .75rem; padding-bottom: .75rem; font-size: .82rem; color: var(--muted); }
+.s-foot a { color: var(--ink); }
+
+/* Sign-in dialog */
+.s-modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.s-modal-bg { position: absolute; inset: 0; background: rgba(20, 20, 43, .5); }
+.s-card { position: relative; width: 100%; max-width: 400px; max-height: calc(100vh - 2rem); overflow-y: auto; background: #fff; border-radius: 18px; padding: 1.75rem 1.5rem 1.4rem; text-align: center; }
+.s-card h2 { margin: .9rem 0 .25rem; font-size: 1.25rem; }
+.s-card > p { margin: 0; color: var(--muted); font-size: .9rem; }
+.s-card form { text-align: left; margin-top: 1.25rem; }
+.s-x { position: absolute; top: .8rem; right: .9rem; width: 30px; height: 30px; border-radius: 50%; color: var(--muted); }
+.s-x:hover { background: #f2f2f6; }
+.s-google { display: flex; justify-content: center; min-height: 44px; margin-top: 1.25rem; }
+.s-or { display: flex; align-items: center; gap: .75rem; margin-top: 1.1rem; font-size: .75rem; color: var(--muted); }
+.s-or::before, .s-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.s-label { display: block; margin: .9rem 0 .35rem; font-size: .8rem; font-weight: 600; }
+.s-label-row { display: flex; align-items: baseline; justify-content: space-between; }
+.s-mini { font-size: .78rem; font-weight: 600; color: var(--muted); }
+.s-input { width: 100%; border: 1px solid #dcdce5; border-radius: 10px; padding: .7rem .8rem; outline: none; font-size: .95rem; }
+.s-input:focus { border-color: var(--brand); }
+.s-code { letter-spacing: .4em; font-weight: 600; }
+.s-hint { margin: .35rem 0 0; font-size: .78rem; color: var(--muted); }
+.s-error { margin: .8rem 0 0; font-size: .85rem; color: #b42318; background: #fef3f2; border-radius: 8px; padding: .55rem .7rem; }
+.s-switch { margin: 1rem 0 0; font-size: .88rem; color: var(--muted); }
+.s-switch button { font-weight: 700; color: var(--ink); }
+.s-fine { margin: 1rem 0 0; padding-top: .9rem; border-top: 1px solid var(--line); font-size: .75rem; color: var(--muted); }
+.s-toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 160%); background: var(--ink); color: #fff; padding: .7rem 1rem; border-radius: 10px; font-size: .9rem; font-weight: 600; opacity: 0; visibility: hidden; transition: transform .25s, opacity .25s, visibility .25s; z-index: 60; max-width: calc(100% - 32px); }
+.s-toast.is-on { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
+/* Footer sits at the bottom on short pages. */
+#s-app { min-height: 100vh; display: flex; flex-direction: column; }
+#s-app > main { flex: 1; }
+/* Let the layout shrink to phone width (inputs otherwise keep their default ~20-character width). */
+#s-app > main, .s-trade { min-width: 0; }
+.s-field-row input { width: 100%; }

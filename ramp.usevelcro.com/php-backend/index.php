@@ -63,6 +63,7 @@ require_once __DIR__ . '/routes/referrals.php';
 require_once __DIR__ . '/routes/campaigns.php';
 require_once __DIR__ . '/routes/hostfi.php';
 require_once __DIR__ . '/routes/merchant.php';
+require_once __DIR__ . '/routes/store.php';
 
 registerPublicRoutes($router);
 registerAdminRoutes($router);
@@ -72,6 +73,7 @@ registerReferralRoutes($router);
 registerCampaignRoutes($router);
 registerHostfiRoutes($router);
 registerMerchantRoutes($router);
+registerStoreRoutes($router);
 
 // Receipts and campaign batches: sent after the response is flushed, at most every 20s.
 register_shutdown_function(static function (): void {

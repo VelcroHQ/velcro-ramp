@@ -754,9 +754,20 @@ function registerMerchantRoutes(Router $router): void
                 continue;
             }
             $velcro = $rates[$sym] ?? ['buy' => null, 'sell' => null];
+            $usd = null;
+            if (in_array($sym, ['USDT', 'USDC'], true)) {
+                $usd = 1.0;
+            } else {
+                try {
+                    $usd = hostfiQuote($sym)['usd_per_unit'] ?: null; // for the coin estimate on the store page
+                } catch (Throwable $e) {
+                    $usd = null;
+                }
+            }
             $coins[$sym] = [
                 'symbol' => $sym,
                 'name' => $name,
+                'usd_price' => $usd,
                 'buy_on' => $c['buy_on'],
                 'sell_on' => $c['sell_on'],
                 // Naira per $1. The base rate and markup are only shown if the merchant chose 'breakdown'.
@@ -780,6 +791,7 @@ function registerMerchantRoutes(Router $router): void
                 'is_owner_preview' => $isOwner && $m['status'] !== 'APPROVED',
                 'rate_display' => merchantRateDisplay($m),
             ],
+            'google_client_id' => GOOGLE_CLIENT_ID !== '' ? GOOGLE_CLIENT_ID : null,
             'coins' => $coins,
         ]));
     });
@@ -874,8 +886,10 @@ function registerMerchantRoutes(Router $router): void
     $router->get('/api/admin/merchants', function () {
         requireAdminAuth();
         ensureMerchantSchema();
+        ensureStoreSchema();
         $rows = Database::select(
-            "SELECT * FROM `merchants` ORDER BY CASE `status` WHEN 'PENDING' THEN 0 WHEN 'DRAFT' THEN 2 ELSE 1 END, `id` DESC LIMIT 500"
+            "SELECT m.*, (SELECT COUNT(*) FROM `store_customers` c WHERE c.`merchant_id` = m.`id`) AS `customers`
+             FROM `merchants` m ORDER BY CASE m.`status` WHEN 'PENDING' THEN 0 WHEN 'DRAFT' THEN 2 ELSE 1 END, m.`id` DESC LIMIT 500"
         );
         jsonResponse(['merchants' => $rows, 'business_types' => MERCHANT_BUSINESS_TYPES, 'volumes' => MERCHANT_VOLUMES]);
     });

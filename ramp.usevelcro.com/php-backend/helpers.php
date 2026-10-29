@@ -594,9 +594,11 @@ function mailConfigured(): bool
 }
 
 /** Sends one email: Mailhive Send API when MAILHIVE_API_KEY is set, SMTP when configured, or PHP mail() fallback. */
-function sendEmailTo(string $to, string $subject, string $html, string $text): bool
+function sendEmailTo(string $to, string $subject, string $html, string $text, string $fromName = 'Velcro'): bool
 {
     $to = strtolower(trim($to));
+    // Sender display name, e.g. "Northline Exchange via Velcro" for a merchant store. No quotes or line breaks.
+    $fromName = trim(preg_replace('/["\r\n<>]+/', '', $fromName) ?? '') ?: 'Velcro';
     if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
         error_log("sendEmailTo skipped invalid email: {$to}");
         return false;
@@ -608,7 +610,7 @@ function sendEmailTo(string $to, string $subject, string $html, string $text): b
             $from = MAIL_FROM !== '' ? MAIL_FROM : 'noreply@usevelcro.com';
             $res = httpRequest('POST', 'https://api.mailhive.africa/v1/send/emails', [
                 'headers' => ['Authorization: Bearer ' . MAILHIVE_API_KEY],
-                'body' => ['from' => 'Velcro <' . $from . '>', 'to' => $to, 'subject' => $subject, 'html' => $html, 'text' => $text],
+                'body' => ['from' => $fromName . ' <' . $from . '>', 'to' => $to, 'subject' => $subject, 'html' => $html, 'text' => $text],
                 'timeout' => 15,
             ]);
             $suppressed = array_map('strtolower', (array) ($res['suppressed'] ?? []));
@@ -624,7 +626,7 @@ function sendEmailTo(string $to, string $subject, string $html, string $text): b
     // 2. Try SMTP when configured
     if (SMTP_HOST !== '' && SMTP_USER !== '' && SMTP_PASS !== '') {
         try {
-            if (smtpSend($to, $subject, $html, $text)) {
+            if (smtpSend($to, $subject, $html, $text, $fromName)) {
                 return true;
             }
             error_log("SMTP send returned false for {$to} — falling back to mail()");
@@ -639,7 +641,7 @@ function sendEmailTo(string $to, string $subject, string $html, string $text): b
         $from = MAIL_FROM !== '' ? MAIL_FROM : (SMTP_FROM !== '' ? SMTP_FROM : 'noreply@usevelcro.com');
         $cleanFrom = filter_var($from, FILTER_VALIDATE_EMAIL) ? $from : 'noreply@usevelcro.com';
         $headers = [
-            'From: "Velcro" <' . $cleanFrom . '>',
+            'From: "' . $fromName . '" <' . $cleanFrom . '>',
             'Reply-To: ' . $cleanFrom,
             'Return-Path: ' . $cleanFrom,
             'MIME-Version: 1.0',
@@ -692,7 +694,7 @@ function sendMail(string $subject, string $html, string $text): array
 /**
  * Minimal SMTP client using fsockopen. Supports TLS on port 465/587.
  */
-function smtpSend(string $to, string $subject, string $html, string $text): bool
+function smtpSend(string $to, string $subject, string $html, string $text, string $fromName = 'Velcro Admin'): bool
 {
     $host = SMTP_HOST;
     $port = SMTP_PORT;
@@ -782,7 +784,7 @@ function smtpSend(string $to, string $subject, string $html, string $text): bool
     }
 
     $data = "To: {$to}\r\n";
-    $data .= "From: \"Velcro Admin\" <{$from}>\r\n";
+    $data .= "From: \"{$fromName}\" <{$from}>\r\n";
     $data .= "Subject: {$subject}\r\n";
     $data .= $message;
     $data .= "\r\n.\r\n";

@@ -82,6 +82,21 @@ function renderEmail(array $o): array
         $body .= '<p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#9ca3af;">' . $e($o['outro']) . '</p>';
     }
 
+    // A merchant store's email: its logo, name and colour up top, "Powered by Velcro" below.
+    $store = is_array($o['store'] ?? null) ? $o['store'] : null;
+    $accent = $store && preg_match('/^#[0-9a-f]{6}$/i', (string) ($store['color'] ?? '')) ? $store['color'] : '#A8CF45';
+    if ($store) {
+        $logo = (string) ($store['logo'] ?? '');
+        $logoUrl = $logo !== '' ? (str_starts_with($logo, 'http') ? $logo : EMAIL_SITE_URL . $logo) : '';
+        $header = '<tr><td style="padding:0 4px 18px;' . $font . '"><table role="presentation" cellpadding="0" cellspacing="0"><tr>'
+            . ($logoUrl !== '' ? '<td style="padding-right:10px;"><img src="' . $e($logoUrl) . '" width="36" height="36" alt="" style="display:block;border:0;border-radius:10px;"></td>' : '')
+            . '<td style="font-size:17px;font-weight:700;color:#0d0d59;">' . $e((string) $store['name']) . '</td></tr></table></td></tr>';
+        $footer = $e((string) $store['name']) . ' &middot; Powered by <a href="' . EMAIL_SITE_URL . '" style="color:#6b7280;text-decoration:underline;">Velcro</a>';
+    } else {
+        $header = '<tr><td style="padding:0 4px 18px;"><img src="' . EMAIL_SITE_URL . '/velcro_logo.png" width="112" alt="Velcro" style="display:block;border:0;height:auto;"></td></tr>';
+        $footer = 'Velcro Convert &middot; Buy &amp; sell crypto with Naira<br><a href="' . EMAIL_SITE_URL . '" style="color:#6b7280;text-decoration:underline;">ramp.usevelcro.com</a>';
+    }
+
     $html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         . '<meta name="color-scheme" content="light only"><title>' . $e($o['title']) . '</title>'
         . '<style>@media (max-width:600px){.card-pad{padding:28px 22px !important}}</style></head>'
@@ -89,14 +104,14 @@ function renderEmail(array $o): array
         . '<div style="display:none;max-height:0;overflow:hidden;opacity:0;">' . $e($o['preheader'] ?? $o['title']) . '</div>'
         . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f7;"><tr><td align="center" style="padding:32px 16px;">'
         . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">'
-        . '<tr><td style="padding:0 4px 18px;"><img src="' . EMAIL_SITE_URL . '/velcro_logo.png" width="112" alt="Velcro" style="display:block;border:0;height:auto;"></td></tr>'
+        . $header
         . '<tr><td style="background:#ffffff;border:1px solid #e7e8ee;border-radius:20px;overflow:hidden;">'
-        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:6px;line-height:6px;font-size:0;background:#A8CF45;">&nbsp;</td></tr>'
+        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:6px;line-height:6px;font-size:0;background:' . $accent . ';">&nbsp;</td></tr>'
         . '<tr><td class="card-pad" style="padding:36px;' . $font . '">' . $body . '</td></tr></table>'
         . '</td></tr>'
-        . '<tr><td align="center" style="padding:26px 8px 0;">' . emailSocialRow() . '</td></tr>'
+        . ($store ? '' : '<tr><td align="center" style="padding:26px 8px 0;">' . emailSocialRow() . '</td></tr>')
         . '<tr><td align="center" style="padding:14px 8px 0;' . $font . 'font-size:12px;line-height:1.6;color:#9ca3af;">'
-        . 'Velcro Convert &middot; Buy &amp; sell crypto with Naira<br><a href="' . EMAIL_SITE_URL . '" style="color:#6b7280;text-decoration:underline;">ramp.usevelcro.com</a>'
+        . $footer
         . (!empty($o['unsubscribe']) ? '<br>Don\'t want these emails? <a href="' . $e($o['unsubscribe']) . '" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>' : '')
         . '</td></tr></table></td></tr></table></body></html>';
 
@@ -126,7 +141,7 @@ function renderEmail(array $o): array
     if (!empty($o['outro'])) {
         $text[] = $o['outro'];
     }
-    $text[] = "--\nVelcro Convert · Buy & sell crypto with Naira\n" . EMAIL_SITE_URL . (!empty($o['unsubscribe']) ? "\nUnsubscribe: " . $o['unsubscribe'] : '');
+    $text[] = ($store ? "--\n{$store['name']} · Powered by Velcro\n" : "--\nVelcro Convert · Buy & sell crypto with Naira\n") . EMAIL_SITE_URL . (!empty($o['unsubscribe']) ? "\nUnsubscribe: " . $o['unsubscribe'] : '');
 
     return [$html, implode("\n\n", $text)];
 }

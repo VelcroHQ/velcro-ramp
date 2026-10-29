@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buy &amp; sell crypto with naira</title>
+  <meta name="description" content="Buy and sell BTC, ETH, SOL, USDT and USDC with naira. Pay by bank transfer, get paid to any Nigerian bank.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="/velcro_favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/store/store.css?v=1" rel="stylesheet">
+</head>
+
+<body>
+  <div id="s-loading" class="s-center">Loading store…</div>
+  <div id="s-missing" class="s-center" hidden>
+    <div><h1>This store isn't available</h1><p>Check the link, or ask the business that shared it with you.</p><a href="/">Go to Velcro</a></div>
+  </div>
+
+  <div id="s-app" hidden>
+    <div id="s-preview" class="s-preview" hidden>Preview: only you can see this store until it's approved.</div>
+    <header class="s-top">
+      <div class="s-wrap s-top-in">
+        <a id="s-home" class="s-brand" href="#"><span id="s-logo" class="s-logo"></span><span id="s-name"></span></a>
+        <div class="s-account">
+          <button type="button" id="s-signin" class="s-link" onclick="openAuth('signin')">Sign in</button>
+          <div id="s-me" class="s-me" hidden>
+            <button type="button" id="s-avatar" class="s-avatar" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()"></button>
+            <div id="s-menu" class="s-menu" role="menu" hidden>
+              <p id="s-me-email"></p>
+              <button type="button" role="menuitem" onclick="signOut()">Sign out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="s-wrap s-main">
+      <section class="s-trade" aria-label="Buy or sell crypto">
+        <div class="s-tabs" role="tablist">
+          <button type="button" role="tab" id="t-buy" aria-selected="true" onclick="setSide('buy')">Buy</button>
+          <button type="button" role="tab" id="t-sell" aria-selected="false" onclick="setSide('sell')">Sell</button>
+        </div>
+
+        <div class="s-coins" id="s-coins" role="radiogroup" aria-label="Coin"></div>
+
+        <label class="s-field">
+          <span id="f-in-label">You pay</span>
+          <span class="s-field-row"><input id="f-in" inputmode="decimal" autocomplete="off" placeholder="0"><b id="f-in-cur">NGN</b></span>
+        </label>
+        <div class="s-field s-field-out">
+          <span id="f-out-label">You get</span>
+          <span class="s-field-row"><output id="f-out">0</output><b id="f-out-cur">BTC</b></span>
+        </div>
+
+        <p class="s-rate" id="s-rate"></p>
+        <p class="s-note" id="s-note"></p>
+        <button type="button" id="s-go" class="s-go" onclick="goTrade()">Continue</button>
+      </section>
+
+      <ul class="s-facts">
+        <li>Pay by bank transfer</li>
+        <li>Paid to any Nigerian bank</li>
+        <li>Live order tracking</li>
+        <li>Receipt by email</li>
+      </ul>
+    </main>
+
+    <footer class="s-foot">
+      <div class="s-wrap s-foot-in">
+        <span><span id="s-foot-name"></span> · Powered by <a href="/" target="_blank" rel="noopener">Velcro</a></span>
+        <span><a href="/terms.html" target="_blank" rel="noopener">Terms</a> · <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Sign in / create account, in the store's name -->
+  <div id="auth" class="s-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" hidden>
+    <div class="s-modal-bg" onclick="closeAuth()"></div>
+    <div class="s-card">
+      <button type="button" class="s-x" onclick="closeAuth()" aria-label="Close">✕</button>
+      <span id="auth-logo" class="s-logo s-logo-lg"></span>
+      <h2 id="auth-title">Sign in</h2>
+      <p id="auth-sub"></p>
+      <div id="google-wrap" hidden>
+        <div id="google-btn" class="s-google"></div>
+        <div class="s-or"><span>or</span></div>
+      </div>
+      <form id="auth-form" novalidate>
+        <label class="s-label" for="a-email">Email address</label>
+        <input id="a-email" type="email" autocomplete="email" inputmode="email" class="s-input" placeholder="you@example.com">
+        <div id="a-code-row" hidden>
+          <label class="s-label" for="a-code">6-digit code from your email</label>
+          <input id="a-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="s-input s-code" placeholder="••••••">
+        </div>
+        <div id="a-pass-row">
+          <div class="s-label-row"><label class="s-label" for="a-pass" id="a-pass-label">Password</label><button type="button" id="a-forgot" class="s-mini" onclick="setAuthMode('reset')">Forgot password?</button></div>
+          <input id="a-pass" type="password" autocomplete="current-password" class="s-input">
+          <p id="a-pass-hint" class="s-hint" hidden>At least 8 characters, with letters and numbers.</p>
+        </div>
+        <p id="auth-error" class="s-error" hidden></p>
+        <button type="submit" id="auth-btn" class="s-go">Sign in</button>
+      </form>
+      <p id="auth-switch" class="s-switch"></p>
+      <p class="s-fine">By continuing you agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. Powered by Velcro.</p>
+    </div>
+  </div>
+
+  <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
+  <script src="/store/store.js?v=1"></script>
+</body>
+
+</html>

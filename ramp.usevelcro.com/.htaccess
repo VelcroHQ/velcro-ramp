@@ -65,6 +65,9 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
+    # Merchant stores: /m/{store} is one page that reads the store from the address
+    RewriteRule ^m/[a-z0-9-]{3,30}/?$ store/index.html [L]
+
     # Route API and webhook requests to the backend
     RewriteRule ^(api|webhook)/.*$ index.php [L]
 

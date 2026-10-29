@@ -16,7 +16,7 @@ if (PHP_SAPI !== 'cli') {
 
 $tmp = sys_get_temp_dir() . '/velcro_merchant_test_' . getmypid();
 @mkdir($tmp . '/data', 0777, true);
-foreach (['.referral_schema_v1', '.merchant_schema_v1'] as $flag) {
+foreach (['.referral_schema_v1', '.merchant_schema_v1', '.store_schema_v1'] as $flag) {
     file_put_contents($tmp . '/data/' . $flag, 'test'); // MySQL DDL; tables built below instead
 }
 
@@ -34,6 +34,8 @@ $pdo->exec("CREATE TABLE merchants (id INTEGER PRIMARY KEY, email TEXT NOT NULL 
     business_name TEXT, business_type TEXT, registration_number TEXT, contact_name TEXT, phone TEXT, website TEXT,
     monthly_volume TEXT, description TEXT, brand TEXT, pricing TEXT, terms_accepted_at TEXT, terms_ip TEXT, review_note TEXT, reviewed_at TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+$pdo->exec('CREATE TABLE store_customers (id INTEGER PRIMARY KEY, merchant_id INTEGER NOT NULL, email TEXT NOT NULL, password_hash TEXT, google_sub TEXT, name TEXT,
+    token_version INTEGER NOT NULL DEFAULT 1, last_login_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, UNIQUE (merchant_id, email), UNIQUE (merchant_id, google_sub))');
 $pdo->exec('CREATE TABLE merchant_accounts (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT, google_sub TEXT UNIQUE, name TEXT,
     token_version INTEGER NOT NULL DEFAULT 1, last_login_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
 
@@ -223,6 +225,56 @@ try {
     [$cName, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline X', 'slug' => 'northline'], $auth($token));
     check($c === 400 && $cSlug === 400 && $cName === 200 && ($res['data']['status'] ?? '') === 'APPROVED' && ($res['data']['checklist']['verified'] ?? false) === true,
         'approved: verification locked, address fixed, name and look still editable');
+
+    // ── Store customers: separate accounts per store ──
+    $storeCode = static function (int $merchantId, string $purpose, string $em) use ($pdo): string {
+        $key = $purpose . $merchantId . ':' . substr(hash('sha256', $em), 0, 40);
+        $pdo->prepare('INSERT OR REPLACE INTO otps (otp_key, code, expires_at, attempts) VALUES (?, ?, ?, 0)')->execute([$key, '654321', (int) (microtime(true) * 1000) + 300000]);
+        return '654321';
+    };
+    $shopper = 'buyer@example.com';
+    [$c, $res] = $app_('GET', '/api/merchant/storefront/northline');
+    check($c === 200 && ($res['data']['store']['name'] ?? '') === 'Northline X' && array_key_exists('google_client_id', $res['data'] ?? []), 'approved store is public');
+    [$c] = $app_('POST', '/api/store/northline/auth/signup', ['email' => $shopper, 'otp' => '000000', 'password' => 'Shopper123']);
+    check($c === 403, 'store sign-up: wrong code refused');
+    [$c, $res] = $app_('POST', '/api/store/northline/auth/signup', ['email' => $shopper, 'otp' => $storeCode($id, 'stsu', $shopper), 'password' => 'Shopper123']);
+    $shopToken = (string) ($res['data']['token'] ?? '');
+    check($c === 200 && $shopToken !== '', 'store sign-up: code + password creates a Northline customer');
+    [$c, $res] = $app_('GET', '/api/store/northline/me', null, ['X-Store-Token' => $shopToken]);
+    check($c === 200 && ($res['data']['customer']['email'] ?? '') === $shopper, 'store customer signed in');
+    [$c] = $app_('POST', '/api/store/northline/auth/login', ['email' => $shopper, 'password' => 'Wrong1234']);
+    [$c2, $res] = $app_('POST', '/api/store/northline/auth/login', ['email' => $shopper, 'password' => 'Shopper123']);
+    check($c === 401 && $c2 === 200, 'store sign-in: wrong password refused, right one works');
+    [$c] = $app_('GET', '/api/store/northline/me', null, ['X-Merchant-Token' => $token]);
+    check($c === 401, 'a merchant token is not a customer token');
+    [$c] = $app_('POST', '/api/store/nostore/auth/login', ['email' => $shopper, 'password' => 'Shopper123']);
+    check($c === 404, 'unknown store: 404');
+
+    // A second approved store: the same email is a separate account there.
+    $app_('POST', '/api/merchant/brand', ['name' => 'Other Store', 'slug' => 'otherstore'], $auth($otherToken));
+    $app_('POST', '/api/merchant/verification', ['business_name' => 'Other Ltd', 'slug' => 'otherstore'] + $kyb, $auth($otherToken));
+    [, $res] = $app_('GET', '/api/admin/merchants', null, $admin);
+    $byEmail = array_column($res['merchants'] ?? [], null, 'email');
+    $otherId = (int) ($byEmail[$other]['id'] ?? 0);
+    $app_('POST', "/api/admin/merchants/{$otherId}/status", ['status' => 'APPROVED'], $admin);
+    [$c] = $app_('GET', '/api/store/otherstore/me', null, ['X-Store-Token' => $shopToken]);
+    [$c2] = $app_('POST', '/api/store/otherstore/auth/login', ['email' => $shopper, 'password' => 'Shopper123']);
+    check($c === 401 && $c2 === 401, "Northline's customer token and password don't work at another store");
+    [$c] = $app_('POST', '/api/store/otherstore/auth/signup', ['email' => $shopper, 'otp' => $storeCode($otherId, 'stsu', $shopper), 'password' => 'Different99']);
+    [$cA] = $app_('POST', '/api/store/northline/auth/login', ['email' => $shopper, 'password' => 'Shopper123']);
+    [$cB] = $app_('POST', '/api/store/otherstore/auth/login', ['email' => $shopper, 'password' => 'Different99']);
+    check($c === 200 && $cA === 200 && $cB === 200, 'same email at two stores: two separate accounts with their own passwords');
+
+    [$c, $res] = $app_('POST', '/api/store/northline/auth/reset', ['email' => $shopper, 'otp' => $storeCode($id, 'strs', $shopper), 'password' => 'NewShop456']);
+    [$cOld] = $app_('GET', '/api/store/northline/me', null, ['X-Store-Token' => $shopToken]);
+    check($c === 200 && $cOld === 401, 'store password reset signs out old sessions');
+
+    [, $res] = $app_('GET', '/api/merchant/customers', null, $auth($token));
+    check(($res['data']['total'] ?? 0) === 1 && ($res['data']['customers'][0]['email'] ?? '') === $shopper, "merchant sees only their own store's customers");
+    [, $res] = $app_('GET', "/api/admin/merchants/{$id}/customers", null, $admin);
+    [, $list] = $app_('GET', '/api/admin/merchants', null, $admin);
+    $counts = array_column($list['merchants'] ?? [], 'customers', 'email');
+    check(count($res['customers'] ?? []) === 1 && (int) ($counts[$email] ?? 0) === 1 && (int) ($counts[$other] ?? 0) === 1, 'admin: customers per store, and a count on the merchants list');
 } finally {
     proc_terminate($app);
 }
