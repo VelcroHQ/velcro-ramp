@@ -2067,6 +2067,67 @@ async function adminPost(path, body) {
 
 // ─── HostFi ───
 
+// ─── Merchants ───
+
+let merchantLookups = { business_types: {}, volumes: {} };
+
+async function fetchMerchants() {
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/merchants`, { headers: { 'Authorization': adminKey } });
+        const data = scrub(await res.json());
+        if (!res.ok) throw new Error(data.error || 'Failed to load merchants');
+        merchantLookups = { business_types: data.business_types || {}, volumes: data.volumes || {} };
+        renderMerchants(data.merchants || []);
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+function renderMerchants(rows) {
+    const pending = rows.filter(m => m.status === 'PENDING').length;
+    const badge = document.getElementById('merchants-pending');
+    badge.style.display = pending ? 'inline-block' : 'none';
+    badge.innerText = `${pending} to review`;
+    const muted = s => `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${s}</div>`;
+    const dash = '<span style="color: var(--text-secondary);">—</span>';
+    document.getElementById('merchants-body').innerHTML = rows.length ? rows.map(m => {
+        let brand = {};
+        try { brand = JSON.parse(m.brand || '{}') || {}; } catch (e) { brand = {}; }
+        const store = escapeHtml(brand.name || m.business_name || '(no name yet)');
+        const actions = {
+            PENDING: [['APPROVED', 'Approve', 'btn-primary'], ['REJECTED', 'Reject', 'btn-secondary']],
+            APPROVED: [['SUSPENDED', 'Suspend', 'btn-secondary']],
+            SUSPENDED: [['APPROVED', 'Reinstate', 'btn-primary']],
+            REJECTED: [], DRAFT: [],
+        }[m.status] || [];
+        return `
+        <tr>
+            <td data-label="Store"><b>${store}</b>${muted(m.slug ? '/m/' + escapeHtml(m.slug) : 'no address yet')}${muted(escapeHtml(m.email))}</td>
+            <td data-label="Business">${m.business_name ? `${escapeHtml(m.business_name)}${muted(escapeHtml(merchantLookups.business_types[m.business_type] || m.business_type || ''))}${m.registration_number ? muted('Reg: ' + escapeHtml(m.registration_number)) : ''}${m.monthly_volume ? muted(escapeHtml(merchantLookups.volumes[m.monthly_volume] || m.monthly_volume)) : ''}${m.website ? muted(escapeHtml(m.website)) : ''}` : dash}</td>
+            <td data-label="Contact">${m.contact_name ? `${escapeHtml(m.contact_name)}${muted(escapeHtml(m.phone || ''))}` : dash}${m.description ? muted(escapeHtml(m.description)) : ''}</td>
+            <td data-label="Status" class="hostfi-status-cell"><span class="status-pill ${String(m.status).toLowerCase()}">${statusLabel(m.status === 'DRAFT' ? 'Not submitted' : m.status)}</span>${m.review_note ? `<div class="hostfi-note">${escapeHtml(m.review_note)}</div>` : ''}</td>
+            <td data-label="Action" class="hostfi-action-cell">${actions.length ? `<div class="hostfi-actions">${actions.map(([s, l, c]) => `<button class="${c}" onclick="setMerchantStatus(${Number(m.id)}, '${s}', '${l}')">${l}</button>`).join('')}</div>` : dash}</td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">No merchants yet.</td></tr>';
+}
+
+async function setMerchantStatus(id, status, label) {
+    let note = '';
+    if (status !== 'APPROVED') {
+        note = prompt(`${label}: reason the merchant will see`) || '';
+        if (!note.trim()) return;
+    } else if (!confirm(`${label} this merchant? Their store can go live.`)) {
+        return;
+    }
+    try {
+        await adminPost(`/api/admin/merchants/${id}/status`, { status, note });
+        showToast(`Merchant ${statusLabel(status).toLowerCase()}`, 'success');
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+    fetchMerchants();
+}
+
 // ─── Coins & providers ───
 
 let routeRows = [];          // [{side, provider, symbol, enabled}] from the server
@@ -2738,6 +2799,9 @@ function switchSection(id) {
     }
     if (id === 'coins') {
         fetchRoutes();
+    }
+    if (id === 'merchants') {
+        fetchMerchants();
     }
     if (id === 'email') {
         fetchCampaigns();

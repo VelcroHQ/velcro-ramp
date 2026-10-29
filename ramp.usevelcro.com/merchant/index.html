@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Velcro Merchant — Your own crypto exchange, live in minutes</title>
+  <meta name="description" content="Launch a branded crypto store on Velcro's rails. Your name, your logo, your prices. Naira bank transfers, BTC, ETH, SOL, USDT and USDC, and payouts to any Nigerian bank.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://ramp.usevelcro.com/merchant/">
+  <link rel="icon" type="image/png" href="/velcro_favicon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ramp.usevelcro.com/merchant/">
+  <meta property="og:title" content="Velcro Merchant — Your own crypto exchange, live in minutes">
+  <meta property="og:description" content="Sell crypto to your customers under your own brand. Velcro handles the naira accounts, the swaps and the payouts.">
+  <meta property="og:image" content="https://ramp.usevelcro.com/og-image.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="/style.css?v=3" rel="stylesheet">
+  <link href="/css/app.css?v=1" rel="stylesheet">
+  <link href="/merchant/merchant.css?v=2" rel="stylesheet">
+</head>
+
+<body class="bg-white text-velcro-navy antialiased">
+
+  <!-- ═══════════ Landing ═══════════ -->
+  <div id="landing">
+    <header id="m-nav" class="fixed inset-x-0 top-0 z-40 transition-colors duration-300">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <a href="/merchant/" class="flex items-center gap-2.5 shrink-0" aria-label="Velcro Merchant home">
+          <img src="/velcro_logo.png" alt="Velcro" class="h-7 w-auto m-logo">
+          <span class="m-pill">Merchant</span>
+        </a>
+        <nav class="hidden md:flex items-center gap-7 text-sm font-medium m-navlinks">
+          <a href="#how">How it works</a>
+          <a href="#features">Features</a>
+          <a href="#earnings">Earnings</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="openAuth('signin')" class="m-btn-ghost">Sign in</button>
+          <button type="button" onclick="openAuth('signup')" class="m-btn-primary">Open your store</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="m-hero relative overflow-hidden">
+      <div class="m-hero-glow" aria-hidden="true"></div>
+      <div class="m-grid-bg" aria-hidden="true"></div>
+      <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-20 sm:pt-36 sm:pb-28 grid lg:grid-cols-2 gap-12 lg:gap-10 items-center">
+        <div>
+          <span class="m-eyebrow"><span class="m-dot"></span> Velcro Merchant</span>
+          <h1 class="mt-5 text-4xl sm:text-5xl lg:text-[3.6rem] font-extrabold tracking-tight leading-[1.05] text-white">
+            Your own crypto exchange.<br><span class="m-gradient-text">Live in minutes.</span>
+          </h1>
+          <p class="mt-5 text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl">
+            Sell crypto to your customers under your own name, logo and prices. Velcro runs the naira accounts, the swaps and the bank payouts behind the scenes, so you never hold a kobo of their money.
+          </p>
+          <div class="mt-8 flex flex-col sm:flex-row gap-3">
+            <button type="button" onclick="openAuth('signup')" class="m-btn-primary m-btn-lg">Open your store <span aria-hidden="true">→</span></button>
+            <a href="#how" class="m-btn-outline m-btn-lg">See how it works</a>
+          </div>
+          <ul class="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
+            <li class="flex items-center gap-2"><span class="m-check"></span>No float needed</li>
+            <li class="flex items-center gap-2"><span class="m-check"></span>Your prices, your margin</li>
+            <li class="flex items-center gap-2"><span class="m-check"></span>Payouts to any Nigerian bank</li>
+          </ul>
+        </div>
+
+        <!-- Live storefront preview -->
+        <div class="relative">
+          <div class="m-preview-controls">
+            <label class="block">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Try your store name</span>
+              <input id="pv-name" type="text" maxlength="30" value="Kamal Exchange" class="m-preview-input" aria-label="Store name for the preview">
+            </label>
+            <div class="mt-3 flex items-center gap-2" role="radiogroup" aria-label="Brand colour for the preview">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-1">Colour</span>
+              <button type="button" class="m-swatch is-on" style="--sw:#a8cf45" data-color="#a8cf45" aria-label="Green"></button>
+              <button type="button" class="m-swatch" style="--sw:#6366f1" data-color="#6366f1" aria-label="Indigo"></button>
+              <button type="button" class="m-swatch" style="--sw:#f59e0b" data-color="#f59e0b" aria-label="Amber"></button>
+              <button type="button" class="m-swatch" style="--sw:#ec4899" data-color="#ec4899" aria-label="Pink"></button>
+              <button type="button" class="m-swatch" style="--sw:#14b8a6" data-color="#14b8a6" aria-label="Teal"></button>
+            </div>
+          </div>
+          <div id="pv-store" class="m-store" style="--brand:#a8cf45">
+            <div class="m-store-bar">
+              <span class="m-store-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="m-store-url">ramp.usevelcro.com/m/<b id="pv-slug">kamal-exchange</b></span>
+            </div>
+            <div class="p-5 sm:p-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <span id="pv-logo" class="m-store-logo">K</span>
+                  <span id="pv-title" class="font-bold text-velcro-navy">Kamal Exchange</span>
+                </div>
+                <span class="text-[11px] font-semibold text-slate-400">Powered by Velcro</span>
+              </div>
+              <div class="mt-5 grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 text-sm font-semibold">
+                <span class="m-store-tab is-on">Buy</span><span class="m-store-tab">Sell</span>
+              </div>
+              <div class="mt-4 space-y-2.5">
+                <div class="m-store-field"><span>You pay</span><b>₦250,000</b><em>NGN</em></div>
+                <div class="m-store-field"><span>You get</span><b id="pv-get">0.00194 BTC</b><em>BTC</em></div>
+              </div>
+              <p class="mt-3 text-xs text-slate-400">1 BTC = <span id="pv-rate">₦128,900,000</span> · your price</p>
+              <button type="button" class="m-store-cta" tabindex="-1">Buy BTC</button>
+              <div class="mt-4 flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="m-store-coin">₿</span><span class="m-store-coin">Ξ</span><span class="m-store-coin">◎</span><span class="m-store-coin">₮</span><span class="m-store-coin">$</span>
+                <span class="ml-1">BTC · ETH · SOL · USDT · USDC</span>
+              </div>
+            </div>
+          </div>
+          <div class="m-float-card m-float-1" aria-hidden="true">
+            <span class="m-float-icon">₦</span>
+            <div><b>₦250,000 received</b><small>Payment detected · 2s ago</small></div>
+          </div>
+          <div class="m-float-card m-float-2" aria-hidden="true">
+            <span class="m-float-icon m-float-green">+</span>
+            <div><b>+₦2,500 earned</b><small>Your 1% markup</small></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rails strip -->
+    <section class="border-b border-slate-100">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-7 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-sm font-semibold text-slate-500">
+        <span>Naira bank transfers</span><span class="m-sep"></span>
+        <span>BTC · ETH · SOL · USDT · USDC</span><span class="m-sep"></span>
+        <span>Payouts to any Nigerian bank</span><span class="m-sep"></span>
+        <span>Live order tracking</span><span class="m-sep"></span>
+        <span>Email receipts</span>
+      </div>
+    </section>
+
+    <!-- Who it's for -->
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
+      <p class="m-kicker">Who it's for</p>
+      <h2 class="m-h2">Anyone who already has people asking them for crypto.</h2>
+      <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <article class="m-card">
+          <span class="m-card-icon">⇄</span>
+          <h3>P2P traders</h3>
+          <p>Stop matching orders by hand at 2am. Your customers pay, the crypto goes out, you keep your margin.</p>
+        </article>
+        <article class="m-card">
+          <span class="m-card-icon">✦</span>
+          <h3>Communities &amp; creators</h3>
+          <p>Give your followers a trusted place to buy, under your brand, and earn on every order they make.</p>
+        </article>
+        <article class="m-card">
+          <span class="m-card-icon">▣</span>
+          <h3>Fintechs &amp; wallets</h3>
+          <p>Add buy and sell to your product without building rails, banking partners or a treasury desk.</p>
+        </article>
+        <article class="m-card">
+          <span class="m-card-icon">↗</span>
+          <h3>Payments &amp; remittance</h3>
+          <p>Move value between naira and stablecoins for your clients, with every order tracked end to end.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="bg-slate-50 border-y border-slate-100">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
+        <p class="m-kicker">How it works</p>
+        <h2 class="m-h2">From sign-up to first sale in four steps.</h2>
+        <ol class="mt-12 grid md:grid-cols-4 gap-6 m-steps">
+          <li><span class="m-step-n">1</span><h3>Create your account</h3><p>Sign up with your email or Google and tell us about your business.</p></li>
+          <li><span class="m-step-n">2</span><h3>Get approved</h3><p>We review your business details, usually within a working day.</p></li>
+          <li><span class="m-step-n">3</span><h3>Make it yours</h3><p>Pick your store name, upload your logo, choose your colours and set your prices.</p></li>
+          <li><span class="m-step-n">4</span><h3>Share your link</h3><p>Customers buy and sell on your store. You earn your markup on every completed order.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
+      <p class="m-kicker">Everything included</p>
+      <h2 class="m-h2">The exchange is yours. The plumbing is ours.</h2>
+      <div class="mt-12 grid md:grid-cols-3 gap-px rounded-3xl overflow-hidden bg-slate-200 border border-slate-200">
+        <div class="m-feature"><h3>Your brand</h3><p>Your store name, logo and colours on every page your customers see. Velcro stays in the background.</p></div>
+        <div class="m-feature"><h3>Your prices</h3><p>Set a markup per coin, separately for buys and sells. Your customers see one clean price.</p></div>
+        <div class="m-feature"><h3>Your customers</h3><p>Customers sign up on your store. Their orders and history belong to your dashboard.</p></div>
+        <div class="m-feature"><h3>No float, no custody</h3><p>Customers pay into a fresh bank account per order and crypto goes straight to their wallet. You never hold their funds.</p></div>
+        <div class="m-feature"><h3>Earnings you can withdraw</h3><p>Your markup lands in your balance on every completed order. Withdraw to your bank whenever you like.</p></div>
+        <div class="m-feature"><h3>Tracking that builds trust</h3><p>Live order steps, explorer links and email receipts, so customers know exactly where their money is.</p></div>
+      </div>
+    </section>
+
+    <!-- Earnings calculator -->
+    <section id="earnings" class="m-dark-band">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-24 grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <p class="m-kicker m-kicker-dark">Earnings</p>
+          <h2 class="m-h2 text-white">See what your store could earn.</h2>
+          <p class="mt-4 text-slate-300 leading-relaxed max-w-lg">Your markup is yours to set. Drag the sliders to see what a month could look like.</p>
+        </div>
+        <div class="m-calc">
+          <label class="block">
+            <span class="flex justify-between text-sm"><span class="text-slate-300">Monthly volume</span><b id="calc-vol-out" class="text-white">₦20,000,000</b></span>
+            <input id="calc-vol" type="range" min="1000000" max="200000000" step="1000000" value="20000000" class="m-range">
+          </label>
+          <label class="block mt-6">
+            <span class="flex justify-between text-sm"><span class="text-slate-300">Your markup</span><b id="calc-mk-out" class="text-white">1.0%</b></span>
+            <input id="calc-mk" type="range" min="0.1" max="5" step="0.1" value="1" class="m-range">
+          </label>
+          <div class="mt-8 pt-6 border-t border-white/10">
+            <p class="text-sm text-slate-400">You'd earn about</p>
+            <p class="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight m-gradient-text"><span id="calc-out">₦200,000</span><span class="text-lg text-slate-400 font-semibold"> / month</span></p>
+            <p class="mt-2 text-xs text-slate-500">An estimate before any fees. Actual earnings depend on your completed orders.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="max-w-3xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
+      <p class="m-kicker text-center">FAQ</p>
+      <h2 class="m-h2 text-center">Questions merchants ask us.</h2>
+      <div class="mt-10 divide-y divide-slate-200 border-y border-slate-200">
+        <details class="m-faq"><summary>Do I hold my customers' money?</summary><p>No. Each customer pays into a bank account made for their order, and crypto goes straight to their wallet (or naira straight to their bank when they sell). Your earnings collect in your Velcro balance.</p></details>
+        <details class="m-faq"><summary>How do I make money?</summary><p>You set a markup on top of Velcro's price for each coin, separately for buying and selling. Your customers see one price, and the markup on every completed order goes to your balance.</p></details>
+        <details class="m-faq"><summary>Which coins can my customers trade?</summary><p>BTC, ETH, SOL, USDT and USDC, bought with naira by bank transfer and sold for naira paid to any Nigerian bank.</p></details>
+        <details class="m-faq"><summary>Who verifies my customers?</summary><p>You do. Velcro verifies your business before your store goes live, and the merchant terms make you responsible for knowing your customers. Check the rules that apply to your business with your own adviser.</p></details>
+        <details class="m-faq"><summary>Can I use my own domain?</summary><p>Your store starts on a Velcro address you choose. Your own domain and your own subdomain on Velcro are coming next.</p></details>
+        <details class="m-faq"><summary>How long does approval take?</summary><p>Usually within one working day. We'll email you as soon as your store is approved, or tell you what we need if something's missing.</p></details>
+      </div>
+    </section>
+
+    <!-- Closing CTA -->
+    <section class="px-4 sm:px-6 pb-20 sm:pb-24">
+      <div class="m-cta max-w-6xl mx-auto">
+        <div class="m-hero-glow" aria-hidden="true"></div>
+        <div class="relative text-center px-6 py-16 sm:py-20">
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">Launch your store. Keep your brand.</h2>
+          <p class="mt-3 text-slate-300">It takes a few minutes to apply. You'll hear from us within a working day.</p>
+          <button type="button" onclick="openAuth('signup')" class="mt-8 m-btn-primary m-btn-lg">Open your store <span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="border-t border-slate-100">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
+        <div class="flex items-center gap-2"><img src="/velcro_logo.png" alt="Velcro" class="h-5 w-auto"><span>Merchant</span></div>
+        <div class="flex gap-5">
+          <a href="/" class="hover:text-velcro-navy">Velcro Convert</a>
+          <a href="/terms.html" class="hover:text-velcro-navy">Terms</a>
+          <a href="/privacy.html" class="hover:text-velcro-navy">Privacy</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ═══════════ Signed-in dashboard ═══════════ -->
+  <div id="app" class="hidden min-h-screen bg-[#f6f7fb]">
+    <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="h-16 flex items-center justify-between gap-3">
+          <a href="/merchant/" class="flex items-center gap-2.5 min-w-0">
+            <span id="hdr-logo" class="d-store-logo" style="--brand:#a8cf45">V</span>
+            <span class="min-w-0">
+              <span id="hdr-name" class="block font-bold leading-tight truncate">Your store</span>
+              <span id="hdr-email" class="block text-xs text-slate-400 truncate"></span>
+            </span>
+          </a>
+          <div class="flex items-center gap-2 sm:gap-4">
+            <a id="hdr-view" href="#" target="_blank" rel="noopener" class="d-chip hidden max-sm:!hidden">View store ↗</a>
+            <a href="https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab" target="_blank" rel="noopener" class="text-sm font-semibold text-slate-500 hover:text-velcro-navy">Support</a>
+            <div class="relative">
+              <button type="button" id="avatar-btn" class="d-avatar" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()">V</button>
+              <div id="avatar-menu" class="d-menu hidden" role="menu">
+                <button type="button" role="menuitem" onclick="startTour(true)">Show me around</button>
+                <button type="button" role="menuitem" onclick="signOut()">Sign out</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <nav class="d-tabs" aria-label="Dashboard">
+          <button type="button" data-tab="overview" class="is-on"><span>◉</span>Overview</button>
+          <button type="button" data-tab="prices" id="tabbtn-prices"><span>₦</span>Prices</button>
+          <button type="button" data-tab="orders"><span>☰</span>Orders</button>
+          <button type="button" data-tab="customers"><span>☺</span>Customers</button>
+          <button type="button" data-tab="earnings"><span>◈</span>Earnings</button>
+          <button type="button" data-tab="settings"><span>⚙</span>Settings</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-7 sm:py-9">
+      <div id="app-loading" class="py-24 text-center text-slate-400 text-sm">Loading your store…</div>
+
+      <!-- Overview -->
+      <section id="tab-overview" class="d-tab hidden">
+        <p id="ov-date" class="text-sm text-slate-500"></p>
+        <h1 id="ov-hello" class="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight">Good day</h1>
+
+        <div id="ov-banner" class="d-banner mt-6"></div>
+
+        <div class="mt-6 grid lg:grid-cols-[1fr_340px] gap-5">
+          <div>
+            <h2 class="d-h2">Quick actions</h2>
+            <div class="mt-3 grid sm:grid-cols-3 gap-3">
+              <button type="button" id="qa-brand" class="d-action" onclick="openTab('settings')">
+                <span class="d-action-icon">✦</span><b>Personalize your store</b><small>Name, logo and colours.</small>
+              </button>
+              <button type="button" id="qa-prices" class="d-action" onclick="openTab('prices')">
+                <span class="d-action-icon">%</span><b>Set your prices</b><small>Your markup on every coin.</small>
+              </button>
+              <button type="button" id="qa-share" class="d-action" onclick="shareStore()">
+                <span class="d-action-icon">↗</span><b>Share your store</b><small id="qa-share-sub">Copy your store link.</small>
+              </button>
+            </div>
+
+            <div class="mt-5 grid grid-cols-3 gap-3">
+              <div class="d-stat"><small>Orders</small><b>0</b><span>this month</span></div>
+              <div class="d-stat"><small>Volume</small><b>₦0</b><span>this month</span></div>
+              <div class="d-stat"><small>Earnings</small><b class="text-[#4d7a12]">₦0</b><span>available</span></div>
+            </div>
+          </div>
+
+          <aside class="d-card" id="ov-checklist">
+            <div class="flex items-center justify-between"><h2 class="d-h2">Launch checklist</h2><span id="ck-count" class="text-xs font-bold text-slate-400">0/3</span></div>
+            <div class="d-progress mt-3"><i id="ck-bar"></i></div>
+            <ol class="mt-4 space-y-2.5" id="ck-list"></ol>
+          </aside>
+        </div>
+
+        <div class="mt-7 d-card !p-0 overflow-hidden" id="ov-prices">
+          <div class="flex items-center justify-between px-5 pt-5">
+            <div><h2 class="d-h2">Your prices</h2><p class="text-sm text-slate-500">What your customers see right now.</p></div>
+            <button type="button" class="d-link" onclick="openTab('prices')">Edit prices →</button>
+          </div>
+          <div class="overflow-x-auto mt-3"><table class="d-table"><thead><tr><th>Coin</th><th>They buy at</th><th>They sell at</th><th>Status</th></tr></thead><tbody id="ov-price-rows"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- Prices -->
+      <section id="tab-prices" class="d-tab hidden">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div><h1 class="text-2xl font-extrabold tracking-tight">Prices</h1><p class="mt-1 text-slate-500 text-sm">Add your markup on top of Velcro's price. Your customers see one price; you keep the difference.</p></div>
+          <button type="button" id="prices-save" class="m-btn-primary" onclick="savePrices()" disabled>Save prices</button>
+        </div>
+        <div class="mt-5 d-card !p-0 overflow-hidden">
+          <div class="overflow-x-auto"><table class="d-table d-table-prices"><thead><tr><th>Coin</th><th>Velcro price</th><th>Buy markup</th><th>Customer buys at</th><th>Sell markup</th><th>Customer sells at</th></tr></thead><tbody id="price-rows"></tbody></table></div>
+        </div>
+        <p class="mt-3 text-xs text-slate-400">Prices update live. Markups can be 0%–<span id="max-markup">5</span>%. A switched-off side is hidden from your store.</p>
+      </section>
+
+      <!-- Orders / Customers / Earnings: empty until the storefront is live -->
+      <section id="tab-orders" class="d-tab hidden"><div class="d-empty"><span>☰</span><h2>No orders yet</h2><p>Every buy and sell on your store shows up here with live status, from payment to delivery.</p><button type="button" class="m-btn-primary" onclick="shareStore()">Share your store</button></div></section>
+      <section id="tab-customers" class="d-tab hidden"><div class="d-empty"><span>☺</span><h2>Your customers will appear here</h2><p>Everyone who signs up on your store, with their order history and volume.</p></div></section>
+      <section id="tab-earnings" class="d-tab hidden"><div class="d-empty"><span>◈</span><h2>₦0 earned so far</h2><p>Your markup on every completed order collects here. Withdraw it to your bank whenever you like.</p><button type="button" class="m-btn-primary" onclick="openTab('prices')">Review your markup</button></div></section>
+
+      <!-- Settings -->
+      <section id="tab-settings" class="d-tab hidden">
+        <h1 class="text-2xl font-extrabold tracking-tight">Settings</h1>
+        <div class="mt-5 grid lg:grid-cols-[1fr_330px] gap-5">
+          <form id="brand-form" class="d-card space-y-5" novalidate>
+            <div><h2 class="d-h2">Your store</h2><p class="text-sm text-slate-500">How your store looks to your customers.</p></div>
+            <div><label class="m-label" for="b-name">Store name</label><input id="b-name" maxlength="60" class="m-input" placeholder="Kamal Exchange"></div>
+            <div>
+              <label class="m-label" for="b-slug">Store address</label>
+              <div class="m-slug-wrap"><span class="m-slug-prefix">ramp.usevelcro.com/m/</span><input id="b-slug" maxlength="30" autocomplete="off" spellcheck="false" placeholder="your-store" class="m-slug-input"></div>
+              <p id="b-slug-msg" class="m-hint">Lowercase letters, numbers and hyphens. It's fixed once you're verified.</p>
+            </div>
+            <div>
+              <span class="m-label">Brand colour</span>
+              <div class="flex flex-wrap items-center gap-2.5" id="b-swatches">
+                <button type="button" class="d-swatch" style="--sw:#a8cf45" data-color="#a8cf45" aria-label="Lime"></button>
+                <button type="button" class="d-swatch" style="--sw:#6366f1" data-color="#6366f1" aria-label="Indigo"></button>
+                <button type="button" class="d-swatch" style="--sw:#0ea5e9" data-color="#0ea5e9" aria-label="Sky"></button>
+                <button type="button" class="d-swatch" style="--sw:#14b8a6" data-color="#14b8a6" aria-label="Teal"></button>
+                <button type="button" class="d-swatch" style="--sw:#f59e0b" data-color="#f59e0b" aria-label="Amber"></button>
+                <button type="button" class="d-swatch" style="--sw:#ef4444" data-color="#ef4444" aria-label="Red"></button>
+                <button type="button" class="d-swatch" style="--sw:#ec4899" data-color="#ec4899" aria-label="Pink"></button>
+                <button type="button" class="d-swatch" style="--sw:#0d0d59" data-color="#0d0d59" aria-label="Navy"></button>
+                <label class="d-swatch-custom" title="Custom colour"><input id="b-color" type="color" value="#a8cf45" aria-label="Custom colour">＋</label>
+              </div>
+            </div>
+            <div>
+              <span class="m-label">Logo</span>
+              <div class="flex items-center gap-4">
+                <span id="b-logo-preview" class="d-store-logo d-store-logo-lg" style="--brand:#a8cf45">K</span>
+                <div class="flex flex-wrap gap-2">
+                  <label class="d-chip cursor-pointer">Upload logo<input id="b-logo" type="file" accept="image/png,image/jpeg,image/webp" class="hidden"></label>
+                  <button type="button" id="b-logo-remove" class="d-chip hidden">Remove</button>
+                </div>
+              </div>
+              <p class="m-hint">Square PNG, JPG or WebP, up to 400 KB.</p>
+            </div>
+            <p id="brand-error" class="hidden m-error"></p>
+            <button type="submit" id="brand-save" class="m-btn-primary">Save store</button>
+          </form>
+          <aside class="lg:sticky lg:top-36 self-start">
+            <div class="m-store" id="b-preview" style="--brand:#a8cf45">
+              <div class="m-store-bar"><span class="m-store-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="m-store-url">…/m/<b id="bp-slug">your-store</b></span></div>
+              <div class="p-5">
+                <div class="flex items-center justify-between"><div class="flex items-center gap-2.5"><span id="bp-logo" class="m-store-logo">K</span><span id="bp-name" class="font-bold">Your store</span></div><span class="text-[10px] font-semibold text-slate-400">Powered by Velcro</span></div>
+                <div class="mt-4 grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 text-sm font-semibold"><span class="m-store-tab is-on">Buy</span><span class="m-store-tab">Sell</span></div>
+                <div class="mt-3 space-y-2"><div class="m-store-field"><span>You pay</span><b>₦100,000</b><em>NGN</em></div><div class="m-store-field"><span>You get</span><b id="bp-get">…</b><em>USDT</em></div></div>
+                <button type="button" class="m-store-cta" tabindex="-1">Buy USDT</button>
+              </div>
+            </div>
+            <p class="mt-3 text-xs text-slate-400 text-center">Live preview of your store.</p>
+          </aside>
+        </div>
+
+        <form id="kyb-form" class="d-card mt-5 space-y-5" novalidate>
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div><h2 class="d-h2" id="kyb">Business verification</h2><p class="text-sm text-slate-500">We verify every merchant before their store goes live. Usually within a working day.</p></div>
+            <span id="kyb-badge" class="m-status-badge pending">Not started</span>
+          </div>
+          <p id="kyb-note" class="hidden m-error"></p>
+          <fieldset id="kyb-fields" class="space-y-5">
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div><label class="m-label" for="f-business">Registered business or trading name</label><input id="f-business" name="business_name" maxlength="120" class="m-input"></div>
+              <div><label class="m-label" for="f-type">Business type</label><select id="f-type" name="business_type" class="m-input"></select></div>
+            </div>
+            <div id="f-reg-row" class="hidden"><label class="m-label" for="f-reg">CAC / registration number</label><input id="f-reg" name="registration_number" maxlength="40" placeholder="RC1234567" class="m-input"></div>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div><label class="m-label" for="f-contact">Your full name</label><input id="f-contact" name="contact_name" maxlength="120" autocomplete="name" class="m-input"></div>
+              <div><label class="m-label" for="f-phone">Phone number</label><input id="f-phone" name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="+234 …" class="m-input"></div>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div><label class="m-label" for="f-web">Website or social link <span class="m-optional">optional</span></label><input id="f-web" name="website" maxlength="255" placeholder="instagram.com/yourbrand" class="m-input"></div>
+              <div><label class="m-label" for="f-volume">Expected monthly volume <span class="m-optional">optional</span></label><select id="f-volume" name="monthly_volume" class="m-input"></select></div>
+            </div>
+            <div><label class="m-label" for="f-desc">How will you sell? <span class="m-optional">optional</span></label><textarea id="f-desc" name="description" maxlength="1000" rows="3" placeholder="e.g. I run a P2P trading community of 3,000 members on Telegram." class="m-input"></textarea></div>
+            <label class="flex items-start gap-3 text-sm text-slate-600"><input id="f-terms" type="checkbox" class="mt-0.5 w-4 h-4 accent-[#a8cf45]"><span>I agree to the <a href="/terms.html" target="_blank" class="font-semibold text-velcro-navy underline">merchant terms</a>, including that I'm responsible for verifying my own customers.</span></label>
+            <p id="kyb-error" class="hidden m-error"></p>
+            <button type="submit" id="kyb-save" class="m-btn-primary">Submit for verification</button>
+          </fieldset>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- Guided tour -->
+  <div id="tour" class="d-tour hidden" role="dialog" aria-live="polite">
+    <button type="button" class="d-tour-x" onclick="endTour()" aria-label="Close tour">✕</button>
+    <b id="tour-title"></b>
+    <p id="tour-body"></p>
+    <div class="flex items-center justify-between mt-3">
+      <span class="text-xs text-slate-400"><span id="tour-step"></span> · <button type="button" class="underline" onclick="endTour()">Skip</button></span>
+      <span class="flex gap-2"><button type="button" id="tour-back" class="d-tour-back" onclick="tourGo(-1)">Back</button><button type="button" id="tour-next" class="d-tour-next" onclick="tourGo(1)">Next</button></span>
+    </div>
+  </div>
+
+  <!-- ═══════════ Auth dialog ═══════════ -->
+  <div id="auth" class="fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div class="absolute inset-0 bg-velcro-navy/60 backdrop-blur-sm" onclick="closeAuth()"></div>
+    <div class="m-auth-card">
+      <button type="button" onclick="closeAuth()" aria-label="Close" class="absolute top-3.5 right-3.5 w-8 h-8 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-velcro-navy hover:bg-slate-100">✕</button>
+      <div class="text-center">
+        <span class="d-auth-mark"><img src="/velcro_favicon.png" alt=""></span>
+        <h2 id="auth-title" class="mt-4 text-xl font-extrabold tracking-tight">Welcome back</h2>
+        <p id="auth-sub" class="mt-1 text-sm text-slate-500">Sign in to your merchant account.</p>
+      </div>
+
+      <div id="google-wrap" class="hidden mt-6">
+        <div id="google-btn" class="flex justify-center min-h-[44px]"></div>
+        <div class="m-or"><span>OR</span></div>
+      </div>
+
+      <form id="auth-form" class="mt-6 space-y-4" novalidate>
+        <div><label class="m-label" for="a-email">Email address</label><input id="a-email" type="email" autocomplete="email" inputmode="email" placeholder="you@yourbusiness.com" class="m-input" required></div>
+        <div id="a-code-row" class="hidden"><label class="m-label" for="a-code">6-digit code from your email</label><input id="a-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="m-input tracking-[0.4em] font-semibold" placeholder="••••••"></div>
+        <div id="a-pass-row">
+          <div class="flex items-center justify-between"><label class="m-label" for="a-pass" id="a-pass-label">Password</label><button type="button" id="a-forgot" onclick="setAuthMode('reset')" class="text-xs font-semibold text-slate-500 hover:text-velcro-navy mb-1.5">Forgot password?</button></div>
+          <input id="a-pass" type="password" autocomplete="current-password" class="m-input" required>
+          <p id="a-pass-hint" class="hidden m-hint">At least 8 characters, with letters and numbers.</p>
+        </div>
+        <p id="auth-error" class="hidden m-error"></p>
+        <button type="submit" id="auth-btn" class="m-btn-primary m-btn-lg w-full">Sign in</button>
+      </form>
+      <p id="auth-switch" class="mt-5 text-center text-sm text-slate-500"></p>
+      <p class="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-400">By continuing you agree to our <a href="/terms.html" target="_blank" class="text-velcro-navy font-semibold">Terms</a> and <a href="/privacy.html" target="_blank" class="text-velcro-navy font-semibold">Privacy Policy</a>.</p>
+    </div>
+  </div>
+
+  <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
+
+  <script src="/merchant/merchant.js?v=2"></script>
+</body>
+
+</html>

@@ -18,6 +18,8 @@ require_once __DIR__ . '/../../poll_helpers.php';
 require_once __DIR__ . '/../../routes/public.php';
 require_once __DIR__ . '/../../routes/admin.php';
 require_once __DIR__ . '/../../routes/hostfi.php';
+require_once __DIR__ . '/../../routes/referrals.php';
+require_once __DIR__ . '/../../routes/merchant.php';
 
 $pdo = new PDO('sqlite:' . BASE_PATH . '/test.db', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
 $pdo->sqliteCreateFunction('NOW', fn () => gmdate('Y-m-d H:i:s'), 0); // MySQL built-in the routes use
@@ -27,6 +29,7 @@ $router = new Router();
 registerPublicRoutes($router);
 registerAdminRoutes($router);
 registerHostfiRoutes($router);
+registerMerchantRoutes($router);
 if (!$router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI'])) {
     jsonResponse(['error' => 'Not found'], 404);
 }

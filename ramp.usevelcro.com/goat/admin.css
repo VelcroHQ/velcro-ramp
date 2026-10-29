@@ -471,6 +471,10 @@ tbody tr:hover {
 .sent { background: rgba(168, 207, 69, 0.16); color: #5f7d17; }
 .send_failed { background: #fef2f2; color: #dc2626; }
 .send_uncertain { background: #fffbeb; color: #b45309; }
+/* Merchant statuses */
+.status-pill.approved { background: rgba(168, 207, 69, 0.16); color: #5f7d17; }
+.status-pill.rejected, .status-pill.suspended { background: #fef2f2; color: #dc2626; }
+.status-pill.draft { background: #f3f4f6; color: #4b5563; }
 .ref-fee-input { width: 72px !important; padding: 6px 8px !important; margin: 0 !important; font-size: 13px !important; }
 
 .btn-view {

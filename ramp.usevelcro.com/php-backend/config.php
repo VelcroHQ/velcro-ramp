@@ -115,6 +115,10 @@ define('HOSTFI_WEBHOOK_SECRET', env('HOSTFI_WEBHOOK_SECRET', ''));
 // HostFi briefly holds what a swap produces: wait this long between checks before sending it on.
 define('HOSTFI_FUNDS_WAIT_SECONDS', (int) env('HOSTFI_FUNDS_WAIT_SECONDS', '10'));
 
+// ─── Velcro Merchant ───
+// OAuth client ID from Google Cloud Console (Credentials → OAuth client ID → Web). Empty hides Google sign-in.
+define('GOOGLE_CLIENT_ID', (string) env('GOOGLE_CLIENT_ID', ''));
+
 // ─── Developer Fee / Withdrawal ───
 define('DEVELOPER_FEE', envFloat('DEVELOPER_FEE', 0.5));
 define('DEVELOPER_RECIPIENT', env('DEVELOPER_RECIPIENT', ''));

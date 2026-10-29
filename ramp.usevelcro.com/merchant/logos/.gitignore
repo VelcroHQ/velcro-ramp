@@ -1,0 +1,4 @@
+# Logos merchants upload live on the server, not in git.
+*
+!.htaccess
+!.gitignore

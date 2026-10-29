@@ -73,6 +73,9 @@
                 <li onclick="switchSection('email')" id="nav-email">
                     <i data-lucide="mail"></i> Email
                 </li>
+                <li onclick="switchSection('merchants')" id="nav-merchants">
+                    <i data-lucide="store"></i> Merchants
+                </li>
                 <li onclick="switchSection('coins')" id="nav-coins">
                     <i data-lucide="toggle-right"></i> Coins
                 </li>
@@ -456,6 +459,25 @@
                 <table>
                     <thead><tr><th>Started</th><th>Subject</th><th>Status</th><th>Progress</th><th>Action</th></tr></thead>
                     <tbody id="camp-body-rows"><tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="section-merchants" class="view-content">
+            <header>
+                <div class="header-title">
+                    <h1>Merchants <span id="merchants-pending" class="status-pill pending" style="display: none; margin-left: 6px;"></span></h1>
+                    <p>Velcro Merchant stores. Review business verification here; a store goes live once it's approved. Merchants verify their own customers.</p>
+                </div>
+                <div class="header-actions">
+                    <a class="btn-secondary" href="/merchant/" target="_blank" style="width: auto; padding: 8px 14px; font-size: 12px;">Open merchant site ↗</a>
+                    <button class="refresh-btn" onclick="fetchMerchants()"><i data-lucide="rotate-cw"></i></button>
+                </div>
+            </header>
+            <div class="table-card">
+                <table>
+                    <thead><tr><th>Store</th><th>Business</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody id="merchants-body"><tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr></tbody>
                 </table>
             </div>
         </div>

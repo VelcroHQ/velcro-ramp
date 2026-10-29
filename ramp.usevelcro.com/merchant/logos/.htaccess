@@ -1,0 +1,6 @@
+# Merchant logos (PNG/JPG/WebP written by the app). Never run anything from here.
+Options -Indexes -ExecCGI
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phar .cgi .pl .py
+<FilesMatch "\.(php|phtml|php\d|phar|cgi|pl|py|sh|html?|svg|js)$">
+    Require all denied
+</FilesMatch>

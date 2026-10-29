@@ -216,6 +216,23 @@ function requireAdminAuth(): void
     }
 }
 
+/** Runs $fn once the response has been sent (emails and other slow work the visitor shouldn't wait on). */
+function runAfterResponse(callable $fn, string $label = 'Background task'): void
+{
+    register_shutdown_function(static function () use ($fn, $label): void {
+        if (function_exists('litespeed_finish_request')) {
+            litespeed_finish_request();
+        } elseif (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+        try {
+            $fn();
+        } catch (Throwable $e) {
+            error_log("[{$label}] failed: " . $e->getMessage());
+        }
+    });
+}
+
 // ─── Audit Logging ───
 
 function auditLog(string $action, array $details = []): void
