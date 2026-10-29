@@ -775,6 +775,8 @@ function startStatusPoll(reference, type = 'buy', statusUrl = `/api/status?refer
         const status = data.status || payload.status;
         updateStatusUI(status, type);
         if (type === 'sell' && Array.isArray(data.hostfi_progress)) applyHostfiProgress(reference, data.hostfi_progress);
+        // HostFi buys send by themselves; the Switch "Confirm" button means nothing for them.
+        if (type === 'buy' && Array.isArray(data.hostfi_progress)) document.getElementById('bstatus-3-confirm')?.classList.add('hidden');
         if (status === 'REVIEW' && !reviewNotified) {
           reviewNotified = true;
           showToast("Your deposit needs a quick manual check. We'll email you once it's paid.", 'info');
