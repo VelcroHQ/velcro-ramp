@@ -548,21 +548,73 @@ function hostfiBuyApplySendStatus(int $id, array $payout): void
         return;
     }
     $hash = $hash ?: ($buy['tx_hash'] ?: null);
-    if ($hash && $hash !== (string) $buy['tx_hash']) { // HostFi's record is the authority
-        // "Sent": the customer gets the explorer link while the network confirms it.
-        Database::execute('UPDATE `hostfi_buys` SET `tx_hash` = :h WHERE `id` = :id', ['h' => $hash, 'id' => $id]);
-    }
     // "Confirmed" (SENT, order COMPLETED, receipt) means confirmed on chain, not just broadcast:
     // HostFi says SUCCESS for a BTC send that's still in the mempool. Chains we can't check, or
     // a hash we can't read, go by HostFi's SUCCESS.
     $chain = hostfiChain((string) $buy['network']);
-    if ($hash && hostfiChainCheckable($chain, (string) $hash)) {
-        if (hostfiChainFinalized($chain, (string) $hash)) {
+    $checkable = $hash && hostfiChainCheckable($chain, (string) $hash);
+    $confirmed = $checkable && hostfiChainFinalized($chain, (string) $hash);
+    if ($hash && $hash !== (string) $buy['tx_hash']) { // HostFi's record is the authority
+        // "Sent": the customer gets the explorer link while the network confirms it. The update only
+        // succeeds once per hash, so the "sent" email can't go out twice.
+        $first = empty($buy['tx_hash']);
+        $moved = Database::execute(
+            'UPDATE `hostfi_buys` SET `tx_hash` = :h WHERE `id` = :id AND (`tx_hash` IS NULL OR `tx_hash` <> :h2)',
+            ['h' => $hash, 'h2' => $hash, 'id' => $id]
+        );
+        if ($moved && $first && !$confirmed && $chain === 'bitcoin') {
+            hostfiBuySentEmail(hostfiBuy($id) ?? $buy);
+        }
+    }
+    if ($checkable) {
+        if ($confirmed) {
             hostfiBuyClaim($id, $from, 'SENT', ['tx_hash' => $hash]);
         }
     } elseif ($status === 'WITHDRAWAL_SUCCESS') {
         hostfiBuyClaim($id, $from, 'SENT', $hash ? ['tx_hash' => $hash] : []);
     }
+}
+
+/**
+ * "Your BTC is on its way": only for Bitcoin, where confirmation can take up to an hour (other
+ * chains confirm in under a minute, just before the receipt). Sent after the response.
+ */
+function hostfiBuySentEmail(array $buy): void
+{
+    [$order] = hostfiBuyOrderFor($buy);
+    $email = strtolower(trim((string) ($order['email'] ?? '')));
+    if (!$order || !isValidEmail($email) || !mailConfigured()) {
+        return;
+    }
+    $sym = strtoupper((string) $buy['currency']);
+    $amount = rtrim(rtrim(number_format((float) $buy['send_amount'], 8, '.', ''), '0'), '.') . ' ' . $sym;
+    $explorer = hostfiExplorerUrl(hostfiChain((string) $buy['network']), (string) $buy['tx_hash']);
+    $wallet = (string) $buy['wallet'];
+    register_shutdown_function(static function () use ($email, $sym, $amount, $explorer, $wallet, $buy): void {
+        if (function_exists('litespeed_finish_request')) {
+            litespeed_finish_request();
+        } elseif (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+        try {
+            [$html, $text] = renderEmail([
+                'preheader' => "Your {$amount} is on its way. It shows as pending in your wallet until the network confirms it.",
+                'eyebrow' => "{$sym} sent",
+                'title' => "Your {$sym} is on its way",
+                'intro' => "We've sent {$amount} to your wallet. Bitcoin needs a network confirmation, usually 10 to 60 minutes. "
+                    . "It already shows as pending in your wallet, and we'll email your receipt once it's confirmed.",
+                'amount' => ['Sent', $amount],
+                'rows' => [
+                    ['Wallet', strlen($wallet) > 20 ? substr($wallet, 0, 10) . '…' . substr($wallet, -8) : $wallet, true],
+                    ['Reference', (string) $buy['order_ref'], true],
+                ],
+                'cta' => $explorer ? ['View on explorer', $explorer] : ['Open Velcro', EMAIL_SITE_URL],
+            ]);
+            @sendEmailTo($email, "Your {$amount} is on its way", $html, $text);
+        } catch (Throwable $e) {
+            error_log('[HostFi] Sent email failed for ' . $buy['order_ref'] . ': ' . $e->getMessage());
+        }
+    });
 }
 
 /** Whether hostfiChainFinalized can check this transaction (its chain and hash format). */
