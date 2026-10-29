@@ -150,8 +150,28 @@ try {
     $pr = $res['data']['pricing'] ?? [];
     check($c === 200 && ($pr['BTC']['buy'] ?? 0) == 1.5 && ($pr['BTC']['sell'] ?? 0) == 0.75 && ($pr['ETH']['sell_on'] ?? true) === false && ($pr['ETH']['buy_on'] ?? false) === true
         && ($res['data']['checklist']['priced'] ?? false) === true, 'pricing: markups and switches saved per coin and side');
+    // Velcro's rates per $1 (fee included), seeded as the provider cache would be.
+    file_put_contents($tmp . '/data/.merchant_rates.json', json_encode(['at' => time(), 'rates' => [
+        'BTC' => ['provider' => 'hostfi', 'buy' => 1500.0, 'sell' => 1480.0], 'ETH' => ['provider' => 'hostfi', 'buy' => 1500.0, 'sell' => 1480.0],
+        'SOL' => ['provider' => 'paj', 'buy' => 1510.0, 'sell' => 1470.0], 'USDT' => ['provider' => 'switch', 'buy' => 1505.0, 'sell' => 1475.0],
+        'USDC' => ['provider' => 'switch', 'buy' => 1505.0, 'sell' => 1475.0],
+    ]]));
     [$c, $res] = $app_('GET', '/api/merchant/prices', null, $auth($token));
-    check($c === 200 && array_key_exists('BTC', $res['data']['prices'] ?? []), 'prices: Velcro base price list served');
+    check($c === 200 && ($res['data']['rates']['BTC']['buy'] ?? 0) == 1500 && ($res['data']['rates']['SOL']['provider'] ?? '') === 'paj' && ($res['data']['rates']['USDT']['provider'] ?? '') === 'switch',
+        'prices: Velcro rate per $1 for each coin, from its provider (BTC HostFi, SOL PAJ, USDT Switch)');
+    [, $res] = $app_('GET', '/api/merchant/storefront/northline', null, $auth($token));
+    $btc = $res['data']['coins']['BTC'] ?? [];
+    check(($btc['buy_rate'] ?? 0) == 1522.5 && ($btc['sell_rate'] ?? 0) == 1468.9 && !array_key_exists('velcro_buy_rate', $btc) && !isset($res['data']['coins']['ETH']['sell_rate'])
+        && ($res['data']['store']['rate_display'] ?? '') === 'final',
+        'store (owner preview): customer rate = Velcro rate + markup ($1 = ₦1,522.50 buy at 1.5%, ₦1,468.90 sell at 0.75%); base rate hidden; ETH sell off');
+    [$c] = $app_('POST', '/api/merchant/pricing', ['display' => 'sideways'], $auth($token));
+    [$c2, $res] = $app_('POST', '/api/merchant/pricing', ['display' => 'breakdown'], $auth($token));
+    [, $sf] = $app_('GET', '/api/merchant/storefront/northline', null, $auth($token));
+    check($c === 400 && $c2 === 200 && ($res['data']['rate_display'] ?? '') === 'breakdown' && ($res['data']['pricing']['BTC']['buy'] ?? 0) == 1.5
+        && ($sf['data']['coins']['BTC']['velcro_buy_rate'] ?? 0) == 1500 && ($sf['data']['coins']['BTC']['buy_markup_percent'] ?? 0) == 1.5,
+        'rate display: "Velcro rate + markup" saved without touching markups; store then shows base rate and markup');
+    [$c] = $app_('GET', '/api/merchant/storefront/northline');
+    check($c === 404, 'store not live to the public until approved');
 
     // ── Verification (KYB) ──
     $kyb = [

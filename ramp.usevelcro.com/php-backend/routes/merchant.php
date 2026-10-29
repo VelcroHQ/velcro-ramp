@@ -16,6 +16,10 @@ const MERCHANT_DEFAULT_MARKUP = 1.0; // % on top of Velcro's price, each side
 const MERCHANT_MAX_MARKUP = 5.0;
 const MERCHANT_DEFAULT_COLOR = '#a8cf45';
 const MERCHANT_LOGO_MAX_BYTES = 400 * 1024;
+// Which provider prices and fills each coin on merchant stores.
+const MERCHANT_COIN_PROVIDERS = ['BTC' => 'hostfi', 'ETH' => 'hostfi', 'SOL' => 'paj', 'USDT' => 'switch', 'USDC' => 'switch'];
+// How a store shows its rate: the final rate only, or Velcro's rate plus the merchant's markup.
+const MERCHANT_RATE_DISPLAYS = ['final', 'breakdown'];
 const MERCHANT_BUSINESS_TYPES = ['individual' => 'Individual / sole trader', 'registered' => 'Registered business'];
 const MERCHANT_VOLUMES = ['under_1m' => 'Under ₦1M', '1m_10m' => '₦1M – ₦10M', '10m_50m' => '₦10M – ₦50M', 'over_50m' => 'Over ₦50M'];
 
@@ -145,6 +149,81 @@ function merchantPricing(array $m): array
     return $out;
 }
 
+/** How the store shows rates to customers ('final' or 'breakdown'). */
+function merchantRateDisplay(array $m): string
+{
+    $saved = json_decode((string) ($m['pricing'] ?? ''), true) ?: [];
+    return in_array($saved['_display'] ?? '', MERCHANT_RATE_DISPLAYS, true) ? $saved['_display'] : 'final';
+}
+
+/**
+ * Velcro's own customer rate per coin as naira per $1, Velcro's fee included, from the provider
+ * that fills that coin on merchant stores. 'buy' is what a customer pays per $1, 'sell' what they
+ * get per $1. Null where the provider can't quote right now. Cached for a minute.
+ *
+ * @return array<string,array{provider:string,buy:?float,sell:?float}>
+ */
+function merchantVelcroRates(): array
+{
+    $file = BASE_PATH . '/data/.merchant_rates.json';
+    $cached = is_file($file) ? json_decode((string) @file_get_contents($file), true) : null;
+    if (is_array($cached) && ($cached['at'] ?? 0) > time() - 60 && !empty($cached['rates'])) {
+        return $cached['rates'];
+    }
+    $out = [];
+    foreach (MERCHANT_COIN_PROVIDERS as $sym => $provider) {
+        $buy = $sell = null;
+        try {
+            if ($provider === 'hostfi') {
+                // Same maths as a HostFi order: buys swap paid × (1 − fee), sells pay out swapped × (1 − fee).
+                $q = hostfiQuote($sym);
+                $fee = hostfiFee() / 100;
+                if ($q['ngn_per_unit'] > 0 && $q['usd_per_unit'] > 0) {
+                    $perUsd = $q['ngn_per_unit'] / $q['usd_per_unit'];
+                    [$buy, $sell] = [$perUsd / (1 - $fee), $perUsd * (1 - $fee)];
+                }
+            } elseif ($provider === 'paj') {
+                // PAJ's $ rates with Velcro's margin, then Velcro's fee (taken from what the customer receives).
+                $r = pajApi()->getPajRate();
+                $margin = getPajRateMargin();
+                $fee = getPajFee() / 100;
+                $on = (float) ($r['onramp']['rate'] ?? 0);
+                $off = (float) ($r['offramp']['rate'] ?? 0);
+                $buy = $on > 0 ? ($on + $margin) / (1 - $fee) : null;
+                $sell = $off > 0 ? ($off - $margin) * (1 - $fee) : null;
+            } else {
+                // Switch quotes per direction already include Velcro's developer fee.
+                $assets = json_decode((string) @file_get_contents(BASE_PATH . '/data/switch_assets_cache.json'), true) ?: [];
+                foreach (['ONRAMP' => 'onramp', 'OFFRAMP' => 'offramp'] as $dir => $key) {
+                    $chains = (array) ($assets[$key][$sym]['chains'] ?? []);
+                    $chain = array_values(array_intersect(['solana', 'base', 'tron', 'bsc', 'polygon', 'ethereum'], $chains))[0] ?? ($chains[0] ?? 'solana');
+                    $res = switchApi()->getRate(['direction' => $dir, 'country' => 'NG', 'currency' => 'NGN', 'channel' => 'BANK', 'asset' => $chain . ':' . strtolower($sym)]);
+                    $rate = (float) ($res['data']['rate'] ?? 0);
+                    if ($rate > 0) {
+                        $dir === 'ONRAMP' ? $buy = $rate : $sell = $rate;
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            error_log("[Merchant] {$sym} rate via {$provider} unavailable: " . $e->getMessage());
+        }
+        $out[$sym] = ['provider' => $provider, 'buy' => $buy ? round($buy, 2) : null, 'sell' => $sell ? round($sell, 2) : null];
+    }
+    if (array_filter(array_column($out, 'buy')) || array_filter(array_column($out, 'sell'))) {
+        @file_put_contents($file, json_encode(['at' => time(), 'rates' => $out]), LOCK_EX);
+    }
+    return $out;
+}
+
+/** A customer's rate per $1 at a store: Velcro's rate with the merchant's markup on top. */
+function merchantCustomerRate(?float $velcro, float $markup, string $side): ?float
+{
+    if (!$velcro) {
+        return null;
+    }
+    return round($side === 'buy' ? $velcro * (1 + $markup / 100) : $velcro * (1 - $markup / 100), 2);
+}
+
 /** The merchant's own dashboard view: no internal review details beyond the note. */
 function merchantView(array $m): array
 {
@@ -164,6 +243,7 @@ function merchantView(array $m): array
         'review_note' => in_array($m['status'], ['REJECTED', 'SUSPENDED'], true) ? $m['review_note'] : null,
         'brand' => $brand,
         'pricing' => merchantPricing($m),
+        'rate_display' => merchantRateDisplay($m),
         'storefront_url' => $m['slug'] ? EMAIL_SITE_URL . '/m/' . $m['slug'] : null,
         // What's left before the store can go live, for the dashboard checklist.
         'checklist' => [
@@ -322,24 +402,59 @@ function merchantField(array $b, string $key, int $max): string
     return mb_substr(trim(preg_replace('/\s+/u', ' ', (string) body($b, $key, '')) ?? ''), 0, $max);
 }
 
-function notifyMerchantStatus(array $m): void
+/** Sends one merchant email; failures are logged and audited, never thrown. */
+function merchantMail(string $to, string $subject, array $email, string $kind): bool
 {
-    $copy = [
-        'APPROVED' => ['Your Velcro Merchant store is approved', "Good news: {$m['business_name']} is approved. Sign in to set up your storefront.", 'Open your dashboard'],
-        'REJECTED' => ['Your Velcro Merchant application', "We couldn't approve {$m['business_name']} this time.", 'View details'],
-        'SUSPENDED' => ['Your Velcro Merchant store is suspended', "{$m['business_name']} has been suspended and your storefront is offline.", 'View details'],
-    ][$m['status']] ?? null;
-    if (!$copy || !mailConfigured()) {
-        return;
+    if (!mailConfigured()) {
+        return false;
     }
-    [$html, $text] = renderEmail([
+    try {
+        [$html, $text] = renderEmail($email);
+        $sent = (bool) @sendEmailTo($to, $subject, $html, $text);
+    } catch (Throwable $e) {
+        error_log("[Merchant] {$kind} email to {$to} failed: " . $e->getMessage());
+        $sent = false;
+    }
+    if (!$sent) {
+        auditLog('MERCHANT_EMAIL_FAILED', ['to' => $to, 'kind' => $kind]);
+    }
+    return $sent;
+}
+
+/** Approved / rejected / suspended. Returns whether the email went out. */
+function notifyMerchantStatus(array $m): bool
+{
+    $name = (string) (merchantBrand($m)['name'] ?: $m['business_name']);
+    $url = EMAIL_SITE_URL . '/m/' . $m['slug'];
+    $copy = [
+        'APPROVED' => ['Your Velcro Merchant store is approved', "Good news: {$name} is verified. Your store link is ready to share, and your customers will be able to trade on it as soon as it opens.", 'Open your dashboard'],
+        'REJECTED' => ['We need a few changes to your Velcro Merchant store', "We couldn't verify {$name} yet. Update your business details in Settings and resubmit, and we'll take another look.", 'Fix my details'],
+        'SUSPENDED' => ['Your Velcro Merchant store is suspended', "{$name} has been suspended and your store is offline. Reply to this email or contact support if you think this is a mistake.", 'View details'],
+    ][$m['status']] ?? null;
+    if (!$copy) {
+        return false;
+    }
+    return merchantMail((string) $m['email'], $copy[0], [
+        'preheader' => $copy[1],
         'eyebrow' => 'Velcro Merchant',
         'title' => $copy[0],
         'intro' => $copy[1] . ((string) $m['review_note'] !== '' && $m['status'] !== 'APPROVED' ? ' Reason: ' . $m['review_note'] : ''),
-        'rows' => [['Store', (string) (merchantBrand($m)['name'] ?: $m['business_name'])], ['Store address', EMAIL_SITE_URL . '/m/' . $m['slug'], true]],
+        'rows' => [['Store', $name], ['Store address', $url, true]],
         'cta' => [$copy[2], EMAIL_SITE_URL . '/merchant/'],
-    ]);
-    sendEmailTo((string) $m['email'], $copy[0], $html, $text);
+    ], 'status ' . $m['status']);
+}
+
+/** Welcome, once, when a merchant account is created. */
+function sendMerchantWelcome(string $email): void
+{
+    runAfterResponse(static fn () => merchantMail($email, 'Welcome to Velcro Merchant', [
+        'preheader' => 'Set up your store in a few minutes.',
+        'eyebrow' => 'Velcro Merchant',
+        'title' => 'Welcome to Velcro Merchant',
+        'intro' => 'Your account is ready. Three steps to your first sale: personalize your store (name, address, logo and colours), set your markup on each coin, and verify your business so your store can go live.',
+        'cta' => ['Open your dashboard', EMAIL_SITE_URL . '/merchant/'],
+        'outro' => "If you didn't create this account, reply to this email and we'll close it.",
+    ], 'welcome'), 'Merchant welcome email');
 }
 
 function registerMerchantRoutes(Router $router): void
@@ -392,6 +507,9 @@ function registerMerchantRoutes(Router $router): void
             Database::insert('merchant_accounts', ['email' => $email, 'password_hash' => $hash, 'name' => $name !== '' ? $name : null]);
         }
         auditLog('MERCHANT_ACCOUNT_CREATED', ['email' => $email, 'method' => 'password']);
+        if (!$account) {
+            sendMerchantWelcome($email);
+        }
         merchantSignedIn(merchantAccount($email), 'Account created');
     });
 
@@ -453,6 +571,13 @@ function registerMerchantRoutes(Router $router): void
             ['h' => password_hash($password, PASSWORD_DEFAULT), 'id' => $account['id']]
         );
         auditLog('MERCHANT_PASSWORD_RESET', ['email' => $email]);
+        runAfterResponse(static fn () => merchantMail($email, 'Your Velcro Merchant password was changed', [
+            'eyebrow' => 'Security',
+            'title' => 'Your password was changed',
+            'intro' => 'The password for your Velcro Merchant account was just changed, and every other session was signed out.',
+            'outro' => "If this wasn't you, reset your password now and reply to this email so we can help.",
+            'cta' => ['Open Velcro Merchant', EMAIL_SITE_URL . '/merchant/'],
+        ], 'password changed'), 'Merchant password email');
         merchantSignedIn(merchantAccount($email), 'Password updated');
     });
 
@@ -470,6 +595,7 @@ function registerMerchantRoutes(Router $router): void
         if (!$account) {
             Database::insert('merchant_accounts', ['email' => $google['email'], 'google_sub' => $google['sub'], 'name' => $google['name'] ?: null]);
             auditLog('MERCHANT_ACCOUNT_CREATED', ['email' => $google['email'], 'method' => 'google']);
+            sendMerchantWelcome($google['email']);
         } elseif (!$account['google_sub']) {
             // Google has verified this address, so linking it to the existing account is safe.
             Database::execute('UPDATE `merchant_accounts` SET `google_sub` = :s WHERE `id` = :id', ['s' => $google['sub'], 'id' => $account['id']]);
@@ -494,17 +620,10 @@ function registerMerchantRoutes(Router $router): void
     });
 
     // Velcro's own naira price per coin (before any markup), for the pricing screen.
+    // Velcro's rate per $1 for each coin (our fee included), for the pricing screen.
     $router->get('/api/merchant/prices', function () {
         requireMerchantAuth();
-        $out = [];
-        foreach (array_keys(MERCHANT_COINS) as $sym) {
-            try {
-                $out[$sym] = round(hostfiQuote($sym)['ngn_per_unit'], 2);
-            } catch (Throwable $e) {
-                $out[$sym] = null;
-            }
-        }
-        jsonResponse(successResponse(['prices' => $out]));
+        jsonResponse(successResponse(['rates' => merchantVelcroRates()]));
     });
 
     // Store name, address, colour and logo. The address is fixed once the store is approved.
@@ -561,7 +680,12 @@ function registerMerchantRoutes(Router $router): void
     // Markup % per coin and side (0–MERCHANT_MAX_MARKUP), and which ones are switched on.
     $router->post('/api/merchant/pricing', function () {
         $email = requireMerchantAuth();
-        $coins = (array) body(getJsonBody(), 'coins', []);
+        $b = getJsonBody();
+        $coins = (array) body($b, 'coins', []);
+        $display = (string) body($b, 'display', '');
+        if ($display !== '' && !in_array($display, MERCHANT_RATE_DISPLAYS, true)) {
+            jsonResponse(errorResponse('Unknown rate display'), 400);
+        }
         ensureMerchantSchema();
         $m = merchantFor($email);
         $pricing = merchantPricing($m);
@@ -582,6 +706,7 @@ function registerMerchantRoutes(Router $router): void
                 }
             }
         }
+        $pricing['_display'] = $display !== '' ? $display : merchantRateDisplay($m);
         Database::execute('UPDATE `merchants` SET `pricing` = :p WHERE `id` = :id', ['p' => json_encode($pricing), 'id' => $m['id']]);
         jsonResponse(successResponse(merchantView(merchantByEmail($email)), 'Prices saved'));
     });
@@ -622,28 +747,27 @@ function registerMerchantRoutes(Router $router): void
         }
 
         $coins = [];
+        $rates = merchantVelcroRates();
         foreach (MERCHANT_COINS as $sym => $name) {
-            $coinConfig = $pricing[$sym] ?? ['buy' => 1.0, 'sell' => 1.0, 'buy_on' => true, 'sell_on' => true];
-            if (!$coinConfig['buy_on'] && !$coinConfig['sell_on']) {
+            $c = $pricing[$sym];
+            if (!$c['buy_on'] && !$c['sell_on']) {
                 continue;
             }
-            $quote = function_exists('hostfiQuote') ? hostfiQuote($sym) : 0;
-            $buyMarkup = (float) ($coinConfig['buy'] ?? 1.0);
-            $sellMarkup = (float) ($coinConfig['sell'] ?? 1.0);
-
-            $customerBuyNgn = $quote > 0 ? round($quote * (1 + ($buyMarkup / 100)), 2) : null;
-            $customerSellNgn = $quote > 0 ? round($quote * (1 - ($sellMarkup / 100)), 2) : null;
-
+            $velcro = $rates[$sym] ?? ['buy' => null, 'sell' => null];
             $coins[$sym] = [
                 'symbol' => $sym,
                 'name' => $name,
-                'buy_on' => (bool) $coinConfig['buy_on'],
-                'sell_on' => (bool) $coinConfig['sell_on'],
-                'buy_markup_percent' => $buyMarkup,
-                'sell_markup_percent' => $sellMarkup,
-                'customer_buy_ngn' => $customerBuyNgn,
-                'customer_sell_ngn' => $customerSellNgn,
-            ];
+                'buy_on' => $c['buy_on'],
+                'sell_on' => $c['sell_on'],
+                // Naira per $1. The base rate and markup are only shown if the merchant chose 'breakdown'.
+                'buy_rate' => $c['buy_on'] ? merchantCustomerRate($velcro['buy'], $c['buy'], 'buy') : null,
+                'sell_rate' => $c['sell_on'] ? merchantCustomerRate($velcro['sell'], $c['sell'], 'sell') : null,
+            ] + (merchantRateDisplay($m) === 'breakdown' ? [
+                'velcro_buy_rate' => $c['buy_on'] ? $velcro['buy'] : null,
+                'velcro_sell_rate' => $c['sell_on'] ? $velcro['sell'] : null,
+                'buy_markup_percent' => $c['buy'],
+                'sell_markup_percent' => $c['sell'],
+            ] : []);
         }
 
         jsonResponse(successResponse([
@@ -654,6 +778,7 @@ function registerMerchantRoutes(Router $router): void
                 'logo' => $brand['logo'],
                 'status' => $m['status'],
                 'is_owner_preview' => $isOwner && $m['status'] !== 'APPROVED',
+                'rate_display' => merchantRateDisplay($m),
             ],
             'coins' => $coins,
         ]));
@@ -733,6 +858,13 @@ function registerMerchantRoutes(Router $router): void
                     ],
                     'cta' => ['Review in admin', EMAIL_SITE_URL . '/goat/'],
                 ])), 'Merchant admin alert');
+            runAfterResponse(static fn () => merchantMail($email, $resubmit ? 'We’ve received your updated details' : 'We’ve received your business details', [
+                'eyebrow' => 'Velcro Merchant',
+                'title' => $resubmit ? 'Thanks, we’ll take another look' : 'Thanks, we’re reviewing your business',
+                'intro' => 'We usually review new stores within one working day. We’ll email you as soon as you’re approved, or tell you exactly what we need.',
+                'rows' => [['Business', (string) $m['business_name']], ['Store address', EMAIL_SITE_URL . '/m/' . $m['slug'], true]],
+                'cta' => ['Open your dashboard', EMAIL_SITE_URL . '/merchant/'],
+            ], 'verification received'), 'Merchant verification email');
         }
         jsonResponse(successResponse(merchantView($m), 'Verification submitted'));
     });
@@ -773,7 +905,6 @@ function registerMerchantRoutes(Router $router): void
         );
         auditLog('MERCHANT_' . $status, ['id' => (int) $id, 'slug' => $m['slug'], 'note' => $note]);
         $m = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
-        runAfterResponse(static fn () => notifyMerchantStatus($m), 'Merchant status email');
-        jsonResponse(['success' => true, 'merchant' => $m]);
+        jsonResponse(['success' => true, 'merchant' => $m, 'email_sent' => notifyMerchantStatus($m)]);
     });
 }

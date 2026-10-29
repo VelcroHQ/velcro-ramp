@@ -12,7 +12,7 @@ try { token = localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { /* private mo
 let authMode = 'signin'; // signin | signup | signup-code | reset | reset-code
 let me = null;            // /api/merchant/me payload
 let merchant = null;      // me.merchant, kept fresh after every save
-let basePrices = {};      // Velcro's naira price per coin
+let velcroRates = {};     // Velcro's naira per $1 per coin, our fee included: {SYM: {buy, sell, provider}}
 let pricingDraft = null;  // edits on the Prices tab before saving
 let brandDraft = null;    // edits on the Settings tab before saving
 
@@ -249,7 +249,7 @@ async function showApp() {
     const [data, prices] = await Promise.all([api('/api/merchant/me'), api('/api/merchant/prices').catch(() => ({ prices: {} }))]);
     me = data;
     merchant = data.merchant;
-    basePrices = prices.prices || {};
+    velcroRates = prices.rates || {};
     $('app-loading').classList.add('hidden');
     renderAll();
     openTab((location.hash || '').replace('#', '') || 'overview');
@@ -332,15 +332,17 @@ function renderOverview() {
   $('qa-prices').classList.toggle('is-done', !!ck.priced);
   $('qa-share-sub').textContent = merchant.slug ? `…/m/${merchant.slug}` : 'Pick your store address first.';
 
-  // Price list.
+  // Price list, as customers see it.
   $('ov-price-rows').innerHTML = Object.entries(me.coins).map(([sym, name]) => {
     const p = merchant.pricing[sym];
-    const base = basePrices[sym];
     const on = p.buy_on || p.sell_on;
-    const cell = (side, sign) => !p[side + '_on'] ? '<span class="d-pill off">Off</span>'
-      : base ? `<span class="d-price"><b>${naira(base * (1 + sign * p[side] / 100))}</b><small>${sign > 0 ? '+' : '−'}${p[side]}% on Velcro</small></span>` : '<span class="text-slate-400">—</span>';
+    const cell = side => {
+      if (!p[side + '_on']) return '<span class="d-pill off">Off</span>';
+      const rate = customerRate(sym, side, p[side]);
+      return rate ? `<span class="d-price"><b>${rateText(rate)}</b><small>${side === 'buy' ? '+' : '−'}${p[side]}% on Velcro</small></span>` : '<span class="text-slate-400">—</span>';
+    };
     return `<tr><td><span class="d-coin"><img src="${COIN_LOGOS[sym]}" alt=""><span>${sym}<small>${esc(name)}</small></span></span></td>
-      <td>${cell('buy', 1)}</td><td>${cell('sell', -1)}</td>
+      <td>${cell('buy')}</td><td>${cell('sell')}</td>
       <td><span class="d-pill ${on && merchant.status === 'APPROVED' ? 'live' : 'off'}">${on ? (merchant.status === 'APPROVED' ? 'Live' : 'Ready') : 'Off'}</span></td></tr>`;
   }).join('');
 }
@@ -367,14 +369,27 @@ async function shareStore() {
 
 // ── Prices ──
 
+/** A customer's naira per $1: Velcro's rate with the markup added (buy) or taken off (sell). */
+function customerRate(sym, side, markup) {
+  const base = (velcroRates[sym] || {})[side];
+  if (!base) return null;
+  return side === 'buy' ? base * (1 + markup / 100) : base * (1 - markup / 100);
+}
+
+const rateText = v => '$1 = ₦' + Number(v).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 function renderPrices() {
   pricingDraft = JSON.parse(JSON.stringify(merchant.pricing));
+  pricingDraft._display = merchant.rate_display || 'final';
+  document.querySelectorAll('input[name="rate-display"]').forEach(r => {
+    r.checked = r.value === pricingDraft._display;
+    r.onchange = () => { pricingDraft._display = r.value; paintPriceRows(true); };
+  });
   $('max-markup').textContent = me.max_markup;
   $('price-rows').innerHTML = Object.entries(me.coins).map(([sym, name]) => {
     const toggle = side => `<button type="button" class="d-toggle" role="switch" aria-label="${sym} ${side} on/off" data-sym="${sym}" data-side="${side}"></button>`;
     const markup = side => `<label class="d-markup"><input type="number" inputmode="decimal" min="0" max="${me.max_markup}" step="0.05" data-sym="${sym}" data-side="${side}" aria-label="${sym} ${side} markup %"><span>%</span></label>`;
     return `<tr data-row="${sym}"><td><span class="d-coin"><img src="${COIN_LOGOS[sym]}" alt=""><span>${sym}<small>${esc(name)}</small></span></span></td>
-      <td>${basePrices[sym] ? naira(basePrices[sym]) : '<span class="text-slate-400">—</span>'}</td>
       <td><span class="d-cell">${toggle('buy')}${markup('buy')}</span></td><td class="d-price" data-out="${sym}-buy"></td>
       <td><span class="d-cell">${toggle('sell')}${markup('sell')}</span></td><td class="d-price" data-out="${sym}-sell"></td></tr>`;
   }).join('');
@@ -396,17 +411,24 @@ function renderPrices() {
 function paintPriceRows(dirty) {
   Object.keys(me.coins).forEach(sym => {
     const p = pricingDraft[sym];
-    const base = basePrices[sym];
     ['buy', 'sell'].forEach(side => {
       const on = p[side + '_on'];
+      const base = (velcroRates[sym] || {})[side];
+      const rate = customerRate(sym, side, p[side]);
       document.querySelector(`.d-toggle[data-sym="${sym}"][data-side="${side}"]`).setAttribute('aria-checked', String(on));
       document.querySelector(`input[data-sym="${sym}"][data-side="${side}"]`).disabled = !on;
       const out = document.querySelector(`[data-out="${sym}-${side}"]`);
       out.closest('td').classList.toggle('is-off', !on);
       out.innerHTML = !on ? '<span class="d-pill off">Hidden</span>'
-        : base ? `<b>${naira(base * (1 + (side === 'buy' ? 1 : -1) * p[side] / 100))}</b><small>you earn ${p[side]}%</small>` : '<span class="text-slate-400">—</span>';
+        : rate ? `<b>${rateText(rate)}</b><small>Velcro ${rateText(base)}</small>` : '<span class="text-slate-400">Rate unavailable</span>';
     });
   });
+  // Example for the display choice, from the first coin with a buy rate.
+  const ex = Object.keys(me.coins).find(sym => customerRate(sym, 'buy', pricingDraft[sym].buy));
+  if (ex) {
+    $('disp-final').textContent = rateText(customerRate(ex, 'buy', pricingDraft[ex].buy)) + ` · ${ex}`;
+    $('disp-breakdown').textContent = `${rateText(velcroRates[ex].buy)} + ${pricingDraft[ex].buy}% fee · ${ex}`;
+  }
   $('prices-save').disabled = !dirty;
 }
 
@@ -415,7 +437,8 @@ async function savePrices() {
   btn.disabled = true;
   btn.textContent = 'Saving…';
   try {
-    merchant = await api('/api/merchant/pricing', { method: 'POST', body: { coins: pricingDraft } });
+    const { _display: display, ...coins } = pricingDraft;
+    merchant = await api('/api/merchant/pricing', { method: 'POST', body: { coins, display } });
     toast('Prices saved');
     renderAll();
   } catch (err) {
@@ -453,7 +476,8 @@ function paintBrand() {
   $('bp-name').textContent = brandDraft.name || 'Your store';
   $('bp-slug').textContent = brandDraft.slug || 'your-store';
   $('b-logo-remove').classList.toggle('hidden', !brand.logo);
-  const usdt = basePrices.USDT && merchant ? 100000 / (basePrices.USDT * (1 + (pricingDraft?.USDT?.buy ?? 1) / 100)) : null;
+  const usdtRate = merchant ? customerRate('USDT', 'buy', merchant.pricing.USDT.buy) : null;
+  const usdt = usdtRate ? 100000 / usdtRate : null;
   $('bp-get').textContent = usdt ? `${usdt.toFixed(2)} USDT` : '… USDT';
 }
 

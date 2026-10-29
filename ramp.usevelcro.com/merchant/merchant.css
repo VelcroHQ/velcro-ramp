@@ -320,3 +320,18 @@ body { font-family: 'Inter', system-ui, sans-serif; }
 .l-close { text-align: center; padding: 4rem 1.5rem; border: 1px solid #e6e5dd; border-radius: 22px; background: #fff; }
 .l-page .m-faq summary { font-weight: 600; }
 .l-page .m-faq p { color: #5a5e78; }
+/* app.css sets Inter on every element (*), so children of serif headings must opt back in. */
+.l-display *, .l-h2 *, .l-calc-out span { font-family: inherit; }
+/* Grid columns may shrink below their content (long store address, headings) on phones. */
+.l-wrap > *, .l-claim > * { min-width: 0; }
+.l-btn-text { white-space: nowrap; }
+@media (max-width: 420px) { .l-tag { display: none; } .l-claim { flex-wrap: wrap; padding: .35rem .35rem .35rem .8rem; } .l-claim-prefix { font-size: .8rem; } .l-claim .l-btn-lg { width: 100%; margin-top: .35rem; } }
+
+/* Rate display choice */
+.d-choice { position: relative; display: flex; gap: .75rem; padding: 1rem; border: 1px solid #e3e5ee; border-radius: 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+.d-choice:hover { border-color: #c9ccda; }
+.d-choice input { margin-top: .2rem; accent-color: var(--navy); }
+.d-choice b { display: block; font-size: .92rem; }
+.d-choice small { display: block; margin-top: .2rem; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+.d-choice em { display: block; margin-top: .2rem; font-style: normal; font-size: .8rem; color: #8a8fa0; }
+.d-choice:has(input:checked) { border-color: var(--navy); background: #f8f8fd; }

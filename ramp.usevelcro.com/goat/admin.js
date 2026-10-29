@@ -2120,8 +2120,11 @@ async function setMerchantStatus(id, status, label) {
         return;
     }
     try {
-        await adminPost(`/api/admin/merchants/${id}/status`, { status, note });
-        showToast(`Merchant ${statusLabel(status).toLowerCase()}`, 'success');
+        const res = await adminPost(`/api/admin/merchants/${id}/status`, { status, note });
+        const done = `Merchant ${statusLabel(status).toLowerCase()}`;
+        res.email_sent
+            ? showToast(`${done} · email sent`, 'success')
+            : showToast(`${done}, but the email to them failed. Check the audit log, or contact them directly.`, 'error');
     } catch (e) {
         showToast(e.message, 'error');
     }

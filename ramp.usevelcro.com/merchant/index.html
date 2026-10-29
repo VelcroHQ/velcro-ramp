@@ -270,13 +270,23 @@
       <!-- Prices -->
       <section id="tab-prices" class="d-tab hidden">
         <div class="flex flex-wrap items-end justify-between gap-3">
-          <div><h1 class="text-2xl font-extrabold tracking-tight">Prices</h1><p class="mt-1 text-slate-500 text-sm">Add your markup on top of Velcro's price. Your customers see one price; you keep the difference.</p></div>
+          <div><h1 class="text-2xl font-extrabold tracking-tight">Prices</h1><p class="mt-1 text-slate-500 text-sm">Velcro's rates already include our fee. Add your markup on top; the difference is yours.</p></div>
           <button type="button" id="prices-save" class="m-btn-primary" onclick="savePrices()" disabled>Save prices</button>
         </div>
+
+        <fieldset class="mt-5 d-card">
+          <legend class="sr-only">How customers see your rate</legend>
+          <p class="d-h2">How customers see your rate</p>
+          <div class="mt-3 grid sm:grid-cols-2 gap-3">
+            <label class="d-choice"><input type="radio" name="rate-display" value="final"><span><b>Final rate only</b><small id="disp-final">$1 = ₦1,426</small><em>Simplest. One number, like any exchange.</em></span></label>
+            <label class="d-choice"><input type="radio" name="rate-display" value="breakdown"><span><b>Velcro rate + your markup</b><small id="disp-breakdown">$1 = ₦1,412 + 1% fee</small><em>Open about your margin.</em></span></label>
+          </div>
+        </fieldset>
+
         <div class="mt-5 d-card !p-0 overflow-hidden">
-          <div class="overflow-x-auto"><table class="d-table d-table-prices"><thead><tr><th>Coin</th><th>Velcro price</th><th>Buy markup</th><th>Customer buys at</th><th>Sell markup</th><th>Customer sells at</th></tr></thead><tbody id="price-rows"></tbody></table></div>
+          <div class="overflow-x-auto"><table class="d-table d-table-prices"><thead><tr><th>Coin</th><th>Buy markup</th><th>Customers buy at</th><th>Sell markup</th><th>Customers sell at</th></tr></thead><tbody id="price-rows"></tbody></table></div>
         </div>
-        <p class="mt-3 text-xs text-slate-400">Prices update live. Markups can be 0%–<span id="max-markup">5</span>%. A switched-off side is hidden from your store.</p>
+        <p class="mt-3 text-xs text-slate-400">Rates are per $1 and update every minute. Markups can be 0%–<span id="max-markup">5</span>%. A side that's switched off is hidden from your store.</p>
       </section>
 
       <!-- Orders / Customers / Earnings: empty until the storefront is live -->
