@@ -420,7 +420,8 @@ function hostfiSwapSucceeded(int $id, array $credit): void
         hostfiSetStatus($id, 'REVIEW', 'Swap returned no naira amount');
         return;
     }
-    $payout = floor($ngn * (1 - hostfiFee() / 100) * 100) / 100 - HOSTFI_PAYOUT_FEE_NGN;
+    // Whole naira: HostFi drops the kobo on NGN payouts (₦3,630.97 is sent as ₦3,630).
+    $payout = floor(round($ngn * (1 - hostfiFee() / 100), 6)) - HOSTFI_PAYOUT_FEE_NGN;
     if ($payout <= 0) {
         hostfiClaim($id, ['SWAPPING', 'SWAP_PENDING'], 'REVIEW', ['ngn_amount' => $ngn, 'note' => 'Too small to cover the payout fee']);
         return;

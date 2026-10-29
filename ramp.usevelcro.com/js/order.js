@@ -268,6 +268,7 @@ async function generateWalletAddress() {
         provider: 'hostfi'
       };
       saveRecentOrder(currentTxDetails);
+      setSellManualConfirm(false); // HostFi finds the deposit itself; a pasted hash adds nothing
       startStatusPoll(data.reference, 'sell', `/api/transactions/${encodeURIComponent(data.reference)}`);
     } catch (err) {
       resetBtn();
@@ -1238,7 +1239,14 @@ function unlockSellForm() {
     el.classList.remove('opacity-50', 'pointer-events-none');
   });
 }
+// "I've sent it" + paste-the-hash box: for Switch/PAJ sells only.
+function setSellManualConfirm(show) {
+  document.getElementById('sell-sent-btn')?.classList.toggle('hidden', !show);
+  if (!show) document.getElementById('sell-manual-confirm')?.classList.add('hidden');
+}
+
 async function resetSellTransaction() {
+  setSellManualConfirm(true);
   if (currentReference) {
     try {
       fetch(`${API_BASE}/api/cancel`, {
