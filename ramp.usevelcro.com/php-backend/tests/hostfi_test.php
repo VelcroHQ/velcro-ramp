@@ -209,6 +209,10 @@ try {
     check($deposit('dep-5')['status'] === 'PAYOUT_UNCERTAIN' && (int) $deposit('dep-5')['payout_attempts'] === 1, 'payout request errors: PAYOUT_UNCERTAIN (not retried blind), swap kept');
     $mock_('/__test/set', ['fail_payouts' => false]);
     $payoutsBefore = count($state()['payouts']);
+    [$code] = $retry($deposit('dep-5'));
+    check($code === 400 && $deposit('dep-5')['status'] === 'PAYOUT_UNCERTAIN' && count($state()['payouts']) === $payoutsBefore,
+        'retry right after an errored request: refused, nothing sent (HostFi could still create the first one)');
+    $pdo->exec("UPDATE hostfi_deposits SET updated_at = '" . gmdate('Y-m-d H:i:s', time() - 700) . "' WHERE deposit_ref = 'dep-5'");
     $retry($deposit('dep-5'));
     check($deposit('dep-5')['status'] === 'PAYOUT_PENDING' && count($state()['swaps']) === 5 && count($state()['payouts']) === $payoutsBefore + 1, 'admin retry after HostFi has no record of attempt 1: one new payout, no second swap');
 

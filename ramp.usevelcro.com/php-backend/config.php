@@ -113,7 +113,7 @@ define('HOSTFI_CLIENT_SECRET', env('HOSTFI_CLIENT_SECRET', ''));
 // Chosen by us in the HostFi portal's webhook subscription; HostFi sends it back as `x-auth-secret`.
 define('HOSTFI_WEBHOOK_SECRET', env('HOSTFI_WEBHOOK_SECRET', ''));
 // HostFi briefly holds what a swap produces: wait this long between checks before sending it on.
-define('HOSTFI_FUNDS_WAIT_SECONDS', (int) env('HOSTFI_FUNDS_WAIT_SECONDS', '5'));
+define('HOSTFI_FUNDS_WAIT_SECONDS', (int) env('HOSTFI_FUNDS_WAIT_SECONDS', '10'));
 
 // ─── Developer Fee / Withdrawal ───
 define('DEVELOPER_FEE', envFloat('DEVELOPER_FEE', 0.5));

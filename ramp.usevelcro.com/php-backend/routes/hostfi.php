@@ -346,6 +346,24 @@ function hostfiProcessDeposit(int $id, bool $force = false): void
 }
 
 /**
+ * A request that errored (timeout, 5xx) can still turn into a payout at HostFi a little later, so
+ * "HostFi has no record of it" only proves it never happened once this long has passed.
+ */
+const HOSTFI_UNCERTAIN_SETTLE_SECONDS = 600;
+
+/** Refuse a retry while an uncertain attempt could still appear at HostFi. Never sends. */
+function hostfiRequireSettled(string $status, string $updatedAt): void
+{
+    if (!str_ends_with($status, '_UNCERTAIN')) {
+        return; // FAILED: HostFi refused it or reported it failed, so nothing went out
+    }
+    $wait = strtotime($updatedAt) + HOSTFI_UNCERTAIN_SETTLE_SECONDS - time();
+    if ($wait > 0) {
+        throw new RuntimeException('HostFi has not confirmed what happened to the last attempt, so nothing was sent. Try again in ' . max(1, (int) ceil($wait / 60)) . ' min.');
+    }
+}
+
+/**
  * Run $fn once the response has gone out (webhooks and pages don't wait on it), after HostFi has
  * released at least $need of $currency: checked every HOSTFI_FUNDS_WAIT_SECONDS, up to 6 times.
  * If it's still held, $fn runs anyway and the send's own error handling takes over. A send
@@ -575,6 +593,7 @@ function hostfiRetryPayout(int $id): string
             if ($e->getCode() !== 404) {
                 throw new RuntimeException('Could not check the last payout with HostFi, so nothing was sent. Try again shortly.');
             }
+            hostfiRequireSettled((string) $dep['status'], (string) $dep['updated_at']);
             $last = null; // HostFi never received that attempt
         }
         $status = strtoupper((string) ($last['status'] ?? ''));

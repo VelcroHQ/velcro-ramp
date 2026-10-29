@@ -548,6 +548,7 @@ function hostfiBuyRetrySend(int $id): string
             if ($e->getCode() !== 404) {
                 throw new RuntimeException('Could not check the last send with HostFi, so nothing was sent. Try again shortly.');
             }
+            hostfiRequireSettled((string) $buy['status'], (string) $buy['updated_at']);
             $last = null; // HostFi never received that attempt
         }
         $status = strtoupper((string) ($last['status'] ?? ''));
