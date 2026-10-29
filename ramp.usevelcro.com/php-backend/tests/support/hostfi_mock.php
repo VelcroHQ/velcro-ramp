@@ -164,6 +164,9 @@ switch (true) {
             $respond(404, ['code' => 'RESOURCE_NOT_FOUND', 'message' => 'Not found']);
         }
         $p['status'] = $state['payout_overrides'][$m[1]] ?? $p['status'];
+        if (isset($state['tx_ids'][$m[1]])) {
+            $p['metadata'] = [['name' => 'transactionId', 'value' => $state['tx_ids'][$m[1]]]];
+        }
         $respond(200, $p);
 }
 $respond(404, ['code' => 'RESOURCE_NOT_FOUND', 'message' => "No mock for {$method} {$path}"]);

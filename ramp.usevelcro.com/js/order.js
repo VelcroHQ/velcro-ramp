@@ -767,15 +767,28 @@ function showHostfiStepDetail(type, progress) {
   const sym = isBuy ? (p.payout_currency || '') : (p.currency || '');
   const received = isBuy ? `${naira(p.amount)} received` : `${coin(p.amount, sym)} received`;
   let working = '';
+  if (isBuy) {
+    // Exchange-style: Processing BTC → BTC sent (explorer link) → BTC confirmed.
+    setStepTitle(document.getElementById('bstatus-3'), p.payout === 'sent' || p.payout === 'done' ? `${sym} sent` : `Processing ${sym}`);
+    setStepTitle(document.getElementById('bstatus-4'), `${sym} confirmed`);
+    const link = document.getElementById('buy-explorer-link');
+    if (link && p.explorer_url) {
+      link.href = p.explorer_url;
+      link.classList.remove('hidden');
+    }
+    if (p.payout === 'done') setStepDetail(document.getElementById('bstatus-4'), 'Confirmed on the network', p.explorer_url);
+  }
   if (p.converted === 'pending') working = isBuy ? `Converting your naira to ${sym}…` : 'Converting to naira…';
+  else if (isBuy && (p.payout === 'sent' || p.payout === 'done')) working = `${coin(p.payout_amount, sym)} sent to your wallet.` + (p.payout === 'sent' ? ' Waiting for network confirmation.' : '');
   else if (p.payout === 'pending' && p.payout_amount) working = isBuy ? `Sending ${coin(p.payout_amount, sym)} to your wallet…` : `${naira(p.payout_amount)} sent to your bank. Waiting for the bank's final confirmation.`;
   else if (p.payout === 'review') working = "Being checked by our team. We'll email you.";
   else if (p.converted === 'done' && p.payout === 'waiting') working = isBuy ? `Converted to ${sym}` : 'Converted to naira';
   setStepDetail(document.getElementById(prefix + 'status-2'), received);
-  if (working) setStepDetail(document.getElementById(prefix + 'status-3'), working);
+  if (working) setStepDetail(document.getElementById(prefix + 'status-3'), working, isBuy && p.payout === 'sent' ? p.explorer_url : null);
 }
 
-function setStepDetail(stepEl, text) {
+// Detail line under a step's title, with an optional "View on explorer" link.
+function setStepDetail(stepEl, text, link = null) {
   const title = stepEl?.querySelector('.text-sm');
   if (!title) return;
   let el = stepEl.querySelector('.hostfi-step-detail');
@@ -785,12 +798,33 @@ function setStepDetail(stepEl, text) {
     title.after(el);
   }
   el.textContent = text;
+  if (link) {
+    const a = document.createElement('a');
+    a.href = link;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = 'ml-1 font-semibold text-velcro-navy underline';
+    a.textContent = 'View on explorer';
+    el.appendChild(a);
+  }
+}
+
+// Renames a step, keeping its "· 11:34 AM" time. The original text is restored on a new order.
+function setStepTitle(stepEl, text) {
+  const title = stepEl?.querySelector('.text-sm');
+  if (!title || !title.firstChild) return;
+  if (!title.dataset.originalTitle) title.dataset.originalTitle = title.firstChild.textContent;
+  title.firstChild.textContent = text;
 }
 
 function startStatusPoll(reference, type = 'buy', statusUrl = `/api/status?reference=${encodeURIComponent(reference)}`) {
   let reviewNotified = false;
   let inFlight = false; // payment in and being worked on: check often so no step is skipped
   document.querySelectorAll('.hostfi-step-detail').forEach(el => el.remove());
+  document.querySelectorAll('[data-original-title]').forEach(t => {
+    t.firstChild.textContent = t.dataset.originalTitle;
+    delete t.dataset.originalTitle;
+  });
   if (statusPollInterval) { clearTimeout(statusPollInterval); clearInterval(statusPollInterval); statusPollInterval = null; }
   activePollReference = reference;
   activePollType = 'standard';

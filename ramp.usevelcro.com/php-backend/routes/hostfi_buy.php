@@ -537,19 +537,53 @@ function hostfiBuyApplySendStatus(int $id, array $payout): void
     $from = ['SEND_PENDING', 'SEND_UNCERTAIN'];
     if (!empty($payout['wasReversed']) || str_ends_with($status, '_FAILED')) {
         hostfiBuyClaim($id, $from, 'SEND_FAILED', ['note' => 'HostFi send ' . ($status ?: 'reversed')]);
+        return;
+    }
+    if ($status === '') {
+        return;
+    }
+    hostfiBuyClaim($id, ['SEND_UNCERTAIN'], 'SEND_PENDING'); // HostFi has it
+    $buy = hostfiBuy($id);
+    if (!$buy) {
+        return;
+    }
+    $hash = $hash ?: ($buy['tx_hash'] ?: null);
+    if ($hash && $hash !== (string) $buy['tx_hash']) { // HostFi's record is the authority
+        // "Sent": the customer gets the explorer link while the network confirms it.
+        Database::execute('UPDATE `hostfi_buys` SET `tx_hash` = :h WHERE `id` = :id', ['h' => $hash, 'id' => $id]);
+    }
+    // "Confirmed" (SENT, order COMPLETED, receipt) means confirmed on chain, not just broadcast:
+    // HostFi says SUCCESS for a BTC send that's still in the mempool. Chains we can't check, or
+    // a hash we can't read, go by HostFi's SUCCESS.
+    $chain = hostfiChain((string) $buy['network']);
+    if ($hash && hostfiChainCheckable($chain, (string) $hash)) {
+        if (hostfiChainFinalized($chain, (string) $hash)) {
+            hostfiBuyClaim($id, $from, 'SENT', ['tx_hash' => $hash]);
+        }
     } elseif ($status === 'WITHDRAWAL_SUCCESS') {
         hostfiBuyClaim($id, $from, 'SENT', $hash ? ['tx_hash' => $hash] : []);
-    } elseif ($status !== '') {
-        hostfiBuyClaim($id, ['SEND_UNCERTAIN'], 'SEND_PENDING'); // HostFi has it and is still working on it
-        $buy = hostfiBuy($id);
-        // HostFi can show "in progress" long after the coin landed. The hash comes from HostFi's own
-        // record, so a finalized, error-free transaction on chain is as good as its SUCCESS.
-        if ($buy && $hash && hostfiChainFinalized(hostfiChain((string) $buy['network']), (string) $hash)) {
-            hostfiBuyClaim($id, $from, 'SENT', ['tx_hash' => $hash, 'note' => 'Confirmed on chain while HostFi still showed ' . $status]);
-        } elseif ($buy && $hash && empty($buy['tx_hash'])) {
-            Database::execute('UPDATE `hostfi_buys` SET `tx_hash` = :h WHERE `id` = :id', ['h' => $hash, 'id' => $id]);
-        }
     }
+}
+
+/** Whether hostfiChainFinalized can check this transaction (its chain and hash format). */
+function hostfiChainCheckable(string $chain, string $hash): bool
+{
+    return match ($chain) {
+        'bitcoin' => (bool) preg_match('/^[0-9a-f]{64}$/i', $hash),
+        'ethereum', 'base' => (bool) preg_match('/^0x[0-9a-f]{64}$/i', $hash),
+        'solana' => (bool) preg_match('/^[1-9A-HJ-NP-Za-km-z]{60,100}$/', $hash),
+        default => false,
+    };
+}
+
+/** Block explorer page for a transaction, or null for chains we don't link. */
+function hostfiExplorerUrl(string $chain, ?string $hash): ?string
+{
+    $base = [
+        'bitcoin' => 'https://mempool.space/tx/', 'ethereum' => 'https://etherscan.io/tx/',
+        'base' => 'https://basescan.org/tx/', 'solana' => 'https://solscan.io/tx/',
+    ][$chain] ?? null;
+    return $base && $hash && hostfiChainCheckable($chain, $hash) ? $base . $hash : null;
 }
 
 /**
@@ -725,12 +759,13 @@ function hostfiBuyProgress(string $orderRef): array
     return array_map(static function (array $b): array {
         $s = $b['status'];
         $converted = (float) $b['coin_amount'] > 0 ? 'done' : (in_array($s, ['SWAPPING', 'SWAP_PENDING'], true) ? 'pending' : ($s === 'RECEIVED' ? 'waiting' : 'stopped'));
-        $payout = match ($s) {
-            'SENT' => 'done',
-            'SENDING', 'SEND_WAITING', 'SEND_PENDING', 'SEND_UNCERTAIN' => 'pending',
-            'SEND_FAILED' => 'failed',
-            'REVIEW' => 'review',
-            'RESOLVED' => 'resolved',
+        $payout = match (true) {
+            $s === 'SENT' => 'done',
+            $s === 'SEND_PENDING' && !empty($b['tx_hash']) => 'sent', // on the network, not yet confirmed
+            in_array($s, ['SENDING', 'SEND_WAITING', 'SEND_PENDING', 'SEND_UNCERTAIN'], true) => 'pending',
+            $s === 'SEND_FAILED' => 'failed',
+            $s === 'REVIEW' => 'review',
+            $s === 'RESOLVED' => 'resolved',
             default => 'waiting',
         };
         return [
@@ -738,6 +773,7 @@ function hostfiBuyProgress(string $orderRef): array
             'amount' => hostfiBuyPaid($b),
             'currency' => 'NGN',
             'tx_hash' => $b['tx_hash'],
+            'explorer_url' => hostfiExplorerUrl(hostfiChain((string) $b['network']), $b['tx_hash'] ?: null),
             'received_at' => $b['created_at'],
             'converted' => $converted,
             'payout' => $payout,

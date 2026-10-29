@@ -412,6 +412,16 @@ try {
     $app_('GET', '/api/transactions/' . $buyRef4);
     check(count($state()['payouts']) === $payoutsBefore + 1, 'viewing again never sends twice');
 
+    // HostFi says SUCCESS while the transaction isn't confirmed on chain (a made-up signature the
+    // network doesn't know): the customer sees "sent" with an explorer link, not "confirmed".
+    $sig = str_repeat('5Kq', 29);
+    $mock_('/__test/set', ['tx_ids' => [$buy('pay-4')['send_client_ref'] => $sig], 'payout_overrides' => [$buy('pay-4')['send_client_ref'] => 'WITHDRAWAL_SUCCESS']]);
+    $app_('POST', '/webhook/hostfi', ['event' => 'CRYPTO_WITHDRAWAL', 'data' => ['clientReference' => $buy('pay-4')['send_client_ref'], 'status' => 'WITHDRAWAL_SUCCESS']]);
+    [, $res] = $app_('GET', '/api/transactions/' . $buyRef4);
+    $p4 = $res['data']['hostfi_progress'][0] ?? [];
+    check($buy('pay-4')['status'] === 'SEND_PENDING' && ($p4['payout'] ?? '') === 'sent' && ($p4['explorer_url'] ?? '') === 'https://solscan.io/tx/' . $sig
+        && $order($buyRef4)['status'] === 'PROCESSING', 'HostFi success but not confirmed on chain: shown as sent with explorer link, order not completed yet');
+
     // Customer pastes their deposit hash on a HostFi sell (HostFi sometimes misses deposits): kept on the order, nothing moves.
     [, $res] = $sellBtc();
     $hashRef = (string) $res['data']['reference'];

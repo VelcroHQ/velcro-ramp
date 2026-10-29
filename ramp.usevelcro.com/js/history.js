@@ -105,8 +105,10 @@ function hostfiProgressHtml(tx) {
 // One HostFi buy payment: received → converted → sent to the wallet on the order.
 function hostfiBuyStepsHtml(tx, d, i, count, step, ngn, coin) {
   const sym = d.payout_currency || '';
+  const explorer = d.explorer_url ? ` <a href="${d.explorer_url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="font-semibold text-velcro-navy dark:text-velcro-green underline">View on explorer</a>` : '';
   const sent = {
-    done: ['Sent to your wallet', d.payout_amount ? coin(d.payout_amount, sym) : ''],
+    done: [`${sym} confirmed`, (d.payout_amount ? coin(d.payout_amount, sym) + ' in your wallet.' : '') + explorer],
+    sent: [`${sym} sent`, (d.payout_amount ? coin(d.payout_amount, sym) + ' sent. Waiting for network confirmation.' : '') + explorer],
     pending: ['Sending to your wallet…', d.payout_amount ? coin(d.payout_amount, sym) : ''],
     failed: ['Sending failed', d.can_retry ? 'Your money is safe with us. Tap retry to send it again.' : 'Our team will contact you to complete it.'],
     review: ['Being checked by our team', "We'll email you once it's sent."],
@@ -120,7 +122,7 @@ function hostfiBuyStepsHtml(tx, d, i, count, step, ngn, coin) {
         <ol class="space-y-2">
           ${step('done', 'Payment received', ngn(d.amount))}
           ${step(d.converted === 'done' ? 'done' : d.converted === 'pending' ? 'pending' : 'waiting', converted, '')}
-          ${step(d.payout, sent[0], sent[1])}
+          ${step(d.payout === 'sent' ? 'pending' : d.payout, sent[0], sent[1])}
         </ol>
         ${d.can_retry ? `<button type="button" onclick="event.stopPropagation(); retryHostfiPayout('${tx.reference}', this)"
           class="mt-3 h-10 w-full rounded-xl bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy text-sm font-bold transition-colors">Retry send</button>` : ''}

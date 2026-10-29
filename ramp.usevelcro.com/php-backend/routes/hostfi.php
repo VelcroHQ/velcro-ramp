@@ -255,10 +255,7 @@ function hostfiReportDepositHash(array $tx, string $hash): string
     }
     if (mailConfigured()) {
         [$chain, $sym] = array_pad(explode(':', (string) $tx['asset']), 2, '');
-        $explorer = [
-            'solana' => 'https://solscan.io/tx/', 'bitcoin' => 'https://mempool.space/tx/',
-            'ethereum' => 'https://etherscan.io/tx/', 'base' => 'https://basescan.org/tx/',
-        ][$chain] ?? null;
+        $explorer = hostfiExplorerUrl($chain, $hash);
         $mail = ['Velcro — customer sent a HostFi deposit hash (' . $tx['reference'] . ')', renderEmail([
                 'eyebrow' => 'HostFi',
                 'title' => 'Deposit hash from a customer',
@@ -271,7 +268,7 @@ function hostfiReportDepositHash(array $tx, string $hash): string
                     ['Order status', (string) $tx['status']],
                     ['Customer', (string) ($tx['email'] ?? '') ?: '-'],
                 ],
-                'cta' => $explorer ? ['View transaction', $explorer . rawurlencode($hash)] : ['Open admin', EMAIL_SITE_URL . '/goat/'],
+                'cta' => $explorer ? ['View transaction', $explorer] : ['Open admin', EMAIL_SITE_URL . '/goat/'],
             ])];
         // After the response: the customer doesn't wait on the mail server.
         register_shutdown_function(static function () use ($mail): void {
