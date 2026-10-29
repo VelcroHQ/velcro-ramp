@@ -29,6 +29,7 @@ putenv("HOSTFI_BASE_URL=http://127.0.0.1:{$mockPort}");
 putenv('HOSTFI_CLIENT_ID=test-client');
 putenv('HOSTFI_CLIENT_SECRET=test-secret');
 putenv('HOSTFI_WEBHOOK_SECRET=hook-secret');
+putenv('HOSTFI_FUNDS_WAIT_SECONDS=0'); // the wait for HostFi to release swapped funds
 putenv('ADMIN_PASSWORD=correct-horse');
 putenv('PAJ_API_KEY=');
 
@@ -190,6 +191,15 @@ try {
     $hook('dep-4', $res['data']['address']);
     check($deposit('dep-4')['status'] === 'PAYOUT_PENDING' && $order($lateRef)['status'] === 'PROCESSING', 'late deposit to a cancelled order: still paid to that order\'s bank');
 
+    // HostFi still holding the naira from the swap: the payout is refused outright, so nothing went out.
+    $mock_('/__test/set', ['held' => ['NGN' => 1000]]);
+    [, $res] = $sellBtc();
+    $mock_('/__test/deposit', ['reference' => 'dep-held', 'address' => $res['data']['address'], 'currency' => 'BTC', 'amount' => 0.001]);
+    $hook('dep-held', $res['data']['address']);
+    check($deposit('dep-held')['status'] === 'PAYOUT_FAILED' && str_contains((string) $deposit('dep-held')['note'], 'refused'),
+        'naira still held after the swap: payout refused → PAYOUT_FAILED (safe to retry), not left uncertain');
+    $mock_('/__test/set', ['held' => []]);
+
     // ── Payouts: never paid twice, re-payout only once HostFi confirms the last one failed ──
     $retry = static fn (array $d) => $app_('POST', '/api/admin/hostfi/deposits/' . $d['id'] . '/retry', null, $admin);
     $mock_('/__test/set', ['fail_payouts' => true]);
@@ -200,7 +210,7 @@ try {
     $mock_('/__test/set', ['fail_payouts' => false]);
     $payoutsBefore = count($state()['payouts']);
     $retry($deposit('dep-5'));
-    check($deposit('dep-5')['status'] === 'PAYOUT_PENDING' && count($state()['swaps']) === 4 && count($state()['payouts']) === $payoutsBefore + 1, 'admin retry after HostFi has no record of attempt 1: one new payout, no second swap');
+    check($deposit('dep-5')['status'] === 'PAYOUT_PENDING' && count($state()['swaps']) === 5 && count($state()['payouts']) === $payoutsBefore + 1, 'admin retry after HostFi has no record of attempt 1: one new payout, no second swap');
 
     $d5 = $deposit('dep-5');
     $mock_('/__test/set', ['payout_overrides' => [$d5['payout_client_ref'] => 'WITHDRAWAL_FAILED']]);

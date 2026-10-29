@@ -118,6 +118,14 @@ class HostfiApiClient
         return $this->assetsByCurrency = $out;
     }
 
+    /** What can be sent right now: balance minus anything HostFi is holding. Always re-read. */
+    public function freeBalance(string $currency): float
+    {
+        $this->assetsByCurrency = null;
+        $a = $this->walletAsset($currency);
+        return (float) ($a['balance'] ?? 0) - (float) ($a['reservedBalance'] ?? 0) - (float) ($a['lienedBalance'] ?? 0) - (float) ($a['lockedBalance'] ?? 0);
+    }
+
     /** @return array<string,mixed> */
     public function walletAsset(string $currency): array
     {

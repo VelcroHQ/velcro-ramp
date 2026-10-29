@@ -256,9 +256,27 @@ function hostfiProcessPayment(int $id, bool $force = false): void
 
     $buy = hostfiBuy($id);
     if ($buy['status'] === 'SWAPPED') {
-        hostfiBuySend($buy);
+        hostfiBuySendAfterSwap($id);
     }
     hostfiBuySyncOrder($buy['order_ref']);
+}
+
+/** Send a freshly swapped payment once HostFi has released the coin (send amount + network fee). */
+function hostfiBuySendAfterSwap(int $id): void
+{
+    $buy = hostfiBuy($id);
+    try {
+        $need = (float) $buy['send_amount'] + hostfiSendFee((string) $buy['currency'], (string) $buy['network'], (float) $buy['send_amount'])['fee'];
+    } catch (Throwable $e) {
+        $need = (float) $buy['send_amount'];
+    }
+    hostfiSendWhenFree((string) $buy['currency'], $need, static function () use ($id): void {
+        $buy = hostfiBuy($id);
+        if ($buy && $buy['status'] === 'SWAPPED') {
+            hostfiBuySend($buy);
+            hostfiBuySyncOrder($buy['order_ref']);
+        }
+    });
 }
 
 /** Record the coin a swap produced and what the user is sent: that coin minus HostFi's network fee, never more. */
@@ -298,7 +316,7 @@ function hostfiBuyCheckSwap(array $buy): void
         hostfiBuySwapSucceeded((int) $buy['id'], $live);
         $buy = hostfiBuy((int) $buy['id']);
         if ($buy['status'] === 'SWAPPED') {
-            hostfiBuySend($buy);
+            hostfiBuySendAfterSwap((int) $buy['id']);
         }
     } elseif ($status === 'FAILED') {
         hostfiBuyClaim((int) $buy['id'], ['SWAP_PENDING'], 'REVIEW', ['note' => 'HostFi reported the swap as failed']);
@@ -378,9 +396,14 @@ function hostfiBuyResumeWaiting(array $buy): void
 function hostfiBuyResumeOrder(string $orderRef): void
 {
     ensureHostfiBuySchema();
-    $rows = Database::select("SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r AND `status` IN ('SEND_WAITING','SEND_PENDING')", ['r' => $orderRef]);
+    $rows = Database::select("SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r AND `status` IN ('SWAPPED','SEND_WAITING','SEND_PENDING')", ['r' => $orderRef]);
     foreach ($rows as $buy) {
-        if ($buy['status'] === 'SEND_WAITING') {
+        if ($buy['status'] === 'SWAPPED') {
+            // Its send after the swap was interrupted; send it now.
+            if (strtotime((string) $buy['updated_at']) < time() - 300) {
+                hostfiBuySend($buy);
+            }
+        } elseif ($buy['status'] === 'SEND_WAITING') {
             hostfiBuyResumeWaiting($buy);
         } elseif (strtotime((string) $buy['updated_at']) < time() - 60) {
             hostfiBuyCheckSend($buy);

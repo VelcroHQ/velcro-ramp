@@ -340,9 +340,58 @@ function hostfiProcessDeposit(int $id, bool $force = false): void
 
     $dep = hostfiDeposit($id);
     if ($dep['status'] === 'SWAPPED') {
-        hostfiSendPayout($dep, $hf);
+        hostfiPayoutAfterSwap($id);
     }
     hostfiSyncOrder($dep['order_ref']);
+}
+
+/**
+ * Run $fn once the response has gone out (webhooks and pages don't wait on it), after HostFi has
+ * released at least $need of $currency: checked every HOSTFI_FUNDS_WAIT_SECONDS, up to 6 times.
+ * If it's still held, $fn runs anyway and the send's own error handling takes over. A send
+ * interrupted here is picked up by the poller (SWAPPED for 5+ minutes).
+ */
+function hostfiSendWhenFree(string $currency, float $need, callable $fn): void
+{
+    register_shutdown_function(static function () use ($currency, $need, $fn): void {
+        ignore_user_abort(true);
+        @set_time_limit(120);
+        if (function_exists('litespeed_finish_request')) {
+            litespeed_finish_request();
+        } elseif (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+        for ($i = 0; $i < 6; $i++) {
+            if (HOSTFI_FUNDS_WAIT_SECONDS > 0) {
+                sleep(HOSTFI_FUNDS_WAIT_SECONDS);
+            }
+            try {
+                if (hostfiApi()->freeBalance($currency) + 1e-9 >= $need) {
+                    break;
+                }
+            } catch (Throwable $e) {
+                break;
+            }
+        }
+        try {
+            $fn();
+        } catch (Throwable $e) {
+            error_log('[HostFi] Send after swap failed: ' . $e->getMessage());
+        }
+    });
+}
+
+/** Pay out a freshly swapped deposit once HostFi has released the naira (payout + HostFi's ₦50). */
+function hostfiPayoutAfterSwap(int $id): void
+{
+    $dep = hostfiDeposit($id);
+    hostfiSendWhenFree('NGN', (float) $dep['payout_amount'] + HOSTFI_PAYOUT_FEE_NGN, static function () use ($id): void {
+        $dep = hostfiDeposit($id);
+        if ($dep && $dep['status'] === 'SWAPPED') {
+            hostfiSendPayout($dep, hostfiOrderFor($dep)[1]);
+            hostfiSyncOrder($dep['order_ref']);
+        }
+    });
 }
 
 /** Record the naira a swap produced and what the user is owed: swap credit minus our fee and HostFi's ₦50, never more. */
@@ -400,7 +449,7 @@ function hostfiCheckSwap(array $dep): void
         hostfiSwapSucceeded((int) $dep['id'], $live);
         $dep = hostfiDeposit((int) $dep['id']);
         if ($dep['status'] === 'SWAPPED') {
-            hostfiSendPayout($dep, hostfiOrderFor($dep)[1]);
+            hostfiPayoutAfterSwap((int) $dep['id']);
         }
     } elseif ($status === 'FAILED') {
         hostfiClaim((int) $dep['id'], ['SWAP_PENDING'], 'REVIEW', ['note' => 'HostFi reported the swap as failed']);
@@ -459,7 +508,12 @@ function hostfiSendPayout(array $dep, array $hf): void
         try {
             $res = hostfiApi()->payout($clientRef);
         } catch (Throwable $lookup) {
-            hostfiClaim($id, ['PAYING'], 'PAYOUT_UNCERTAIN', ['note' => 'Payout request failed (' . substr($e->getMessage(), 0, 200) . '); waiting for HostFi to confirm before any retry']);
+            // A 4xx answer plus no record of the payout means HostFi refused it: nothing went out.
+            if ($e->getCode() >= 400 && $e->getCode() < 500 && $lookup->getCode() === 404) {
+                hostfiClaim($id, ['PAYING'], 'PAYOUT_FAILED', ['note' => 'HostFi refused the payout: ' . substr($e->getMessage(), 0, 200)]);
+            } else {
+                hostfiClaim($id, ['PAYING'], 'PAYOUT_UNCERTAIN', ['note' => 'Payout request failed (' . substr($e->getMessage(), 0, 200) . '); waiting for HostFi to confirm before any retry']);
+            }
             return;
         }
     }
@@ -602,10 +656,17 @@ function hostfiReconcileOrder(string $orderRef): void
     }
     ensureHostfiSchema();
     $deps = Database::select(
-        "SELECT * FROM `hostfi_deposits` WHERE `order_ref` = :r AND `status` IN ('PAYOUT_PENDING','PAYOUT_UNCERTAIN')",
+        "SELECT * FROM `hostfi_deposits` WHERE `order_ref` = :r AND `status` IN ('SWAPPED','PAYOUT_PENDING','PAYOUT_UNCERTAIN')",
         ['r' => $orderRef]
     );
     foreach ($deps as $dep) {
+        if ($dep['status'] === 'SWAPPED') {
+            // Its payout after the swap was interrupted; send it now.
+            if (strtotime((string) $dep['updated_at']) < time() - 300) {
+                hostfiSendPayout($dep, hostfiOrderFor($dep)[1]);
+            }
+            continue;
+        }
         if ($dep['status'] === 'PAYOUT_PENDING' && strtotime((string) $dep['updated_at']) > time() - 1800) {
             continue;
         }
