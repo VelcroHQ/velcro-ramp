@@ -34,7 +34,7 @@ $respond = static function (int $code, array $data) use (&$state, $fp): never {
 $asset = static fn (string $code, array $networks) => [
     'id' => 'asset-' . strtolower($code),
     'balance' => 1000,
-    'reservedBalance' => (float) ($state['held'][$code] ?? 0),
+    'lockedBalance' => (float) ($state['held'][$code] ?? 0),
     'currency' => ['code' => $code, 'name' => $code, 'networks' => array_map(fn ($n) => ['network' => $n, 'activities' => ['DEPOSIT', 'WITHDRAW']], $networks)],
 ];
 // Naira per coin. Like the live API, `rate` is toCurrency per one fromCurrency.

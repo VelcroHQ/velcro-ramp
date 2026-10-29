@@ -331,7 +331,7 @@ try {
     $sent = array_values(array_slice($st['payouts'], count($before['payouts'])));
     check(($swap['from'] ?? '') === 'NGN' && near((float) $swap['value'], 29850) && near((float) $swap['ngn'], 0.0995, 1e-9),
         "buy payment: HostFi's ₦30,000 (not the payload's) recorded; ₦29,850 swapped to 0.0995 SOL, our 0.5% kept in naira");
-    check(count($sent) === 1 && near((float) $sent[0]['amount']['value'], 0.0965, 1e-9) && ($sent[0]['recipient']['accountNumber'] ?? '') === $solWallet
+    check(count($sent) === 1 && near((float) $sent[0]['amount']['value'], 0.09649999, 1e-9) && ($sent[0]['recipient']['accountNumber'] ?? '') === $solWallet
         && ($sent[0]['recipient']['network'] ?? '') === 'SOL' && ($sent[0]['amount']['currency'] ?? '') === 'SOL', 'buy: 0.0965 SOL (swap − network fee) sent to the order\'s wallet on SOL');
     check($buy('pay-1')['status'] === 'SEND_PENDING' && $order($buyRef)['status'] === 'PROCESSING', 'buy: send pending, order PROCESSING');
     $hook2();
@@ -341,11 +341,11 @@ try {
     $mock_('/__test/set', ['payout_overrides' => [$buy('pay-1')['send_client_ref'] => 'WITHDRAWAL_SUCCESS']]);
     $app_('POST', '/webhook/hostfi', ['event' => 'CRYPTO_WITHDRAWAL', 'data' => ['clientReference' => $buy('pay-1')['send_client_ref'], 'status' => 'WITHDRAWAL_SUCCESS']]);
     $o = $order($buyRef);
-    check($buy('pay-1')['status'] === 'SENT' && $o['status'] === 'COMPLETED' && near((float) $o['destination_amount'], 0.0965, 1e-9) && near((float) $o['amount'], 30000)
+    check($buy('pay-1')['status'] === 'SENT' && $o['status'] === 'COMPLETED' && near((float) $o['destination_amount'], 0.09649999, 1e-9) && near((float) $o['amount'], 30000)
         && str_starts_with((string) $o['hash'], 'chain-tx-'), 'crypto payout webhook: SENT, order COMPLETED with naira paid, SOL sent and on-chain hash');
     [, $res] = $app_('GET', '/api/transactions/' . $buyRef);
     $prog = $res['data']['hostfi_progress'][0] ?? [];
-    check(($prog['kind'] ?? '') === 'buy' && ($prog['payout'] ?? '') === 'done' && near((float) ($prog['payout_amount'] ?? 0), 0.0965, 1e-9) && !isset($prog['wallet']),
+    check(($prog['kind'] ?? '') === 'buy' && ($prog['payout'] ?? '') === 'done' && near((float) ($prog['payout_amount'] ?? 0), 0.09649999, 1e-9) && !isset($prog['wallet']),
         'buy progress: paid → converted → sent, in the sell shape');
 
     // A second order, paid without our customId: matched by the account it was paid into.
@@ -362,7 +362,7 @@ try {
     [$code] = $app_('POST', '/api/hostfi/orders/' . $buyRef2 . '/retry', ['wallet' => 'AttackerWa11etAddressXXXXXXXXXXXXXXXXXXXXXX', 'amount' => 99]);
     $last = array_values($state()['payouts']);
     $last = end($last);
-    check($code === 200 && count($state()['payouts']) === $countBefore + 1 && ($last['recipient']['accountNumber'] ?? '') === $solWallet && near((float) $last['amount']['value'], 0.0965, 1e-9)
+    check($code === 200 && count($state()['payouts']) === $countBefore + 1 && ($last['recipient']['accountNumber'] ?? '') === $solWallet && near((float) $last['amount']['value'], 0.09649999, 1e-9)
         && $buy('pay-2')['status'] === 'SEND_PENDING' && count($state()['swaps']) === count($st2['swaps']) + 1,
         "customer retry: same 0.0965 SOL re-sent to the order's own wallet, no second swap; wallet/amount in the request ignored");
 
@@ -405,7 +405,7 @@ try {
     $last = array_values($state()['payouts']);
     $last = end($last);
     check($buy('pay-4')['status'] === 'SEND_PENDING' && count($state()['payouts']) === $payoutsBefore + 1
-        && ($last['recipient']['accountNumber'] ?? '') === $solWallet && near((float) $last['amount']['value'], 0.0965, 1e-9),
+        && ($last['recipient']['accountNumber'] ?? '') === $solWallet && near((float) $last['amount']['value'], 0.09649999, 1e-9),
         "coin released: the next check sends the same 0.0965 SOL to the order's wallet");
     $app_('GET', '/api/transactions/' . $buyRef4);
     check(count($state()['payouts']) === $payoutsBefore + 1, 'viewing again never sends twice');

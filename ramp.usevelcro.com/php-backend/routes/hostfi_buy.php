@@ -166,16 +166,26 @@ function hostfiBuyOrderFor(array $buy): array
     return [$order, (array) ($meta['hostfi'] ?? [])];
 }
 
-/** HostFi's network fee for sending $coin of $currency on $network, and that network's minimum. */
+/**
+ * HostFi's network fee for sending $coin of $currency on $network, and that network's minimum.
+ * HostFi rounds the fee UP to the coin's orderDecimals before checking the balance (SOL:
+ * 0.00321063 → 0.003211), so sending "balance − listed fee" is refused for insufficient funds.
+ */
 function hostfiSendFee(string $currency, string $network, float $coin): array
 {
     foreach (hostfiApi()->cryptoSendNetworks($currency) as $n) {
         if (strcasecmp($n['network'], $network) === 0) {
-            return ['fee' => $n['flat'] + $coin * $n['percent'] / 100, 'min' => $n['min']];
+            $dp = (int) (hostfiApi()->walletAsset($currency)['currency']['orderDecimals'] ?? 8);
+            $dp = max(0, min(8, $dp));
+            $fee = $n['flat'] + $coin * $n['percent'] / 100;
+            return ['fee' => ceil(round($fee * 10 ** $dp, 6)) / 10 ** $dp, 'min' => $n['min']];
         }
     }
     throw new RuntimeException("HostFi can't send {$currency} on {$network}");
 }
+
+// One smallest unit left over, so amount + fee never tips over the balance in HostFi's float maths.
+const HOSTFI_SEND_MARGIN = 1e-8;
 
 /** Coin amounts are floored to 8 decimals, so we never send more than the swap produced. */
 function hostfiFloorCoin(float $v): float
@@ -351,7 +361,7 @@ function hostfiBuySwapSucceeded(int $id, array $credit): void
         hostfiBuyClaim($id, ['SWAPPING', 'SWAP_PENDING'], 'REVIEW', ['coin_amount' => $coin, 'note' => 'No network fee: ' . substr($e->getMessage(), 0, 200)]);
         return;
     }
-    $send = hostfiFloorCoin($coin - $fee['fee']);
+    $send = hostfiFloorCoin($coin - $fee['fee'] - HOSTFI_SEND_MARGIN);
     if ($send <= 0 || $send < $fee['min']) {
         hostfiBuyClaim($id, ['SWAPPING', 'SWAP_PENDING'], 'REVIEW', ['coin_amount' => $coin, 'note' => 'Too small to send after the network fee']);
         return;
@@ -389,7 +399,20 @@ function hostfiBuySend(array $buy): void
     $id = (int) $buy['id'];
     $attempt = (int) $buy['send_attempts'] + 1;
     $clientRef = $buy['order_ref'] . '-b' . $id . '-' . $attempt;
-    if (!hostfiBuyClaim($id, ['SWAPPED'], 'SENDING', ['send_attempts' => $attempt, 'send_client_ref' => $clientRef])) {
+    $set = ['send_attempts' => $attempt, 'send_client_ref' => $clientRef];
+    // Amount plus HostFi's (rounded-up) fee must fit in what the swap produced; payments recorded
+    // before the fee was rounded are trimmed here, never raised.
+    try {
+        $fee = hostfiSendFee((string) $buy['currency'], (string) $buy['network'], (float) $buy['coin_amount'])['fee'];
+        $max = hostfiFloorCoin((float) $buy['coin_amount'] - $fee - HOSTFI_SEND_MARGIN);
+        if ($max > 0 && $max < (float) $buy['send_amount']) {
+            $buy['send_amount'] = $max;
+            $set += ['send_amount' => $max, 'fee_coin' => $fee];
+        }
+    } catch (Throwable $e) {
+        // keep the recorded amount; HostFi refuses it if it doesn't fit, and nothing is sent
+    }
+    if (!hostfiBuyClaim($id, ['SWAPPED'], 'SENDING', $set)) {
         return;
     }
     try {
@@ -437,7 +460,8 @@ function hostfiBuyResumeWaiting(array $buy): void
     } catch (Throwable $e) {
         return; // try again on the next check
     }
-    $free = (float) ($wallet['balance'] ?? 0) - (float) ($wallet['reservedBalance'] ?? 0) - (float) ($wallet['lienedBalance'] ?? 0) - (float) ($wallet['lockedBalance'] ?? 0);
+    // reservedBalance always equals the whole balance on HostFi, so it isn't a hold; liens and locks are.
+    $free = (float) ($wallet['balance'] ?? 0) - (float) ($wallet['lienedBalance'] ?? 0) - (float) ($wallet['lockedBalance'] ?? 0);
     if ($free + 1e-9 < $need || !hostfiBuyClaim((int) $buy['id'], ['SEND_WAITING'], 'SWAPPED')) {
         return;
     }
