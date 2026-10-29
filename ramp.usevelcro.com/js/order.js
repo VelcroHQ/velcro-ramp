@@ -87,6 +87,7 @@ async function confirmManual(type) {
     }
   }
 
+  let message = '';
   try {
     const body = { reference: currentReference };
     if (hash) body.hash = hash;
@@ -102,6 +103,7 @@ async function confirmManual(type) {
       resetConfirmForm(type, btn);
       return;
     }
+    if (currentTxDetails && currentTxDetails.provider === 'hostfi') message = payload.message || ''; // Switch's message is a bare "Success"
   } catch (err) {
     showToast(err.message || 'Failed to confirm', 'error');
     resetConfirmForm(type, btn);
@@ -110,7 +112,7 @@ async function confirmManual(type) {
 
   // Success — hide manual confirm and let polling handle status updates
   document.getElementById(type + '-manual-confirm').classList.add('hidden');
-  showToast('Payment confirmed! Processing your payout...', 'success');
+  showToast(message || 'Payment confirmed! Processing your payout...', 'success');
   // Reset form for next time
   resetConfirmForm(type, btn);
 }
@@ -268,7 +270,8 @@ async function generateWalletAddress() {
         provider: 'hostfi'
       };
       saveRecentOrder(currentTxDetails);
-      setSellManualConfirm(false); // HostFi finds the deposit itself; a pasted hash adds nothing
+      // HostFi sometimes misses deposits; a pasted hash goes to our team to forward to HostFi.
+      document.getElementById('sell-tx-hash').placeholder = 'Transaction hash or ID';
       startStatusPoll(data.reference, 'sell', `/api/transactions/${encodeURIComponent(data.reference)}`);
     } catch (err) {
       resetBtn();
@@ -1279,14 +1282,8 @@ function unlockSellForm() {
     el.classList.remove('opacity-50', 'pointer-events-none');
   });
 }
-// "I've sent it" + paste-the-hash box: for Switch/PAJ sells only.
-function setSellManualConfirm(show) {
-  document.getElementById('sell-sent-btn')?.classList.toggle('hidden', !show);
-  if (!show) document.getElementById('sell-manual-confirm')?.classList.add('hidden');
-}
-
 async function resetSellTransaction() {
-  setSellManualConfirm(true);
+  document.getElementById('sell-tx-hash').placeholder = '0x...';
   if (currentReference) {
     try {
       fetch(`${API_BASE}/api/cancel`, {

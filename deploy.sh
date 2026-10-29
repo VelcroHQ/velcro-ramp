@@ -32,6 +32,11 @@ echo "cleaned"
 touch "$DEPLOYPATH/.htaccess"
 pkill -u "$(whoami)" lsphp 2>/dev/null
 echo "php restarted"
+# Belt and braces: also clear PHP's code cache through the site, if OPCACHE_FLUSH_KEY is set in .env.
+FLUSH_KEY=$(grep -E '^OPCACHE_FLUSH_KEY=' "$DEPLOYPATH/php-backend/.env" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d "\"'\r ")
+if [ -n "$FLUSH_KEY" ] && curl -s -m 20 "${SITE_URL:-https://ramp.usevelcro.com}/index.php?flush=$FLUSH_KEY" | grep -q opcache_reset; then
+  echo "cache cleared"
+fi
 
 git rev-parse --short HEAD > "$DEPLOYPATH/deploy-version.txt"
 echo "DONE: $(cat "$DEPLOYPATH/deploy-version.txt") is live"

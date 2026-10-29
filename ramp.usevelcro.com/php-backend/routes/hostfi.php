@@ -233,6 +233,64 @@ function hostfiSetStatus(int $id, string $status, ?string $note = null): void
 }
 
 /** Emails for states that need someone: the admin for anything stuck, the customer when their payout failed. */
+/**
+ * A customer pasted their deposit's transaction hash on a HostFi sell. HostFi sometimes misses
+ * deposits and needs the hash to credit them by hand, so it's kept on the order and emailed to
+ * the admin with everything to forward to HostFi. It never moves money.
+ */
+function hostfiReportDepositHash(array $tx, string $hash): string
+{
+    if (!preg_match('/^(0x)?[A-Za-z0-9]{40,100}$/', $hash)) {
+        throw new InvalidArgumentException("That doesn't look like a transaction hash");
+    }
+    if (!rateLimitCheck('hostfi_hash_' . $tx['reference'], 3, 3600) || !rateLimitCheck('hostfi_hash_ip_' . clientIp(), 10, 3600)) {
+        throw new InvalidArgumentException('We already have your transaction. Our team is on it.');
+    }
+    $meta = json_decode((string) ($tx['meta'] ?? ''), true) ?: [];
+    $reported = (array) ($meta['hostfi']['reported_hashes'] ?? []);
+    if (!in_array($hash, array_column($reported, 'hash'), true)) {
+        $reported[] = ['hash' => $hash, 'at' => gmdate('c')];
+        $meta['hostfi']['reported_hashes'] = array_slice($reported, -5);
+        Database::execute('UPDATE `transactions` SET `meta` = :m WHERE `id` = :id', ['m' => jsonEncodeNullable($meta), 'id' => $tx['id']]);
+    }
+    if (mailConfigured()) {
+        [$chain, $sym] = array_pad(explode(':', (string) $tx['asset']), 2, '');
+        $explorer = [
+            'solana' => 'https://solscan.io/tx/', 'bitcoin' => 'https://mempool.space/tx/',
+            'ethereum' => 'https://etherscan.io/tx/', 'base' => 'https://basescan.org/tx/',
+        ][$chain] ?? null;
+        $mail = ['Velcro — customer sent a HostFi deposit hash (' . $tx['reference'] . ')', renderEmail([
+                'eyebrow' => 'HostFi',
+                'title' => 'Deposit hash from a customer',
+                'intro' => "The customer says they've sent their deposit. If HostFi hasn't credited it, forward the address and hash below to HostFi.",
+                'rows' => [
+                    ['Order', (string) $tx['reference'], true],
+                    ['Coin', strtoupper($sym) . ' on ' . $chain],
+                    ['Deposit address', (string) ($tx['deposit_address'] ?? '-'), true],
+                    ['Transaction hash', $hash, true],
+                    ['Order status', (string) $tx['status']],
+                    ['Customer', (string) ($tx['email'] ?? '') ?: '-'],
+                ],
+                'cta' => $explorer ? ['View transaction', $explorer . rawurlencode($hash)] : ['Open admin', EMAIL_SITE_URL . '/goat/'],
+            ])];
+        // After the response: the customer doesn't wait on the mail server.
+        register_shutdown_function(static function () use ($mail): void {
+            if (function_exists('litespeed_finish_request')) {
+                litespeed_finish_request();
+            } elseif (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            }
+            try {
+                @sendMail($mail[0], ...$mail[1]);
+            } catch (Throwable $e) {
+                error_log('[HostFi] Hash report email failed: ' . $e->getMessage());
+            }
+        });
+    }
+    auditLog('HOSTFI_DEPOSIT_HASH', ['reference' => $tx['reference'], 'hash' => $hash]);
+    return "Thanks. We've passed your transaction to our team, and your payout goes out automatically once it's credited.";
+}
+
 function hostfiNotify(int $id, string $status): void
 {
     $labels = ['REVIEW' => 'needs review', 'PAYOUT_UNCERTAIN' => 'payout unconfirmed', 'PAYOUT_FAILED' => 'payout failed'];

@@ -410,6 +410,19 @@ try {
     $app_('GET', '/api/transactions/' . $buyRef4);
     check(count($state()['payouts']) === $payoutsBefore + 1, 'viewing again never sends twice');
 
+    // Customer pastes their deposit hash on a HostFi sell (HostFi sometimes misses deposits): kept on the order, nothing moves.
+    [, $res] = $sellBtc();
+    $hashRef = (string) $res['data']['reference'];
+    $payoutsBefore = count($state()['payouts']);
+    [$code] = $app_('POST', '/api/confirm', ['reference' => $hashRef, 'hash' => 'not a hash']);
+    check($code === 400, 'deposit hash report: junk refused');
+    $txHash = str_repeat('ab12', 16);
+    [$code, $res] = $app_('POST', '/api/confirm', ['reference' => $hashRef, 'hash' => $txHash]);
+    $meta = json_decode((string) $order($hashRef)['meta'], true);
+    check($code === 200 && str_contains((string) ($res['message'] ?? ''), 'passed your transaction') && ($meta['hostfi']['reported_hashes'][0]['hash'] ?? '') === $txHash
+        && $order($hashRef)['status'] === 'AWAITING_DEPOSIT' && count($state()['payouts']) === $payoutsBefore,
+        'deposit hash report: stored on the order for the admin, order and money untouched');
+
     // ── Route switches for the other providers ──
     $resetLimits();
     $app_('POST', '/api/admin/settings', ['routes' => ['buy:switch:USDT' => false]], $admin);

@@ -548,6 +548,13 @@ function registerPublicRoutes(Router $router): void
         }
 
         if ($tx && ($tx['channel'] ?? '') === 'HOSTFI') {
+            if ($hash && strtoupper((string) $tx['type']) === 'OFFRAMP' && !in_array($tx['status'], ['COMPLETED', 'CANCELLED', 'FAILED'], true)) {
+                try {
+                    jsonResponse(['success' => true, 'status' => (string) $tx['status'], 'message' => hostfiReportDepositHash($tx, trim((string) $hash))]);
+                } catch (InvalidArgumentException $e) {
+                    jsonResponse(errorResponse($e->getMessage()), 400);
+                }
+            }
             jsonResponse([
                 'success' => true,
                 'status' => (string) $tx['status'],
