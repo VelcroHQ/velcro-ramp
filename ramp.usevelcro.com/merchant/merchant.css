@@ -422,9 +422,9 @@ button.d-set-card:hover { border-color: #cfd3e3; box-shadow: 0 14px 28px -22px r
 .d-lay-thumb.is-minimal { background: #fff; box-shadow: inset 0 0 0 1px #eceef4; }
 .d-lay-thumb.is-minimal b { box-shadow: 0 0 0 1px #e3e6ef; }
 .d-lay-name { display: flex; align-items: center; gap: .45rem; margin-top: .55rem; font-size: .88rem; font-weight: 600; color: var(--navy); }
-.d-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #cfd3df; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-[aria-checked="true"] .d-check { background: #6366f1; border-color: #6366f1; }
-[aria-checked="true"] .d-check { background: #6366f1 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5L20 7'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.d-tick { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #cfd3df; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+[aria-checked="true"] .d-tick { background: #6366f1; border-color: #6366f1; }
+[aria-checked="true"] .d-tick { background: #6366f1 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5L20 7'/%3E%3C/svg%3E") center / 12px no-repeat; }
 [aria-checked="true"] .d-lay-name { color: #4f46e5; }
 
 .d-savebar { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: .6rem; margin: 2rem -1rem 0; padding: .85rem 1rem; background: rgba(255, 255, 255, .94); backdrop-filter: blur(8px); border-top: 1px solid #eceef4; }
