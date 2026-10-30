@@ -145,6 +145,17 @@ try {
     [$c, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'remove_logo' => true], $auth($token));
     clearstatcache(); // the earlier is_file() answer for this path is cached
     check($c === 200 && array_key_exists('logo', $res['data']['brand'] ?? []) && $res['data']['brand']['logo'] === null && !is_file($tmp . '/logos/' . basename($logo)), 'brand: removing the logo deletes the file');
+    [$c] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'layout' => 'fancy'], $auth($token));
+    [$c2] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'button_text' => 'white'], $auth($token));
+    check($c === 400 && $c2 === 400, 'brand: unknown layout and invalid button text colour refused');
+    [$c, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'color' => '#6366f1', 'button_text' => '#FFFFFF', 'welcome' => "  Fast   naira trades,\n any time.  ", 'layout' => 'card'], $auth($token));
+    $b = $res['data']['brand'] ?? [];
+    check($c === 200 && ($b['button_text'] ?? '') === '#ffffff' && ($b['welcome'] ?? '') === 'Fast naira trades, any time.' && ($b['layout'] ?? '') === 'card', 'brand: button text colour, welcome message and layout saved');
+    [$c, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'color' => '#6366f1'], $auth($token));
+    $b = $res['data']['brand'] ?? [];
+    check($c === 200 && ($b['welcome'] ?? '') === 'Fast naira trades, any time.' && ($b['layout'] ?? '') === 'card', 'brand: saving without the new fields keeps them');
+    [$c, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'button_text' => null], $auth($token));
+    check($c === 200 && array_key_exists('button_text', $res['data']['brand'] ?? []) && $res['data']['brand']['button_text'] === null, 'brand: button text colour back to automatic');
 
     // ── Prices ──
     [$c] = $app_('POST', '/api/merchant/pricing', ['coins' => ['BTC' => ['buy' => 9]]], $auth($token));

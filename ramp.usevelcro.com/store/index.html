@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" href="/velcro_favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="/store/store.css?v=2" rel="stylesheet">
+  <link href="/store/store.css?v=4" rel="stylesheet">
 </head>
 
 <body>
@@ -32,6 +32,7 @@
             <button type="button" id="s-avatar" class="s-avatar" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()"></button>
             <div id="s-menu" class="s-menu" role="menu" hidden>
               <p id="s-me-email"></p>
+              <button type="button" role="menuitem" onclick="showOrders()">My orders</button>
               <button type="button" role="menuitem" onclick="signOut()">Sign out</button>
             </div>
           </div>
@@ -57,6 +58,7 @@
         </div>
 
         <section class="s-trade" aria-label="Buy or sell crypto">
+          <div id="s-form">
           <div class="s-tabs" role="tablist">
             <button type="button" role="tab" id="t-buy" aria-selected="true" onclick="setSide('buy')">Buy</button>
             <button type="button" role="tab" id="t-sell" aria-selected="false" onclick="setSide('sell')">Sell</button>
@@ -90,6 +92,8 @@
           <button type="button" id="s-go" class="s-btn-brand s-go" onclick="goTrade()">Continue</button>
           <p class="s-trust"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are handled by Velcro. You never send money to a person.</p>
           <a id="s-support" class="s-support" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg><span></span></a>
+          </div>
+          <div id="s-checkout" class="s-checkout" hidden></div>
         </section>
       </div>
     </section>
@@ -144,7 +148,7 @@
   </div>
 
   <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
-  <script src="/store/store.js?v=2"></script>
+  <script src="/store/store.js?v=4"></script>
 </body>
 
 </html>

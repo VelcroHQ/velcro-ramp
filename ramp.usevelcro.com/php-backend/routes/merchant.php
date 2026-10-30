@@ -121,13 +121,19 @@ function merchantFor(string $email): array
     return $m;
 }
 
-/** Store name, colour and logo, with defaults filled in. */
+const MERCHANT_LAYOUTS = ['classic', 'card', 'minimal'];
+
+/** Store name, colours, logo, welcome line and layout, with defaults filled in. */
 function merchantBrand(array $m): array
 {
     $b = json_decode((string) ($m['brand'] ?? ''), true) ?: [];
     return [
         'name' => (string) ($b['name'] ?? ($m['business_name'] ?? '')),
         'color' => preg_match('/^#[0-9a-f]{6}$/i', (string) ($b['color'] ?? '')) ? strtolower($b['color']) : MERCHANT_DEFAULT_COLOR,
+        // Null means the store picks black or white text for the best contrast.
+        'button_text' => preg_match('/^#[0-9a-f]{6}$/i', (string) ($b['button_text'] ?? '')) ? strtolower($b['button_text']) : null,
+        'welcome' => (string) ($b['welcome'] ?? ''),
+        'layout' => in_array($b['layout'] ?? '', MERCHANT_LAYOUTS, true) ? $b['layout'] : 'classic',
         'logo' => $b['logo'] ?? null,
         'support_url' => $b['support_url'] ?? null,
     ];
@@ -640,10 +646,16 @@ function registerMerchantRoutes(Router $router): void
         $name = merchantField($b, 'name', 60);
         $slug = strtolower(trim((string) body($b, 'slug', '')));
         $color = strtolower(trim((string) body($b, 'color', $brand['color'])));
+        // Sent as null to go back to automatic black or white.
+        $buttonText = strtolower(trim((string) (array_key_exists('button_text', $b) ? $b['button_text'] : $brand['button_text'])));
+        $welcome = array_key_exists('welcome', $b) ? merchantField($b, 'welcome', 140) : $brand['welcome'];
+        $layout = (string) body($b, 'layout', $brand['layout']);
         $locked = in_array($m['status'], ['APPROVED', 'SUSPENDED'], true) && $m['slug'];
         $problem = match (true) {
             mb_strlen($name) < 2 => 'Enter your store name',
             !preg_match('/^#[0-9a-f]{6}$/', $color) => 'Pick a valid colour',
+            $buttonText !== '' && !preg_match('/^#[0-9a-f]{6}$/', $buttonText) => 'Pick a valid button text colour',
+            !in_array($layout, MERCHANT_LAYOUTS, true) => 'Pick a layout',
             $locked && $slug !== $m['slug'] => 'Your store address can’t change after approval',
             default => merchantSlugProblem($slug),
         };
@@ -663,7 +675,15 @@ function registerMerchantRoutes(Router $router): void
         try {
             Database::execute('UPDATE `merchants` SET `slug` = :s, `brand` = :b WHERE `id` = :id', [
                 's' => $slug,
-                'b' => json_encode(['name' => $name, 'color' => $color, 'logo' => $logo, 'support_url' => $brand['support_url']]),
+                'b' => json_encode([
+                    'name' => $name,
+                    'color' => $color,
+                    'button_text' => $buttonText !== '' ? $buttonText : null,
+                    'welcome' => $welcome,
+                    'layout' => $layout,
+                    'logo' => $logo,
+                    'support_url' => $brand['support_url'],
+                ]),
                 'id' => $m['id'],
             ]);
         } catch (PDOException $e) {
@@ -784,6 +804,7 @@ function registerMerchantRoutes(Router $router): void
                 'symbol' => $sym,
                 'name' => $name,
                 'usd_price' => $usd,
+                'provider' => MERCHANT_COIN_PROVIDERS[$sym] ?? null,
                 'buy_on' => $c['buy_on'],
                 'sell_on' => $c['sell_on'],
                 // Naira per $1. The base rate and markup are only shown if the merchant chose 'breakdown'.
@@ -802,6 +823,9 @@ function registerMerchantRoutes(Router $router): void
                 'name' => $brand['name'] ?: $m['business_name'] ?: 'Store',
                 'slug' => $m['slug'],
                 'color' => $brand['color'],
+                'button_text' => $brand['button_text'],
+                'welcome' => $brand['welcome'],
+                'layout' => $brand['layout'],
                 'logo' => $brand['logo'],
                 'status' => $m['status'],
                 'is_owner_preview' => $isOwner && $m['status'] !== 'APPROVED',

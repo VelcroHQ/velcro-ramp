@@ -83,7 +83,10 @@ async function loadStore() {
   const s = store.info;
   document.title = `${s.name} · Buy & sell crypto with naira`;
   document.documentElement.style.setProperty('--brand', s.color);
-  document.documentElement.style.setProperty('--on-brand', onBrand(s.color));
+  document.documentElement.style.setProperty('--on-brand', s.button_text || onBrand(s.color));
+  document.documentElement.style.setProperty('--on-brand-auto', onBrand(s.color));
+  document.body.classList.add('s-layout-' + (s.layout || 'classic'));
+  if (s.welcome) document.querySelector('.s-lede').textContent = s.welcome;
   $('s-name').textContent = s.name;
   $('s-title').textContent = s.name;
   $('s-foot-name').textContent = s.name;
@@ -213,7 +216,7 @@ function render() {
   }
 }
 
-function goTrade() {
+async function goTrade() {
   const amount = Number(String($('f-in').value).replace(/,/g, '')) || 0;
   if (!(amount > 0)) {
     $('s-note').textContent = store.side === 'buy' ? 'Enter how much naira you want to spend.' : 'Enter how much you want to sell.';
@@ -224,8 +227,248 @@ function goTrade() {
     openAuth('signin');
     return;
   }
-  // Checkout on merchant stores is switched on next; until then nothing is charged.
-  toast(`Trading on ${store.info.name} opens very soon. We’ll email you at ${me.email}.`);
+  const c = store.coins[store.coin];
+  // Checkout is live for HostFi coins first; the others follow.
+  if (store.side !== 'buy' || c.provider !== 'hostfi') {
+    toast(`${store.side === 'buy' ? 'Buying' : 'Selling'} ${c.symbol} on ${store.info.name} opens very soon.`);
+    return;
+  }
+  const nets = await hostfiNetworks(c.symbol);
+  if (!nets.length) {
+    toast(`Buying ${c.symbol} isn't available right now. Try again shortly.`);
+    return;
+  }
+  checkout = { step: 'details', coin: c.symbol, amount, nets, network: nets[0].code, wallet: '', order: null };
+  renderCheckout();
+}
+
+// ── Checkout (buy) ──
+
+// Networks come from HostFi's own list, so the code we send is exactly the one it expects.
+const CHAIN_LABELS = { bitcoin: 'Bitcoin', ethereum: 'Ethereum', base: 'Base', bsc: 'BNB Chain', solana: 'Solana', polygon: 'Polygon', arbitrum: 'Arbitrum', optimism: 'Optimism' };
+const EVM_RULE = [/^0x[a-fA-F0-9]{40}$/, 'an address that starts with 0x'];
+const WALLET_RULES = {
+  bitcoin: [/^(bc1[a-z0-9]{25,62}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/, 'a Bitcoin address (starts with bc1, 1 or 3)'],
+  solana: [/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, 'a Solana address'],
+  ethereum: EVM_RULE, base: EVM_RULE, bsc: EVM_RULE, polygon: EVM_RULE, arbitrum: EVM_RULE, optimism: EVM_RULE,
+};
+let buyAssets = null;
+
+async function hostfiNetworks(symbol) {
+  if (!buyAssets) {
+    try { buyAssets = await api('/api/hostfi/buy-assets'); } catch (e) { return []; }
+  }
+  const a = (buyAssets || []).find(x => x.symbol === symbol);
+  return a ? a.networks.map(n => ({ code: n.code, chain: n.chain, label: CHAIN_LABELS[n.chain] || n.code })) : [];
+}
+let checkout = null;
+let pollTimer = null;
+let expiryTimer = null;
+const ICON_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+const ICON_COPY = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>';
+
+function showForm() {
+  clearInterval(pollTimer);
+  clearInterval(expiryTimer);
+  checkout = null;
+  $('s-checkout').hidden = true;
+  $('s-form').hidden = false;
+}
+
+function renderCheckout() {
+  $('s-form').hidden = true;
+  const box = $('s-checkout');
+  box.hidden = false;
+  if (checkout.step === 'details') box.innerHTML = checkoutDetailsHtml();
+  else if (checkout.step === 'pay') box.innerHTML = checkoutPayHtml();
+  else if (checkout.step === 'orders') box.innerHTML = ordersHtml();
+  wireCheckout();
+  if (checkout.step === 'details') setTimeout(() => $('co-wallet') && $('co-wallet').focus(), 50);
+}
+
+function estimateFor(symbol, ngn) {
+  const c = store.coins[symbol];
+  return c && c.buy_rate && c.usd_price ? ngn / c.buy_rate / c.usd_price : 0;
+}
+
+function checkoutDetailsHtml() {
+  const c = store.coins[checkout.coin];
+  const nets = checkout.nets;
+  return `
+    <button type="button" class="s-back" data-act="back">${ICON_BACK}Back</button>
+    <h2 class="s-co-title">Buy ${esc(c.symbol)}</h2>
+    <div class="s-co-sum">
+      <div><span>You pay</span><b>${fmtNgn(checkout.amount)}</b></div>
+      <div><span>You get about</span><b>${estimateFor(c.symbol, checkout.amount) > 0 ? `${fmtCoin(estimateFor(c.symbol, checkout.amount), c.symbol)} ${esc(c.symbol)}` : 'Shown next'}</b></div>
+    </div>
+    ${nets.length > 1 ? `<span class="s-label">Network</span><div class="s-seg">${nets.map(n => `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${esc(n.label)}</button>`).join('')}</div>` : ''}
+    <label class="s-label" for="co-wallet">Your ${esc(c.symbol)} wallet address${nets.length === 1 ? '' : ` on ${esc((nets.find(n => n.code === checkout.network) || {}).label || '')}`}</label>
+    <input id="co-wallet" class="s-input s-mono" autocomplete="off" spellcheck="false" placeholder="Paste your address" value="${esc(checkout.wallet)}">
+    <p class="s-hint">Double-check it. Crypto sent to the wrong address can't be recovered.</p>
+    <p id="co-error" class="s-error" hidden></p>
+    <button type="button" class="s-btn-brand s-go" data-act="create">Get payment details</button>
+    <p class="s-trust">The network fee is taken from the ${esc(c.symbol)} you receive. Your final amount is shown on the next step.</p>`;
+}
+
+function checkoutPayHtml() {
+  const o = checkout.order;
+  const done = o.status === 'COMPLETED';
+  const waiting = o.status === 'AWAITING_DEPOSIT';
+  return `
+    <button type="button" class="s-back" data-act="back">${ICON_BACK}${done ? 'New order' : 'Back'}</button>
+    <h2 class="s-co-title">${done ? `${esc(o.coin)} sent` : waiting ? `Transfer ${fmtNgn(o.amount)}` : `Buying ${esc(o.coin)}`}</h2>
+    ${!waiting ? '' : `
+    <p class="s-co-lede">Send exactly this amount from any Nigerian bank to the account below. We'll detect it automatically.</p>
+    <div class="s-bank">
+      <div><span>Bank</span><b>${esc(o.bank)}</b></div>
+      <div><span>Account number</span><b class="s-mono">${esc(o.account)}</b><button type="button" class="s-copy" data-copy="${esc(o.account)}">${ICON_COPY}Copy</button></div>
+      <div><span>Account name</span><b>${esc(o.accountName)}</b></div>
+      <div><span>Amount</span><b>${fmtNgn(o.amount)}</b><button type="button" class="s-copy" data-copy="${esc(String(o.amount))}">${ICON_COPY}Copy</button></div>
+    </div>
+    <p class="s-expiry" id="co-expiry"></p>`}
+    <ol class="s-progress" id="co-steps">${progressHtml(o)}</ol>
+    <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me.email)}.</p>`;
+}
+
+// Steps from the order's live status: waiting → received → converting/sending → sent → confirmed.
+function progressHtml(o) {
+  const p = o.progress || {};
+  const received = ['CONFIRMED', 'PROCESSING', 'COMPLETED'].includes(o.status) || !!p.amount;
+  const sent = p.payout === 'sent' || p.payout === 'done' || o.status === 'COMPLETED';
+  const confirmed = p.payout === 'done' || o.status === 'COMPLETED';
+  const steps = [
+    [received ? 'Order created' : 'Waiting for your transfer', received ? 'done' : 'now', received ? '' : 'We check for it every few seconds.'],
+    ['Payment received', received ? 'done' : 'next', received && p.amount ? fmtNgn(p.amount) : ''],
+    [`Sending ${esc(o.coin)} to your wallet`, sent ? 'done' : (received ? 'now' : 'next'), p.converted === 'pending' ? 'Converting…' : ''],
+    [`${esc(o.coin)} confirmed on the network`, confirmed ? 'done' : (sent ? 'now' : 'next'),
+      sent && p.explorer_url ? `<a href="${esc(p.explorer_url)}" target="_blank" rel="noopener">View on explorer</a>` : (p.payout_amount ? `${fmtCoin(p.payout_amount, o.coin)} ${esc(o.coin)}` : '')],
+  ];
+  if (p.payout === 'failed' || p.payout === 'review') {
+    steps[2] = ['We’re checking your order', 'warn', "Your money is safe. We'll email you shortly."];
+  }
+  return steps.map(([t, st, d]) => `<li class="is-${st}"><i>${st === 'done' ? ICON_CHECK : ''}</i><div><b>${t}</b>${d ? `<span>${d}</span>` : ''}</div></li>`).join('');
+}
+
+function wireCheckout() {
+  const box = $('s-checkout');
+  box.querySelectorAll('[data-act="back"]').forEach(b => b.onclick = () => (checkout.step === 'pay' || checkout.step === 'orders') ? showForm() : showForm());
+  box.querySelectorAll('[data-net]').forEach(b => b.onclick = () => { checkout.wallet = $('co-wallet').value.trim(); checkout.network = b.dataset.net; renderCheckout(); });
+  box.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied'); } catch (e) { toast(b.dataset.copy); }
+  });
+  box.querySelectorAll('[data-order]').forEach(b => b.onclick = () => openOrder(b.dataset.order));
+  const create = box.querySelector('[data-act="create"]');
+  if (create) create.onclick = createBuy;
+}
+
+async function createBuy() {
+  const wallet = $('co-wallet').value.trim();
+  const rule = WALLET_RULES[(checkout.nets.find(n => n.code === checkout.network) || {}).chain];
+  const err = $('co-error');
+  err.hidden = true;
+  if (rule && !rule[0].test(wallet)) {
+    err.textContent = `That doesn't look like ${rule[1]}.`;
+    err.hidden = false;
+    return;
+  }
+  checkout.wallet = wallet;
+  const btn = $('s-checkout').querySelector('[data-act="create"]');
+  btn.disabled = true;
+  btn.textContent = 'Creating your order…';
+  try {
+    const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });
+    checkout.order = {
+      reference: d.reference, coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT',
+      bank: d.bank_name, account: d.account_number, accountName: d.account_name, expiresAt: Date.now() + (d.expires_in || 3600) * 1000, progress: {},
+    };
+    checkout.step = 'pay';
+    renderCheckout();
+    startPolling();
+  } catch (e) {
+    err.textContent = e.message;
+    err.hidden = false;
+    btn.disabled = false;
+    btn.textContent = 'Get payment details';
+  }
+}
+
+function startPolling() {
+  clearInterval(pollTimer);
+  clearInterval(expiryTimer);
+  const o = checkout.order;
+  const tickExpiry = () => {
+    const el = $('co-expiry');
+    if (!el || !o.expiresAt) return;
+    const left = Math.max(0, Math.floor((o.expiresAt - Date.now()) / 1000));
+    el.textContent = left > 0 ? `This account is for this order only and expires in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : 'This account has expired. Start a new order if you haven’t paid.';
+  };
+  tickExpiry();
+  expiryTimer = setInterval(tickExpiry, 1000);
+  const poll = async () => {
+    try {
+      const t = await api('/api/transactions/' + encodeURIComponent(o.reference));
+      const was = o.status;
+      o.status = String(t.status || '').toUpperCase();
+      o.progress = (t.hostfi_progress || [])[0] || {};
+      if (o.status !== 'AWAITING_DEPOSIT') clearInterval(expiryTimer);
+      if (['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(o.status)) clearInterval(pollTimer);
+      // Paid (or finished): redraw without the bank details.
+      if (was !== o.status && (was === 'AWAITING_DEPOSIT' || o.status === 'COMPLETED')) {
+        if (checkout && checkout.order === o) renderCheckout();
+        return;
+      }
+      const steps = $('co-steps');
+      if (steps) steps.innerHTML = progressHtml(o);
+    } catch (e) { /* keep trying */ }
+  };
+  poll();
+  pollTimer = setInterval(poll, 5000);
+}
+
+// ── My orders ──
+
+async function showOrders() {
+  $('s-menu').hidden = true;
+  if (!me) return openAuth('signin');
+  try {
+    const data = await api(`/api/store/${SLUG}/me`);
+    store.orders = data.orders || [];
+  } catch (e) {
+    return toast(e.message);
+  }
+  clearInterval(pollTimer);
+  clearInterval(expiryTimer);
+  checkout = { step: 'orders' };
+  renderCheckout();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+const STATUS_LABELS = { AWAITING_DEPOSIT: ['Awaiting payment', 'wait'], CONFIRMED: ['Payment received', 'busy'], PROCESSING: ['Processing', 'busy'], COMPLETED: ['Completed', 'ok'], REVIEW: ['Being checked', 'warn'], CANCELLED: ['Cancelled', 'off'], EXPIRED: ['Expired', 'off'], FAILED: ['Failed', 'warn'] };
+
+function ordersHtml() {
+  const rows = store.orders || [];
+  return `
+    <button type="button" class="s-back" data-act="back">${ICON_BACK}Back</button>
+    <h2 class="s-co-title">My orders</h2>
+    ${rows.length ? `<ul class="s-orders">${rows.map(o => {
+      const sym = String(o.destination_currency || (o.asset || '').split(':')[1] || '').toUpperCase();
+      const [label, cls] = STATUS_LABELS[String(o.status).toUpperCase()] || [o.status, 'off'];
+      const buy = String(o.type).toUpperCase() === 'ONRAMP';
+      return `<li><button type="button" data-order="${esc(o.reference)}"><span><b>${buy ? 'Buy' : 'Sell'} ${esc(sym)}</b><small>${new Date(String(o.created_at).replace(' ', 'T') + 'Z').toLocaleString()}</small></span><span class="s-orders-right"><b>${fmtNgn(o.amount)}</b><em class="s-pill is-${cls}">${esc(label)}</em></span></button></li>`;
+    }).join('')}</ul>` : '<p class="s-co-lede">No orders yet. Your buys and sells on this store will show up here.</p>'}`;
+}
+
+function openOrder(ref) {
+  const o = (store.orders || []).find(x => x.reference === ref);
+  if (!o) return;
+  const sym = String(o.destination_currency || (o.asset || '').split(':')[1] || '').toUpperCase();
+  checkout = {
+    step: 'pay',
+    order: { reference: o.reference, coin: sym, amount: Number(o.amount), status: String(o.status).toUpperCase(), bank: o.deposit_bank_name, account: o.deposit_account_number, accountName: o.deposit_account_name, expiresAt: 0, progress: {} },
+  };
+  renderCheckout();
+  startPolling();
 }
 
 // ── Customer account ──

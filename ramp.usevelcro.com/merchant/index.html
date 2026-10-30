@@ -18,7 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link href="/style.css?v=3" rel="stylesheet">
   <link href="/css/app.css?v=1" rel="stylesheet">
-  <link href="/merchant/merchant.css?v=5" rel="stylesheet">
+  <link href="/merchant/merchant.css?v=6" rel="stylesheet">
 </head>
 
 <body class="bg-white text-velcro-navy antialiased">
@@ -305,7 +305,7 @@
             <h2 class="d-h2">Quick actions</h2>
             <div class="mt-3 grid sm:grid-cols-3 gap-3">
               <button type="button" id="qa-brand" class="d-action" onclick="openSettings('store')">
-                <span class="d-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.7 1.6-1.6 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4.1-4-7.4-9-7.4Z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></span><b>Personalize your store</b><small>Name, logo and colours.</small>
+                <span class="d-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.7 1.6-1.6 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4.1-4-7.4-9-7.4Z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></span><b>Personalize your store</b><small>Logo, colours and layout.</small>
               </button>
               <button type="button" id="qa-prices" class="d-action" onclick="openTab('prices')">
                 <span class="d-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span><b>Set your prices</b><small>Your markup on every coin.</small>
@@ -376,7 +376,7 @@
             <button type="button" id="set-cta" class="m-btn-primary"></button>
           </div>
           <div class="d-set-grid mt-4">
-            <button type="button" class="d-set-card" onclick="openSettings('store')"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.7 1.6-1.6 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4.1-4-7.4-9-7.4Z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></span><b>Store profile</b><small>Name, address, colour and logo your customers see.</small></button>
+            <button type="button" class="d-set-card" onclick="openSettings('store')"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.7 1.6-1.6 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4.1-4-7.4-9-7.4Z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></span><b>Customize</b><small>Logo, colours, welcome message and layout.</small></button>
             <button type="button" class="d-set-card" onclick="openSettings('kyb')"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span><b>Business verification</b><small id="set-kyb-sub">Verify your business to put your store live.</small></button>
             <button type="button" class="d-set-card" onclick="openSettings('security')"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><b>Sign-in &amp; security</b><small>Change your password. Codes always go to your email.</small></button>
             <button type="button" class="d-set-card" onclick="openSettings('support')"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg></span><b>Customer support</b><small>Where your customers reach you when they need help.</small></button>
@@ -388,54 +388,88 @@
         <div id="set-panel" class="hidden">
           <button type="button" class="d-back" onclick="openSettings(null)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>All settings</button>
 
-        <div id="panel-store" class="d-panel mt-4 grid lg:grid-cols-[1fr_330px] gap-5">
-          <form id="brand-form" class="d-card space-y-5" novalidate>
-            <div><h2 class="d-h2">Your store</h2><p class="text-sm text-slate-500">How your store looks to your customers.</p></div>
-            <div><label class="m-label" for="b-name">Store name</label><input id="b-name" maxlength="60" class="m-input" placeholder="e.g. Northline Exchange"></div>
-            <div>
-              <label class="m-label" for="b-slug">Store address</label>
+        <div id="panel-store" class="d-panel d-custom">
+          <form id="brand-form" class="d-custom-form" novalidate>
+            <span class="d-custom-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 4.6 4h14.8L21 9.5M3 9.5h18M3 9.5a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0M5 12.5V20h14v-7.5M10 20v-4h4v4"/></svg></span>
+            <h2 class="d-custom-title">Customize</h2>
+            <p class="d-custom-sub">Your logo, colours, welcome line and layout. The preview updates as you go.</p>
+
+            <section class="d-custom-sec">
+              <span class="m-label">Logo</span>
+              <div class="d-upload">
+                <span id="b-logo-preview" class="d-store-logo d-store-logo-lg"></span>
+                <div class="d-upload-text"><b>Upload image</b><small>Square PNG, JPG or WebP, up to 400 KB.</small></div>
+                <button type="button" id="b-logo-remove" class="d-chip hidden">Remove</button>
+                <label class="d-chip d-chip-white cursor-pointer"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>Upload<input id="b-logo" type="file" accept="image/png,image/jpeg,image/webp" class="hidden"></label>
+              </div>
+            </section>
+
+            <section class="d-custom-sec">
+              <label class="m-label" for="b-name">Store name</label>
+              <input id="b-name" maxlength="60" class="m-input" placeholder="e.g. Northline Exchange">
+            </section>
+
+            <section class="d-custom-sec">
+              <label class="m-label" for="b-slug">Store link</label>
               <div class="m-slug-wrap"><span class="m-slug-prefix">ramp.usevelcro.com/m/</span><input id="b-slug" maxlength="30" autocomplete="off" spellcheck="false" placeholder="your-store" class="m-slug-input"></div>
               <p id="b-slug-msg" class="m-hint">Lowercase letters, numbers and hyphens. It's fixed once you're verified.</p>
-            </div>
-            <div>
-              <span class="m-label">Brand colour</span>
-              <div class="flex flex-wrap items-center gap-2.5" id="b-swatches">
-                <button type="button" class="d-swatch" style="--sw:#a8cf45" data-color="#a8cf45" aria-label="Lime"></button>
-                <button type="button" class="d-swatch" style="--sw:#6366f1" data-color="#6366f1" aria-label="Indigo"></button>
-                <button type="button" class="d-swatch" style="--sw:#0ea5e9" data-color="#0ea5e9" aria-label="Sky"></button>
-                <button type="button" class="d-swatch" style="--sw:#14b8a6" data-color="#14b8a6" aria-label="Teal"></button>
-                <button type="button" class="d-swatch" style="--sw:#f59e0b" data-color="#f59e0b" aria-label="Amber"></button>
-                <button type="button" class="d-swatch" style="--sw:#ef4444" data-color="#ef4444" aria-label="Red"></button>
-                <button type="button" class="d-swatch" style="--sw:#ec4899" data-color="#ec4899" aria-label="Pink"></button>
-                <button type="button" class="d-swatch" style="--sw:#0d0d59" data-color="#0d0d59" aria-label="Navy"></button>
-                <label class="d-swatch-custom" title="Custom colour"><input id="b-color" type="color" value="#a8cf45" aria-label="Custom colour">＋</label>
-              </div>
-            </div>
-            <div>
-              <span class="m-label">Logo</span>
-              <div class="flex items-center gap-4">
-                <span id="b-logo-preview" class="d-store-logo d-store-logo-lg" style="--brand:#a8cf45">K</span>
-                <div class="flex flex-wrap gap-2">
-                  <label class="d-chip cursor-pointer">Upload logo<input id="b-logo" type="file" accept="image/png,image/jpeg,image/webp" class="hidden"></label>
-                  <button type="button" id="b-logo-remove" class="d-chip hidden">Remove</button>
+            </section>
+
+            <section class="d-custom-sec">
+              <div class="flex items-baseline justify-between"><label class="m-label" for="b-welcome">Welcome message</label><span id="b-welcome-count" class="text-xs text-slate-400">0/140</span></div>
+              <textarea id="b-welcome" maxlength="140" rows="2" class="m-input d-textarea" placeholder="Buy and sell crypto with naira. Pay by bank transfer, get paid to any Nigerian bank."></textarea>
+              <p class="m-hint">Shown under your store name. Leave it empty to use ours.</p>
+            </section>
+
+            <section class="d-custom-sec">
+              <span class="m-label">Colours</span>
+              <div class="d-colors">
+                <div class="d-color-row">
+                  <label class="d-color-chip" title="Pick theme colour"><input id="b-color" type="color" value="#a8cf45" aria-label="Theme colour"></label>
+                  <span class="d-color-name">Theme colour<small>Buttons, links and highlights</small></span>
+                  <input id="b-color-hex" class="d-hex" maxlength="7" spellcheck="false" aria-label="Theme colour hex">
                 </div>
+                <div class="d-color-row">
+                  <label class="d-color-chip" title="Pick button text colour"><input id="b-btn" type="color" value="#ffffff" aria-label="Button text colour"></label>
+                  <span class="d-color-name">Button text colour<small id="b-btn-auto">Picked for you</small></span>
+                  <input id="b-btn-hex" class="d-hex" maxlength="7" spellcheck="false" aria-label="Button text colour hex">
+                </div>
+                <div class="d-swatch-row" id="b-swatches">
+                  <span>Quick picks</span>
+                  <button type="button" class="d-swatch" style="--sw:#a8cf45" data-color="#a8cf45" aria-label="Lime"></button>
+                  <button type="button" class="d-swatch" style="--sw:#6366f1" data-color="#6366f1" aria-label="Indigo"></button>
+                  <button type="button" class="d-swatch" style="--sw:#7c3aed" data-color="#7c3aed" aria-label="Purple"></button>
+                  <button type="button" class="d-swatch" style="--sw:#0ea5e9" data-color="#0ea5e9" aria-label="Sky"></button>
+                  <button type="button" class="d-swatch" style="--sw:#14b8a6" data-color="#14b8a6" aria-label="Teal"></button>
+                  <button type="button" class="d-swatch" style="--sw:#f59e0b" data-color="#f59e0b" aria-label="Amber"></button>
+                  <button type="button" class="d-swatch" style="--sw:#ef4444" data-color="#ef4444" aria-label="Red"></button>
+                  <button type="button" class="d-swatch" style="--sw:#0d0d59" data-color="#0d0d59" aria-label="Navy"></button>
+                </div>
+                <div class="d-read" id="rd-theme"><p></p><div class="d-bar"><i></i></div></div>
+                <div class="d-read" id="rd-btn"><p></p><div class="d-bar"><i></i></div></div>
               </div>
-              <p class="m-hint">Square PNG, JPG or WebP, up to 400 KB.</p>
-            </div>
+            </section>
+
+            <section class="d-custom-sec">
+              <span class="m-label">Layout</span>
+              <div class="d-layouts" role="radiogroup" aria-label="Layout">
+                <button type="button" role="radio" data-layout="classic"><span class="d-lay-thumb is-classic"><i></i><b></b></span><span class="d-lay-name"><em class="d-check"></em>Classic</span></button>
+                <button type="button" role="radio" data-layout="card"><span class="d-lay-thumb is-card"><i></i><b></b></span><span class="d-lay-name"><em class="d-check"></em>Card</span></button>
+                <button type="button" role="radio" data-layout="minimal"><span class="d-lay-thumb is-minimal"><i></i><b></b></span><span class="d-lay-name"><em class="d-check"></em>Minimal</span></button>
+              </div>
+            </section>
+
             <p id="brand-error" class="hidden m-error"></p>
-            <button type="submit" id="brand-save" class="m-btn-primary">Save store</button>
-          </form>
-          <aside class="lg:sticky lg:top-36 self-start">
-            <div class="m-store" id="b-preview" style="--brand:#a8cf45">
-              <div class="m-store-bar"><span class="m-store-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="m-store-url">…/m/<b id="bp-slug">your-store</b></span></div>
-              <div class="p-5">
-                <div class="flex items-center justify-between"><div class="flex items-center gap-2.5"><span id="bp-logo" class="m-store-logo">K</span><span id="bp-name" class="font-bold">Your store</span></div><span class="text-[10px] font-semibold text-slate-400">Powered by Velcro</span></div>
-                <div class="mt-4 grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 text-sm font-semibold"><span class="m-store-tab is-on">Buy</span><span class="m-store-tab">Sell</span></div>
-                <div class="mt-3 space-y-2"><div class="m-store-field"><span>You pay</span><b>₦100,000</b><em>NGN</em></div><div class="m-store-field"><span>You get</span><b id="bp-get">…</b><em>USDT</em></div></div>
-                <button type="button" class="m-store-cta" tabindex="-1">Buy USDT</button>
-              </div>
+            <div class="d-savebar">
+              <span id="brand-dirty" class="d-savebar-note">No unsaved changes</span>
+              <button type="button" id="brand-cancel" class="d-btn-ghost">Cancel</button>
+              <button type="submit" id="brand-save" class="m-btn-primary">Save changes</button>
             </div>
-            <p class="mt-3 text-xs text-slate-400 text-center">Live preview of your store.</p>
+          </form>
+
+          <aside class="d-phone-wrap" aria-label="Live preview">
+            <div class="d-phone"><div class="d-phone-screen" id="b-preview"></div></div>
+            <p class="d-phone-cap">Live preview · <a id="bp-open" target="_blank" rel="noopener">Open store</a></p>
           </aside>
         </div>
 
@@ -532,7 +566,7 @@
 
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
-  <script src="/merchant/merchant.js?v=5"></script>
+  <script src="/merchant/merchant.js?v=6"></script>
 </body>
 
 </html>

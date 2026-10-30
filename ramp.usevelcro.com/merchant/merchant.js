@@ -523,9 +523,21 @@ async function savePrices() {
 function renderSettings() {
   let claimed = '';
   try { claimed = merchant.slug ? '' : (localStorage.getItem(CLAIM_KEY) || ''); } catch (e) { /* ignore */ }
-  brandDraft = { name: merchant.brand.name || merchant.business_name || '', slug: merchant.slug || claimed, color: merchant.brand.color, logo: merchant.brand.logo, logoData: null, removeLogo: false };
+  brandDraft = {
+    name: merchant.brand.name || merchant.business_name || '',
+    slug: merchant.slug || claimed,
+    color: merchant.brand.color,
+    buttonText: merchant.brand.button_text || null,
+    welcome: merchant.brand.welcome || '',
+    layout: merchant.brand.layout || 'classic',
+    logo: merchant.brand.logo,
+    logoData: null,
+    removeLogo: false,
+  };
+  brandSaved = JSON.stringify(brandSnapshot());
   $('b-name').value = brandDraft.name;
   $('b-slug').value = brandDraft.slug;
+  $('b-welcome').value = brandDraft.welcome;
   const locked = ['APPROVED', 'SUSPENDED'].includes(merchant.status) && !!merchant.slug;
   $('b-slug').readOnly = locked;
   $('b-slug-msg').className = 'm-hint';
@@ -536,19 +548,100 @@ function renderSettings() {
   renderSettingsHome();
 }
 
+// Contrast ratio between two hex colours (WCAG), 1 to 21.
+function contrast(a, b) {
+  const lum = hex => {
+    const n = parseInt(hex.slice(1), 16);
+    const [r, g, bl] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
+  return (x + 0.05) / (y + 0.05);
+}
+
+// Black or white, whichever reads better on the colour. Matches the store page.
+const autoText = hex => contrast(hex, '#14142b') > contrast(hex, '#ffffff') ? '#14142b' : '#ffffff';
+const isHex = v => /^#[0-9a-f]{6}$/i.test(v);
+let brandSaved = '';
+
+function brandSnapshot() {
+  const d = brandDraft;
+  return { name: d.name.trim(), slug: d.slug, color: d.color, buttonText: d.buttonText, welcome: d.welcome.trim(), layout: d.layout, logo: d.removeLogo ? null : (d.logoData || d.logo) };
+}
+
+function paintReadability(id, label, ratio) {
+  const [word, cls] = ratio >= 7 ? ['Great', 'ok'] : ratio >= 4.5 ? ['Good', 'ok'] : ratio >= 3 ? ['Fair, fine for big text', 'meh'] : ['Hard to read', 'bad'];
+  const box = $(id);
+  box.className = 'd-read is-' + cls;
+  box.querySelector('p').textContent = `${label}: ${word} (${ratio.toFixed(1)}:1)`;
+  box.querySelector('i').style.width = Math.min(100, (ratio / 7) * 100) + '%';
+}
+
 function paintBrand() {
-  const brand = { name: brandDraft.name, color: brandDraft.color, logo: brandDraft.removeLogo ? null : (brandDraft.logoData || brandDraft.logo) };
-  document.querySelectorAll('.d-swatch').forEach(s => s.classList.toggle('is-on', s.dataset.color === brandDraft.color));
-  $('b-color').value = brandDraft.color;
+  const d = brandDraft;
+  const brand = { name: d.name, color: d.color, logo: d.removeLogo ? null : (d.logoData || d.logo) };
+  const btnText = d.buttonText || autoText(d.color);
+  document.querySelectorAll('.d-swatch').forEach(s => s.classList.toggle('is-on', s.dataset.color === d.color));
+  $('b-color').value = d.color;
+  $('b-btn').value = btnText;
+  if (document.activeElement !== $('b-color-hex')) $('b-color-hex').value = d.color.toUpperCase();
+  if (document.activeElement !== $('b-btn-hex')) $('b-btn-hex').value = btnText.toUpperCase();
+  $('b-btn-auto').innerHTML = d.buttonText ? '<button type="button" class="d-link" id="b-btn-reset">Use automatic</button>' : 'Picked for best contrast';
+  const reset = $('b-btn-reset');
+  if (reset) reset.onclick = () => { d.buttonText = null; paintBrand(); };
+  $('b-welcome-count').textContent = `${d.welcome.length}/140`;
   paintLogo($('b-logo-preview'), brand, 'Y');
-  paintLogo($('bp-logo'), brand, 'Y');
-  $('b-preview').style.setProperty('--brand', brandDraft.color);
-  $('bp-name').textContent = brandDraft.name || 'Your store';
-  $('bp-slug').textContent = brandDraft.slug || 'your-store';
   $('b-logo-remove').classList.toggle('hidden', !brand.logo);
-  const usdtRate = merchant ? customerRate('USDT', 'buy', merchant.pricing.USDT.buy) : null;
-  const usdt = usdtRate ? 100000 / usdtRate : null;
-  $('bp-get').textContent = usdt ? `${usdt.toFixed(2)} USDT` : '… USDT';
+  document.querySelectorAll('[data-layout]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.layout === d.layout)));
+  paintReadability('rd-theme', 'Theme colour on white', contrast(d.color, '#ffffff'));
+  paintReadability('rd-btn', 'Button text', contrast(btnText, d.color));
+  renderPhone(brand, btnText);
+  const dirty = JSON.stringify(brandSnapshot()) !== brandSaved;
+  $('brand-dirty').textContent = dirty ? 'Unsaved changes' : 'No unsaved changes';
+  $('brand-dirty').classList.toggle('is-dirty', dirty);
+}
+
+// A phone-sized copy of the store page, drawn from the draft.
+function renderPhone(brand, btnText) {
+  const d = brandDraft;
+  const screen = $('b-preview');
+  screen.className = 'd-phone-screen is-' + d.layout;
+  screen.style.setProperty('--brand', d.color);
+  screen.style.setProperty('--on-brand', btnText);
+  screen.style.setProperty('--on-brand-auto', autoText(d.color));
+  const coins = Object.keys((me && me.coins) || {}).filter(sym => merchant.pricing[sym] && (merchant.pricing[sym].buy_on || merchant.pricing[sym].sell_on));
+  const rate = (sym, side) => {
+    const p = merchant.pricing[sym];
+    const r = p[side + '_on'] ? customerRate(sym, side, p[side]) : null;
+    return r ? '₦' + Number(r).toLocaleString('en-NG', { maximumFractionDigits: 0 }) : '—';
+  };
+  // Rates are naira per $1, so a stablecoin shows the amount exactly; anything else shows its dollar value.
+  const first = ['USDT', 'USDC'].find(sym => coins.includes(sym) && merchant.pricing[sym].buy_on) || coins.find(sym => merchant.pricing[sym].buy_on) || 'USDT';
+  const firstRate = merchant.pricing[first] ? customerRate(first, 'buy', merchant.pricing[first].buy) : null;
+  const usd = firstRate ? 100000 / firstRate : null;
+  const stable = first === 'USDT' || first === 'USDC';
+  const name = d.name.trim() || 'Your store';
+  screen.innerHTML = `
+    <div class="pv-status"><b>9:41</b><span><i></i><i></i><i></i></span></div>
+    <div class="pv-top"><span class="pv-logo" id="pv-logo"></span><b>${esc(name)}</b><span class="pv-signin">Sign in</span></div>
+    <div class="pv-hero">
+      <h3>${esc(name)}</h3>
+      <p>${esc(d.welcome.trim() || 'Buy and sell crypto with naira. Pay by bank transfer, get paid to any Nigerian bank.')}</p>
+    </div>
+    <div class="pv-card">
+      <div class="pv-tabs"><span class="is-on">Buy</span><span>Sell</span></div>
+      <div class="pv-field"><small>You pay</small><b>₦100,000</b><em>NGN</em></div>
+      <div class="pv-field"><small>${stable ? 'You get' : 'You get (in dollars)'}</small><b>${usd ? (stable ? '' : '$') + usd.toFixed(2) : '…'}</b><em>${first}</em></div>
+      <span class="pv-cta">Buy ${first}</span>
+    </div>
+    <div class="pv-rates">
+      <div class="pv-rates-head"><b>Today's rates</b><span>We sell · We buy</span></div>
+      ${coins.length ? coins.map(sym => `<div class="pv-rate"><img src="${COIN_LOGOS[sym]}" alt=""><b>${sym}</b><span>${rate(sym, 'buy')}</span><span>${rate(sym, 'sell')}</span></div>`).join('') : '<p class="pv-empty">Switch on coins in Listed offers to show rates.</p>'}
+    </div>
+    <p class="pv-foot">${esc(name)} · Powered by Velcro</p>`;
+  paintLogo($('pv-logo'), brand, 'Y');
+  $('bp-open').href = '/m/' + (merchant.slug || '');
+  $('bp-open').classList.toggle('hidden', !merchant.slug);
 }
 
 let slugTimer = null;
@@ -593,19 +686,26 @@ async function saveBrand(e) {
   btn.disabled = true;
   btn.textContent = 'Saving…';
   try {
-    const body = { name: $('b-name').value.trim(), slug: $('b-slug').value.trim(), color: brandDraft.color };
+    const body = {
+      name: $('b-name').value.trim(),
+      slug: $('b-slug').value.trim(),
+      color: brandDraft.color,
+      button_text: brandDraft.buttonText,
+      welcome: brandDraft.welcome.trim(),
+      layout: brandDraft.layout,
+    };
     if (brandDraft.logoData) body.logo = brandDraft.logoData;
     if (brandDraft.removeLogo) body.remove_logo = true;
     merchant = await api('/api/merchant/brand', { method: 'POST', body });
     try { localStorage.removeItem(CLAIM_KEY); } catch (e2) { /* ignore */ }
-    toast('Store saved');
+    toast('Changes saved');
     renderAll();
   } catch (ex) {
     err.textContent = ex.message;
     err.classList.remove('hidden');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Save store';
+    btn.textContent = 'Save changes';
   }
 }
 
@@ -747,6 +847,13 @@ document.addEventListener('DOMContentLoaded', () => {
   $('b-slug').addEventListener('input', () => { $('b-slug').dataset.edited = '1'; checkSlug(); });
   document.querySelectorAll('.d-swatch').forEach(s => s.addEventListener('click', () => { brandDraft.color = s.dataset.color; paintBrand(); }));
   $('b-color').addEventListener('input', () => { brandDraft.color = $('b-color').value.toLowerCase(); paintBrand(); });
+  $('b-btn').addEventListener('input', () => { brandDraft.buttonText = $('b-btn').value.toLowerCase(); paintBrand(); });
+  $('b-color-hex').addEventListener('input', () => { const v = '#' + $('b-color-hex').value.replace(/[^0-9a-f]/gi, ''); if (isHex(v)) { brandDraft.color = v.toLowerCase(); paintBrand(); } });
+  $('b-btn-hex').addEventListener('input', () => { const v = '#' + $('b-btn-hex').value.replace(/[^0-9a-f]/gi, ''); if (isHex(v)) { brandDraft.buttonText = v.toLowerCase(); paintBrand(); } });
+  ['b-color-hex', 'b-btn-hex'].forEach(id => $(id).addEventListener('blur', paintBrand));
+  $('b-welcome').addEventListener('input', () => { brandDraft.welcome = $('b-welcome').value; paintBrand(); });
+  document.querySelectorAll('[data-layout]').forEach(b => b.addEventListener('click', () => { brandDraft.layout = b.dataset.layout; paintBrand(); }));
+  $('brand-cancel').addEventListener('click', () => { renderSettings(); openSettings(null); });
   $('b-logo').addEventListener('change', () => pickLogo($('b-logo').files[0]));
   $('b-logo-remove').addEventListener('click', () => { brandDraft.logoData = null; brandDraft.removeLogo = true; $('b-logo').value = ''; paintBrand(); });
   $('f-type').addEventListener('change', () => $('f-reg-row').classList.toggle('hidden', $('f-type').value !== 'registered'));
