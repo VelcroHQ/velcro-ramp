@@ -174,9 +174,29 @@ function merchantVelcroRates(): array
 {
     $file = BASE_PATH . '/data/.merchant_rates.json';
     $cached = is_file($file) ? json_decode((string) @file_get_contents($file), true) : null;
-    if (is_array($cached) && ($cached['at'] ?? 0) > time() - 60 && !empty($cached['rates'])) {
+    $age = time() - (int) ($cached['at'] ?? 0);
+    if (is_array($cached) && !empty($cached['rates']) && $age < 600) {
+        // Fresh for a minute. After that, visitors still get these straight away and the
+        // providers are asked again once the response has gone out (one refresh at a time).
+        $lock = $file . '.refreshing';
+        if ($age >= 60 && (!is_file($lock) || filemtime($lock) < time() - 30) && @touch($lock)) {
+            runAfterResponse(static function () use ($lock): void {
+                try {
+                    merchantFetchVelcroRates();
+                } finally {
+                    @unlink($lock);
+                }
+            }, 'Merchant rates refresh');
+        }
         return $cached['rates'];
     }
+    return merchantFetchVelcroRates();
+}
+
+/** Asks each provider for its rate now and saves the result for merchantVelcroRates(). */
+function merchantFetchVelcroRates(): array
+{
+    $file = BASE_PATH . '/data/.merchant_rates.json';
     $out = [];
     foreach (MERCHANT_COIN_PROVIDERS as $sym => $provider) {
         $buy = $sell = null;
@@ -214,7 +234,13 @@ function merchantVelcroRates(): array
         } catch (Throwable $e) {
             error_log("[Merchant] {$sym} rate via {$provider} unavailable: " . $e->getMessage());
         }
-        $out[$sym] = ['provider' => $provider, 'buy' => $buy ? round($buy, 2) : null, 'sell' => $sell ? round($sell, 2) : null];
+        $usd = null;
+        try {
+            $usd = in_array($sym, ['USDT', 'USDC'], true) ? 1.0 : (hostfiQuote($sym)['usd_per_unit'] ?: null);
+        } catch (Throwable $e) {
+            // the store page then just doesn't estimate this coin
+        }
+        $out[$sym] = ['provider' => $provider, 'buy' => $buy ? round($buy, 2) : null, 'sell' => $sell ? round($sell, 2) : null, 'usd' => $usd];
     }
     if (array_filter(array_column($out, 'buy')) || array_filter(array_column($out, 'sell'))) {
         @file_put_contents($file, json_encode(['at' => time(), 'rates' => $out]), LOCK_EX);
@@ -790,16 +816,7 @@ function registerMerchantRoutes(Router $router): void
                 continue;
             }
             $velcro = $rates[$sym] ?? ['buy' => null, 'sell' => null];
-            $usd = null;
-            if (in_array($sym, ['USDT', 'USDC'], true)) {
-                $usd = 1.0;
-            } else {
-                try {
-                    $usd = hostfiQuote($sym)['usd_per_unit'] ?: null; // for the coin estimate on the store page
-                } catch (Throwable $e) {
-                    $usd = null;
-                }
-            }
+            $usd = $velcro['usd'] ?? (in_array($sym, ['USDT', 'USDC'], true) ? 1.0 : null); // for the coin estimate on the store page
             $coins[$sym] = [
                 'symbol' => $sym,
                 'name' => $name,

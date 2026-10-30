@@ -3,6 +3,12 @@
 // and /api/store/{slug}/*.
 
 const SLUG = (location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/) || [])[1] || '';
+// The name from the link ("ada-crypto" → "Ada Crypto") shows while the store loads.
+if (SLUG) {
+  const pretty = SLUG.split('-').filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+  document.getElementById('s-loading-text').textContent = `Loading ${pretty}…`;
+  document.title = pretty;
+}
 const TOKEN_KEY = 'velcro_store_' + SLUG;
 const MERCHANT_TOKEN_KEY = 'velcro_merchant_token'; // lets a merchant preview their own store before approval
 const COIN_LOGOS = { BTC: '/logos/bitcoin.png', ETH: '/logos/ethereum.png', SOL: '/logos/solana.png', USDT: '/logos/usdt.png', USDC: '/logos/usdc.png' };
