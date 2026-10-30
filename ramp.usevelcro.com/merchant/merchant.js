@@ -269,11 +269,20 @@ function renderHeader() {
   paintLogo($('hdr-logo'), merchant.brand, storeName());
   $('hdr-name').textContent = storeName();
   $('hdr-email').textContent = me.email;
-  $('avatar-btn').textContent = (me.name || me.email).trim().charAt(0).toUpperCase();
+  $('menu-name').textContent = me.name || storeName();
+  $('avatar-initial').textContent = (me.name || me.email).trim().charAt(0).toUpperCase();
+  const [cls, words] = HDR_STATUS[merchant.status] || HDR_STATUS.DRAFT;
+  $('hdr-status').className = 'd-hdr-status is-' + cls;
+  $('hdr-status').textContent = words;
+  const url = merchant.storefront_url;
+  $('hdr-link-text').textContent = url ? url.replace(/^https?:\/\//, '') : 'Pick your store link';
+  $('hdr-link').onclick = () => (url ? shareStore() : (openTab('settings'), openSettings('store')));
   const view = $('hdr-view');
-  view.classList.toggle('hidden', !merchant.storefront_url);
-  if (merchant.storefront_url) view.href = merchant.storefront_url;
+  view.classList.toggle('hidden', !url);
+  if (url) view.href = url;
 }
+
+const HDR_STATUS = { DRAFT: ['draft', 'Not live'], PENDING: ['pending', 'In review'], REJECTED: ['bad', 'Needs changes'], APPROVED: ['live', 'Live'], SUSPENDED: ['bad', 'Suspended'] };
 
 const BANNERS = {
   DRAFT: ['', 'Verify your business to put your store live.', 'It takes about three minutes. You can set up your store while we review it.', 'Start verification', () => goToKyb()],

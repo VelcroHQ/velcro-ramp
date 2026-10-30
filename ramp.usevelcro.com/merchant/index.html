@@ -18,7 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link href="/style.css?v=3" rel="stylesheet">
   <link href="/css/app.css?v=1" rel="stylesheet">
-  <link href="/merchant/merchant.css?v=7" rel="stylesheet">
+  <link href="/merchant/merchant.css?v=9" rel="stylesheet">
 </head>
 
 <body class="bg-white text-velcro-navy antialiased">
@@ -260,21 +260,27 @@
     <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30">
       <div class="max-w-6xl mx-auto px-4 sm:px-6">
         <div class="h-16 flex items-center justify-between gap-3">
-          <a href="/merchant/" class="flex items-center gap-2.5 min-w-0">
-            <span id="hdr-logo" class="d-store-logo" style="--brand:#a8cf45">V</span>
-            <span class="min-w-0">
-              <span id="hdr-name" class="block font-bold leading-tight truncate">Your store</span>
-              <span id="hdr-email" class="block text-xs text-slate-400 truncate"></span>
-            </span>
-          </a>
-          <div class="flex items-center gap-2 sm:gap-4">
-            <a id="hdr-view" href="#" target="_blank" rel="noopener" class="d-chip hidden max-sm:!hidden">View store ↗</a>
-            <a href="https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab" target="_blank" rel="noopener" class="text-sm font-semibold text-slate-500 hover:text-velcro-navy">Support</a>
+          <div class="d-hdr-store">
+            <a href="/merchant/" class="shrink-0" aria-label="Overview"><span id="hdr-logo" class="d-store-logo" style="--brand:#a8cf45">V</span></a>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 min-w-0">
+                <span id="hdr-name" class="d-hdr-name">Your store</span>
+                <span id="hdr-status" class="d-hdr-status"></span>
+              </div>
+              <button type="button" id="hdr-link" class="d-hdr-link" title="Copy store link"><span id="hdr-link-text"></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></button>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 sm:gap-2">
+            <a id="hdr-view" href="#" target="_blank" rel="noopener" class="d-hdr-btn hidden max-sm:!hidden"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5 4.6 4h14.8L21 9.5M3 9.5h18M3 9.5a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0M5 12.5V20h14v-7.5"/></svg>View store</a>
+            <a href="https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab" target="_blank" rel="noopener" class="d-hdr-btn is-quiet" aria-label="Support"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg><span class="max-sm:hidden">Support</span></a>
+            <span class="d-hdr-sep" aria-hidden="true"></span>
             <div class="relative">
-              <button type="button" id="avatar-btn" class="d-avatar" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()">V</button>
+              <button type="button" id="avatar-btn" class="d-avatar" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()"><span id="avatar-initial">V</span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
               <div id="avatar-menu" class="d-menu hidden" role="menu">
+                <div class="d-menu-head"><b id="menu-name"></b><span id="hdr-email"></span></div>
+                <button type="button" role="menuitem" onclick="toggleMenu(); openTab('settings')">Settings</button>
                 <button type="button" role="menuitem" onclick="startTour(true)">Show me around</button>
-                <button type="button" role="menuitem" onclick="signOut()">Sign out</button>
+                <button type="button" role="menuitem" class="is-danger" onclick="signOut()">Sign out</button>
               </div>
             </div>
           </div>
@@ -363,7 +369,15 @@
       <!-- Orders / Customers / Earnings: empty until the storefront is live -->
       <section id="tab-orders" class="d-tab hidden"><div class="d-empty"><span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><h2>No orders yet</h2><p>Every buy and sell on your store shows up here with live status, from payment to delivery.</p><button type="button" class="m-btn-primary" onclick="shareStore()">Share your store</button></div></section>
       <section id="tab-customers" class="d-tab hidden"><div class="d-empty"><span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4.1a4 4 0 0 1 0 7.8M22 21a7 7 0 0 0-4.5-6.5"/></svg></span><h2>Your customers will appear here</h2><p>Everyone who signs up on your store, with their order history and volume.</p></div></section>
-      <section id="tab-earnings" class="d-tab hidden"><div class="d-empty"><span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M21 9h-6a3 3 0 0 0 0 6h6z"/></svg></span><h2>₦0 earned so far</h2><p>Your markup on every completed order collects here. Withdraw it to your bank whenever you like.</p><button type="button" class="m-btn-primary" onclick="openTab('prices')">Review your markup</button></div></section>
+      <section id="tab-earnings" class="d-tab hidden">
+        <div class="d-ngn">
+          <span class="d-ngn-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3 3 8h18z"/></svg></span>
+          <div class="min-w-0">
+            <b>NGN business account <em>Coming soon</em></b>
+            <p>A naira account number in your store's name. Your earnings land there automatically, and your customers get their own accounts so they can fund once and trade instantly.</p>
+          </div>
+        </div>
+        <div class="d-empty"><span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M21 9h-6a3 3 0 0 0 0 6h6z"/></svg></span><h2>₦0 earned so far</h2><p>Your markup on every completed order collects here. Withdraw it to your bank whenever you like.</p><button type="button" class="m-btn-primary" onclick="openTab('prices')">Review your markup</button></div></section>
 
       <!-- Settings -->
       <section id="tab-settings" class="d-tab hidden">
@@ -380,7 +394,8 @@
             <button type="button" class="d-set-card" onclick="openSettings('kyb')"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span><b>Business verification</b><small id="set-kyb-sub">Verify your business to put your store live.</small></button>
             <button type="button" class="d-set-card" onclick="openSettings('security')"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><b>Sign-in &amp; security</b><small>Change your password. Codes always go to your email.</small></button>
             <button type="button" class="d-set-card" onclick="openSettings('support')"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg></span><b>Customer support</b><small>Where your customers reach you when they need help.</small></button>
-            <div class="d-set-card is-soon"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 4l9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/></svg></span><b>Payouts <em>Coming soon</em></b><small>Where your earnings are paid.</small></div>
+            <div class="d-set-card is-soon"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3 3 8h18z"/></svg></span><b>NGN business account <em>Coming soon</em></b><small>Your own naira account number. Earnings land there and you can withdraw any time.</small></div>
+            <div class="d-set-card is-soon"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M19 8v6M16 11h6"/></svg></span><b>Customer NGN accounts <em>Coming soon</em></b><small>A naira account for each of your customers, so they fund once and trade instantly.</small></div>
             <div class="d-set-card is-soon"><span class="d-set-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></span><b>Notifications <em>Coming soon</em></b><small>Emails for new orders and customers.</small></div>
           </div>
         </div>
@@ -566,7 +581,7 @@
 
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
-  <script src="/merchant/merchant.js?v=6"></script>
+  <script src="/merchant/merchant.js?v=7"></script>
 </body>
 
 </html>

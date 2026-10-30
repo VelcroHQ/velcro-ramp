@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" href="/velcro_favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="/store/store.css?v=4" rel="stylesheet">
+  <link href="/store/store.css?v=6" rel="stylesheet">
 </head>
 
 <body>
@@ -25,6 +25,11 @@
     <header class="s-top">
       <div class="s-wrap s-top-in">
         <a id="s-home" class="s-brand" href="#"><span id="s-logo" class="s-logo"></span><span id="s-name"></span></a>
+        <nav class="s-nav" aria-label="Store">
+          <a href="#rates">Rates</a>
+          <a href="#how">How it works</a>
+          <a id="s-nav-help" target="_blank" rel="noopener" hidden>Help</a>
+        </nav>
         <div class="s-account">
           <button type="button" id="s-signin" class="s-btn-quiet" onclick="openAuth('signin')">Sign in</button>
           <button type="button" id="s-join" class="s-btn-brand s-btn-sm" onclick="openAuth('signup')">Create account</button>
@@ -33,6 +38,7 @@
             <div id="s-menu" class="s-menu" role="menu" hidden>
               <p id="s-me-email"></p>
               <button type="button" role="menuitem" onclick="showOrders()">My orders</button>
+              <button type="button" role="menuitem" class="s-menu-soon" onclick="toast('Naira accounts are coming soon. We’ll email you when yours is ready.')">Naira account <em>Soon</em></button>
               <button type="button" role="menuitem" onclick="signOut()">Sign out</button>
             </div>
           </div>
@@ -43,17 +49,26 @@
     <section class="s-hero">
       <div class="s-wrap s-hero-grid">
         <div class="s-intro">
-          <span id="s-hero-logo" class="s-logo s-logo-xl"></span>
-          <h1 id="s-title"></h1>
-          <p class="s-lede">Buy and sell crypto with naira. Pay by bank transfer, get paid to any Nigerian bank.</p>
+          <span class="s-eyebrow"><i></i><span id="s-eyebrow"></span></span>
+          <h1>Buy and sell crypto <span class="s-h1-soft">with naira.</span></h1>
+          <p class="s-lede">Pay by bank transfer and get your crypto in minutes. Selling? Get paid to any Nigerian bank.</p>
+          <ul class="s-perks">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10V20M19 10V20M9 14v3M15 14v3M3 20h18M12 3 3 8h18z"/></svg>Bank transfer, any bank</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Live rates, no surprises</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="m4 6 8 7 8-7"/></svg>Receipt for every order</li>
+          </ul>
 
-          <div class="s-board" aria-label="Today's rates">
-            <div class="s-board-head"><span>Today's rates</span><span class="s-live"><i></i>Live</span></div>
-            <table>
-              <thead><tr><th>Coin</th><th>We sell at</th><th>We buy at</th></tr></thead>
-              <tbody id="s-board-rows"></tbody>
-            </table>
-            <p class="s-board-note">Per $1. Prices update every minute.</p>
+          <div class="s-rates" id="rates" aria-label="Today's rates">
+            <div class="s-rates-head"><span><b>Today's rates</b><small id="s-rates-side">to buy, per $1</small></span><span class="s-live"><i></i>Live</span></div>
+            <div class="s-rates-list" id="s-board-rows"></div>
+          </div>
+
+          <div class="s-ngn" aria-label="Naira account, coming soon">
+            <span class="s-ngn-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3 3 8h18z"/></svg></span>
+            <div>
+              <b>Your own naira account <em>Coming soon</em></b>
+              <p>A personal account number with <span class="s-ngn-store">this store</span>. Fund it once and buy instantly, and get paid straight into it when you sell.</p>
+            </div>
           </div>
         </div>
 
@@ -72,7 +87,7 @@
             <ul id="s-coin-list" class="s-select-list" role="listbox" hidden></ul>
           </div>
 
-          <label class="s-field" for="f-in">
+          <label class="s-field s-field-in" for="f-in">
             <span id="f-in-label">You pay</span>
             <span class="s-field-row"><input id="f-in" inputmode="decimal" autocomplete="off" placeholder="0"><b id="f-in-cur">NGN</b></span>
           </label>
@@ -83,7 +98,6 @@
           </div>
 
           <dl class="s-details">
-            <div><dt>Rate</dt><dd id="s-rate">—</dd></div>
             <div><dt id="s-dest-label">Delivered to</dt><dd id="s-dest">Your wallet</dd></div>
             <div><dt>Usually takes</dt><dd id="s-time">A few minutes</dd></div>
           </dl>
@@ -98,7 +112,7 @@
       </div>
     </section>
 
-    <section class="s-wrap s-how" aria-label="How it works">
+    <section class="s-wrap s-how" id="how" aria-label="How it works">
       <h2>How a trade works</h2>
       <ol>
         <li><b>Choose an amount</b><span>Pick a coin and see exactly what you'll get before you start.</span></li>
@@ -148,7 +162,7 @@
   </div>
 
   <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
-  <script src="/store/store.js?v=5"></script>
+  <script src="/store/store.js?v=7"></script>
 </body>
 
 </html>

@@ -94,17 +94,19 @@ async function loadStore() {
   document.body.classList.add('s-layout-' + (s.layout || 'classic'));
   if (s.welcome) document.querySelector('.s-lede').textContent = s.welcome;
   $('s-name').textContent = s.name;
-  $('s-title').textContent = s.name;
+  $('s-eyebrow').textContent = `${s.name} · live rates`;
+  document.querySelector('.s-ngn-store').textContent = s.name;
   $('s-foot-name').textContent = s.name;
   $('s-home').href = '/m/' + SLUG;
   paintLogo($('s-logo'));
-  paintLogo($('s-hero-logo'));
   paintLogo($('auth-logo'));
   paintBoard();
   if (s.support_url) {
     $('s-support').href = s.support_url;
     $('s-support').querySelector('span').textContent = `Need help? Chat with ${s.name}`;
     $('s-support').hidden = false;
+    $('s-nav-help').href = s.support_url;
+    $('s-nav-help').hidden = false;
   }
   $('s-preview').hidden = !s.is_owner_preview;
   $('s-loading').hidden = true;
@@ -128,11 +130,30 @@ function showMissing() {
 }
 
 // Today's rates: per $1, what the store sells at (customers buy) and buys at (customers sell).
+// Today's rates as one row of pills for the side the customer is on; a pill picks that coin.
 function paintBoard() {
-  $('s-board-rows').innerHTML = Object.values(store.coins).map(c => {
-    const cell = (on, rate) => !on ? '<td class="is-off">—</td>' : `<td>${rate ? fmtNgn(rate) : '—'}</td>`;
-    return `<tr><td><span class="s-board-coin"><img src="${COIN_LOGOS[c.symbol]}" alt=""><span>${esc(c.symbol)}<small>${esc(c.name)}</small></span></span></td>${cell(c.buy_on, c.buy_rate)}${cell(c.sell_on, c.sell_rate)}</tr>`;
-  }).join('');
+  const side = store.side || 'buy';
+  $('s-rates-side').textContent = side === 'buy' ? 'to buy, per $1' : 'to sell, per $1';
+  $('s-board-rows').innerHTML = Object.values(store.coins).filter(c => c[side + '_on'] && c[side + '_rate']).map(c =>
+    `<button type="button" class="s-rate-pill" data-sym="${c.symbol}" aria-label="${side === 'buy' ? 'Buy' : 'Sell'} ${esc(c.symbol)} at ${fmtNgn(c[side + '_rate'])} per dollar"><img src="${COIN_LOGOS[c.symbol]}" alt=""><b>${esc(c.symbol)}</b><span>${fmtNgn(c[side + '_rate'])}</span></button>`
+  ).join('') || '<p class="s-rates-empty">No rates right now.</p>';
+  document.querySelectorAll('#s-board-rows .s-rate-pill').forEach(b => b.addEventListener('click', () => pickFromBoard(b.dataset.sym, side)));
+  markBoard();
+}
+
+// A price on the board opens that coin and side in the trade card.
+function pickFromBoard(sym, side) {
+  if (checkout) showForm();
+  if (store.side !== side) setSide(side);
+  store.coin = sym;
+  paintCoin();
+  render();
+  if (window.innerWidth < 960) document.querySelector('.s-trade').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => $('f-in').focus({ preventScroll: true }), 300);
+}
+
+function markBoard() {
+  document.querySelectorAll('#s-board-rows .s-rate-pill').forEach(b => b.classList.toggle('is-on', b.dataset.sym === store.coin));
 }
 
 function setSide(side) {
@@ -187,6 +208,8 @@ function toggleCoins(open) {
 function render() {
   const c = store.coins[store.coin];
   const buying = store.side === 'buy';
+  paintBoard();
+  $('f-out').classList.toggle('is-empty', !(Number(String($('f-in').value).replace(/,/g, '')) > 0));
   $('f-in-label').textContent = buying ? 'You pay' : 'You send';
   $('f-out-label').textContent = buying ? 'You get' : 'You receive';
   $('f-in-cur').textContent = buying ? 'NGN' : (c ? c.symbol : '');
@@ -200,7 +223,7 @@ function render() {
   }
   const rate = buying ? c.buy_rate : c.sell_rate;
   if (!rate || !c.usd_price) {
-    $('s-rate').textContent = 'Unavailable right now';
+    $('s-coin-name').textContent = 'Rate unavailable right now';
     $('f-out').textContent = '0';
     $('s-go').disabled = true;
     return;
@@ -209,7 +232,8 @@ function render() {
   // The merchant chooses: one final rate, or Velcro's rate plus their markup.
   const base = buying ? c.velcro_buy_rate : c.velcro_sell_rate;
   const pct = buying ? c.buy_markup_percent : c.sell_markup_percent;
-  $('s-rate').textContent = store.info.rate_display === 'breakdown' && base
+  // The rate sits under the coin in the picker.
+  $('s-coin-name').textContent = store.info.rate_display === 'breakdown' && base
     ? `$1 = ${fmtNgn(base)} + ${pct}% fee`
     : `$1 = ${fmtNgn(rate)}`;
   $('s-time').textContent = buying ? (c.symbol === 'BTC' ? '10–60 minutes' : 'A few minutes') : (c.symbol === 'BTC' ? '20–60 minutes' : 'A few minutes');
