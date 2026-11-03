@@ -51,9 +51,9 @@ function pajLiveRate(string $direction = 'ONRAMP'): float
     return $cache[$key] = $rate;
 }
 
-function calculatePajDeveloperFee(float $fiatAmount, string $direction = 'ONRAMP'): float
+function calculatePajDeveloperFee(float $fiatAmount, string $direction = 'ONRAMP', ?float $feePercent = null): float
 {
-    $feePercent = getPajFee();
+    $feePercent ??= getPajFee(); // a store order passes ours plus the merchant's markup
     if ($feePercent <= 0 || $fiatAmount <= 0) {
         return 0.0;
     }
@@ -176,7 +176,14 @@ function registerPajRoutes(Router $router): void
         if ($fiatAmount === null || !$recipient || !$mint) {
             jsonResponse(errorResponse('fiatAmount, recipient, and mint are required'), 400);
         }
-        requireRouteEnabled('buy', 'paj', pajSymbolForMint((string) $mint));
+        // A store order: the store decides the coins, the customer's email is used, and the
+        // merchant's markup is added to our fee.
+        $store = storeOrderContext('buy', pajSymbolForMint((string) $mint), 'paj');
+        if ($store) {
+            $email = (string) $store['customer']['email'];
+        } else {
+            requireRouteEnabled('buy', 'paj', pajSymbolForMint((string) $mint));
+        }
         if ($email !== '' && !isValidEmail($email)) {
             jsonResponse(errorResponse('Invalid email address'), 400);
         }
@@ -188,11 +195,11 @@ function registerPajRoutes(Router $router): void
         }
         try {
             $totalInputAmount = (float) $fiatAmount;
-            $feePercent = getPajFee();
+            $feePercent = getPajFee() + ($store['markup'] ?? 0.0);
             // Fee is always computed server-side; never accept it from the request.
             $businessUSDCFee = null;
             if ($feePercent > 0 && $totalInputAmount > 0) {
-                $businessUSDCFee = max(0.01, calculatePajDeveloperFee($totalInputAmount, 'ONRAMP'));
+                $businessUSDCFee = max(0.01, calculatePajDeveloperFee($totalInputAmount, 'ONRAMP', $feePercent));
             }
 
             // PAJ adds businessUSDCFee on top of fiatAmount. Take it out first, so the amount the
@@ -227,7 +234,7 @@ function registerPajRoutes(Router $router): void
                 'wallet_address' => $recipient,
                 'email' => $email ? strtolower(trim($email)) : null,
                 'meta' => jsonEncodeNullable($d),
-            ] + referralFieldsFor(body($body, 'ref'), $email));
+            ] + ($store ? storeOrderFields($store, getPajFee()) : referralFieldsFor(body($body, 'ref'), $email)));
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);
@@ -250,7 +257,12 @@ function registerPajRoutes(Router $router): void
         if ($fiatAmount === null || !$mint || !$bank || !$accountNumber) {
             jsonResponse(errorResponse('fiatAmount, mint, bank, and accountNumber are required'), 400);
         }
-        requireRouteEnabled('sell', 'paj', pajSymbolForMint((string) $mint));
+        $store = storeOrderContext('sell', pajSymbolForMint((string) $mint), 'paj');
+        if ($store) {
+            $email = (string) $store['customer']['email'];
+        } else {
+            requireRouteEnabled('sell', 'paj', pajSymbolForMint((string) $mint));
+        }
         if ($email !== '' && !isValidEmail($email)) {
             jsonResponse(errorResponse('Invalid email address'), 400);
         }
@@ -261,11 +273,11 @@ function registerPajRoutes(Router $router): void
             }
         }
         try {
-            $feePercent = getPajFee();
+            $feePercent = getPajFee() + ($store['markup'] ?? 0.0);
             // Fee is always computed server-side; never accept it from the request.
             $businessUSDCFee = null;
             if ($feePercent > 0) {
-                $businessUSDCFee = calculatePajDeveloperFee((float) $fiatAmount, 'OFFRAMP');
+                $businessUSDCFee = calculatePajDeveloperFee((float) $fiatAmount, 'OFFRAMP', $feePercent);
             }
 
             $order = pajApi()->createOfframpOrder((float) $fiatAmount, $mint, $bank, $accountNumber, $businessUSDCFee);
@@ -291,7 +303,7 @@ function registerPajRoutes(Router $router): void
                 'beneficiary' => jsonEncodeNullable(['bank' => $bank, 'accountNumber' => $accountNumber, 'holder_name' => $d['accountName'] ?? 'Customer']),
                 'email' => $email ? strtolower(trim($email)) : null,
                 'meta' => jsonEncodeNullable($d),
-            ] + referralFieldsFor(body($body, 'ref'), $email));
+            ] + ($store ? storeOrderFields($store, getPajFee()) : referralFieldsFor(body($body, 'ref'), $email)));
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);

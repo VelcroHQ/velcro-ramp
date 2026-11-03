@@ -259,19 +259,45 @@ async function goTrade() {
     return;
   }
   const c = store.coins[store.coin];
-  // Checkout is live for HostFi coins first; the others follow.
-  // Live: buys through HostFi (BTC, ETH) and Switch (USDT, USDC). The rest follow.
-  if (store.side !== 'buy' || !['hostfi', 'switch'].includes(c.provider)) {
-    toast(`${store.side === 'buy' ? 'Buying' : 'Selling'} ${c.symbol} on ${store.info.name} opens very soon.`);
+  const selling = store.side === 'sell';
+  const btn = $('s-go');
+  btn.disabled = true;
+  const nets = await networksFor(c.provider, c.symbol, selling);
+  const banks = selling ? await banksFor(c.provider) : [];
+  btn.disabled = false;
+  if (!nets.length || (selling && !banks.length)) {
+    toast(`${selling ? 'Selling' : 'Buying'} ${c.symbol} isn't available right now. Try again shortly.`);
     return;
   }
-  const nets = c.provider === 'switch' ? await switchNetworks(c.symbol) : await hostfiNetworks(c.symbol);
-  if (!nets.length) {
-    toast(`Buying ${c.symbol} isn't available right now. Try again shortly.`);
-    return;
-  }
-  checkout = { step: 'details', coin: c.symbol, provider: c.provider, amount, nets, network: nets[0].code, wallet: '', order: null };
+  checkout = {
+    step: 'details', side: store.side, coin: c.symbol, provider: c.provider, amount, nets, network: nets[0].code,
+    wallet: '', banks, bank: '', account: '', accountName: '', order: null,
+  };
   renderCheckout();
+}
+
+// Networks per provider and side. Each code is exactly what that provider's order expects.
+async function networksFor(provider, symbol, selling) {
+  if (provider === 'paj') return [{ code: 'solana', chain: 'solana', label: 'Solana' }];
+  if (provider === 'switch') return switchNetworks(symbol, selling);
+  return selling ? hostfiSellNetworks(symbol) : hostfiNetworks(symbol);
+}
+
+// Payout banks: PAJ keeps its own list; HostFi and Switch both take Switch's bank codes.
+const bankLists = {};
+async function banksFor(provider) {
+  const key = provider === 'paj' ? 'paj' : 'switch';
+  if (!bankLists[key]) {
+    try {
+      const raw = await api(key === 'paj' ? '/api/paj/banks' : '/api/institutions?country=NG&currency=NGN&channel=BANK');
+      bankLists[key] = (Array.isArray(raw) ? raw : (raw.data || [])).filter(b => b && b.name)
+        .map(b => ({ id: String(key === 'paj' ? (b.id || b.code) : b.code), code: String(b.code || ''), name: String(b.name).trim() }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (e) {
+      return [];
+    }
+  }
+  return bankLists[key];
 }
 
 // ── Checkout (buy) ──
@@ -291,11 +317,11 @@ let buyAssets = null;
 const SWITCH_CHAINS = ['tron', 'bsc', 'solana', 'base', 'ethereum', 'polygon', 'arbitrum', 'optimism'];
 let switchAssets = null;
 
-async function switchNetworks(symbol) {
+async function switchNetworks(symbol, selling = false) {
   if (!switchAssets) {
     try { switchAssets = await api('/api/assets'); } catch (e) { return []; }
   }
-  const chains = ((switchAssets.onramp || {})[symbol] || {}).chains || [];
+  const chains = ((switchAssets[selling ? 'offramp' : 'onramp'] || {})[symbol] || {}).chains || [];
   return SWITCH_CHAINS.filter(ch => chains.includes(ch)).map(ch => ({ code: `${ch}:${symbol.toLowerCase()}`, chain: ch, label: CHAIN_LABELS[ch] }));
 }
 
@@ -306,6 +332,16 @@ async function hostfiNetworks(symbol) {
   const a = (buyAssets || []).find(x => x.symbol === symbol);
   return a ? a.networks.map(n => ({ code: n.code, chain: n.chain, label: CHAIN_LABELS[n.chain] || n.code })) : [];
 }
+let sellAssets = null;
+async function hostfiSellNetworks(symbol) {
+  if (!sellAssets) {
+    try { sellAssets = await api('/api/hostfi/assets'); } catch (e) { return []; }
+  }
+  const a = (sellAssets || []).find(x => x.symbol === symbol);
+  return a ? a.networks.map(n => ({ code: n.code, chain: n.chain, label: CHAIN_LABELS[n.chain] || n.code })) : [];
+}
+
+const PAJ_MINTS = { SOL: 'So11111111111111111111111111111111111111112' };
 let checkout = null;
 let pollTimer = null;
 let expiryTimer = null;
@@ -325,16 +361,172 @@ function renderCheckout() {
   $('s-form').hidden = true;
   const box = $('s-checkout');
   box.hidden = false;
-  if (checkout.step === 'details') box.innerHTML = checkoutDetailsHtml();
-  else if (checkout.step === 'pay') box.innerHTML = checkoutPayHtml();
+  const selling = checkout.side === 'sell' || (checkout.order && checkout.order.side === 'sell');
+  if (checkout.step === 'details') box.innerHTML = selling ? sellDetailsHtml() : checkoutDetailsHtml();
+  else if (checkout.step === 'pay') box.innerHTML = selling ? sellPayHtml() : checkoutPayHtml();
   else if (checkout.step === 'orders') box.innerHTML = ordersHtml();
   wireCheckout();
-  if (checkout.step === 'details') setTimeout(() => $('co-wallet') && $('co-wallet').focus(), 50);
+  if (checkout.step === 'details') setTimeout(() => { const f = $('co-wallet') || $('co-bank'); if (f && !f.value) f.focus(); }, 50);
 }
 
 function estimateFor(symbol, ngn) {
   const c = store.coins[symbol];
   return c && c.buy_rate && c.usd_price ? ngn / c.buy_rate / c.usd_price : 0;
+}
+
+// Naira a sale of `amount` coin pays at the store's rate.
+function payoutFor(symbol, amount) {
+  const c = store.coins[symbol];
+  return c && c.sell_rate && c.usd_price ? amount * c.usd_price * c.sell_rate : 0;
+}
+
+function netLabel() {
+  return (checkout.nets.find(n => n.code === checkout.network) || {}).label || '';
+}
+
+function sellDetailsHtml() {
+  const c = store.coins[checkout.coin];
+  const nets = checkout.nets;
+  const est = payoutFor(c.symbol, checkout.amount);
+  return `
+    <button type="button" class="s-back" data-act="back">${ICON_BACK}Back</button>
+    <h2 class="s-co-title">Sell ${esc(c.symbol)}</h2>
+    <div class="s-co-sum">
+      <div><span>You send</span><b>${fmtCoin(checkout.amount, c.symbol)} ${esc(c.symbol)}</b></div>
+      <div><span>You receive about</span><b>${est > 0 ? fmtNgn(est) : 'Shown next'}</b></div>
+    </div>
+    ${nets.length > 1 ? `<span class="s-label">Network you'll send on</span><div class="s-seg">${nets.map(n => `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${esc(n.label)}</button>`).join('')}</div>` : ''}
+    <label class="s-label" for="co-bank">Your bank</label>
+    <select id="co-bank" class="s-input">
+      <option value="">Choose your bank</option>
+      ${checkout.banks.map(b => `<option value="${esc(b.id)}"${b.id === checkout.bank ? ' selected' : ''}>${esc(b.name)}</option>`).join('')}
+    </select>
+    <label class="s-label" for="co-acct">Account number</label>
+    <input id="co-acct" class="s-input s-mono" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="10 digits" value="${esc(checkout.account)}">
+    <p id="co-name" class="s-name-check${checkout.accountName ? ' is-ok' : ''}">${checkout.accountName ? `${ICON_CHECK}${esc(checkout.accountName)}` : 'We check the name on the account before you send anything.'}</p>
+    <p id="co-error" class="s-error" hidden></p>
+    <button type="button" class="s-btn-brand s-go" data-act="create"${checkout.accountName ? '' : ' disabled'}>Get deposit address</button>
+    <p class="s-trust">Naira is paid only to an account in the name shown above.</p>`;
+}
+
+function sellPayHtml() {
+  const o = checkout.order;
+  const done = o.status === 'COMPLETED';
+  const waiting = o.status === 'AWAITING_DEPOSIT';
+  const amount = o.sendAmount ? `${fmtCoin(o.sendAmount, o.coin)} ${esc(o.coin)}` : esc(o.coin);
+  return `
+    <button type="button" class="s-back" data-act="back">${ICON_BACK}${done ? 'New order' : 'Back'}</button>
+    <h2 class="s-co-title">${done ? 'Naira paid' : waiting ? `Send ${amount}` : `Selling ${esc(o.coin)}`}</h2>
+    ${!waiting ? '' : `
+    <p class="s-co-lede">Send ${o.exact ? 'exactly this amount' : 'your ' + esc(o.coin)} to the address below${o.network ? `, on the <b>${esc(o.network)}</b> network` : ''}. We'll detect it automatically.</p>
+    <div class="s-bank">
+      <div><span>Address</span><b class="s-mono">${esc(o.address)}</b><button type="button" class="s-copy" data-copy="${esc(o.address)}">${ICON_COPY}Copy</button></div>
+      ${o.memo ? `<div><span>Memo</span><b class="s-mono">${esc(o.memo)}</b><button type="button" class="s-copy" data-copy="${esc(o.memo)}">${ICON_COPY}Copy</button></div>` : ''}
+      ${o.sendAmount ? `<div><span>Amount</span><b>${amount}</b><button type="button" class="s-copy" data-copy="${esc(String(o.sendAmount))}">${ICON_COPY}Copy</button></div>` : ''}
+      ${o.payTo ? `<div><span>Paid to</span><b>${esc(o.payTo)}</b></div>` : ''}
+    </div>
+    <p class="s-expiry" id="co-expiry"></p>`}
+    <ol class="s-progress" id="co-steps">${sellProgressHtml(o)}</ol>
+    <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me.email)}.</p>`;
+}
+
+// Sell steps: waiting for the coin → received → paying the bank → paid.
+function sellProgressHtml(o) {
+  const p = o.progress || {};
+  const received = ['DETECTED', 'RECEIVED', 'VERIFIED', 'CONFIRMED', 'PROCESSING', 'COMPLETED'].includes(o.status) || !!p.amount;
+  const paying = received && (p.payout === 'pending' || p.converted === 'done' || o.status === 'PROCESSING');
+  const paid = p.payout === 'done' || o.status === 'COMPLETED';
+  const steps = [
+    [received ? 'Order created' : `Waiting for your ${esc(o.coin)}`, received ? 'done' : 'now', received ? '' : 'We check for it every few seconds.'],
+    [`${esc(o.coin)} received`, received ? 'done' : 'next', received && p.amount ? `${fmtCoin(p.amount, o.coin)} ${esc(o.coin)}` : ''],
+    ['Paying your bank', paid ? 'done' : (received ? 'now' : 'next'), paying && p.converted === 'pending' ? 'Converting…' : ''],
+    ['Naira paid', paid ? 'done' : 'next', p.payout_amount ? fmtNgn(p.payout_amount) : ''],
+  ];
+  if (p.payout === 'failed' || p.payout === 'review' || o.status === 'REVIEW') {
+    steps[2] = ['We’re checking your order', 'warn', "Your money is safe. We'll email you shortly."];
+  }
+  return steps.map(([t, st, d]) => `<li class="is-${st}"><i>${st === 'done' ? ICON_CHECK : ''}</i><div><b>${t}</b>${d ? `<span>${d}</span>` : ''}</div></li>`).join('');
+}
+
+// Checks the account name with the provider that will pay it.
+let nameTimer = null;
+function checkAccountName() {
+  checkout.bank = $('co-bank').value;
+  checkout.account = $('co-acct').value.replace(/\D/g, '').slice(0, 10);
+  $('co-acct').value = checkout.account;
+  checkout.accountName = '';
+  const out = $('co-name');
+  const go = $('s-checkout').querySelector('[data-act="create"]');
+  go.disabled = true;
+  out.className = 's-name-check';
+  clearTimeout(nameTimer);
+  if (!checkout.bank || checkout.account.length !== 10) {
+    out.textContent = 'We check the name on the account before you send anything.';
+    return;
+  }
+  out.textContent = 'Checking the account…';
+  const bank = checkout.banks.find(b => b.id === checkout.bank) || {};
+  const key = checkout.bank + checkout.account;
+  nameTimer = setTimeout(async () => {
+    try {
+      let d;
+      if (checkout.provider === 'paj') d = await api('/api/paj/resolve', { method: 'POST', body: { bank: bank.id, accountNumber: checkout.account } });
+      else if (checkout.provider === 'hostfi') d = await api('/api/hostfi/resolve', { method: 'POST', body: { bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account } });
+      else d = await api('/api/resolve', { method: 'POST', body: { country: 'NG', beneficiary: { account_number: checkout.account, bank_code: bank.code } } });
+      if (key !== checkout.bank + checkout.account) return;
+      const name = d && (d.accountName || d.account_name || d.holder_name || d.name || (d.data && (d.data.account_name || d.data.accountName)));
+      if (!name) throw new Error('We couldn’t find that account. Check the number and bank.');
+      checkout.accountName = String(name).trim();
+      out.className = 's-name-check is-ok';
+      out.innerHTML = `${ICON_CHECK}${esc(checkout.accountName)}`;
+      go.disabled = false;
+    } catch (e) {
+      if (key !== checkout.bank + checkout.account) return;
+      out.className = 's-name-check is-bad';
+      out.textContent = e.message || 'We couldn’t verify this account.';
+    }
+  }, 300);
+}
+
+async function createSell() {
+  const err = $('co-error');
+  err.hidden = true;
+  const bank = checkout.banks.find(b => b.id === checkout.bank) || {};
+  if (!checkout.accountName) return;
+  const btn = $('s-checkout').querySelector('[data-act="create"]');
+  btn.disabled = true;
+  btn.textContent = 'Creating your order…';
+  const base = { side: 'sell', coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT', network: netLabel(), payTo: `${checkout.accountName} · ${bank.name}`, progress: {} };
+  try {
+    if (checkout.provider === 'hostfi') {
+      const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount } });
+      checkout.order = { ...base, reference: d.reference, address: d.address, memo: d.memo, sendAmount: checkout.amount, exact: false, expiresAt: Date.now() + (d.expires_in || 3600) * 1000 };
+    } else if (checkout.provider === 'paj') {
+      const d = await api('/api/paj/sell', { method: 'POST', body: { store: SLUG, fiatAmount: Math.floor(payoutFor(checkout.coin, checkout.amount)), mint: PAJ_MINTS[checkout.coin], bank: bank.id, accountNumber: checkout.account } });
+      checkout.order = { ...base, reference: d.id, address: d.address, sendAmount: Number(d.amount) || checkout.amount, exact: true, expiresAt: Date.now() + 3600 * 1000 };
+    } else {
+      const d = await api('/api/initiate', {
+        method: 'POST',
+        body: {
+          store: SLUG, direction: 'OFFRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network,
+          beneficiary: { holder_type: 'INDIVIDUAL', holder_name: checkout.accountName, account_number: checkout.account, bank_code: bank.code },
+        },
+      });
+      const dep = d.deposit;
+      checkout.order = {
+        ...base, reference: d.velcro_reference || d.reference, address: (typeof dep === 'string' ? dep : (dep && dep.address)) || d.address || '',
+        sendAmount: Number((d.source || {}).amount) || checkout.amount, exact: true, expiresAt: Date.now() + 3600 * 1000,
+      };
+    }
+    checkout.step = 'pay';
+    renderCheckout();
+    startPolling();
+  } catch (e) {
+    err.textContent = e.message;
+    err.hidden = false;
+    btn.disabled = false;
+    btn.textContent = 'Get deposit address';
+  }
 }
 
 function checkoutDetailsHtml() {
@@ -398,13 +590,17 @@ function progressHtml(o) {
 function wireCheckout() {
   const box = $('s-checkout');
   box.querySelectorAll('[data-act="back"]').forEach(b => b.onclick = () => (checkout.step === 'pay' || checkout.step === 'orders') ? showForm() : showForm());
-  box.querySelectorAll('[data-net]').forEach(b => b.onclick = () => { checkout.wallet = $('co-wallet').value.trim(); checkout.network = b.dataset.net; renderCheckout(); });
+  box.querySelectorAll('[data-net]').forEach(b => b.onclick = () => { if ($('co-wallet')) checkout.wallet = $('co-wallet').value.trim(); checkout.network = b.dataset.net; renderCheckout(); });
+  if ($('co-bank')) {
+    $('co-bank').onchange = checkAccountName;
+    $('co-acct').oninput = checkAccountName;
+  }
   box.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
     try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied'); } catch (e) { toast(b.dataset.copy); }
   });
   box.querySelectorAll('[data-order]').forEach(b => b.onclick = () => openOrder(b.dataset.order));
   const create = box.querySelector('[data-act="create"]');
-  if (create) create.onclick = createBuy;
+  if (create) create.onclick = checkout.side === 'sell' ? createSell : createBuy;
 }
 
 async function createBuy() {
@@ -441,6 +637,12 @@ async function createBuy() {
         reference: d.velcro_reference || d.reference, coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT',
         bank: dep.bank_name || '', account: dep.account_number || '', accountName: dep.account_name || 'Velcro checkout', expiresAt: Date.now() + 3600 * 1000, progress: {},
       };
+    } else if (checkout.provider === 'paj') {
+      const d = await api('/api/paj/initiate', { method: 'POST', body: { store: SLUG, fiatAmount: checkout.amount, recipient: wallet, mint: PAJ_MINTS[checkout.coin] } });
+      checkout.order = {
+        reference: d.id, coin: checkout.coin, amount: Number(d.fiatAmount) > 0 ? Number(d.fiatAmount) : checkout.amount, status: 'AWAITING_DEPOSIT',
+        bank: d.bank || 'PAJ Partner Bank', account: d.accountNumber || '', accountName: d.accountName || '', expiresAt: Date.now() + 3600 * 1000, progress: {},
+      };
     } else {
       const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });
       checkout.order = {
@@ -467,7 +669,8 @@ function startPolling() {
     const el = $('co-expiry');
     if (!el || !o.expiresAt) return;
     const left = Math.max(0, Math.floor((o.expiresAt - Date.now()) / 1000));
-    el.textContent = left > 0 ? `This account is for this order only and expires in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : 'This account has expired. Start a new order if you haven’t paid.';
+    const what = o.side === 'sell' ? 'address' : 'account';
+    el.textContent = left > 0 ? `This ${what} is for this order only and expires in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : `This ${what} has expired. Start a new order if you haven’t ${o.side === 'sell' ? 'sent anything' : 'paid'}.`;
   };
   tickExpiry();
   expiryTimer = setInterval(tickExpiry, 1000);
@@ -489,7 +692,7 @@ function startPolling() {
         return;
       }
       const steps = $('co-steps');
-      if (steps) steps.innerHTML = progressHtml(o);
+      if (steps) steps.innerHTML = o.side === 'sell' ? sellProgressHtml(o) : progressHtml(o);
     } catch (e) { /* keep trying */ }
   };
   poll();
@@ -522,20 +725,30 @@ function ordersHtml() {
     <button type="button" class="s-back" data-act="back">${ICON_BACK}Back</button>
     <h2 class="s-co-title">My orders</h2>
     ${rows.length ? `<ul class="s-orders">${rows.map(o => {
-      const sym = String(o.destination_currency || (o.asset || '').split(':')[1] || '').toUpperCase();
-      const [label, cls] = STATUS_LABELS[String(o.status).toUpperCase()] || [o.status, 'off'];
       const buy = String(o.type).toUpperCase() === 'ONRAMP';
+      const sym = orderCoin(o);
+      const [label, cls] = STATUS_LABELS[String(o.status).toUpperCase()] || [o.status, 'off'];
       return `<li><button type="button" data-order="${esc(o.reference)}"><span><b>${buy ? 'Buy' : 'Sell'} ${esc(sym)}</b><small>${new Date(String(o.created_at).replace(' ', 'T') + 'Z').toLocaleString()}</small></span><span class="s-orders-right"><b>${fmtNgn(o.amount)}</b><em class="s-pill is-${cls}">${esc(label)}</em></span></button></li>`;
     }).join('')}</ul>` : '<p class="s-co-lede">No orders yet. Your buys and sells on this store will show up here.</p>'}`;
+}
+
+// The coin of an order, whichever side: "base:usdt", "USDT" or the currency columns.
+function orderCoin(o) {
+  const buy = String(o.type).toUpperCase() === 'ONRAMP';
+  const fromAsset = String(o.asset || '').split(':').pop();
+  return String((buy ? o.destination_currency : o.source_currency) || fromAsset || '').toUpperCase();
 }
 
 function openOrder(ref) {
   const o = (store.orders || []).find(x => x.reference === ref);
   if (!o) return;
-  const sym = String(o.destination_currency || (o.asset || '').split(':')[1] || '').toUpperCase();
+  const sell = String(o.type).toUpperCase() === 'OFFRAMP';
   checkout = {
     step: 'pay',
-    order: { reference: o.reference, coin: sym, amount: Number(o.amount), status: String(o.status).toUpperCase(), bank: o.deposit_bank_name, account: o.deposit_account_number, accountName: o.deposit_account_name, expiresAt: 0, progress: {} },
+    order: {
+      reference: o.reference, side: sell ? 'sell' : 'buy', coin: orderCoin(o), amount: Number(o.amount), status: String(o.status).toUpperCase(),
+      bank: o.deposit_bank_name, account: o.deposit_account_number, accountName: o.deposit_account_name, address: o.deposit_address, expiresAt: 0, progress: {},
+    },
   };
   renderCheckout();
   startPolling();

@@ -1005,9 +1005,15 @@ function registerHostfiRoutes(Router $router): void
         $accountNumber = preg_replace('/\D/', '', (string) body($b, 'accountNumber', '')) ?? '';
         $email = strtolower(trim((string) body($b, 'email', '')));
 
-        if (!in_array($symbol, hostfiEnabledAssets(), true)) {
+        // A store order: the store decides the coins, the customer's email is used, and the
+        // merchant's markup is added to our fee.
+        $store = storeOrderContext('sell', $symbol, 'hostfi');
+        if ($store) {
+            $email = (string) $store['customer']['email'];
+        } elseif (!in_array($symbol, hostfiEnabledAssets(), true)) {
             jsonResponse(errorResponse("{$symbol} sells are not available right now"), 400);
         }
+        $fee = hostfiFee() + ($store['markup'] ?? 0.0);
         // No amount needed: the user sends any amount and the payout follows what arrives
         // (deposits outside the sell limits are held for review). An amount, if given, is checked.
         if ($amount < 0 || strlen($accountNumber) < 10) {
@@ -1022,6 +1028,9 @@ function registerHostfiRoutes(Router $router): void
                 jsonResponse(errorResponse("{$symbol} can't be received on that network"), 400);
             }
             $quote = hostfiQuote($symbol);
+            if ($store) {
+                $quote['ngn_per_unit'] = $quote['ngn_per_unit_gross'] * (1 - $fee / 100); // what this customer is paid per coin
+            }
             $usd = $amount * $quote['usd_per_unit'];
             $s = loadSettings();
             if ($amount > 0 && $usd < (float) ($s['sell_min_limit'] ?? 1) || $usd > (float) ($s['sell_max_limit'] ?? 10000)) {
@@ -1080,10 +1089,10 @@ function registerHostfiRoutes(Router $router): void
                     'expires_at' => time() + $minutes * 60,
                     'timer_minutes' => $minutes,
                     // Quote at order time, so History can show "$1 = ₦X" plus our fee.
-                    'quote' => ['ngn_per_usd' => $quote['usd_per_unit'] > 0 ? $quote['ngn_per_unit_gross'] / $quote['usd_per_unit'] : null, 'fee_percent' => hostfiFee()],
+                    'quote' => ['ngn_per_usd' => $quote['usd_per_unit'] > 0 ? $quote['ngn_per_unit_gross'] / $quote['usd_per_unit'] : null, 'fee_percent' => $fee],
                     'bank' => ['accountName' => $accountName, 'accountNumber' => $accountNumber, 'bankId' => $bank['bankId'], 'bankName' => $bank['bankName']],
-                ]]),
-            ] + referralFieldsFor(body($b, 'ref'), $email));
+                ] + ($store ? ['fee_percent' => $fee] : [])]), // store orders keep their fee (ours + markup) for the payout
+            ] + ($store ? storeOrderFields($store, hostfiFee()) : referralFieldsFor(body($b, 'ref'), $email)));
 
             if ($email !== '') {
                 try {

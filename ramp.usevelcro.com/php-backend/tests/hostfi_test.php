@@ -493,6 +493,22 @@ try {
     [, $res] = call($GLOBALS['appPort'], 'GET', '/api/store/shop1/me', null, '', "X-Store-Token: {$shopToken}\r\n");
     check(in_array($swRef, array_column($res['data']['orders'] ?? [], 'reference'), true), 'store customer sees the Switch order in their orders');
 
+    // ── A store sell through HostFi: the customer is paid after our 0.5% and the store's 1% ──
+    $resetLimits();
+    $storeSell = ['store' => 'shop1', 'asset' => 'BTC', 'network' => 'BTC', 'amount' => 0.001, 'bankCode' => '100004', 'bankName' => 'OPay', 'accountNumber' => '0123456789'];
+    [$c] = $app_('POST', '/api/hostfi/sell', $storeSell);
+    check($c === 401, 'store sell: needs the store customer to be signed in');
+    [$c, $res] = call($GLOBALS['appPort'], 'POST', '/api/hostfi/sell', $storeSell, '', "X-Store-Token: {$shopToken}\r\n");
+    $sellRef = (string) ($res['data']['reference'] ?? '');
+    $sellAddr = (string) ($res['data']['address'] ?? '');
+    $so = $order($sellRef);
+    check($c === 200 && (int) $so['merchant_id'] === 1 && (float) $so['merchant_markup_percent'] == 1.0 && $so['email'] === $shopper
+        && near((float) ($res['data']['estimate_ngn'] ?? 0), 147700), 'store sell: tagged with the store and customer; quote ₦147,700 (₦150,000 − 1.5% − ₦50)');
+    $mock_('/__test/deposit', ['reference' => 'dep-store', 'address' => $sellAddr, 'currency' => 'BTC', 'amount' => 0.001, 'network' => 'BTC']);
+    $hook('dep-store', $sellAddr);
+    $paid = array_values(array_filter($state()['payouts'], fn ($p) => $p['clientReference'] === $deposit('dep-store')['payout_client_ref']))[0] ?? [];
+    check(near((float) ($paid['amount']['value'] ?? 0), 147700), 'store sell payout: ₦147,700 sent; the ₦2,250 fee stays with Velcro (₦1,500 owed to the store)');
+
     // ── Route switches for the other providers ──
     $resetLimits();
     $app_('POST', '/api/admin/settings', ['routes' => ['buy:switch:USDT' => false]], $admin);
