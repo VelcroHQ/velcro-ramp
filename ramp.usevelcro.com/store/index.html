@@ -8,13 +8,38 @@
   <meta name="description" content="Buy and sell BTC, ETH, SOL, USDT and USDC with naira. Pay by bank transfer, get paid to any Nigerian bank.">
   <meta name="robots" content="noindex">
   <link rel="icon" type="image/png" href="/velcro_favicon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="/store/store.css?v=6" rel="stylesheet">
+  <script>
+    // Ask for the store now, while the stylesheet and script are still downloading.
+    (function () {
+      var m = location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/);
+      if (!m) return;
+      var h = {};
+      try { var t = localStorage.getItem('velcro_merchant_token'); if (t) h['X-Merchant-Token'] = t; } catch (e) { /* ignore */ }
+      window.storefrontRequest = fetch('/api/merchant/storefront/' + m[1], { headers: h }).then(function (r) {
+        return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || 'Store not found'); return j.data || j; });
+      });
+      window.storefrontRequest.catch(function () { /* loadStore reports it */ });
+    })();
+  </script>
+  <link rel="preload" href="/store/store.js?v=10" as="script">
+  <link href="/store/store.css?v=8" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- The font never holds up the page: system text shows until Inter arrives. -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 </head>
 
 <body>
   <div id="s-loading" class="s-center"><span class="s-spinner" aria-hidden="true"></span><span id="s-loading-text">Loading…</span></div>
+  <script>
+    // The name from the link ("ada-crypto" → "Ada Crypto") shows while the store loads.
+    (function () {
+      var m = location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/);
+      if (!m) return;
+      var name = m[1].split('-').filter(Boolean).map(function (w) { return w[0].toUpperCase() + w.slice(1); }).join(' ');
+      document.getElementById('s-loading-text').textContent = 'Loading ' + name + '…';
+      document.title = name;
+    })();
+  </script>
   <div id="s-missing" class="s-center" hidden>
     <div><h1>This store isn't available</h1><p>Check the link, or ask the business that shared it with you.</p><a href="/">Go to Velcro</a></div>
   </div>
@@ -162,7 +187,7 @@
   </div>
 
   <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
-  <script src="/store/store.js?v=7"></script>
+  <script src="/store/store.js?v=10"></script>
 </body>
 
 </html>

@@ -360,13 +360,20 @@ function registerPublicRoutes(Router $router): void
         }
         // Switch assets look like "base:usdc".
         $assetSymbol = strtoupper((string) (explode(':', (string) $asset)[1] ?? $asset));
-        requireRouteEnabled(strtoupper((string) $direction) === 'ONRAMP' ? 'buy' : 'sell', 'switch', $assetSymbol);
+        $side = strtoupper((string) $direction) === 'ONRAMP' ? 'buy' : 'sell';
+        // A store order: the store decides the coins, the customer's email is used, and the
+        // merchant's markup is added to our fee.
+        $store = storeOrderContext($side, $assetSymbol, 'switch');
+        if (!$store) {
+            requireRouteEnabled($side, 'switch', $assetSymbol);
+        }
+        $fee = getPlatformFee() + ($store['markup'] ?? 0.0);
 
         // Always server-generated: a client-chosen reference could collide with another user's.
         $txRef = generateUuid();
         $callbackUrl = body($body, 'callback_url');
         $walletAddress = body($body, 'wallet_address');
-        $email = strtolower(trim((string) body($body, 'email', '')));
+        $email = $store ? (string) $store['customer']['email'] : strtolower(trim((string) body($body, 'email', '')));
         if ($email !== '' && !isValidEmail($email)) {
             jsonResponse(errorResponse('Invalid email address'), 400);
         }
@@ -391,7 +398,7 @@ function registerPublicRoutes(Router $router): void
                 'exact_output' => body($body, 'exact_output'),
                 'callback_url' => $callbackUrl,
                 'wallet_address' => $walletAddress,
-            ]);
+            ] + ($store ? ['developer_fee' => $fee] : []));
         } catch (Throwable $e) {
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
             jsonResponse([
@@ -402,7 +409,7 @@ function registerPublicRoutes(Router $router): void
 
         $d = $data['data'] ?? [];
         if ($direction === 'ONRAMP') {
-            $d = normalizeSwitchOnrampAmount($d, getPlatformFee());
+            $d = normalizeSwitchOnrampAmount($d, $fee);
             $data['data'] = $d;
         }
         $dep = $d['deposit'] ?? [];
@@ -469,7 +476,7 @@ function registerPublicRoutes(Router $router): void
                 'callback_url' => $callbackUrl,
                 'email' => $email !== '' ? $email : null,
                 'meta' => jsonEncodeNullable($d),
-            ] + referralFieldsFor(body($body, 'ref'), $email));
+            ] + ($store ? storeOrderFields($store, getPlatformFee()) : referralFieldsFor(body($body, 'ref'), $email)));
 
             if ($email !== '') {
                 try {
@@ -487,6 +494,8 @@ function registerPublicRoutes(Router $router): void
             error_log('DB write failed in /api/initiate for ' . $txRef . ': ' . $e->getMessage() . ' order=' . json_encode($data));
         }
 
+        // The store page polls /api/transactions/{reference}, so it needs our reference back.
+        $data['data']['velcro_reference'] = $txRef;
         jsonResponse($data);
     });
 

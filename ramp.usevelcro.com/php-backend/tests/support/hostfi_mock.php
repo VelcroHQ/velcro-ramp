@@ -58,6 +58,16 @@ if ($path === '/__test/state') {
     $respond(200, $state);
 }
 
+// Switch (store stablecoin buys, its own auth): the order is recorded so the test can check the fee sent.
+if ($method === 'POST' && $path === '/onramp/initiate') {
+    $state['switch_orders'][] = $body;
+    $respond(200, ['data' => [
+        'reference' => $body['reference'], 'status' => 'AWAITING_DEPOSIT', 'rate' => 1450,
+        'deposit' => ['bank_name' => 'Switch Bank', 'account_number' => '0123456789', 'account_name' => 'Velcro checkout'],
+        'source' => ['amount' => $body['amount'], 'currency' => 'NGN'],
+        'destination' => ['amount' => 20.0, 'currency' => 'USDT'],
+    ]]);
+}
 if (($_SERVER['HTTP_X_AUTH_TOKEN'] ?? '') !== 'test-token' && $path !== '/auth/token') {
     $respond(401, ['code' => 'UNAUTHORIZED', 'message' => 'Bad token']);
 }

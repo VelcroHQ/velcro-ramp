@@ -3,12 +3,6 @@
 // and /api/store/{slug}/*.
 
 const SLUG = (location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/) || [])[1] || '';
-// The name from the link ("ada-crypto" → "Ada Crypto") shows while the store loads.
-if (SLUG) {
-  const pretty = SLUG.split('-').filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
-  document.getElementById('s-loading-text').textContent = `Loading ${pretty}…`;
-  document.title = pretty;
-}
 const TOKEN_KEY = 'velcro_store_' + SLUG;
 const MERCHANT_TOKEN_KEY = 'velcro_merchant_token'; // lets a merchant preview their own store before approval
 const COIN_LOGOS = { BTC: '/logos/bitcoin.png', ETH: '/logos/ethereum.png', SOL: '/logos/solana.png', USDT: '/logos/usdt.png', USDC: '/logos/usdc.png' };
@@ -79,7 +73,8 @@ function paintLogo(el) {
 async function loadStore() {
   if (!SLUG) return showMissing();
   try {
-    const data = await api('/api/merchant/storefront/' + SLUG);
+    // Started in the page's <head>, so it is usually back by the time this script runs.
+    const data = await (window.storefrontRequest || api('/api/merchant/storefront/' + SLUG));
     store.info = data.store;
     store.coins = data.coins || {};
     store.googleClientId = data.google_client_id;
@@ -111,7 +106,8 @@ async function loadStore() {
   $('s-preview').hidden = !s.is_owner_preview;
   $('s-loading').hidden = true;
   $('s-app').hidden = false;
-  const first = Object.values(store.coins).find(c => c.buy_on) || Object.values(store.coins)[0];
+  const coins = Object.values(store.coins);
+  const first = preferredCoin(coins.filter(c => c.buy_on)) || coins[0];
   if (!first) {
     $('s-note').textContent = 'This store isn’t quoting any coins right now.';
     $('s-go').disabled = true;
@@ -156,12 +152,17 @@ function markBoard() {
   document.querySelectorAll('#s-board-rows .s-rate-pill').forEach(b => b.classList.toggle('is-on', b.dataset.sym === store.coin));
 }
 
+// USDT first, then USDC, then whatever the store lists first.
+function preferredCoin(list) {
+  return list.find(c => c.symbol === 'USDT') || list.find(c => c.symbol === 'USDC') || list[0];
+}
+
 function setSide(side) {
   store.side = side;
   $('t-buy').setAttribute('aria-selected', String(side === 'buy'));
   $('t-sell').setAttribute('aria-selected', String(side === 'sell'));
   const available = Object.values(store.coins).filter(c => c[side + '_on']);
-  if (!available.some(c => c.symbol === store.coin)) store.coin = available[0] ? available[0].symbol : null;
+  if (!available.some(c => c.symbol === store.coin)) store.coin = (preferredCoin(available) || {}).symbol || null;
   // Steps and details read differently for buying and selling.
   const buying = side === 'buy';
   $('how-2-title').textContent = buying ? 'Pay by bank transfer' : 'Send your crypto';
@@ -259,30 +260,44 @@ async function goTrade() {
   }
   const c = store.coins[store.coin];
   // Checkout is live for HostFi coins first; the others follow.
-  if (store.side !== 'buy' || c.provider !== 'hostfi') {
+  // Live: buys through HostFi (BTC, ETH) and Switch (USDT, USDC). The rest follow.
+  if (store.side !== 'buy' || !['hostfi', 'switch'].includes(c.provider)) {
     toast(`${store.side === 'buy' ? 'Buying' : 'Selling'} ${c.symbol} on ${store.info.name} opens very soon.`);
     return;
   }
-  const nets = await hostfiNetworks(c.symbol);
+  const nets = c.provider === 'switch' ? await switchNetworks(c.symbol) : await hostfiNetworks(c.symbol);
   if (!nets.length) {
     toast(`Buying ${c.symbol} isn't available right now. Try again shortly.`);
     return;
   }
-  checkout = { step: 'details', coin: c.symbol, amount, nets, network: nets[0].code, wallet: '', order: null };
+  checkout = { step: 'details', coin: c.symbol, provider: c.provider, amount, nets, network: nets[0].code, wallet: '', order: null };
   renderCheckout();
 }
 
 // ── Checkout (buy) ──
 
 // Networks come from HostFi's own list, so the code we send is exactly the one it expects.
-const CHAIN_LABELS = { bitcoin: 'Bitcoin', ethereum: 'Ethereum', base: 'Base', bsc: 'BNB Chain', solana: 'Solana', polygon: 'Polygon', arbitrum: 'Arbitrum', optimism: 'Optimism' };
+const CHAIN_LABELS = { bitcoin: 'Bitcoin', ethereum: 'Ethereum', base: 'Base', bsc: 'BNB Chain', solana: 'Solana', polygon: 'Polygon', arbitrum: 'Arbitrum', optimism: 'Optimism', tron: 'Tron' };
 const EVM_RULE = [/^0x[a-fA-F0-9]{40}$/, 'an address that starts with 0x'];
 const WALLET_RULES = {
   bitcoin: [/^(bc1[a-z0-9]{25,62}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/, 'a Bitcoin address (starts with bc1, 1 or 3)'],
   solana: [/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, 'a Solana address'],
+  tron: [/^T[1-9A-HJ-NP-Za-km-z]{33}$/, 'a Tron address (starts with T)'],
   ethereum: EVM_RULE, base: EVM_RULE, bsc: EVM_RULE, polygon: EVM_RULE, arbitrum: EVM_RULE, optimism: EVM_RULE,
 };
 let buyAssets = null;
+
+// Switch's networks for stablecoins, the common ones first. The code sent is "chain:symbol".
+const SWITCH_CHAINS = ['tron', 'bsc', 'solana', 'base', 'ethereum', 'polygon', 'arbitrum', 'optimism'];
+let switchAssets = null;
+
+async function switchNetworks(symbol) {
+  if (!switchAssets) {
+    try { switchAssets = await api('/api/assets'); } catch (e) { return []; }
+  }
+  const chains = ((switchAssets.onramp || {})[symbol] || {}).chains || [];
+  return SWITCH_CHAINS.filter(ch => chains.includes(ch)).map(ch => ({ code: `${ch}:${symbol.toLowerCase()}`, chain: ch, label: CHAIN_LABELS[ch] }));
+}
 
 async function hostfiNetworks(symbol) {
   if (!buyAssets) {
@@ -364,7 +379,7 @@ function checkoutPayHtml() {
 // Steps from the order's live status: waiting → received → converting/sending → sent → confirmed.
 function progressHtml(o) {
   const p = o.progress || {};
-  const received = ['CONFIRMED', 'PROCESSING', 'COMPLETED'].includes(o.status) || !!p.amount;
+  const received = ['DETECTED', 'RECEIVED', 'VERIFIED', 'CONFIRMED', 'PROCESSING', 'COMPLETED'].includes(o.status) || !!p.amount;
   const sent = p.payout === 'sent' || p.payout === 'done' || o.status === 'COMPLETED';
   const confirmed = p.payout === 'done' || o.status === 'COMPLETED';
   const steps = [
@@ -402,16 +417,37 @@ async function createBuy() {
     err.hidden = false;
     return;
   }
+  if (checkout.provider === 'switch') {
+    const chain = (checkout.nets.find(n => n.code === checkout.network) || {}).chain;
+    const min = ['tron', 'ethereum'].includes(chain) ? 5 : 1;
+    if (estimateFor(checkout.coin, checkout.amount) < min) {
+      err.textContent = `The minimum on ${CHAIN_LABELS[chain] || chain} is ${min} ${checkout.coin}. Go back and enter a bigger amount.`;
+      err.hidden = false;
+      return;
+    }
+  }
   checkout.wallet = wallet;
   const btn = $('s-checkout').querySelector('[data-act="create"]');
   btn.disabled = true;
   btn.textContent = 'Creating your order…';
   try {
-    const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });
-    checkout.order = {
-      reference: d.reference, coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT',
-      bank: d.bank_name, account: d.account_number, accountName: d.account_name, expiresAt: Date.now() + (d.expires_in || 3600) * 1000, progress: {},
-    };
+    if (checkout.provider === 'switch') {
+      const d = await api('/api/initiate', {
+        method: 'POST',
+        body: { store: SLUG, direction: 'ONRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network, wallet_address: wallet },
+      });
+      const dep = d.deposit || {};
+      checkout.order = {
+        reference: d.velcro_reference || d.reference, coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT',
+        bank: dep.bank_name || '', account: dep.account_number || '', accountName: dep.account_name || 'Velcro checkout', expiresAt: Date.now() + 3600 * 1000, progress: {},
+      };
+    } else {
+      const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });
+      checkout.order = {
+        reference: d.reference, coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT',
+        bank: d.bank_name, account: d.account_number, accountName: d.account_name, expiresAt: Date.now() + (d.expires_in || 3600) * 1000, progress: {},
+      };
+    }
     checkout.step = 'pay';
     renderCheckout();
     startPolling();
@@ -440,7 +476,11 @@ function startPolling() {
       const t = await api('/api/transactions/' + encodeURIComponent(o.reference));
       const was = o.status;
       o.status = String(t.status || '').toUpperCase();
-      o.progress = (t.hostfi_progress || [])[0] || {};
+      o.progress = (t.hostfi_progress || [])[0] || {
+        payout: o.status === 'COMPLETED' ? 'done' : (t.hash ? 'sent' : 'waiting'),
+        explorer_url: t.explorer_url || null,
+        payout_amount: Number(t.destination_amount) || null,
+      };
       if (o.status !== 'AWAITING_DEPOSIT') clearInterval(expiryTimer);
       if (['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(o.status)) clearInterval(pollTimer);
       // Paid (or finished): redraw without the bank details.

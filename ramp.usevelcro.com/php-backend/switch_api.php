@@ -125,7 +125,8 @@ class SwitchApiClient
         ];
         $recipient = getDeveloperRecipientForAsset($payload['asset'] ?? null);
         if ($recipient !== '') {
-            $body['developer_fee'] = getPlatformFee();
+            // A store order passes its own fee: ours plus the merchant's markup.
+            $body['developer_fee'] = $payload['developer_fee'] ?? getPlatformFee();
             $body['developer_recipient'] = $recipient;
         }
         $callbackUrl = !empty($payload['callback_url'])

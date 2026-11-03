@@ -32,6 +32,8 @@ putenv('HOSTFI_WEBHOOK_SECRET=hook-secret');
 putenv('HOSTFI_FUNDS_WAIT_SECONDS=0'); // the wait for HostFi to release swapped funds
 putenv('ADMIN_PASSWORD=correct-horse');
 putenv('PAJ_API_KEY=');
+putenv("SWITCH_BASE_URL=http://127.0.0.1:{$mockPort}");
+putenv('DEVELOPER_RECIPIENT=0x' . str_repeat('cd', 20));
 
 $pdo = new PDO('sqlite:' . $tmp . '/test.db', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
 // Velcro Merchant: one approved store, its customers, and sign-up codes.
@@ -39,7 +41,7 @@ $pdo->exec("CREATE TABLE merchants (id INTEGER PRIMARY KEY, email TEXT NOT NULL 
     registration_number TEXT, contact_name TEXT, phone TEXT, website TEXT, monthly_volume TEXT, description TEXT, brand TEXT, pricing TEXT, terms_accepted_at TEXT, terms_ip TEXT,
     review_note TEXT, reviewed_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
 $pdo->exec("INSERT INTO merchants (id, email, slug, status, business_name, brand, pricing) VALUES (1, 'shop@example.com', 'shop1', 'APPROVED', 'Shop One Ltd',
-    '{\"name\":\"Shop One\",\"color\":\"#0e7c66\"}', '{\"BTC\":{\"buy\":1,\"sell\":1,\"buy_on\":true,\"sell_on\":true},\"ETH\":{\"buy\":1,\"sell\":1,\"buy_on\":false,\"sell_on\":true}}')");
+    '{\"name\":\"Shop One\",\"color\":\"#0e7c66\"}', '{\"BTC\":{\"buy\":1,\"sell\":1,\"buy_on\":true,\"sell_on\":true},\"ETH\":{\"buy\":1,\"sell\":1,\"buy_on\":false,\"sell_on\":true},\"USDT\":{\"buy\":2,\"sell\":1,\"buy_on\":true,\"sell_on\":false}}')");
 $pdo->exec('CREATE TABLE store_customers (id INTEGER PRIMARY KEY, merchant_id INTEGER NOT NULL, email TEXT NOT NULL, password_hash TEXT, google_sub TEXT, name TEXT,
     token_version INTEGER NOT NULL DEFAULT 1, last_login_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, UNIQUE (merchant_id, email), UNIQUE (merchant_id, google_sub))');
 $pdo->exec('CREATE TABLE merchant_accounts (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT, google_sub TEXT UNIQUE, name TEXT, token_version INTEGER NOT NULL DEFAULT 1, last_login_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
@@ -474,6 +476,22 @@ try {
     check(count($sw) === $swapsBefore + 1 && near((float) end($sw)['value'], 29550), "store payment: ₦30,000 − (0.5% + 1%) = ₦29,550 swapped; the ₦450 stays with Velcro (₦300 owed to the store)");
     [, $res] = call($GLOBALS['appPort'], 'GET', '/api/store/shop1/me', null, '', "X-Store-Token: {$shopToken}\r\n");
     check(($res['data']['orders'][0]['reference'] ?? '') === $storeRef, "store customer sees the order in their orders");
+
+    // ── A store stablecoin buy through Switch: our fee plus the store's 2% go to Switch as one developer fee ──
+    $resetLimits();
+    $usdtBuy = ['store' => 'shop1', 'direction' => 'ONRAMP', 'amount' => 30000, 'country' => 'NG', 'currency' => 'NGN', 'channel' => 'BANK', 'asset' => 'tron:usdt', 'wallet_address' => 'T' . str_repeat('L', 33)];
+    [$c] = $app_('POST', '/api/initiate', $usdtBuy);
+    check($c === 401, 'store Switch order: needs the store customer to be signed in');
+    [$c, $res] = call($GLOBALS['appPort'], 'POST', '/api/initiate', $usdtBuy, '', "X-Store-Token: {$shopToken}\r\n");
+    $swRef = (string) ($res['data']['velcro_reference'] ?? '');
+    $sent = end($state()['switch_orders']);
+    $so = $order($swRef);
+    $platform = (float) $sent['developer_fee'] - 2;
+    check($c === 200 && $swRef !== '' && $platform > 0 && (int) $so['merchant_id'] === 1 && (float) $so['merchant_markup_percent'] == 2.0
+        && near((float) $so['velcro_fee_percent'], $platform) && $so['email'] === $shopper && near((float) $so['destination_amount'], 20 * (1 - (float) $sent['developer_fee'] / 100)),
+        'store Switch order: developer fee = our fee + 2% markup, tagged with the store, customer email used, the amount shown is after both');
+    [, $res] = call($GLOBALS['appPort'], 'GET', '/api/store/shop1/me', null, '', "X-Store-Token: {$shopToken}\r\n");
+    check(in_array($swRef, array_column($res['data']['orders'] ?? [], 'reference'), true), 'store customer sees the Switch order in their orders');
 
     // ── Route switches for the other providers ──
     $resetLimits();
