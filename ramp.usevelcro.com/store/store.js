@@ -435,7 +435,7 @@ const CHAIN_LOGOS = {
 
 function getChainLogo(chain) {
   if (!chain) return '';
-  const key = String(chain).toLowerCase().trim();
+  const key = String(chain).toLowerCase().split(':')[0].trim();
   const alias = {
     bnb: 'bsc',
     binance: 'bsc',
@@ -444,6 +444,7 @@ function getChainLogo(chain) {
     eth: 'ethereum',
     btc: 'bitcoin',
     matic: 'polygon',
+    pol: 'polygon',
     arb: 'arbitrum',
     op: 'optimism',
     avax: 'avalanche',
@@ -629,8 +630,8 @@ function sellDetailsHtml() {
       <div><span>You send</span><b>${isAny ? `Any amount of ${esc(c.symbol)}` : `${fmtCoin(checkout.amount, c.symbol)} ${esc(c.symbol)}`}</b></div>
       <div><span>You receive about</span><b>${est > 0 ? fmtNgn(est) : 'Calculated on arrival'}</b></div>
     </div>
-    ${nets.length > 1 ? `<span class="s-label">Network you'll send on</span><div class="s-seg">${nets.map(n => {
-      const logo = getChainLogo(n.chain);
+    ${nets.length > 1 ? `<span class="s-label">Network you'll send on</span><div class="s-seg" data-cols="${nets.length === 2 ? '2' : '3'}">${nets.map(n => {
+      const logo = getChainLogo(n.chain || n.code);
       return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon" onerror="this.style.display='none'">` : ''}<span>${esc(n.label)}</span></button>`;
     }).join('')}</div>` : ''}
 
@@ -896,8 +897,8 @@ function checkoutDetailsHtml() {
       <div><span>You pay</span><b>${fmtNgn(checkout.amount)}</b></div>
       <div><span>You get about</span><b>${estimateFor(c.symbol, checkout.amount) > 0 ? `${fmtCoin(estimateFor(c.symbol, checkout.amount), c.symbol)} ${esc(c.symbol)}` : 'Shown next'}</b></div>
     </div>
-    ${nets.length > 1 ? `<span class="s-label">Network</span><div class="s-seg">${nets.map(n => {
-      const logo = getChainLogo(n.chain);
+    ${nets.length > 1 ? `<span class="s-label">Network</span><div class="s-seg" data-cols="${nets.length === 2 ? '2' : '3'}">${nets.map(n => {
+      const logo = getChainLogo(n.chain || n.code);
       return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon" onerror="this.style.display='none'">` : ''}<span>${esc(n.label)}</span></button>`;
     }).join('')}</div>` : ''}
     <label class="s-label" for="co-wallet">Your ${esc(c.symbol)} wallet address${nets.length === 1 ? '' : ` on ${esc((nets.find(n => n.code === checkout.network) || {}).label || '')}`}</label>

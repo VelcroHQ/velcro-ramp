@@ -558,3 +558,91 @@ button.d-set-card:hover { border-color: #cfd3e3; box-shadow: 0 14px 28px -22px r
 .m-hint.is-ok { color: #2f7a32; font-weight: 700; }
 .m-hint.is-bad { color: #b42318; }
 .d-earn { align-items: start; }
+
+/* Mobile Optimization across Merchant Dashboard */
+@media (max-width: 640px) {
+  main.max-w-6xl {
+    padding-left: .75rem !important;
+    padding-right: .75rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 2rem !important;
+  }
+  .d-card {
+    padding: 1.05rem .85rem;
+    border-radius: 16px;
+  }
+  .d-stat {
+    padding: .65rem .55rem;
+    border-radius: 14px;
+  }
+  .d-stat small {
+    font-size: .68rem;
+  }
+  .d-stat b {
+    font-size: 1.05rem;
+    letter-spacing: -.02em;
+    word-break: break-word;
+  }
+  .d-stat span {
+    font-size: .65rem;
+  }
+  .d-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .5rem;
+  }
+  .d-search {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+  .d-filter {
+    width: 100%;
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 3px;
+  }
+  .d-filter::-webkit-scrollbar {
+    display: none;
+  }
+  .d-filter button {
+    flex: 1 0 auto;
+    padding: .4rem .6rem;
+    font-size: .78rem;
+    text-align: center;
+  }
+  .d-table th, .d-table td {
+    padding: .65rem .75rem;
+    font-size: .84rem;
+  }
+  .d-table-prices th:first-child, .d-table-prices td:first-child {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 2;
+    box-shadow: 2px 0 5px rgba(0,0,0,.04);
+  }
+  .d-table-prices thead th:first-child {
+    background: #fafbfd;
+  }
+  .d-earn {
+    grid-template-columns: 1fr;
+  }
+  .d-earn-main > b {
+    font-size: 1.75rem;
+  }
+  .d-tabs {
+    margin: 0 -.5rem;
+    padding: 0 .5rem;
+  }
+  .d-tabs button {
+    padding: .6rem .65rem .75rem;
+    font-size: .84rem;
+  }
+  .d-list-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .5rem;
+  }
+}
