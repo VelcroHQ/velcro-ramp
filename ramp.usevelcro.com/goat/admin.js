@@ -2081,6 +2081,57 @@ async function fetchMerchants() {
     } catch (e) {
         showToast(e.message, 'error');
     }
+    fetchMerchantWithdrawals();
+}
+
+async function fetchMerchantWithdrawals() {
+    const body = document.getElementById('mwd-body');
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/merchant-withdrawals`, { headers: { 'Authorization': adminKey } });
+        const data = scrub(await res.json());
+        if (!res.ok) throw new Error(data.error || 'Failed to load withdrawals');
+        const rows = data.withdrawals || [];
+        const pending = rows.filter(w => w.status === 'PENDING').length;
+        const pill = document.getElementById('mwd-pending');
+        pill.style.display = pending ? '' : 'none';
+        pill.textContent = `${pending} to pay`;
+        const ngn = v => '₦' + Number(v).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        body.innerHTML = rows.length ? rows.map(w => {
+            const amount = w.currency === 'NGN' ? ngn(w.amount_ngn) : `$${Number(w.amount_usd).toFixed(2)} USDC`;
+            const to = w.currency === 'NGN'
+                ? `${escapeHtml(w.account_name)}<br><span style="color: var(--text-secondary);">${escapeHtml(w.bank_name)} · <code>${escapeHtml(w.account_number)}</code></span>`
+                : `${escapeHtml(w.chain)}<br><code style="font-size: 11px; word-break: break-all;">${escapeHtml(w.address)}</code>`;
+            const status = { PENDING: ['pending', 'To pay'], APPROVED: ['completed', 'Paid'], REJECTED: ['failed', 'Rejected'] }[w.status] || ['pending', w.status];
+            const actions = w.status === 'PENDING'
+                ? `<button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 12px;" onclick="processMerchantWithdrawal(${w.id}, 'approve', '${escapeAttr(amount)}')">Mark paid</button>
+                   <button class="btn-secondary" style="width: auto; padding: 7px 14px; font-size: 12px;" onclick="processMerchantWithdrawal(${w.id}, 'reject', '${escapeAttr(amount)}')">Reject</button>`
+                : `<span style="color: var(--text-secondary); font-size: 12px;">${escapeHtml(w.payout_ref || w.note || '')}</span>`;
+            return `<tr><td><b>${escapeHtml(w.store)}</b><br><span style="color: var(--text-secondary); font-size: 12px;">${escapeHtml(w.merchant_email)}</span></td>
+                <td><b>${amount}</b>${w.currency === 'USDC' ? `<br><span style="color: var(--text-secondary); font-size: 12px;">${ngn(w.amount_ngn)} earned</span>` : ''}</td>
+                <td style="font-size: 13px;">${to}</td><td style="font-size: 12px;">${escapeHtml(w.created_at)}</td>
+                <td><span class="status-pill ${status[0]}">${status[1]}</span></td><td style="white-space: nowrap;">${actions}</td></tr>`;
+        }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No withdrawal requests yet.</td></tr>';
+    } catch (e) {
+        body.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">${escapeHtml(e.message)}</td></tr>`;
+    }
+}
+
+async function processMerchantWithdrawal(id, action, amount) {
+    const body = { action };
+    if (action === 'approve') {
+        const ref = prompt(`Mark ${amount} as paid?\n\nSend the money first, then paste the bank reference or transaction hash (optional, the merchant sees it):`);
+        if (ref === null) return;
+        body.payout_ref = ref.trim();
+    } else {
+        const note = prompt(`Reject this ${amount} withdrawal? The amount goes back to the merchant's earnings.\n\nReason (the merchant sees it):`);
+        if (note === null) return;
+        body.note = note.trim();
+    }
+    try {
+        const res = await adminPost(`/api/admin/merchant-withdrawals/${id}`, body);
+        showToast((action === 'approve' ? 'Marked paid' : 'Rejected') + (res && res.email_sent === false ? ' (email to merchant failed)' : ''), 'success');
+        fetchMerchantWithdrawals();
+    } catch (e) { showToast(e.message, 'error'); }
 }
 
 function renderMerchants(rows) {

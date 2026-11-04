@@ -309,6 +309,42 @@ try {
     [, $res] = $app_('GET', '/api/merchant/customers', null, $auth($token));
     $cust = $res['data']['customers'][0] ?? [];
     check(($cust['orders'] ?? 0) === 3 && near($cust['volume_ngn'] ?? 0, 200000), 'customers: order count and completed volume per customer');
+
+    // ── Earnings and withdrawals ($2 minimum, naira or USDC, paid by hand from the admin) ──
+    [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
+    $earn = $res['data'] ?? [];
+    check(near($earn['available_ngn'] ?? 0, 2000) && ($earn['can_withdraw'] ?? null) === false && str_contains((string) ($earn['reason'] ?? ''), 'minimum'),
+        'earnings: ₦2,000 earned ($1.33 at ₦1,505/$) is under the $2 minimum');
+    $addOrder->execute(['ord-big', 'ONRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 500000, 330, 'USDT', 'NGN', $id, $custId]);
+    [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
+    $earn = $res['data'] ?? [];
+    check(near($earn['available_ngn'] ?? 0, 7000) && near($earn['available_usd'] ?? 0, 4.65) && ($earn['can_withdraw'] ?? null) === true, 'earnings: ₦7,000 ($4.65) can be withdrawn');
+    $wd = ['currency' => 'USDC', 'chain' => 'base', 'address' => '0x' . str_repeat('ab', 20)];
+    [$cBad] = $app_('POST', '/api/merchant/withdraw', ['address' => 'nope', 'otp' => $code('merchwd', $email)] + $wd, $auth($token));
+    [$cOtp] = $app_('POST', '/api/merchant/withdraw', ['otp' => '000000'] + $wd, $auth($token));
+    check($cBad === 400 && $cOtp === 403, 'withdraw: bad wallet address and wrong code refused');
+    [$cNgn] = $app_('POST', '/api/merchant/withdraw', ['currency' => 'NGN', 'bank_code' => '000013', 'bank_name' => 'GTBank', 'account_number' => '0123456789', 'otp' => $code('merchwd', $email)], $auth($token));
+    check($cNgn === 400, "withdraw: naira refused when the bank account can't be verified");
+    [$c] = $app_('POST', '/api/merchant/withdraw', ['otp' => $code('merchwd', $email)] + $wd, $auth($token));
+    [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
+    $earn = $res['data'] ?? [];
+    [$cAgain] = $app_('POST', '/api/merchant/withdraw/code', null, $auth($token));
+    check($c === 200 && near($earn['pending_ngn'] ?? 0, 7000) && near($earn['available_ngn'] ?? -1, 0) && ($earn['withdrawals'][0]['status'] ?? '') === 'PENDING' && $cAgain === 400,
+        'withdraw: whole ₦7,000 requested as USDC, held as pending; no second request while one waits');
+    [$cMerch] = $app_('GET', '/api/admin/merchant-withdrawals', null, $auth($token));
+    [, $res] = $app_('GET', '/api/admin/merchant-withdrawals', null, $admin);
+    $w = $res['withdrawals'][0] ?? [];
+    check($cMerch === 401 && ($w['address'] ?? '') === $wd['address'] && near($w['amount_usd'] ?? 0, 4.65) && ($w['slug'] ?? '') === 'northline', 'admin: sees the request with full payout details (merchants can\'t)');
+    $app_('POST', '/api/admin/merchant-withdrawals/' . $w['id'], ['action' => 'reject', 'note' => 'Wrong network'], $admin);
+    [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
+    check(near($res['data']['available_ngn'] ?? 0, 7000), 'admin rejects: the ₦7,000 is back in the balance');
+    $app_('POST', '/api/merchant/withdraw', ['otp' => $code('merchwd', $email)] + $wd, $auth($token));
+    [, $res] = $app_('GET', '/api/admin/merchant-withdrawals', null, $admin);
+    $wid = $res['withdrawals'][0]['id'] ?? 0;
+    [$c1] = $app_('POST', '/api/admin/merchant-withdrawals/' . $wid, ['action' => 'approve', 'payout_ref' => '0xhash'], $admin);
+    [$c2] = $app_('POST', '/api/admin/merchant-withdrawals/' . $wid, ['action' => 'approve'], $admin);
+    [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
+    check($c1 === 200 && $c2 === 409 && near($res['data']['paid_ngn'] ?? 0, 7000) && near($res['data']['available_ngn'] ?? -1, 0), 'admin marks paid: counted once as paid out, balance ₦0');
     [, $res] = $app_('GET', "/api/admin/merchants/{$id}/customers", null, $admin);
     [, $list] = $app_('GET', '/api/admin/merchants', null, $admin);
     $counts = array_column($list['merchants'] ?? [], 'customers', 'email');

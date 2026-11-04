@@ -206,11 +206,11 @@ function storeSignedIn(array $customer, string $message): never
 }
 
 /**
- * A store's orders (newest 500) for its dashboard: coin, naira value, and the markup earned.
+ * A store's orders (newest 500, or all with $limit null) for its dashboard: coin, naira value, and the markup earned.
  * Naira value is what the customer paid on a buy, and the payout before fees on a sell. Only
  * completed orders earn; open ones show what they would.
  */
-function merchantOrders(int $merchantId): array
+function merchantOrders(int $merchantId, ?int $limit = 500): array
 {
     ensureStoreOrderColumns();
     $rows = Database::select(
@@ -218,7 +218,7 @@ function merchantOrders(int $merchantId): array
                 t.`source_currency`, t.`merchant_markup_percent`, t.`velcro_fee_percent`, t.`hash`, t.`created_at`, t.`store_customer_id`,
                 c.`email` AS `customer_email`, c.`name` AS `customer_name`
          FROM `transactions` t LEFT JOIN `store_customers` c ON c.`id` = t.`store_customer_id`
-         WHERE t.`merchant_id` = :m ORDER BY t.`id` DESC LIMIT 500',
+         WHERE t.`merchant_id` = :m ORDER BY t.`id` DESC' . ($limit ? ' LIMIT ' . (int) $limit : ''),
         ['m' => $merchantId]
     );
     return array_map(static function (array $t): array {

@@ -542,3 +542,19 @@ button.d-set-card:hover { border-color: #cfd3e3; box-shadow: 0 14px 28px -22px r
 .d-pill.wait { background: #fff4e0; color: #a5530a; }
 .d-pill.busy { background: #e8edff; color: #3d4bb8; }
 .d-pill.warn, .d-pill.bad { background: #fdecec; color: #b42318; }
+
+/* Earnings */
+.d-earn { display: grid; gap: 1rem; margin-top: 1rem; }
+@media (min-width: 900px) { .d-earn { grid-template-columns: 340px 1fr; } }
+.d-earn-main small { display: block; font-size: .8rem; font-weight: 700; color: #6b7080; }
+.d-earn-main > b { display: block; margin-top: .3rem; font-size: 2.2rem; font-weight: 800; letter-spacing: -.02em; color: var(--navy); font-variant-numeric: tabular-nums; }
+.d-earn-usd { display: block; font-size: .85rem; color: #8a8fa0; }
+.d-earn-reason { margin: .7rem 0 0; font-size: .82rem; color: #a5530a; }
+.d-earn-main .m-btn-primary { margin-top: 1rem; width: 100%; }
+.d-earn-main .m-btn-primary:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.d-earn-stats { display: grid; gap: 1rem; }
+@media (min-width: 640px) { .d-earn-stats { grid-template-columns: repeat(3, 1fr); } }
+.d-wd { margin-top: 1rem; }
+.m-hint.is-ok { color: #2f7a32; font-weight: 700; }
+.m-hint.is-bad { color: #b42318; }
+.d-earn { align-items: start; }

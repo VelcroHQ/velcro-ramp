@@ -242,6 +242,18 @@ function merchantFetchVelcroRates(): array
         }
         $out[$sym] = ['provider' => $provider, 'buy' => $buy ? round($buy, 2) : null, 'sell' => $sell ? round($sell, 2) : null, 'usd' => $usd];
     }
+    // A provider that didn't answer this time keeps its last good rates (up to 10 minutes old),
+    // so one slow provider never blanks the other coins' prices.
+    $old = json_decode((string) @file_get_contents($file), true);
+    if (is_array($old) && ($old['at'] ?? 0) > time() - 600) {
+        foreach ($out as $sym => $r) {
+            foreach (['buy', 'sell', 'usd'] as $k) {
+                if ($r[$k] === null && isset($old['rates'][$sym][$k])) {
+                    $out[$sym][$k] = $old['rates'][$sym][$k];
+                }
+            }
+        }
+    }
     if (array_filter(array_column($out, 'buy')) || array_filter(array_column($out, 'sell'))) {
         @file_put_contents($file, json_encode(['at' => time(), 'rates' => $out]), LOCK_EX);
     }

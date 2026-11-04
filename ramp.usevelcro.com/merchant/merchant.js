@@ -348,6 +348,136 @@ function renderCustomers() {
     </tr>`).join('')}</tbody></table></div>` : '<p class="d-list-error">No customers match.</p>';
 }
 
+// ── Earnings and withdrawals ──
+
+let earnings = null;
+let wdCurrency = 'NGN';
+let wdStep = 1;
+let wdBanks = null;
+let wdAccountName = '';
+const WD_STATUS = { PENDING: ['Waiting to be paid', 'wait'], APPROVED: ['Paid', 'live'], REJECTED: ['Not sent', 'bad'] };
+
+async function loadEarnings() {
+  try {
+    earnings = await api('/api/merchant/earnings');
+  } catch (e) {
+    $('wd-list').innerHTML = `<p class="d-list-error">${esc(e.message)}</p>`;
+    return;
+  }
+  const e = earnings;
+  $('earn-available').textContent = naira(e.available_ngn);
+  $('earn-usd').textContent = e.available_usd !== null ? `≈ $${Number(e.available_usd).toFixed(2)} · minimum $${e.min_usd}` : '';
+  $('earn-total').textContent = naira(e.earned_ngn);
+  $('earn-pending').textContent = naira(e.pending_ngn);
+  $('earn-paid').textContent = naira(e.paid_ngn);
+  $('earn-reason').textContent = e.reason || '';
+  $('earn-reason').classList.toggle('hidden', !e.reason);
+  $('earn-withdraw').disabled = !e.can_withdraw;
+  $('wd-chain').innerHTML = Object.entries(e.chains || {}).map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join('');
+  $('wd-list').innerHTML = e.withdrawals.length ? `<div class="overflow-x-auto"><table class="d-table"><thead><tr><th>Amount</th><th>To</th><th>Status</th><th>Requested</th></tr></thead><tbody>${e.withdrawals.map(w => {
+    const [label, cls] = WD_STATUS[w.status] || [w.status, 'off'];
+    return `<tr><td><span class="d-price"><b>${w.currency === 'NGN' ? naira(w.amount_ngn) : '$' + Number(w.amount_usd).toFixed(2) + ' USDC'}</b><small>${w.currency === 'NGN' ? 'Naira' : naira(w.amount_ngn) + ' of earnings'}</small></span></td>
+      <td class="text-sm">${esc(w.to)}${w.payout_ref ? `<small class="block text-slate-400">Ref ${esc(w.payout_ref)}</small>` : ''}${w.status === 'REJECTED' && w.note ? `<small class="block text-red-700">${esc(w.note)}</small>` : ''}</td>
+      <td><span class="d-pill ${cls}">${esc(label)}</span></td><td class="text-slate-500 text-sm">${when(w.created_at)}</td></tr>`;
+  }).join('')}</tbody></table></div>` : '<p class="d-list-error">No withdrawals yet. Your markup on every completed order adds up here.</p>';
+}
+
+async function openWithdraw() {
+  if (!earnings || !earnings.can_withdraw) return;
+  wdStep = 1;
+  $('wd-step2').classList.add('hidden');
+  $('wd-error').classList.add('hidden');
+  $('wd-btn').textContent = 'Email me a code';
+  $('wd-amount').textContent = naira(earnings.available_ngn);
+  $('wd-form').classList.remove('hidden');
+  setWdCurrency(wdCurrency);
+  $('wd-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!wdBanks) {
+    try {
+      const raw = await api('/api/institutions?country=NG&currency=NGN&channel=BANK');
+      wdBanks = (Array.isArray(raw) ? raw : (raw.data || [])).filter(b => b && b.name).sort((a, b) => a.name.localeCompare(b.name));
+      $('wd-bank').innerHTML = '<option value="">Choose your bank</option>' + wdBanks.map(b => `<option value="${esc(b.code)}">${esc(b.name)}</option>`).join('');
+    } catch (e) { /* the naira option shows the error on lookup */ }
+  }
+}
+
+function closeWithdraw() {
+  $('wd-form').classList.add('hidden');
+}
+
+function setWdCurrency(c) {
+  wdCurrency = c;
+  document.querySelectorAll('[data-wd]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.wd === c)));
+  $('wd-ngn').classList.toggle('hidden', c !== 'NGN');
+  $('wd-usdc').classList.toggle('hidden', c !== 'USDC');
+  const usd = earnings && earnings.available_usd !== null ? `$${Number(earnings.available_usd).toFixed(2)} USDC` : 'USDC';
+  $('wd-amount').textContent = c === 'NGN' ? naira(earnings.available_ngn) : usd;
+}
+
+// HostFi pays the naira, so its lookup is the name shown (and checked again on the server).
+let wdNameTimer = null;
+function checkWdAccount() {
+  const acct = $('wd-acct').value.replace(/\D/g, '').slice(0, 10);
+  $('wd-acct').value = acct;
+  wdAccountName = '';
+  const out = $('wd-name');
+  out.className = 'm-hint sm:col-span-2';
+  clearTimeout(wdNameTimer);
+  const bank = (wdBanks || []).find(b => b.code === $('wd-bank').value);
+  if (!bank || acct.length !== 10) { out.textContent = 'We check the name on the account before anything is sent.'; return; }
+  out.textContent = 'Checking the account…';
+  wdNameTimer = setTimeout(async () => {
+    try {
+      const d = await api('/api/hostfi/resolve', { method: 'POST', body: { bankCode: bank.code, bankName: bank.name, accountNumber: acct } });
+      if (!d.accountName) throw new Error('We couldn’t find that account.');
+      wdAccountName = d.accountName;
+      out.className = 'm-hint sm:col-span-2 is-ok';
+      out.textContent = '✓ ' + d.accountName;
+    } catch (e) {
+      out.className = 'm-hint sm:col-span-2 is-bad';
+      out.textContent = e.message;
+    }
+  }, 300);
+}
+
+async function submitWithdraw(ev) {
+  ev.preventDefault();
+  const err = $('wd-error');
+  const btn = $('wd-btn');
+  err.classList.add('hidden');
+  const body = { currency: wdCurrency };
+  if (wdCurrency === 'NGN') {
+    const bank = (wdBanks || []).find(b => b.code === $('wd-bank').value);
+    if (!bank || !wdAccountName) { err.textContent = 'Choose your bank and enter an account number we can verify.'; err.classList.remove('hidden'); return; }
+    Object.assign(body, { bank_code: bank.code, bank_name: bank.name, account_number: $('wd-acct').value });
+  } else {
+    Object.assign(body, { chain: $('wd-chain').value, address: $('wd-addr').value.trim() });
+    if (!body.address) { err.textContent = 'Paste your USDC wallet address.'; err.classList.remove('hidden'); return; }
+  }
+  btn.disabled = true;
+  try {
+    if (wdStep === 1) {
+      await api('/api/merchant/withdraw/code', { method: 'POST' });
+      wdStep = 2;
+      $('wd-step2').classList.remove('hidden');
+      btn.textContent = `Withdraw ${$('wd-amount').textContent}`;
+      $('wd-code').focus();
+      toast(`Code sent to ${me.email}`);
+    } else {
+      await api('/api/merchant/withdraw', { method: 'POST', body: { ...body, otp: $('wd-code').value.trim() } });
+      $('wd-code').value = '';
+      closeWithdraw();
+      toast('Withdrawal requested. We’ll email you when it’s sent.');
+      loadEarnings();
+    }
+  } catch (e) {
+    err.textContent = e.message;
+    err.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 function renderAll() {
   renderHeader();
   renderOverview();
@@ -360,6 +490,7 @@ function openTab(name) {
   if (name === 'settings') openSettings(null);
   if (name === 'orders' || name === 'overview') loadOrders();
   if (name === 'customers') loadCustomers();
+  if (name === 'earnings') loadEarnings();
   document.querySelectorAll('.d-tab').forEach(t => t.classList.toggle('hidden', t.id !== 'tab-' + name));
   document.querySelectorAll('.d-tabs button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === name));
   history.replaceState(null, '', '#' + name);
@@ -951,6 +1082,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.d-tabs button').forEach(b => b.addEventListener('click', () => openTab(b.dataset.tab)));
   $('brand-form').addEventListener('submit', saveBrand);
   $('ord-q').addEventListener('input', renderOrders);
+  $('wd-form').addEventListener('submit', submitWithdraw);
+  $('wd-bank').addEventListener('change', checkWdAccount);
+  $('wd-acct').addEventListener('input', checkWdAccount);
+  document.querySelectorAll('[data-wd]').forEach(b => b.addEventListener('click', () => setWdCurrency(b.dataset.wd)));
   $('cus-q').addEventListener('input', renderCustomers);
   document.querySelectorAll('[data-of]').forEach(b => b.addEventListener('click', () => {
     orderFilter = b.dataset.of;

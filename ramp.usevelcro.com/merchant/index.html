@@ -18,7 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link href="/style.css?v=3" rel="stylesheet">
   <link href="/css/app.css?v=1" rel="stylesheet">
-  <link href="/merchant/merchant.css?v=10" rel="stylesheet">
+  <link href="/merchant/merchant.css?v=11" rel="stylesheet">
 </head>
 
 <body class="bg-white text-velcro-navy antialiased">
@@ -405,7 +405,50 @@
             <p>A naira account number in your store's name. Your earnings land there automatically, and your customers get their own accounts so they can fund once and trade instantly.</p>
           </div>
         </div>
-        <div class="d-empty"><span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M21 9h-6a3 3 0 0 0 0 6h6z"/></svg></span><h2>₦0 earned so far</h2><p>Your markup on every completed order collects here. Withdraw it to your bank whenever you like.</p><button type="button" class="m-btn-primary" onclick="openTab('prices')">Review your markup</button></div></section>
+        <div class="d-earn">
+          <div class="d-card d-earn-main">
+            <small>Available to withdraw</small>
+            <b id="earn-available">₦0</b>
+            <span id="earn-usd" class="d-earn-usd"></span>
+            <p id="earn-reason" class="d-earn-reason hidden"></p>
+            <button type="button" id="earn-withdraw" class="m-btn-primary" onclick="openWithdraw()">Withdraw</button>
+          </div>
+          <div class="d-earn-stats">
+            <div class="d-stat"><small>Total earned</small><b id="earn-total">₦0</b><span>from completed orders</span></div>
+            <div class="d-stat"><small>Waiting to be paid</small><b id="earn-pending">₦0</b><span>withdrawal requested</span></div>
+            <div class="d-stat"><small>Paid out</small><b id="earn-paid">₦0</b><span>all time</span></div>
+          </div>
+        </div>
+
+        <form id="wd-form" class="d-card d-wd hidden" novalidate>
+          <div class="flex items-start justify-between gap-3">
+            <div><h2 class="d-h2">Withdraw <span id="wd-amount"></span></h2><p class="text-sm text-slate-500">Your whole available balance. We pay within a working day.</p></div>
+            <button type="button" class="d-chip" onclick="closeWithdraw()">Cancel</button>
+          </div>
+          <div class="d-filter mt-4" role="group" aria-label="Get paid in">
+            <button type="button" data-wd="NGN" aria-pressed="true">Naira to my bank</button>
+            <button type="button" data-wd="USDC" aria-pressed="false">USDC to my wallet</button>
+          </div>
+          <div id="wd-ngn" class="grid sm:grid-cols-2 gap-4 mt-4">
+            <div><label class="m-label" for="wd-bank">Bank</label><select id="wd-bank" class="m-input"><option value="">Choose your bank</option></select></div>
+            <div><label class="m-label" for="wd-acct">Account number</label><input id="wd-acct" class="m-input" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="10 digits"></div>
+            <p id="wd-name" class="m-hint sm:col-span-2">We check the name on the account before anything is sent.</p>
+          </div>
+          <div id="wd-usdc" class="grid sm:grid-cols-[200px_1fr] gap-4 mt-4 hidden">
+            <div><label class="m-label" for="wd-chain">Network</label><select id="wd-chain" class="m-input"></select></div>
+            <div><label class="m-label" for="wd-addr">USDC wallet address</label><input id="wd-addr" class="m-input" autocomplete="off" spellcheck="false" placeholder="Paste your address"></div>
+          </div>
+          <div id="wd-step2" class="mt-4 hidden">
+            <label class="m-label" for="wd-code">6-digit code from your email</label>
+            <input id="wd-code" class="m-input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••">
+          </div>
+          <p id="wd-error" class="m-error hidden mt-3"></p>
+          <button type="submit" id="wd-btn" class="m-btn-primary mt-4">Email me a code</button>
+        </form>
+
+        <div class="d-list-head mt-6"><h2 class="d-h2">Withdrawals</h2></div>
+        <div id="wd-list" class="d-card d-card-flush mt-3"></div>
+      </section>
 
       <!-- Settings -->
       <section id="tab-settings" class="d-tab hidden">
@@ -609,7 +652,7 @@
 
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
-  <script src="/merchant/merchant.js?v=8"></script>
+  <script src="/merchant/merchant.js?v=9"></script>
 </body>
 
 </html>
