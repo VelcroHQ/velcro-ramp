@@ -327,6 +327,40 @@ async function networksFor(provider, symbol, selling) {
   return selling ? hostfiSellNetworks(symbol) : hostfiNetworks(symbol);
 }
 
+const TOP_BANK_CODES = [
+  '100004', // OPay
+  '000014', // Access Bank
+  '000013', // GTBank
+  '000015', // Zenith Bank
+  '000016', // First Bank of Nigeria
+  '000004', // United Bank for Africa (UBA)
+  '000007', // Fidelity Bank
+  '000018', // Union Bank
+  '000017', // Wema Bank / ALAT
+  '000001', // Sterling Bank
+  '000010', // Ecobank
+  '090267', // Kuda Bank
+  '000008', // Kuda Bank (alt)
+  '000012', // Stanbic IBTC
+  '000003', // FCMB
+  '100033', // PalmPay
+  '090405', // Moniepoint
+  '090393', // Moniepoint MFB
+  '000011', // Unity Bank
+  '000002', // Standard Chartered
+];
+
+function sortBanks(banks) {
+  return [...banks].sort((a, b) => {
+    const aTop = TOP_BANK_CODES.indexOf(a.code);
+    const bTop = TOP_BANK_CODES.indexOf(b.code);
+    if (aTop !== -1 && bTop !== -1) return aTop - bTop;
+    if (aTop !== -1) return -1;
+    if (bTop !== -1) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 // Payout banks: PAJ keeps its own list; HostFi and Switch both take Switch's bank codes.
 const bankLists = {};
 async function banksFor(provider) {
@@ -334,9 +368,9 @@ async function banksFor(provider) {
   if (!bankLists[key]) {
     try {
       const raw = await api(key === 'paj' ? '/api/paj/banks' : '/api/institutions?country=NG&currency=NGN&channel=BANK');
-      bankLists[key] = (Array.isArray(raw) ? raw : (raw.data || [])).filter(b => b && b.name)
-        .map(b => ({ id: String(key === 'paj' ? (b.id || b.code) : b.code), code: String(b.code || ''), name: String(b.name).trim() }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+      const list = (Array.isArray(raw) ? raw : (raw.data || [])).filter(b => b && b.name)
+        .map(b => ({ id: String(key === 'paj' ? (b.id || b.code) : b.code), code: String(b.code || ''), name: String(b.name).trim() }));
+      bankLists[key] = sortBanks(list);
     } catch (e) {
       return [];
     }
@@ -452,11 +486,96 @@ function netLabel() {
   return (checkout.nets.find(n => n.code === checkout.network) || {}).label || '';
 }
 
+function toggleBankDropdown(open) {
+  const dd = $('co-bank-dropdown');
+  const btn = $('co-bank-btn');
+  const bd = $('co-bank-backdrop');
+  if (!dd || !btn) return;
+  const isHidden = dd.hidden;
+  const show = typeof open === 'boolean' ? open : isHidden;
+  dd.hidden = !show;
+  btn.setAttribute('aria-expanded', String(show));
+  if (bd) bd.hidden = !show;
+  if (show) {
+    renderBankList($('co-bank-search')?.value || '');
+    setTimeout(() => $('co-bank-search')?.focus({ preventScroll: true }), 50);
+  }
+}
+
+function clearBankSearch() {
+  const input = $('co-bank-search');
+  if (input) {
+    input.value = '';
+    renderBankList('');
+    input.focus();
+  }
+  if ($('co-bank-clear')) $('co-bank-clear').hidden = true;
+}
+
+function filterBanks(query) {
+  if ($('co-bank-clear')) $('co-bank-clear').hidden = !query;
+  renderBankList(query);
+}
+
+function selectBank(id) {
+  checkout.bank = id;
+  const bank = (checkout.banks || []).find(b => b.id === id);
+  const selectedEl = $('co-bank-selected');
+  if (selectedEl) {
+    selectedEl.textContent = bank ? bank.name : 'Choose your bank';
+    selectedEl.className = bank ? 'has-bank' : 'is-empty';
+  }
+  toggleBankDropdown(false);
+  checkAccountName();
+}
+
+function renderBankList(query) {
+  const listEl = $('co-bank-list');
+  if (!listEl) return;
+  const q = String(query || '').toLowerCase().trim();
+  const banks = (checkout.banks || []).filter(b => !q || b.name.toLowerCase().includes(q) || b.code.includes(q));
+  if (!banks.length) {
+    listEl.innerHTML = `
+      <div class="s-bank-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <span>No banks found matching "${esc(query)}"</span>
+      </div>`;
+    return;
+  }
+  listEl.innerHTML = banks.map(b => {
+    const isSelected = b.id === checkout.bank;
+    return `
+      <button type="button" role="option" class="s-bank-item${isSelected ? ' is-selected' : ''}" data-bid="${esc(b.id)}">
+        <span class="s-bank-item-left">
+          <svg class="s-bank-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/></svg>
+          <span class="s-bank-item-name">${esc(b.name)}</span>
+        </span>
+        ${isSelected ? `<svg class="s-bank-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 5 5L20 7"/></svg>` : ''}
+      </button>`;
+  }).join('');
+  listEl.querySelectorAll('.s-bank-item').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      selectBank(btn.dataset.bid);
+    };
+  });
+}
+
+document.addEventListener('click', e => {
+  const wrap = $('co-bank-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    toggleBankDropdown(false);
+  }
+});
+
 function sellDetailsHtml() {
   const c = store.coins[checkout.coin];
   const nets = checkout.nets;
   const isAny = isAnyAmountCoin(c.symbol, checkout.side) || !(checkout.amount > 0);
   const est = checkout.amount > 0 ? payoutFor(c.symbol, checkout.amount) : 0;
+  const currentBank = (checkout.banks || []).find(b => b.id === checkout.bank);
+  const selectedBankName = currentBank ? currentBank.name : '';
+
   return `
     <button type="button" class="s-back" data-act="back">${ICON_BACK}Back</button>
     <h2 class="s-co-title">Sell ${esc(c.symbol)}</h2>
@@ -468,11 +587,28 @@ function sellDetailsHtml() {
       const logo = getChainLogo(n.chain);
       return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon">` : ''}<span>${esc(n.label)}</span></button>`;
     }).join('')}</div>` : ''}
-    <label class="s-label" for="co-bank">Your bank</label>
-    <select id="co-bank" class="s-input">
-      <option value="">Choose your bank</option>
-      ${checkout.banks.map(b => `<option value="${esc(b.id)}"${b.id === checkout.bank ? ' selected' : ''}>${esc(b.name)}</option>`).join('')}
-    </select>
+
+    <label class="s-label" id="co-bank-label">Your bank</label>
+    <div class="s-bank-select" id="co-bank-wrap">
+      <button type="button" class="s-bank-trigger" id="co-bank-btn" aria-haspopup="listbox" aria-expanded="false" onclick="toggleBankDropdown()">
+        <span class="s-bank-trigger-info">
+          <svg class="s-bank-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/></svg>
+          <span id="co-bank-selected" class="${selectedBankName ? 'has-bank' : 'is-empty'}">${esc(selectedBankName || 'Choose your bank')}</span>
+        </span>
+        <svg class="s-bank-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+
+      <div class="s-bank-dropdown" id="co-bank-dropdown" hidden>
+        <div class="s-bank-search-bar">
+          <svg class="s-bank-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="co-bank-search" placeholder="Search Nigerian banks…" autocomplete="off" autocorrect="off" spellcheck="false" oninput="filterBanks(this.value)">
+          <button type="button" class="s-bank-search-clear" id="co-bank-clear" onclick="clearBankSearch()" hidden aria-label="Clear search">✕</button>
+        </div>
+        <div class="s-bank-list" id="co-bank-list" role="listbox"></div>
+      </div>
+      <div class="s-bank-backdrop" id="co-bank-backdrop" onclick="toggleBankDropdown(false)" hidden></div>
+    </div>
+
     <label class="s-label" for="co-acct">Account number</label>
     <input id="co-acct" class="s-input s-mono" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="10 digits" value="${esc(checkout.account)}">
     <p id="co-name" class="s-name-check${checkout.accountName ? ' is-ok' : ''}">${checkout.accountName ? `${ICON_CHECK}${esc(checkout.accountName)}` : 'We check the name on the account before you send anything.'}</p>
@@ -526,13 +662,15 @@ function sellProgressHtml(o) {
 // Checks the account name with the provider that will pay it.
 let nameTimer = null;
 function checkAccountName() {
-  checkout.bank = $('co-bank').value;
-  checkout.account = $('co-acct').value.replace(/\D/g, '').slice(0, 10);
-  $('co-acct').value = checkout.account;
+  if ($('co-acct')) {
+    checkout.account = $('co-acct').value.replace(/\D/g, '').slice(0, 10);
+    $('co-acct').value = checkout.account;
+  }
   checkout.accountName = '';
   const out = $('co-name');
-  const go = $('s-checkout').querySelector('[data-act="create"]');
-  go.disabled = true;
+  const go = $('s-checkout')?.querySelector('[data-act="create"]');
+  if (go) go.disabled = true;
+  if (!out) return;
   out.className = 's-name-check';
   clearTimeout(nameTimer);
   if (!checkout.bank || checkout.account.length !== 10) {
@@ -540,7 +678,7 @@ function checkAccountName() {
     return;
   }
   out.textContent = 'Checking the account…';
-  const bank = checkout.banks.find(b => b.id === checkout.bank) || {};
+  const bank = (checkout.banks || []).find(b => b.id === checkout.bank) || {};
   const key = checkout.bank + checkout.account;
   nameTimer = setTimeout(async () => {
     try {
@@ -554,7 +692,7 @@ function checkAccountName() {
       checkout.accountName = String(name).trim();
       out.className = 's-name-check is-ok';
       out.innerHTML = `${ICON_CHECK}${esc(checkout.accountName)}`;
-      go.disabled = false;
+      if (go) go.disabled = false;
     } catch (e) {
       if (key !== checkout.bank + checkout.account) return;
       out.className = 's-name-check is-bad';
@@ -690,8 +828,7 @@ function wireCheckout() {
   const box = $('s-checkout');
   box.querySelectorAll('[data-act="back"]').forEach(b => b.onclick = () => (checkout.step === 'pay' || checkout.step === 'orders') ? showForm() : showForm());
   box.querySelectorAll('[data-net]').forEach(b => b.onclick = () => { if ($('co-wallet')) checkout.wallet = $('co-wallet').value.trim(); checkout.network = b.dataset.net; renderCheckout(); });
-  if ($('co-bank')) {
-    $('co-bank').onchange = checkAccountName;
+  if ($('co-acct')) {
     $('co-acct').oninput = checkAccountName;
   }
   box.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
