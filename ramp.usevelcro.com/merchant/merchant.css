@@ -518,3 +518,27 @@ button.d-set-card:hover { border-color: #cfd3e3; box-shadow: 0 14px 28px -22px r
 .d-ngn b { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-size: 1rem; }
 .d-ngn em { font-style: normal; font-size: .7rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; background: var(--green); color: var(--navy); }
 .d-ngn p { margin: .3rem 0 0; font-size: .88rem; line-height: 1.55; color: rgba(255, 255, 255, .75); max-width: 44rem; }
+
+/* Orders and Customers */
+.d-list-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.d-sum { display: flex; gap: 1.25rem; font-size: .85rem; color: #6b7080; }
+.d-sum b { color: var(--navy); font-weight: 800; }
+.d-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: 1.25rem 0 .9rem; }
+.d-search { flex: 1 1 260px; display: flex; align-items: center; gap: .5rem; padding: 0 .8rem; height: 40px; border-radius: 12px; background: #fff; border: 1px solid #e3e6ef; color: #8a8fa0; }
+.d-search:focus-within { border-color: #c9cde0; box-shadow: 0 0 0 3px rgba(13, 13, 89, .05); }
+.d-search input { flex: 1; min-width: 0; border: 0; outline: none; font-size: .9rem; color: var(--navy); background: transparent; }
+.d-filter { display: inline-flex; padding: 3px; gap: 2px; border-radius: 12px; background: #eef0f5; }
+.d-filter button { padding: .4rem .75rem; border-radius: 9px; font-size: .8rem; font-weight: 700; color: #6b7080; }
+.d-filter button[aria-pressed="true"] { background: #fff; color: var(--navy); box-shadow: 0 1px 2px rgba(13, 13, 89, .08); }
+.d-card-flush { padding: 0 !important; overflow: hidden; }
+.d-list-error { margin: 0; padding: 2rem 1.25rem; text-align: center; color: #8a8fa0; font-size: .9rem; }
+.d-who { display: flex; align-items: center; gap: .65rem; }
+.d-who b { display: block; font-weight: 700; color: var(--navy); }
+.d-who small { display: block; font-size: .76rem; color: #8a8fa0; }
+.d-who-av { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #eef0f8; color: var(--navy); font-weight: 800; font-size: .8rem; flex-shrink: 0; }
+.d-side { font-size: .7rem; font-weight: 800; padding: .1rem .4rem; border-radius: 6px; margin-right: .15rem; }
+.d-side.is-buy { background: #e9f6df; color: #3f7a12; }
+.d-side.is-sell { background: #e8edff; color: #3d4bb8; }
+.d-pill.wait { background: #fff4e0; color: #a5530a; }
+.d-pill.busy { background: #e8edff; color: #3d4bb8; }
+.d-pill.warn, .d-pill.bad { background: #fdecec; color: #b42318; }

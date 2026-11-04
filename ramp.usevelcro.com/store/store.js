@@ -416,8 +416,8 @@ function sellPayHtml() {
   const amount = o.sendAmount ? `${fmtCoin(o.sendAmount, o.coin)} ${esc(o.coin)}` : esc(o.coin);
   return `
     <button type="button" class="s-back" data-act="back">${ICON_BACK}${done ? 'New order' : 'Back'}</button>
-    <h2 class="s-co-title">${done ? 'Naira paid' : waiting ? `Send ${amount}` : `Selling ${esc(o.coin)}`}</h2>
-    ${!waiting ? '' : `
+    <h2 class="s-co-title">${done ? 'Naira paid' : waiting ? (o.claimed ? `Confirming your ${esc(o.coin)}` : `Send ${amount}`) : `Selling ${esc(o.coin)}`}</h2>
+    ${!waiting ? '' : o.claimed && !o.showDetails ? checkingHtml(o, `your ${amount}`) : `
     <p class="s-co-lede">Send ${o.exact ? 'exactly this amount' : 'your ' + esc(o.coin)} to the address below${o.network ? `, on the <b>${esc(o.network)}</b> network` : ''}. We'll detect it automatically.</p>
     <div class="s-bank">
       <div><span>Address</span><b class="s-mono">${esc(o.address)}</b><button type="button" class="s-copy" data-copy="${esc(o.address)}">${ICON_COPY}Copy</button></div>
@@ -425,7 +425,9 @@ function sellPayHtml() {
       ${o.sendAmount ? `<div><span>Amount</span><b>${amount}</b><button type="button" class="s-copy" data-copy="${esc(String(o.sendAmount))}">${ICON_COPY}Copy</button></div>` : ''}
       ${o.payTo ? `<div><span>Paid to</span><b>${esc(o.payTo)}</b></div>` : ''}
     </div>
-    <p class="s-expiry" id="co-expiry"></p>`}
+    <p class="s-expiry" id="co-expiry"></p>
+    ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn-brand s-go" data-act="paid">I’ve sent the ${esc(o.coin)}</button>
+    <p class="s-hint s-center-text">Tap this once it has left your wallet.</p>`}`}
     <ol class="s-progress" id="co-steps">${sellProgressHtml(o)}</ol>
     <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me.email)}.</p>`;
 }
@@ -554,8 +556,8 @@ function checkoutPayHtml() {
   const waiting = o.status === 'AWAITING_DEPOSIT';
   return `
     <button type="button" class="s-back" data-act="back">${ICON_BACK}${done ? 'New order' : 'Back'}</button>
-    <h2 class="s-co-title">${done ? `${esc(o.coin)} sent` : waiting ? `Transfer ${fmtNgn(o.amount)}` : `Buying ${esc(o.coin)}`}</h2>
-    ${!waiting ? '' : `
+    <h2 class="s-co-title">${done ? `${esc(o.coin)} sent` : waiting ? (o.claimed ? 'Confirming your payment' : `Transfer ${fmtNgn(o.amount)}`) : `Buying ${esc(o.coin)}`}</h2>
+    ${!waiting ? '' : o.claimed && !o.showDetails ? checkingHtml(o, `your ${fmtNgn(o.amount)} transfer`) : `
     <p class="s-co-lede">Send exactly this amount from any Nigerian bank to the account below. We'll detect it automatically.</p>
     <div class="s-bank">
       <div><span>Bank</span><b>${esc(o.bank)}</b></div>
@@ -563,9 +565,30 @@ function checkoutPayHtml() {
       <div><span>Account name</span><b>${esc(o.accountName)}</b></div>
       <div><span>Amount</span><b>${fmtNgn(o.amount)}</b><button type="button" class="s-copy" data-copy="${esc(String(o.amount))}">${ICON_COPY}Copy</button></div>
     </div>
-    <p class="s-expiry" id="co-expiry"></p>`}
+    <p class="s-expiry" id="co-expiry"></p>
+    ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn-brand s-go" data-act="paid">I’ve sent the money</button>
+    <p class="s-hint s-center-text">Tap this once your transfer has gone through.</p>`}`}
     <ol class="s-progress" id="co-steps">${progressHtml(o)}</ol>
     <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me.email)}.</p>`;
+}
+
+// After "I've sent it": what we're waiting for, how long we've been looking, and where they'll hear.
+function checkingHtml(o, what) {
+  return `
+    <div class="s-checking">
+      <span class="s-checking-ring" aria-hidden="true"></span>
+      <div>
+        <b>Checking for ${what}</b>
+        <p>Most ${o.side === 'sell' ? 'deposits' : 'transfers'} show up within 1–5 minutes. You can leave this page; we'll email you at ${esc(me.email)} at each step.</p>
+        <span class="s-checking-time" id="co-checking"></span>
+      </div>
+    </div>
+    <button type="button" class="s-link-btn" data-act="show-details">Show ${o.side === 'sell' ? 'deposit' : 'payment'} details</button>`;
+}
+
+const PAID_KEY = ref => 'velcro_paid_' + ref;
+function paidAt(ref) {
+  try { return Number(localStorage.getItem(PAID_KEY(ref))) || 0; } catch (e) { return 0; }
 }
 
 // Steps from the order's live status: waiting → received → converting/sending → sent → confirmed.
@@ -579,7 +602,7 @@ function progressHtml(o) {
     ['Payment received', received ? 'done' : 'next', received && p.amount ? fmtNgn(p.amount) : ''],
     [`Sending ${esc(o.coin)} to your wallet`, sent ? 'done' : (received ? 'now' : 'next'), p.converted === 'pending' ? 'Converting…' : ''],
     [`${esc(o.coin)} confirmed on the network`, confirmed ? 'done' : (sent ? 'now' : 'next'),
-      sent && p.explorer_url ? `<a href="${esc(p.explorer_url)}" target="_blank" rel="noopener">View on explorer</a>` : (p.payout_amount ? `${fmtCoin(p.payout_amount, o.coin)} ${esc(o.coin)}` : '')],
+      sent && p.explorer_url ? `<a href="${esc(p.explorer_url)}" target="_blank" rel="noopener">View on explorer</a>` : (p.payout_amount ? `${sent ? '' : 'About '}${fmtCoin(p.payout_amount, o.coin)} ${esc(o.coin)}` : '')],
   ];
   if (p.payout === 'failed' || p.payout === 'review') {
     steps[2] = ['We’re checking your order', 'warn', "Your money is safe. We'll email you shortly."];
@@ -599,6 +622,19 @@ function wireCheckout() {
     try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied'); } catch (e) { toast(b.dataset.copy); }
   });
   box.querySelectorAll('[data-order]').forEach(b => b.onclick = () => openOrder(b.dataset.order));
+  const paid = box.querySelector('[data-act="paid"]');
+  if (paid) paid.onclick = () => {
+    const o = checkout.order;
+    o.claimed = Date.now();
+    o.showDetails = false;
+    try { localStorage.setItem(PAID_KEY(o.reference), String(o.claimed)); } catch (e) { /* ignore */ }
+    renderCheckout();
+    startPolling(3000);
+  };
+  box.querySelectorAll('[data-act="show-details"], [data-act="hide-details"]').forEach(b => b.onclick = () => {
+    checkout.order.showDetails = b.dataset.act === 'show-details';
+    renderCheckout();
+  });
   const create = box.querySelector('[data-act="create"]');
   if (create) create.onclick = checkout.side === 'sell' ? createSell : createBuy;
 }
@@ -661,11 +697,18 @@ async function createBuy() {
   }
 }
 
-function startPolling() {
+function startPolling(every = 5000) {
   clearInterval(pollTimer);
   clearInterval(expiryTimer);
   const o = checkout.order;
+  if (!o.claimed) o.claimed = paidAt(o.reference);
+  if (o.claimed) every = 3000;
   const tickExpiry = () => {
+    const chk = $('co-checking');
+    if (chk && o.claimed) {
+      const s2 = Math.max(0, Math.floor((Date.now() - o.claimed) / 1000));
+      chk.textContent = `Checking for ${Math.floor(s2 / 60)}:${String(s2 % 60).padStart(2, '0')}`;
+    }
     const el = $('co-expiry');
     if (!el || !o.expiresAt) return;
     const left = Math.max(0, Math.floor((o.expiresAt - Date.now()) / 1000));
@@ -684,7 +727,10 @@ function startPolling() {
         explorer_url: t.explorer_url || null,
         payout_amount: Number(t.destination_amount) || null,
       };
-      if (o.status !== 'AWAITING_DEPOSIT') clearInterval(expiryTimer);
+      if (o.status !== 'AWAITING_DEPOSIT') {
+        clearInterval(expiryTimer);
+        try { localStorage.removeItem(PAID_KEY(o.reference)); } catch (e) { /* ignore */ }
+      }
       if (['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(o.status)) clearInterval(pollTimer);
       // Paid (or finished): redraw without the bank details.
       if (was !== o.status && (was === 'AWAITING_DEPOSIT' || o.status === 'COMPLETED')) {
@@ -696,7 +742,7 @@ function startPolling() {
     } catch (e) { /* keep trying */ }
   };
   poll();
-  pollTimer = setInterval(poll, 5000);
+  pollTimer = setInterval(poll, every);
 }
 
 // ── My orders ──

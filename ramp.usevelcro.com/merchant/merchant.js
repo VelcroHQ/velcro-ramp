@@ -245,6 +245,109 @@ async function showApp() {
   }
 }
 
+// ── Orders ──
+
+let orders = null;
+let orderFilter = 'all';
+let ordersTimer = null;
+const OPEN_STATUSES = ['AWAITING_DEPOSIT', 'PENDING', 'DETECTED', 'RECEIVED', 'VERIFIED', 'CONFIRMED', 'PROCESSING', 'INITIATED'];
+const ORDER_STATUS = {
+  AWAITING_DEPOSIT: ['Awaiting payment', 'wait'], CONFIRMED: ['Payment received', 'busy'], PROCESSING: ['Processing', 'busy'], DETECTED: ['Payment seen', 'busy'],
+  COMPLETED: ['Completed', 'live'], REVIEW: ['Needs review', 'warn'], FAILED: ['Failed', 'bad'], CANCELLED: ['Cancelled', 'off'], EXPIRED: ['Expired', 'off'],
+};
+const when = v => { const d = new Date(String(v).replace(' ', 'T') + (String(v).includes('Z') ? '' : 'Z')); return isNaN(d) ? '' : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
+
+async function loadOrders() {
+  try {
+    const data = await api('/api/merchant/orders');
+    orders = data.orders || [];
+    const sm = data.summary || {};
+    $('ov-orders').textContent = String(sm.orders_month || 0);
+    $('ov-volume').textContent = naira(sm.volume_month_ngn || 0);
+    $('ov-earned').textContent = naira(sm.earned_month_ngn || 0);
+    $('ord-sum').innerHTML = `<span><b>${orders.length}</b> orders</span><span><b>${naira(sm.earned_total_ngn || 0)}</b> earned in total</span>`;
+    renderOrders();
+  } catch (e) {
+    $('ord-list').innerHTML = `<p class="d-list-error">${esc(e.message)}</p>`;
+  }
+  // Orders still moving refresh themselves while the tab is open.
+  clearTimeout(ordersTimer);
+  if (orders && orders.some(o => OPEN_STATUSES.includes(o.status)) && !$('tab-orders').classList.contains('hidden')) ordersTimer = setTimeout(loadOrders, 15000);
+}
+
+function shownOrders() {
+  const q = ($('ord-q').value || '').trim().toLowerCase();
+  return (orders || []).filter(o => {
+    if (orderFilter === 'buy' || orderFilter === 'sell') { if (o.side !== orderFilter) return false; }
+    if (orderFilter === 'open' && !OPEN_STATUSES.includes(o.status)) return false;
+    if (orderFilter === 'done' && o.status !== 'COMPLETED') return false;
+    return !q || [o.customer_email, o.customer_name, o.coin, o.reference].some(v => String(v || '').toLowerCase().includes(q));
+  });
+}
+
+function renderOrders() {
+  const list = $('ord-list');
+  if (!orders || !orders.length) { list.innerHTML = $('ord-empty').innerHTML; list.classList.remove('d-card-flush'); return; }
+  list.classList.add('d-card-flush');
+  const rows = shownOrders();
+  list.innerHTML = rows.length ? `<div class="overflow-x-auto"><table class="d-table d-table-orders"><thead><tr><th>Customer</th><th>Order</th><th>Amount</th><th>Your markup</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows.map(o => {
+    const [label, cls] = ORDER_STATUS[o.status] || [o.status, 'off'];
+    const coinAmt = o.coin_amount ? `${Number(o.coin_amount).toLocaleString('en-US', { maximumFractionDigits: 8 })} ${esc(o.coin)}` : esc(o.coin);
+    return `<tr>
+      <td><span class="d-who"><b>${esc(o.customer_name || (o.customer_email || '').split('@')[0])}</b><small>${esc(o.customer_email || '')}</small></span></td>
+      <td><span class="d-coin"><img src="${COIN_LOGOS[o.coin] || ''}" alt=""><span><span class="d-side is-${o.side}">${o.side === 'buy' ? 'Buy' : 'Sell'}</span> ${esc(o.coin)}<small title="${esc(o.reference)}">${esc(String(o.reference).slice(0, 14))}…</small></span></span></td>
+      <td><span class="d-price"><b>${o.naira ? naira(o.naira) : '—'}</b><small>${coinAmt}</small></span></td>
+      <td><span class="d-price"><b class="${o.status === 'COMPLETED' ? 'text-[#4d7a12]' : 'text-slate-400'}">${o.earned ? naira(o.earned) : '—'}</b><small>${o.markup_percent}%${o.status === 'COMPLETED' ? '' : ' · if completed'}</small></span></td>
+      <td><span class="d-pill ${cls}">${esc(label)}</span></td>
+      <td class="text-slate-500 text-sm">${when(o.created_at)}</td>
+    </tr>`;
+  }).join('')}</tbody></table></div>` : '<p class="d-list-error">No orders match.</p>';
+}
+
+function exportOrders() {
+  const rows = shownOrders();
+  if (!rows.length) return toast('No orders to export');
+  const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [['Date', 'Reference', 'Customer', 'Email', 'Side', 'Coin', 'Coin amount', 'Naira', 'Markup %', 'Earned (NGN)', 'Status']]
+    .concat(rows.map(o => [o.created_at, o.reference, o.customer_name || '', o.customer_email || '', o.side, o.coin, o.coin_amount ?? '', o.naira, o.markup_percent, o.earned, o.status]))
+    .map(r => r.map(cell).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `${(merchant.slug || 'store')}-orders.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ── Customers ──
+
+let customers = null;
+async function loadCustomers() {
+  try {
+    const data = await api('/api/merchant/customers');
+    customers = data.customers || [];
+    const active = customers.filter(c => c.orders > 0).length;
+    $('cus-sum').innerHTML = `<span><b>${customers.length}</b> customers</span><span><b>${active}</b> have ordered</span>`;
+    renderCustomers();
+  } catch (e) {
+    $('cus-list').innerHTML = `<p class="d-list-error">${esc(e.message)}</p>`;
+  }
+}
+
+function renderCustomers() {
+  const list = $('cus-list');
+  if (!customers || !customers.length) { list.innerHTML = $('cus-empty').innerHTML; list.classList.remove('d-card-flush'); return; }
+  list.classList.add('d-card-flush');
+  const q = ($('cus-q').value || '').trim().toLowerCase();
+  const rows = customers.filter(c => !q || [c.email, c.name].some(v => String(v || '').toLowerCase().includes(q)));
+  list.innerHTML = rows.length ? `<div class="overflow-x-auto"><table class="d-table"><thead><tr><th>Customer</th><th>Orders</th><th>Completed volume</th><th>Last order</th><th>Joined</th></tr></thead><tbody>${rows.map(c => `<tr>
+      <td><span class="d-who"><span class="d-who-av">${esc((c.name || c.email).trim().charAt(0).toUpperCase())}</span><span><b>${esc(c.name || c.email.split('@')[0])}</b><small>${esc(c.email)}</small></span></span></td>
+      <td><b>${c.orders}</b></td>
+      <td>${c.volume_ngn ? naira(c.volume_ngn) : '<span class="text-slate-400">—</span>'}</td>
+      <td class="text-slate-500 text-sm">${c.last_order_at ? when(c.last_order_at) : '—'}</td>
+      <td class="text-slate-500 text-sm">${when(c.since)}</td>
+    </tr>`).join('')}</tbody></table></div>` : '<p class="d-list-error">No customers match.</p>';
+}
+
 function renderAll() {
   renderHeader();
   renderOverview();
@@ -255,6 +358,8 @@ function renderAll() {
 function openTab(name) {
   if (!$('tab-' + name)) name = 'overview';
   if (name === 'settings') openSettings(null);
+  if (name === 'orders' || name === 'overview') loadOrders();
+  if (name === 'customers') loadCustomers();
   document.querySelectorAll('.d-tab').forEach(t => t.classList.toggle('hidden', t.id !== 'tab-' + name));
   document.querySelectorAll('.d-tabs button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === name));
   history.replaceState(null, '', '#' + name);
@@ -845,6 +950,13 @@ document.addEventListener('DOMContentLoaded', () => {
   $('auth-form').addEventListener('submit', submitAuth);
   document.querySelectorAll('.d-tabs button').forEach(b => b.addEventListener('click', () => openTab(b.dataset.tab)));
   $('brand-form').addEventListener('submit', saveBrand);
+  $('ord-q').addEventListener('input', renderOrders);
+  $('cus-q').addEventListener('input', renderCustomers);
+  document.querySelectorAll('[data-of]').forEach(b => b.addEventListener('click', () => {
+    orderFilter = b.dataset.of;
+    document.querySelectorAll('[data-of]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    renderOrders();
+  }));
   $('panel-security').addEventListener('submit', submitSecurity);
   $('panel-support').addEventListener('submit', submitSupport);
   $('kyb-form').addEventListener('submit', submitKyb);

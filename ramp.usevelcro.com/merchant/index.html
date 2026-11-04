@@ -18,7 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link href="/style.css?v=3" rel="stylesheet">
   <link href="/css/app.css?v=1" rel="stylesheet">
-  <link href="/merchant/merchant.css?v=9" rel="stylesheet">
+  <link href="/merchant/merchant.css?v=10" rel="stylesheet">
 </head>
 
 <body class="bg-white text-velcro-navy antialiased">
@@ -322,9 +322,9 @@
             </div>
 
             <div class="mt-5 grid grid-cols-3 gap-3">
-              <div class="d-stat"><small>Orders</small><b>0</b><span>this month</span></div>
-              <div class="d-stat"><small>Volume</small><b>₦0</b><span>this month</span></div>
-              <div class="d-stat"><small>Earnings</small><b class="text-[#4d7a12]">₦0</b><span>available</span></div>
+              <div class="d-stat"><small>Orders</small><b id="ov-orders">0</b><span>this month</span></div>
+              <div class="d-stat"><small>Volume</small><b id="ov-volume">₦0</b><span>completed this month</span></div>
+              <div class="d-stat"><small>Earnings</small><b id="ov-earned" class="text-[#4d7a12]">₦0</b><span>this month</span></div>
             </div>
           </div>
 
@@ -367,8 +367,36 @@
       </section>
 
       <!-- Orders / Customers / Earnings: empty until the storefront is live -->
-      <section id="tab-orders" class="d-tab hidden"><div class="d-empty"><span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><h2>No orders yet</h2><p>Every buy and sell on your store shows up here with live status, from payment to delivery.</p><button type="button" class="m-btn-primary" onclick="shareStore()">Share your store</button></div></section>
-      <section id="tab-customers" class="d-tab hidden"><div class="d-empty"><span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4.1a4 4 0 0 1 0 7.8M22 21a7 7 0 0 0-4.5-6.5"/></svg></span><h2>Your customers will appear here</h2><p>Everyone who signs up on your store, with their order history and volume.</p></div></section>
+      <section id="tab-orders" class="d-tab hidden">
+        <div class="d-list-head">
+          <div><h1 class="text-2xl font-extrabold tracking-tight">Orders</h1><p class="mt-1 text-sm text-slate-500">Every buy and sell on your store, with what your markup earned.</p></div>
+          <div class="d-sum" id="ord-sum"></div>
+        </div>
+        <div class="d-toolbar">
+          <label class="d-search"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="ord-q" type="search" placeholder="Search customer, coin or reference"></label>
+          <div class="d-filter" role="group" aria-label="Filter orders">
+            <button type="button" data-of="all" aria-pressed="true">All</button>
+            <button type="button" data-of="buy" aria-pressed="false">Buys</button>
+            <button type="button" data-of="sell" aria-pressed="false">Sells</button>
+            <button type="button" data-of="open" aria-pressed="false">In progress</button>
+            <button type="button" data-of="done" aria-pressed="false">Completed</button>
+          </div>
+          <button type="button" class="d-chip" onclick="exportOrders()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M4 19h16"/></svg>CSV</button>
+        </div>
+        <div id="ord-list" class="d-card d-card-flush"></div>
+        <template id="ord-empty"><div class="d-empty"><span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><h2>No orders yet</h2><p>Every buy and sell on your store shows up here with live status, from payment to delivery.</p><button type="button" class="m-btn-primary" onclick="shareStore()">Share your store</button></div></template>
+      </section>
+      <section id="tab-customers" class="d-tab hidden">
+        <div class="d-list-head">
+          <div><h1 class="text-2xl font-extrabold tracking-tight">Customers</h1><p class="mt-1 text-sm text-slate-500">Everyone with an account on your store.</p></div>
+          <div class="d-sum" id="cus-sum"></div>
+        </div>
+        <div class="d-toolbar">
+          <label class="d-search"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="cus-q" type="search" placeholder="Search by name or email"></label>
+        </div>
+        <div id="cus-list" class="d-card d-card-flush"></div>
+        <template id="cus-empty"><div class="d-empty"><span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4.1a4 4 0 0 1 0 7.8M22 21a7 7 0 0 0-4.5-6.5"/></svg></span><h2>Your customers will appear here</h2><p>Everyone who signs up on your store, with their order history and volume.</p></div></template>
+      </section>
       <section id="tab-earnings" class="d-tab hidden">
         <div class="d-ngn">
           <span class="d-ngn-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3 3 8h18z"/></svg></span>
@@ -581,7 +609,7 @@
 
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
-  <script src="/merchant/merchant.js?v=7"></script>
+  <script src="/merchant/merchant.js?v=8"></script>
 </body>
 
 </html>

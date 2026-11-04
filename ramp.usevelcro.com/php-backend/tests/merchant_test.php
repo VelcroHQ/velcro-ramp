@@ -61,6 +61,11 @@ function call(int $port, string $method, string $path, ?array $body = null, arra
 }
 
 $failed = 0;
+function near(float $a, float $b, float $eps = 0.01): bool
+{
+    return abs($a - $b) <= $eps;
+}
+
 function check(bool $ok, string $msg): void
 {
     global $failed;
@@ -285,6 +290,25 @@ try {
 
     [, $res] = $app_('GET', '/api/merchant/customers', null, $auth($token));
     check(($res['data']['total'] ?? 0) === 1 && ($res['data']['customers'][0]['email'] ?? '') === $shopper, "merchant sees only their own store's customers");
+
+    // ── Orders tab: what each order earned the store ──
+    $custId = (int) $pdo->query("SELECT id FROM store_customers WHERE merchant_id = {$id}")->fetchColumn();
+    $addOrder = $pdo->prepare('INSERT INTO transactions (reference, type, status, asset, channel, amount, destination_amount, destination_currency, source_currency, merchant_id, store_customer_id, merchant_markup_percent, velcro_fee_percent)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0.5)');
+    $addOrder->execute(['ord-buy', 'ONRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 100000, 69.4, 'USDT', 'NGN', $id, $custId]);       // paid ₦100,000
+    $addOrder->execute(['ord-sell', 'OFFRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 70, 98500, 'NGN', 'USDT', $id, $custId]);        // ₦98,500 paid after 1.5%
+    $addOrder->execute(['ord-open', 'ONRAMP', 'AWAITING_DEPOSIT', 'bitcoin:btc', 'HOSTFI', 50000, null, 'BTC', 'NGN', $id, $custId]);
+    $addOrder->execute(['ord-other', 'ONRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 900000, 600, 'USDT', 'NGN', $otherId, null]);
+    [, $res] = $app_('GET', '/api/merchant/orders', null, $auth($token));
+    $byRef = array_column($res['data']['orders'] ?? [], null, 'reference');
+    $sum = $res['data']['summary'] ?? [];
+    check(count($byRef) === 3 && !isset($byRef['ord-other']) && near($byRef['ord-buy']['earned'] ?? 0, 1000) && near($byRef['ord-sell']['naira'] ?? 0, 100000)
+        && near($byRef['ord-sell']['earned'] ?? 0, 1000) && ($byRef['ord-buy']['customer_email'] ?? '') === $shopper && ($byRef['ord-sell']['coin'] ?? '') === 'USDT',
+        "orders: only this store's; 1% of ₦100,000 bought and of ₦100,000 sold (₦98,500 + fees) earned; customer and coin shown");
+    check(($sum['orders_month'] ?? 0) === 3 && near($sum['volume_month_ngn'] ?? 0, 200000) && near($sum['earned_total_ngn'] ?? 0, 2000), 'orders summary: 3 this month, ₦200,000 completed, ₦2,000 earned (open order not counted)');
+    [, $res] = $app_('GET', '/api/merchant/customers', null, $auth($token));
+    $cust = $res['data']['customers'][0] ?? [];
+    check(($cust['orders'] ?? 0) === 3 && near($cust['volume_ngn'] ?? 0, 200000), 'customers: order count and completed volume per customer');
     [, $res] = $app_('GET', "/api/admin/merchants/{$id}/customers", null, $admin);
     [, $list] = $app_('GET', '/api/admin/merchants', null, $admin);
     $counts = array_column($list['merchants'] ?? [], 'customers', 'email');

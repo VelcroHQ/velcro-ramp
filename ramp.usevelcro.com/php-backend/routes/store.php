@@ -205,6 +205,52 @@ function storeSignedIn(array $customer, string $message): never
     jsonResponse(successResponse(['token' => issueStoreToken($customer), 'email' => $customer['email'], 'name' => $customer['name']], $message));
 }
 
+/**
+ * A store's orders (newest 500) for its dashboard: coin, naira value, and the markup earned.
+ * Naira value is what the customer paid on a buy, and the payout before fees on a sell. Only
+ * completed orders earn; open ones show what they would.
+ */
+function merchantOrders(int $merchantId): array
+{
+    ensureStoreOrderColumns();
+    $rows = Database::select(
+        'SELECT t.`reference`, t.`type`, t.`status`, t.`channel`, t.`asset`, t.`amount`, t.`destination_amount`, t.`destination_currency`,
+                t.`source_currency`, t.`merchant_markup_percent`, t.`velcro_fee_percent`, t.`hash`, t.`created_at`, t.`store_customer_id`,
+                c.`email` AS `customer_email`, c.`name` AS `customer_name`
+         FROM `transactions` t LEFT JOIN `store_customers` c ON c.`id` = t.`store_customer_id`
+         WHERE t.`merchant_id` = :m ORDER BY t.`id` DESC LIMIT 500',
+        ['m' => $merchantId]
+    );
+    return array_map(static function (array $t): array {
+        $buy = strtoupper((string) $t['type']) === 'ONRAMP';
+        $markup = (float) $t['merchant_markup_percent'];
+        $fees = ($markup + (float) $t['velcro_fee_percent']) / 100;
+        $coin = strtoupper((string) ($buy ? $t['destination_currency'] : $t['source_currency']) ?: (explode(':', (string) $t['asset'])[1] ?? $t['asset']));
+        if ($buy) {
+            $naira = (float) $t['amount'];
+        } elseif (strtoupper((string) $t['channel']) === 'PAJ') {
+            $naira = (float) $t['amount']; // PAJ sells are ordered in naira
+        } else {
+            $paid = strtoupper((string) $t['destination_currency']) === 'NGN' ? (float) $t['destination_amount'] : 0.0;
+            $naira = $paid > 0 && $fees < 1 ? $paid / (1 - $fees) : 0.0;
+        }
+        return [
+            'reference' => $t['reference'],
+            'side' => $buy ? 'buy' : 'sell',
+            'status' => strtoupper((string) $t['status']),
+            'coin' => $coin,
+            'coin_amount' => $buy ? ($t['destination_amount'] !== null ? (float) $t['destination_amount'] : null) : (float) $t['amount'],
+            'naira' => round($naira, 2),
+            'markup_percent' => $markup,
+            'earned' => round($naira * $markup / 100, 2),
+            'customer_email' => $t['customer_email'],
+            'customer_name' => $t['customer_name'],
+            'customer_id' => (int) $t['store_customer_id'],
+            'created_at' => $t['created_at'],
+        ];
+    }, $rows);
+}
+
 function storeCustomerView(array $c): array
 {
     return ['email' => $c['email'], 'name' => $c['name'], 'since' => $c['created_at']];
@@ -369,7 +415,39 @@ function registerStoreRoutes(Router $router): void
         ensureStoreSchema();
         $m = merchantFor($email);
         $rows = Database::select('SELECT * FROM `store_customers` WHERE `merchant_id` = :m ORDER BY `id` DESC LIMIT 500', ['m' => $m['id']]);
-        jsonResponse(successResponse(['customers' => array_map('storeCustomerView', $rows), 'total' => count($rows)]));
+        // Orders and completed volume per customer, from the same rows as the Orders tab.
+        $stats = [];
+        foreach (merchantOrders((int) $m['id']) as $o) {
+            $s = &$stats[$o['customer_id']];
+            $s['orders'] = ($s['orders'] ?? 0) + 1;
+            $s['volume_ngn'] = ($s['volume_ngn'] ?? 0) + ($o['status'] === 'COMPLETED' ? (float) $o['naira'] : 0);
+            $s['last_order_at'] = max($s['last_order_at'] ?? '', (string) $o['created_at']);
+            unset($s);
+        }
+        jsonResponse(successResponse([
+            'customers' => array_map(static fn ($c) => storeCustomerView($c) + ($stats[(int) $c['id']] ?? []) + ['orders' => 0, 'volume_ngn' => 0, 'last_order_at' => null], $rows),
+            'total' => count($rows),
+        ]));
+    });
+
+    // Every order on the store, newest first, with what the merchant's markup earned on it.
+    $router->get('/api/merchant/orders', function () {
+        $email = requireMerchantAuth();
+        ensureStoreSchema();
+        $m = merchantFor($email);
+        $orders = merchantOrders((int) $m['id']);
+        $month = gmdate('Y-m');
+        $summary = ['orders_month' => 0, 'volume_month_ngn' => 0.0, 'earned_month_ngn' => 0.0, 'earned_total_ngn' => 0.0];
+        foreach ($orders as $o) {
+            $thisMonth = str_starts_with((string) $o['created_at'], $month);
+            $summary['orders_month'] += $thisMonth ? 1 : 0;
+            if ($o['status'] === 'COMPLETED') {
+                $summary['volume_month_ngn'] += $thisMonth ? (float) $o['naira'] : 0;
+                $summary['earned_month_ngn'] += $thisMonth ? (float) $o['earned'] : 0;
+                $summary['earned_total_ngn'] += (float) $o['earned'];
+            }
+        }
+        jsonResponse(successResponse(['orders' => array_map(static fn ($o) => array_diff_key($o, ['customer_id' => 1]), $orders), 'summary' => $summary]));
     });
 
     $router->get('/api/admin/merchants/(\d+)/customers', function (string $id) {
