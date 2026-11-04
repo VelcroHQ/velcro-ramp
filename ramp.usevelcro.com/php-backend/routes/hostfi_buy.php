@@ -1068,7 +1068,7 @@ function registerHostfiBuyRoutes(Router $router): void
                     'timer_minutes' => HOSTFI_BUY_TIMER_MINUTES,
                     // Quote at order time, so History can show "$1 = ₦X" plus our fee.
                     'quote' => ['ngn_per_usd' => $quote['usd_per_unit'] > 0 && $coinPerNgn > 0 ? (1 / $coinPerNgn) / $quote['usd_per_unit'] : null, 'fee_percent' => $fee],
-                ] + ($store ? ['fee_percent' => $fee] : [])]), // store orders keep their fee (ours + markup) for the swap
+                ] + ($store ? ['fee_percent' => $fee, 'store' => $store['merchant']['slug']] : (body($b, 'store') ? ['store' => strtolower(trim((string) body($b, 'store')))] : []))]), // store orders keep their fee (ours + markup) for the swap
             ] + ($store ? storeOrderFields($store, hostfiFee()) : referralFieldsFor(body($b, 'ref'), $email));
 
             Database::safeInsert('transactions', $txRecord);

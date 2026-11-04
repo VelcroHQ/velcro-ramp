@@ -306,16 +306,20 @@ async function goTrade() {
   }
   const btn = $('s-go');
   btn.disabled = true;
-  const nets = await networksFor(c.provider, c.symbol, selling);
-  const banks = selling ? await banksFor(c.provider) : [];
+  const [nets, banks] = await Promise.all([
+    networksFor(c.provider, c.symbol, selling),
+    selling ? banksFor(c.provider) : Promise.resolve([])
+  ]);
   btn.disabled = false;
   if (!nets.length || (selling && !banks.length)) {
     toast(`${selling ? 'Selling' : 'Buying'} ${c.symbol} isn't available right now. Try again shortly.`);
     return;
   }
+  let savedEmail = '';
+  try { savedEmail = localStorage.getItem('velcro_email') || ''; } catch (e) {}
   checkout = {
     step: 'details', side: store.side, coin: c.symbol, provider: c.provider, amount, nets, network: nets[0].code,
-    wallet: '', banks, bank: '', account: '', accountName: '', order: null,
+    wallet: '', banks, bank: '', account: '', accountName: '', email: (me && me.email) || savedEmail, order: null,
   };
   renderCheckout();
 }
@@ -395,6 +399,13 @@ async function banksFor(provider) {
   const key = provider === 'paj' ? 'paj' : 'switch';
   if (!bankLists[key] || !bankLists[key].length) {
     try {
+      const cached = sessionStorage.getItem('velcro_banks_' + key);
+      if (cached) {
+        bankLists[key] = JSON.parse(cached);
+        return bankLists[key];
+      }
+    } catch (e) {}
+    try {
       const raw = await api(key === 'paj' ? '/api/paj/banks' : '/api/institutions?country=NG&currency=NGN&channel=BANK');
       const arr = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
       const list = arr.filter(b => b && b.name)
@@ -404,6 +415,7 @@ async function banksFor(provider) {
           name: String(b.name).trim()
         }));
       bankLists[key] = sortBanks(list.length ? list : FALLBACK_NIGERIAN_BANKS.map(b => ({ id: b.code, code: b.code, name: b.name })));
+      try { sessionStorage.setItem('velcro_banks_' + key, JSON.stringify(bankLists[key])); } catch (e) {}
     } catch (e) {
       bankLists[key] = sortBanks(FALLBACK_NIGERIAN_BANKS.map(b => ({ id: b.code, code: b.code, name: b.name })));
     }
@@ -435,21 +447,48 @@ const CHAIN_LOGOS = {
 
 function getChainLogo(chain) {
   if (!chain) return '';
-  const key = String(chain).toLowerCase().split(':')[0].trim();
+  const raw = String(chain).toLowerCase().split(':')[0].trim();
+  const clean = raw.replace(/[^a-z0-9]/g, '');
   const alias = {
     bnb: 'bsc',
     binance: 'bsc',
+    bnbchain: 'bsc',
+    bep20: 'bsc',
+    bsc: 'bsc',
     trx: 'tron',
+    trc20: 'tron',
+    tron: 'tron',
     sol: 'solana',
+    spl: 'solana',
+    solana: 'solana',
     eth: 'ethereum',
+    erc20: 'ethereum',
+    ethereum: 'ethereum',
     btc: 'bitcoin',
+    bitcoin: 'bitcoin',
     matic: 'polygon',
     pol: 'polygon',
+    polygon: 'polygon',
     arb: 'arbitrum',
+    arbitrum: 'arbitrum',
     op: 'optimism',
+    optimism: 'optimism',
     avax: 'avalanche',
+    avaxc: 'avalanche',
+    avalanche: 'avalanche',
+    base: 'base',
+    celo: 'celo',
+    sui: 'sui',
+    linea: 'linea',
+    mantle: 'mantle',
+    gnosis: 'gnosis',
+    monad: 'monad',
+    plasma: 'plasma',
+    sonic: 'sonic',
+    berachain: 'berachain',
+    hyperevm: 'hyperevm',
   };
-  const resolved = alias[key] || key;
+  const resolved = alias[clean] || alias[raw] || clean;
   return CHAIN_LOGOS[resolved] || `/logos/${resolved}.png`;
 }
 
@@ -631,7 +670,7 @@ function sellDetailsHtml() {
       <div><span>You receive about</span><b>${est > 0 ? fmtNgn(est) : 'Calculated on arrival'}</b></div>
     </div>
     ${nets.length > 1 ? `<span class="s-label">Network you'll send on</span><div class="s-seg" data-cols="${nets.length === 2 ? '2' : '3'}">${nets.map(n => {
-      const logo = getChainLogo(n.chain || n.code);
+      const logo = getChainLogo(n.chain || n.code || n.label);
       return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon" onerror="this.style.display='none'">` : ''}<span>${esc(n.label)}</span></button>`;
     }).join('')}</div>` : ''}
 
@@ -674,6 +713,10 @@ function sellDetailsHtml() {
         </p>
       `}
     </div>
+
+    <label class="s-label" for="co-email">Your email <small style="font-weight:500;color:var(--muted);">(for payment receipt & updates)</small></label>
+    <input id="co-email" type="email" class="s-input" autocomplete="email" placeholder="you@example.com" value="${esc(checkout.email || (me ? me.email : ''))}">
+
     <p id="co-error" class="s-error" hidden></p>
     <button type="button" class="s-btn-brand s-go" data-act="create"${checkout.accountName ? '' : ' disabled'}>Get deposit address</button>
     <p class="s-trust">Naira is paid only to an account in the name shown above.</p>`;
@@ -852,8 +895,20 @@ async function createSell() {
   const btn = $('s-checkout').querySelector('[data-act="create"]');
   btn.disabled = true;
   btn.textContent = 'Creating your order…';
-  const base = { side: 'sell', coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT', network: netLabel(), payTo: `${checkout.accountName} · ${bank.name}`, progress: {} };
-  const myEmail = (me && me.email) ? me.email : '';
+  const emailInput = $('co-email');
+  const emailVal = emailInput ? emailInput.value.trim() : (checkout.email || '');
+  checkout.email = emailVal;
+  try { if (emailVal) localStorage.setItem('velcro_email', emailVal); } catch (e) {}
+  const myEmail = emailVal || (me && me.email) || '';
+  if (!myEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(myEmail)) {
+    err.textContent = 'Please enter a valid email address so we can send your receipt.';
+    err.hidden = false;
+    btn.disabled = false;
+    btn.textContent = 'Get deposit address';
+    emailInput?.focus();
+    return;
+  }
+  const base = { side: 'sell', coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT', network: netLabel(), payTo: `${checkout.accountName} · ${bank.name}`, email: myEmail, progress: {} };
   try {
     if (checkout.provider === 'hostfi') {
       const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, email: myEmail, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount || 0 } });
@@ -904,6 +959,10 @@ function checkoutDetailsHtml() {
     <label class="s-label" for="co-wallet">Your ${esc(c.symbol)} wallet address${nets.length === 1 ? '' : ` on ${esc((nets.find(n => n.code === checkout.network) || {}).label || '')}`}</label>
     <input id="co-wallet" class="s-input s-mono" autocomplete="off" spellcheck="false" placeholder="Paste your address" value="${esc(checkout.wallet)}">
     <p class="s-hint">Double-check it. Crypto sent to the wrong address can't be recovered.</p>
+
+    <label class="s-label" for="co-email">Your email <small style="font-weight:500;color:var(--muted);">(for payment receipt & updates)</small></label>
+    <input id="co-email" type="email" class="s-input" autocomplete="email" placeholder="you@example.com" value="${esc(checkout.email || (me ? me.email : ''))}">
+
     <p id="co-error" class="s-error" hidden></p>
     <button type="button" class="s-btn-brand s-go" data-act="create">Get payment details</button>
     <p class="s-trust">The network fee is taken from the ${esc(c.symbol)} you receive. Your final amount is shown on the next step.</p>`;
@@ -939,12 +998,13 @@ function checkoutPayHtml() {
 
 // After "I've sent it": what we're waiting for, how long we've been looking, and where they'll hear.
 function checkingHtml(o, what) {
+  const displayEmail = (o && o.email) || checkout.email || (me && me.email) || 'your email';
   return `
     <div class="s-checking">
       <span class="s-checking-ring" aria-hidden="true"></span>
       <div>
         <b>Checking for ${what}</b>
-        <p>Most ${o.side === 'sell' ? 'deposits' : 'transfers'} show up within 1–5 minutes. You can leave this page; we'll email you at ${esc(me.email)} at each step.</p>
+        <p>Most ${o.side === 'sell' ? 'deposits' : 'transfers'} show up within 1–5 minutes. You can leave this page; we'll email you at ${esc(displayEmail)} at each step.</p>
         <span class="s-checking-time" id="co-checking"></span>
       </div>
     </div>
@@ -987,6 +1047,11 @@ function wireCheckout() {
   if ($('co-acct')) {
     $('co-acct').oninput = checkAccountName;
     $('co-acct').onpaste = () => setTimeout(checkAccountName, 50);
+  }
+  const emInput = $('co-email');
+  if (emInput) {
+    emInput.oninput = () => { checkout.email = emInput.value.trim(); try { localStorage.setItem('velcro_email', checkout.email); } catch (e) {} };
+    emInput.onchange = () => { checkout.email = emInput.value.trim(); try { localStorage.setItem('velcro_email', checkout.email); } catch (e) {} };
   }
   box.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
     try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied'); } catch (e) { toast(b.dataset.copy); }
@@ -1032,7 +1097,19 @@ async function createBuy() {
   const btn = $('s-checkout').querySelector('[data-act="create"]');
   btn.disabled = true;
   btn.textContent = 'Creating your order…';
-  const myEmail = (me && me.email) ? me.email : '';
+  const emailInput = $('co-email');
+  const emailVal = emailInput ? emailInput.value.trim() : (checkout.email || '');
+  checkout.email = emailVal;
+  try { if (emailVal) localStorage.setItem('velcro_email', emailVal); } catch (e) {}
+  const myEmail = emailVal || (me && me.email) || '';
+  if (!myEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(myEmail)) {
+    err.textContent = 'Please enter a valid email address so we can send your receipt.';
+    err.hidden = false;
+    btn.disabled = false;
+    btn.textContent = 'Get payment details';
+    emailInput?.focus();
+    return;
+  }
   try {
     if (checkout.provider === 'switch') {
       const d = await api('/api/initiate', {

@@ -484,7 +484,11 @@ function registerAdminRoutes(Router $router): void
 
     $router->get('/api/admin/settings', function () {
         requireAdminAuth();
-        jsonResponse(loadSettings());
+        $s = loadSettings();
+        if (!empty($s['smtp_pass'])) {
+            $s['smtp_pass_masked'] = '••••••••';
+        }
+        jsonResponse($s);
     });
 
     $router->get('/api/admin/debug/last-payload', function () {
@@ -616,6 +620,27 @@ function registerAdminRoutes(Router $router): void
             }
             $settings['sell_timer_minutes'] = $timers;
         }
+        if (isset($body['smtp_host'])) {
+            $settings['smtp_host'] = trim((string) $body['smtp_host']);
+        }
+        if (isset($body['smtp_port'])) {
+            $settings['smtp_port'] = max(1, min(65535, (int) $body['smtp_port']));
+        }
+        if (isset($body['smtp_user'])) {
+            $settings['smtp_user'] = trim((string) $body['smtp_user']);
+        }
+        if (isset($body['smtp_pass']) && (string) $body['smtp_pass'] !== '••••••••' && (string) $body['smtp_pass'] !== '') {
+            $settings['smtp_pass'] = (string) $body['smtp_pass'];
+        }
+        if (isset($body['smtp_from'])) {
+            $settings['smtp_from'] = trim((string) $body['smtp_from']);
+        }
+        if (isset($body['mailhive_api_key'])) {
+            $settings['mailhive_api_key'] = trim((string) $body['mailhive_api_key']);
+        }
+        if (isset($body['mail_from'])) {
+            $settings['mail_from'] = trim((string) $body['mail_from']);
+        }
 
         if (saveSettings($settings)) {
             auditLog('SETTINGS_UPDATED', ['ip' => $ip, 'changes' => $body]);
@@ -661,6 +686,30 @@ function registerAdminRoutes(Router $router): void
                 $err = json_decode((string) $res, true);
                 jsonResponse(['success' => false, 'error' => $err['description'] ?? 'Telegram API error: ' . $code], 400);
             }
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
+    $router->post('/api/admin/email/test', function () {
+        requireAdminAuth();
+        try {
+            $body = getJsonBody();
+            $target = trim((string) ($body['email'] ?? ADMIN_EMAIL));
+            if ($target === '') {
+                $target = 'shehukamal6@gmail.com';
+            }
+            $overrides = [];
+            if (!empty($body['smtp_host'])) $overrides['smtp_host'] = trim((string) $body['smtp_host']);
+            if (!empty($body['smtp_port'])) $overrides['smtp_port'] = (int) $body['smtp_port'];
+            if (!empty($body['smtp_user'])) $overrides['smtp_user'] = trim((string) $body['smtp_user']);
+            if (!empty($body['smtp_pass']) && (string) $body['smtp_pass'] !== '••••••••') $overrides['smtp_pass'] = (string) $body['smtp_pass'];
+            if (!empty($body['smtp_from'])) $overrides['smtp_from'] = trim((string) $body['smtp_from']);
+            if (!empty($body['mailhive_api_key'])) $overrides['mailhive_api_key'] = trim((string) $body['mailhive_api_key']);
+            if (!empty($body['mail_from'])) $overrides['mail_from'] = trim((string) $body['mail_from']);
+
+            $res = testEmailDelivery($target, $overrides);
+            jsonResponse($res, $res['success'] ? 200 : 400);
         } catch (Throwable $e) {
             jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
         }

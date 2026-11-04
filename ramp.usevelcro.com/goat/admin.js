@@ -181,6 +181,18 @@ async function fetchData() {
                 document.getElementById('telegram-chat-id').value = settings.telegram_chat_id || '';
                 document.getElementById('telegram-alerts-toggle').checked = !!settings.telegram_alerts_enabled;
             }
+            if (document.getElementById('smtp-host')) {
+                document.getElementById('smtp-host').value = settings.smtp_host || '';
+                document.getElementById('smtp-port').value = settings.smtp_port || 587;
+                document.getElementById('smtp-user').value = settings.smtp_user || '';
+                document.getElementById('smtp-pass').value = settings.smtp_pass_masked || (settings.smtp_pass ? '••••••••' : '');
+                document.getElementById('smtp-from').value = settings.smtp_from || '';
+                document.getElementById('mailhive-api-key').value = settings.mailhive_api_key || '';
+                const testTarget = document.getElementById('test-email-target');
+                if (testTarget && !testTarget.value) {
+                    testTarget.value = settings.paj_email || 'shehukamal6@gmail.com';
+                }
+            }
         }
 
         // 6. PAJ Session
@@ -3283,3 +3295,103 @@ window.onload = () => {
         setInterval(fetchData, 60000);
     }
 };
+
+
+async function saveEmailSettings() {
+    const host = (document.getElementById('smtp-host')?.value || '').trim();
+    const port = parseInt(document.getElementById('smtp-port')?.value || '587', 10);
+    const user = (document.getElementById('smtp-user')?.value || '').trim();
+    const pass = (document.getElementById('smtp-pass')?.value || '');
+    const from = (document.getElementById('smtp-from')?.value || '').trim();
+    const mailhive = (document.getElementById('mailhive-api-key')?.value || '').trim();
+    const msgEl = document.getElementById('email-settings-message');
+
+    try {
+        const body = {
+            smtp_host: host,
+            smtp_port: port,
+            smtp_user: user,
+            smtp_from: from,
+            mailhive_api_key: mailhive,
+        };
+        if (pass && pass !== '••••••••') {
+            body.smtp_pass = pass;
+        }
+        const res = await fetch(`${API_BASE}/api/admin/settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (msgEl) {
+                msgEl.innerText = 'Email settings saved successfully!';
+                msgEl.style.background = '#f0fdf4'; msgEl.style.color = '#15803d'; msgEl.style.border = '1px solid #bbf7d0';
+                msgEl.classList.remove('hidden');
+                setTimeout(() => msgEl.classList.add('hidden'), 4000);
+            }
+            showToast('Email settings saved', 'success');
+        } else {
+            throw new Error(data.error || 'Failed to save settings');
+        }
+    } catch (e) {
+        if (msgEl) {
+            msgEl.innerText = e.message;
+            msgEl.style.background = '#fef2f2'; msgEl.style.color = '#b91c1c'; msgEl.style.border = '1px solid #fecaca';
+            msgEl.classList.remove('hidden');
+        }
+        showToast(e.message, 'error');
+    }
+}
+
+async function sendTestEmail() {
+    const target = (document.getElementById('test-email-target')?.value || '').trim();
+    const btn = document.getElementById('btn-test-email');
+    const msgEl = document.getElementById('email-settings-message');
+
+    if (!target) {
+        showToast('Please enter an email address for the test', 'error');
+        return;
+    }
+
+    if (btn) { btn.disabled = true; btn.innerText = 'Sending...'; }
+    if (msgEl) {
+        msgEl.innerText = 'Dispatching test email...';
+        msgEl.style.background = '#eff6ff'; msgEl.style.color = '#1e40af'; msgEl.style.border = '1px solid #bfdbfe';
+        msgEl.classList.remove('hidden');
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/email/test`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': adminKey },
+            body: JSON.stringify({
+                email: target,
+                smtp_host: (document.getElementById('smtp-host')?.value || '').trim(),
+                smtp_port: parseInt(document.getElementById('smtp-port')?.value || '587', 10),
+                smtp_user: (document.getElementById('smtp-user')?.value || '').trim(),
+                smtp_pass: (document.getElementById('smtp-pass')?.value || ''),
+                smtp_from: (document.getElementById('smtp-from')?.value || '').trim(),
+                mailhive_api_key: (document.getElementById('mailhive-api-key')?.value || '').trim(),
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (msgEl) {
+                msgEl.innerText = data.message || `Test email successfully delivered via ${data.transport || 'active transport'}! Check ${target}`;
+                msgEl.style.background = '#f0fdf4'; msgEl.style.color = '#15803d'; msgEl.style.border = '1px solid #bbf7d0';
+            }
+            showToast('Test email delivered!', 'success');
+        } else {
+            throw new Error(data.error || 'Test email failed');
+        }
+    } catch (e) {
+        if (msgEl) {
+            msgEl.innerText = `Delivery Failed: ${e.message}`;
+            msgEl.style.background = '#fef2f2'; msgEl.style.color = '#b91c1c'; msgEl.style.border = '1px solid #fecaca';
+        }
+        showToast(e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = 'Send Test'; }
+    }
+}

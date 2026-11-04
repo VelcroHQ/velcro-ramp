@@ -214,12 +214,32 @@ class PajApiClient
 
     public function getPajRate(): array
     {
-        $result = $this->request('GET', '/pub/rate');
-        // Match the shape returned by the original Node wrapper.
-        return [
-            'onramp' => $result['onRampRate'] ?? null,
-            'offramp' => $result['offRampRate'] ?? null,
-        ];
+        $cacheFile = BASE_PATH . '/data/.paj_rate.json';
+        if (is_file($cacheFile) && (time() - (int) filemtime($cacheFile)) < 60) {
+            $cached = @json_decode((string) file_get_contents($cacheFile), true);
+            if (is_array($cached) && !empty($cached['onramp'])) {
+                return $cached;
+            }
+        }
+        try {
+            $result = $this->request('GET', '/pub/rate');
+            $data = [
+                'onramp' => $result['onRampRate'] ?? null,
+                'offramp' => $result['offRampRate'] ?? null,
+            ];
+            if (!empty($data['onramp']) || !empty($data['offramp'])) {
+                @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
+            }
+            return $data;
+        } catch (Throwable $e) {
+            if (is_file($cacheFile)) {
+                $cached = @json_decode((string) file_get_contents($cacheFile), true);
+                if (is_array($cached)) {
+                    return $cached;
+                }
+            }
+            throw $e;
+        }
     }
 
     public function getRate(float $amount): array

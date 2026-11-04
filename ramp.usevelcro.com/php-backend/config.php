@@ -208,6 +208,14 @@ function defaultSettings(): array
         'telegram_bot_token' => TELEGRAM_BOT_TOKEN,
         'telegram_chat_id' => TELEGRAM_CHAT_ID,
         'telegram_alerts_enabled' => TELEGRAM_ALERTS_ENABLED,
+        // SMTP / Email Settings
+        'smtp_host' => SMTP_HOST,
+        'smtp_port' => SMTP_PORT,
+        'smtp_user' => SMTP_USER,
+        'smtp_pass' => SMTP_PASS,
+        'smtp_from' => SMTP_FROM,
+        'mailhive_api_key' => MAILHIVE_API_KEY,
+        'mail_from' => MAIL_FROM,
     ];
 }
 

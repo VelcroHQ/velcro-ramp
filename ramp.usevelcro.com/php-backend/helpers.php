@@ -588,9 +588,34 @@ function ensureReminderSchema(): void
 
 // ─── Mail ───
 
+function getEmailConfig(): array
+{
+    $s = function_exists('loadSettings') ? loadSettings() : [];
+    $mailhiveKey = trim((string) ($s['mailhive_api_key'] ?? (defined('MAILHIVE_API_KEY') ? MAILHIVE_API_KEY : '')));
+    $mailFrom = trim((string) ($s['mail_from'] ?? (defined('MAIL_FROM') ? MAIL_FROM : '')));
+    $smtpHost = trim((string) ($s['smtp_host'] ?? (defined('SMTP_HOST') ? SMTP_HOST : '')));
+    $smtpPort = (int) ($s['smtp_port'] ?? (defined('SMTP_PORT') ? SMTP_PORT : 587));
+    $smtpUser = trim((string) ($s['smtp_user'] ?? (defined('SMTP_USER') ? SMTP_USER : '')));
+    $smtpPass = (string) ($s['smtp_pass'] ?? (defined('SMTP_PASS') ? SMTP_PASS : ''));
+    $smtpFrom = trim((string) ($s['smtp_from'] ?? (defined('SMTP_FROM') ? SMTP_FROM : ($smtpUser ?: $mailFrom))));
+
+    return [
+        'mailhive_api_key' => $mailhiveKey,
+        'mail_from' => $mailFrom,
+        'smtp_host' => $smtpHost,
+        'smtp_port' => $smtpPort > 0 ? $smtpPort : 587,
+        'smtp_user' => $smtpUser,
+        'smtp_pass' => $smtpPass,
+        'smtp_from' => $smtpFrom,
+    ];
+}
+
 function mailConfigured(): bool
 {
-    return MAILHIVE_API_KEY !== '' || (SMTP_HOST !== '' && SMTP_USER !== '' && SMTP_PASS !== '') || function_exists('mail');
+    $c = getEmailConfig();
+    return $c['mailhive_api_key'] !== ''
+        || ($c['smtp_host'] !== '' && $c['smtp_user'] !== '' && $c['smtp_pass'] !== '')
+        || function_exists('mail');
 }
 
 /** Sends one email: Mailhive Send API when MAILHIVE_API_KEY is set, SMTP when configured, or PHP mail() fallback. */
@@ -604,41 +629,54 @@ function sendEmailTo(string $to, string $subject, string $html, string $text, st
         return false;
     }
 
+    $c = getEmailConfig();
+    $mailhiveKey = $c['mailhive_api_key'];
+    $mailFrom = $c['mail_from'];
+    $smtpHost = $c['smtp_host'];
+    $smtpPort = (int) $c['smtp_port'];
+    $smtpUser = $c['smtp_user'];
+    $smtpPass = $c['smtp_pass'];
+    $smtpFrom = $c['smtp_from'] !== '' ? $c['smtp_from'] : ($smtpUser ?: $mailFrom);
+
     // 1. Try Mailhive Send API when configured
-    if (MAILHIVE_API_KEY !== '') {
+    if ($mailhiveKey !== '') {
         try {
-            $from = MAIL_FROM !== '' ? MAIL_FROM : 'noreply@usevelcro.com';
+            $from = $mailFrom !== '' ? $mailFrom : 'noreply@usevelcro.com';
             $res = httpRequest('POST', 'https://api.mailhive.africa/v1/send/emails', [
-                'headers' => ['Authorization: Bearer ' . MAILHIVE_API_KEY],
+                'headers' => ['Authorization: Bearer ' . $mailhiveKey],
                 'body' => ['from' => $fromName . ' <' . $from . '>', 'to' => $to, 'subject' => $subject, 'html' => $html, 'text' => $text],
                 'timeout' => 15,
             ]);
             $suppressed = array_map('strtolower', (array) ($res['suppressed'] ?? []));
             if (!empty($res['id']) && !in_array($to, $suppressed, true)) {
+                error_log("Mailhive sent email to {$to} (id: {$res['id']})");
                 return true;
             }
             error_log("Mailhive suppressed or skipped delivery to {$to}: " . json_encode($res));
         } catch (Throwable $e) {
-            error_log("Mailhive send failed for {$to}: " . $e->getMessage() . " — falling back to secondary transport");
+            error_log("Mailhive send failed for {$to}: " . $e->getMessage() . " - falling back to secondary transport");
         }
     }
 
     // 2. Try SMTP when configured
-    if (SMTP_HOST !== '' && SMTP_USER !== '' && SMTP_PASS !== '') {
+    if ($smtpHost !== '' && $smtpUser !== '' && $smtpPass !== '') {
         try {
-            if (smtpSend($to, $subject, $html, $text, $fromName)) {
+            if (smtpSend($to, $subject, $html, $text, $fromName, [
+                'smtp_host' => $smtpHost, 'smtp_port' => $smtpPort, 'smtp_user' => $smtpUser, 'smtp_pass' => $smtpPass, 'smtp_from' => $smtpFrom
+            ])) {
+                error_log("SMTP sent email to {$to} via {$smtpHost}");
                 return true;
             }
-            error_log("SMTP send returned false for {$to} — falling back to mail()");
+            error_log("SMTP send returned false for {$to} - falling back to mail()");
         } catch (Throwable $e) {
-            error_log("SMTP send exception for {$to}: " . $e->getMessage() . " — falling back to mail()");
+            error_log("SMTP send exception for {$to}: " . $e->getMessage() . " - falling back to mail()");
         }
     }
 
     // 3. Fallback to PHP mail()
     if (function_exists('mail')) {
         $boundary = md5(uniqid((string) time(), true));
-        $from = MAIL_FROM !== '' ? MAIL_FROM : (SMTP_FROM !== '' ? SMTP_FROM : 'noreply@usevelcro.com');
+        $from = $smtpFrom !== '' ? $smtpFrom : ($mailFrom !== '' ? $mailFrom : 'noreply@usevelcro.com');
         $cleanFrom = filter_var($from, FILTER_VALIDATE_EMAIL) ? $from : 'noreply@usevelcro.com';
         $headers = [
             'From: "' . $fromName . '" <' . $cleanFrom . '>',
@@ -659,7 +697,12 @@ function sendEmailTo(string $to, string $subject, string $html, string $text, st
             // Retry without the -f flag in case hosting disallows custom envelope parameters
             $ok = @mail($to, $subject, $body, implode("\r\n", $headers));
         }
-        return $ok;
+        if ($ok) {
+            error_log("PHP mail() queued email to {$to} with sender {$cleanFrom}");
+        } else {
+            error_log("PHP mail() failed to queue email to {$to}");
+        }
+        return (bool) $ok;
     }
 
     error_log("No email transport succeeded for recipient: {$to}");
@@ -676,15 +719,16 @@ function sendMail(string $subject, string $html, string $text): array
         if ($sent || MAILHIVE_API_KEY !== '') {
             return ['sent' => $sent];
         }
-        // Fallback to mail() if SMTP failed.
+        $c = getEmailConfig();
+        $sender = $c['smtp_from'] ?: ($c['smtp_user'] ?: 'noreply@usevelcro.com');
         $headers = [
-            'From: "Velcro Admin" <' . SMTP_FROM . '>',
-            'Reply-To: ' . SMTP_FROM,
+            'From: "Velcro Admin" <' . $sender . '>',
+            'Reply-To: ' . $sender,
             'MIME-Version: 1.0',
             'Content-Type: text/html; charset=UTF-8',
         ];
         $sent = mail(ADMIN_EMAIL, $subject, $html, implode("\r\n", $headers));
-        return ['sent' => $sent, 'reason' => $sent ? 'ok' : 'mail() returned false'];
+        return ['sent' => (bool) $sent, 'reason' => $sent ? 'ok' : 'mail() returned false'];
     } catch (Throwable $e) {
         error_log('Email send failed: ' . $e->getMessage());
         return ['sent' => false, 'error' => $e->getMessage()];
@@ -694,13 +738,19 @@ function sendMail(string $subject, string $html, string $text): array
 /**
  * Minimal SMTP client using fsockopen. Supports TLS on port 465/587.
  */
-function smtpSend(string $to, string $subject, string $html, string $text, string $fromName = 'Velcro Admin'): bool
+function smtpSend(string $to, string $subject, string $html, string $text, string $fromName = 'Velcro Admin', array $customConfig = []): bool
 {
-    $host = SMTP_HOST;
-    $port = SMTP_PORT;
-    $user = SMTP_USER;
-    $pass = SMTP_PASS;
-    $from = SMTP_FROM;
+    $c = array_merge(getEmailConfig(), $customConfig);
+    $host = $c['smtp_host'];
+    $port = (int) $c['smtp_port'];
+    $user = $c['smtp_user'];
+    $pass = $c['smtp_pass'];
+    $from = $c['smtp_from'] !== '' ? $c['smtp_from'] : $user;
+
+    if ($host === '' || $user === '' || $pass === '') {
+        error_log('SMTP send skipped: incomplete credentials (host, user or password missing)');
+        return false;
+    }
 
     $timeout = 15;
     $isTls = in_array($port, [465, 587], true);
@@ -708,7 +758,7 @@ function smtpSend(string $to, string $subject, string $html, string $text, strin
 
     $fp = @fsockopen($prefix . $host, $port, $errno, $errstr, $timeout);
     if (!$fp) {
-        error_log("SMTP connect failed: {$errstr} ({$errno})");
+        error_log("SMTP connect failed to {$host}:{$port} - {$errstr} ({$errno})");
         return false;
     }
 
@@ -739,52 +789,67 @@ function smtpSend(string $to, string $subject, string $html, string $text, strin
     $message .= "Content-Type: text/html; charset=UTF-8\r\n\r\n{$html}\r\n";
     $message .= "--{$boundary}--\r\n";
 
-    $read();
+    $initResp = $read();
+    if (!$expect($initResp, '220')) {
+        error_log("SMTP unexpected banner from {$host}: " . trim($initResp));
+    }
     if (!$expect($cmd('EHLO ' . gethostname()), '250')) {
         fclose($fp);
+        error_log("SMTP EHLO rejected by {$host}");
         return false;
     }
     if ($isTls && $port === 587) {
         if (!$expect($cmd('STARTTLS'), '220')) {
             fclose($fp);
+            error_log("SMTP STARTTLS rejected by {$host}");
             return false;
         }
         if (!stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
             fclose($fp);
+            error_log("SMTP TLS handshake failed with {$host}");
             return false;
         }
         if (!$expect($cmd('EHLO ' . gethostname()), '250')) {
             fclose($fp);
+            error_log("SMTP post-TLS EHLO rejected by {$host}");
             return false;
         }
     }
     if (!$expect($cmd('AUTH LOGIN'), '334')) {
         fclose($fp);
+        error_log("SMTP AUTH LOGIN rejected by {$host}");
         return false;
     }
     if (!$expect($cmd(base64_encode($user)), '334')) {
         fclose($fp);
+        error_log("SMTP username rejected by {$host} for user: {$user}");
         return false;
     }
     if (!$expect($cmd(base64_encode($pass)), '235')) {
         fclose($fp);
+        error_log("SMTP authentication failed for user: {$user}");
         return false;
     }
     if (!$expect($cmd('MAIL FROM:<' . $from . '>'), '250')) {
         fclose($fp);
+        error_log("SMTP MAIL FROM rejected for sender: {$from}");
         return false;
     }
     if (!$expect($cmd('RCPT TO:<' . $to . '>'), '250')) {
         fclose($fp);
+        error_log("SMTP RCPT TO rejected for recipient: {$to}");
         return false;
     }
     if (!$expect($cmd('DATA'), '354')) {
         fclose($fp);
+        error_log("SMTP DATA command rejected by {$host}");
         return false;
     }
 
+    $cleanFromName = trim(preg_replace('/["\r\n<>]+/', '', $fromName) ?? '') ?: 'Velcro';
     $data = "To: {$to}\r\n";
-    $data .= "From: \"{$fromName}\" <{$from}>\r\n";
+    $data .= "From: \"{$cleanFromName}\" <{$from}>\r\n";
+    $data .= "Reply-To: {$from}\r\n";
     $data .= "Subject: {$subject}\r\n";
     $data .= $message;
     $data .= "\r\n.\r\n";
@@ -792,7 +857,82 @@ function smtpSend(string $to, string $subject, string $html, string $text, strin
     $cmd('QUIT');
     fclose($fp);
 
-    return $expect($response, '250');
+    $ok = $expect($response, '250');
+    if ($ok) {
+        error_log("SMTP message accepted by {$host} for {$to}");
+    } else {
+        error_log("SMTP message rejected by {$host} for {$to}: " . trim($response));
+    }
+    return $ok;
+}
+
+function testEmailDelivery(string $to, array $customConfig = []): array
+{
+    $to = strtolower(trim($to));
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        return ['success' => false, 'error' => 'Invalid destination email address.'];
+    }
+    $c = array_merge(getEmailConfig(), $customConfig);
+    $subject = 'Velcro Test Email - ' . date('Y-m-d H:i:s');
+    $html = '<div style="font-family:sans-serif;padding:24px;color:#1e293b;max-width:560px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;">'
+        . '<h2 style="color:#16a34a;margin-top:0;">Velcro Email Test Successful</h2>'
+        . '<p>This test email confirms that your Velcro Ramp email delivery system is functioning properly.</p>'
+        . '<p><b>Recipient:</b> ' . htmlspecialchars($to) . '<br>'
+        . '<b>Timestamp:</b> ' . gmdate('Y-m-d H:i:s') . ' UTC<br>'
+        . '<b>Sender:</b> ' . htmlspecialchars($c['smtp_from'] ?: ($c['smtp_user'] ?: 'Velcro')) . '</p>'
+        . '<p style="color:#64748b;font-size:12px;margin-top:30px;border-top:1px solid #e2e8f0;padding-top:12px;">Sent from Velcro Ramp Admin Settings</p></div>';
+    $text = "Velcro Email Delivery Test\n\nThis confirms that email delivery is working properly.\nRecipient: {$to}\nTimestamp: " . gmdate('Y-m-d H:i:s') . " UTC";
+
+    // 1. Try Mailhive if set
+    if (!empty($c['mailhive_api_key'])) {
+        try {
+            $from = !empty($c['mail_from']) ? $c['mail_from'] : 'noreply@usevelcro.com';
+            $res = httpRequest('POST', 'https://api.mailhive.africa/v1/send/emails', [
+                'headers' => ['Authorization: Bearer ' . $c['mailhive_api_key']],
+                'body' => ['from' => 'Velcro Admin <' . $from . '>', 'to' => $to, 'subject' => $subject, 'html' => $html, 'text' => $text],
+                'timeout' => 15,
+            ]);
+            if (!empty($res['id'])) {
+                return ['success' => true, 'transport' => 'Mailhive', 'message' => "Delivered via Mailhive (ID: {$res['id']})"];
+            }
+            return ['success' => false, 'transport' => 'Mailhive', 'error' => 'Mailhive API returned: ' . json_encode($res)];
+        } catch (Throwable $e) {
+            return ['success' => false, 'transport' => 'Mailhive', 'error' => 'Mailhive error: ' . $e->getMessage()];
+        }
+    }
+
+    // 2. Try SMTP if configured
+    if (!empty($c['smtp_host']) && !empty($c['smtp_user']) && !empty($c['smtp_pass'])) {
+        $sent = smtpSend($to, $subject, $html, $text, 'Velcro Admin', $c);
+        if ($sent) {
+            return ['success' => true, 'transport' => 'SMTP (' . $c['smtp_host'] . ')', 'message' => "Successfully delivered via SMTP server ({$c['smtp_host']}:{$c['smtp_port']})"];
+        }
+        return ['success' => false, 'transport' => 'SMTP (' . $c['smtp_host'] . ')', 'error' => "SMTP delivery to {$c['smtp_host']} failed. Check error log or verify credentials/port."];
+    }
+
+    // 3. Fallback to PHP mail()
+    if (function_exists('mail')) {
+        $cleanFrom = filter_var($c['smtp_from'] ?: ($c['mail_from'] ?: 'noreply@usevelcro.com'), FILTER_VALIDATE_EMAIL) ? ($c['smtp_from'] ?: ($c['mail_from'] ?: 'noreply@usevelcro.com')) : 'noreply@usevelcro.com';
+        $boundary = md5(uniqid((string) time(), true));
+        $headers = [
+            'From: "Velcro Admin" <' . $cleanFrom . '>',
+            'Reply-To: ' . $cleanFrom,
+            'Return-Path: ' . $cleanFrom,
+            'MIME-Version: 1.0',
+            'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+        ];
+        $body = "--{$boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n{$text}\r\n--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n{$html}\r\n--{$boundary}--";
+        $ok = @mail($to, $subject, $body, implode("\r\n", $headers), '-f' . $cleanFrom);
+        if (!$ok) {
+            $ok = @mail($to, $subject, $body, implode("\r\n", $headers));
+        }
+        if ($ok) {
+            return ['success' => true, 'transport' => 'PHP mail()', 'message' => "Sent via PHP mail() with sender {$cleanFrom}. Note: shared hosts may delay delivery or deliver to Spam if SPF/DKIM is not configured on the domain."];
+        }
+        return ['success' => false, 'transport' => 'PHP mail()', 'error' => "PHP mail() returned false. Hosting provider disabled mail() or rejected the sender envelope."];
+    }
+
+    return ['success' => false, 'transport' => 'None', 'error' => 'No email transport configured. Please enter your SMTP credentials or Mailhive API key in settings.'];
 }
 
 // ─── Webhook Signature Verification ───

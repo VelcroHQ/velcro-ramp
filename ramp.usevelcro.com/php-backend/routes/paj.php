@@ -234,7 +234,7 @@ function registerPajRoutes(Router $router): void
                 'deposit_account_name' => $d['accountName'] ?? null,
                 'wallet_address' => $recipient,
                 'email' => $email ? strtolower(trim($email)) : null,
-                'meta' => jsonEncodeNullable($d),
+                'meta' => jsonEncodeNullable((is_array($d) ? $d : []) + ($store ? ['store' => $store['merchant']['slug']] : (body($body, 'store') ? ['store' => strtolower(trim((string) body($body, 'store')))] : []))),
             ] + ($store ? storeOrderFields($store, getPajFee()) : referralFieldsFor(body($body, 'ref'), $email));
 
             Database::safeInsert('transactions', $txRecord);

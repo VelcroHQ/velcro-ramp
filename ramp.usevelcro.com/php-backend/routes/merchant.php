@@ -175,9 +175,9 @@ function merchantVelcroRates(): array
     $file = BASE_PATH . '/data/.merchant_rates.json';
     $cached = is_file($file) ? json_decode((string) @file_get_contents($file), true) : null;
     $age = time() - (int) ($cached['at'] ?? 0);
-    if (is_array($cached) && !empty($cached['rates']) && $age < 600) {
-        // Fresh for a minute. After that, visitors still get these straight away and the
-        // providers are asked again once the response has gone out (one refresh at a time).
+    if (is_array($cached) && !empty($cached['rates'])) {
+        // Return cached rates immediately without blocking the visitor on remote API roundtrips.
+        // If older than 60s, refresh in the background.
         $lock = $file . '.refreshing';
         if ($age >= 60 && (!is_file($lock) || filemtime($lock) < time() - 30) && @touch($lock)) {
             runAfterResponse(static function () use ($lock): void {
@@ -200,6 +200,8 @@ function merchantFetchVelcroRates(): array
     $out = [];
     $usdMarketBuy = null;
     $usdMarketSell = null;
+    $switchStableBuy = null;
+    $switchStableSell = null;
 
     foreach (MERCHANT_COIN_PROVIDERS as $sym => $provider) {
         $buy = $sell = null;
@@ -230,15 +232,28 @@ function merchantFetchVelcroRates(): array
                     $usdMarketSell = $sell;
                 }
             } else {
-                // Switch quotes per direction already include Velcro's developer fee.
-                $assets = json_decode((string) @file_get_contents(BASE_PATH . '/data/switch_assets_cache.json'), true) ?: [];
-                foreach (['ONRAMP' => 'onramp', 'OFFRAMP' => 'offramp'] as $dir => $key) {
-                    $chains = (array) ($assets[$key][$sym]['chains'] ?? []);
-                    $chain = array_values(array_intersect(['solana', 'base', 'tron', 'bsc', 'polygon', 'ethereum'], $chains))[0] ?? ($chains[0] ?? 'solana');
-                    $res = switchApi()->getRate(['direction' => $dir, 'country' => 'NG', 'currency' => 'NGN', 'channel' => 'BANK', 'asset' => $chain . ':' . strtolower($sym)]);
-                    $rate = (float) ($res['data']['rate'] ?? 0);
-                    if ($rate > 0) {
-                        $dir === 'ONRAMP' ? $buy = $rate : $sell = $rate;
+                // Switch: USDT and USDC share identical USD stablecoin rates.
+                if (in_array($sym, ['USDT', 'USDC'], true) && ($switchStableBuy !== null || $switchStableSell !== null)) {
+                    $buy = $switchStableBuy;
+                    $sell = $switchStableSell;
+                } else {
+                    $assets = json_decode((string) @file_get_contents(BASE_PATH . '/data/switch_assets_cache.json'), true) ?: [];
+                    foreach (['ONRAMP' => 'onramp', 'OFFRAMP' => 'offramp'] as $dir => $key) {
+                        $chains = (array) ($assets[$key][$sym]['chains'] ?? []);
+                        $chain = array_values(array_intersect(['solana', 'base', 'tron', 'bsc', 'polygon', 'ethereum'], $chains))[0] ?? ($chains[0] ?? 'solana');
+                        try {
+                            $res = switchApi()->getRate(['direction' => $dir, 'country' => 'NG', 'currency' => 'NGN', 'channel' => 'BANK', 'asset' => $chain . ':' . strtolower($sym)]);
+                            $rate = (float) ($res['data']['rate'] ?? 0);
+                            if ($rate > 0) {
+                                $dir === 'ONRAMP' ? $buy = $rate : $sell = $rate;
+                            }
+                        } catch (Throwable $re) {
+                            // ignore individual direction failure
+                        }
+                    }
+                    if (in_array($sym, ['USDT', 'USDC'], true)) {
+                        $switchStableBuy = $buy;
+                        $switchStableSell = $sell;
                     }
                 }
             }
@@ -264,10 +279,10 @@ function merchantFetchVelcroRates(): array
 
         $out[$sym] = ['provider' => $provider, 'buy' => $buy ? round($buy, 2) : null, 'sell' => $sell ? round($sell, 2) : null, 'usd' => $usd];
     }
-    // A provider that didn't answer this time keeps its last good rates (up to 10 minutes old),
+    // A provider that didn't answer this time keeps its last good rates (up to 24 hours old),
     // so one slow provider never blanks the other coins' prices.
     $old = json_decode((string) @file_get_contents($file), true);
-    if (is_array($old) && ($old['at'] ?? 0) > time() - 600) {
+    if (is_array($old) && !empty($old['rates'])) {
         foreach ($out as $sym => $r) {
             foreach (['buy', 'sell', 'usd'] as $k) {
                 if ($r[$k] === null && isset($old['rates'][$sym][$k]) && $old['rates'][$sym][$k] !== null) {

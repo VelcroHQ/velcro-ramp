@@ -73,7 +73,8 @@ function ensureStoreOrderColumns(): void
  */
 function storeOrderContext(string $side, string $symbol, string $provider): ?array
 {
-    $slug = strtolower(trim((string) body(getJsonBody(), 'store', '')));
+    $body = getJsonBody();
+    $slug = strtolower(trim((string) body($body, 'store', '')));
     if ($slug === '') {
         return null;
     }
@@ -86,14 +87,29 @@ function storeOrderContext(string $side, string $symbol, string $provider): ?arr
     }
     $customer = storeTokenCustomer($m);
     if (!$customer) {
-        jsonResponse(errorResponse('Sign in to continue', 401), 401);
+        $email = strtolower(trim((string) body($body, 'email', '')));
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $customer = storeCustomer($m, $email);
+            if (!$customer) {
+                try {
+                    Database::insert('store_customers', [
+                        'merchant_id' => (int) $m['id'],
+                        'email' => $email,
+                        'name' => explode('@', $email)[0],
+                    ]);
+                    $customer = storeCustomer($m, $email);
+                } catch (Throwable $e) {
+                    $customer = storeCustomer($m, $email);
+                }
+            }
+        }
     }
     $symbol = strtoupper($symbol);
     $p = merchantPricing($m)[$symbol] ?? null;
     if (!$p || empty($p[$side . '_on']) || (MERCHANT_COIN_PROVIDERS[$symbol] ?? '') !== $provider) {
         jsonResponse(errorResponse("This store isn't " . ($side === 'buy' ? 'selling' : 'buying') . " {$symbol} right now."), 400);
     }
-    return ['merchant' => $m, 'customer' => $customer, 'markup' => (float) $p[$side]];
+    return ['merchant' => $m, 'customer' => $customer, 'markup' => (float) ($p[$side] ?? 0)];
 }
 
 /** Columns that tag a store order. */
@@ -105,8 +121,8 @@ function storeOrderFields(?array $ctx, float $velcroFee): array
     ensureStoreOrderColumns();
     return [
         'merchant_id' => (int) $ctx['merchant']['id'],
-        'store_customer_id' => (int) $ctx['customer']['id'],
-        'merchant_markup_percent' => $ctx['markup'],
+        'store_customer_id' => !empty($ctx['customer']['id']) ? (int) $ctx['customer']['id'] : null,
+        'merchant_markup_percent' => (float) ($ctx['markup'] ?? 0),
         'velcro_fee_percent' => $velcroFee,
     ];
 }
@@ -273,9 +289,9 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
          FROM `transactions` t
          LEFT JOIN `store_customers` c ON (c.`id` = t.`store_customer_id` OR (c.`merchant_id` = :m_join AND LOWER(c.`email`) = LOWER(t.`email`)))
          WHERE t.`merchant_id` = :m
-            OR (t.`merchant_id` IS NULL AND LOWER(t.`email`) = :m_email AND :m_email != "")
-            OR (t.`merchant_id` IS NULL AND LOWER(t.`email`) IN (SELECT LOWER(`email`) FROM `store_customers` WHERE `merchant_id` = :m_sub))
-            OR (t.`merchant_id` IS NULL AND :slug != "" AND (t.`meta` LIKE :s1 OR t.`meta` LIKE :s2))
+            OR ((t.`merchant_id` IS NULL OR t.`merchant_id` = 0) AND LOWER(t.`email`) = :m_email AND :m_email != "")
+            OR ((t.`merchant_id` IS NULL OR t.`merchant_id` = 0) AND LOWER(t.`email`) IN (SELECT LOWER(`email`) FROM `store_customers` WHERE `merchant_id` = :m_sub))
+            OR ((t.`merchant_id` IS NULL OR t.`merchant_id` = 0) AND :slug != "" AND (t.`meta` LIKE :s1 OR t.`meta` LIKE :s2 OR t.`meta` LIKE :s3))
          ORDER BY t.`id` DESC' . ($limit ? ' LIMIT ' . (int) $limit : ''),
         [
             'm' => $merchantId,
@@ -285,6 +301,7 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
             'slug' => $slug,
             's1' => '%"store":"' . $slug . '"%',
             's2' => '%"storefront":"' . $slug . '"%',
+            's3' => '%"slug":"' . $slug . '"%',
         ]
     );
     return array_map(static function (array $t): array {

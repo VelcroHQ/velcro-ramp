@@ -133,15 +133,37 @@ function registerPublicRoutes(Router $router): void
     });
 
     $router->get('/api/institutions', function () {
+        $country = strtolower((string) (query('country') ?: 'ng'));
+        $cacheFile = BASE_PATH . '/data/institutions_cache_' . $country . '.json';
+        $cacheTtl = 86400; // 24 hours
+
+        if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+            $cached = @json_decode((string) file_get_contents($cacheFile), true);
+            if (is_array($cached) && !empty($cached['data'])) {
+                jsonResponse($cached);
+                return;
+            }
+        }
+
         try {
             $data = switchApi()->getInstitutions([
-                'country' => query('country'),
-                'currency' => query('currency'),
-                'channel' => query('channel'),
+                'country' => query('country') ?: 'NG',
+                'currency' => query('currency') ?: 'NGN',
+                'channel' => query('channel') ?: 'BANK',
             ]);
+            if (!empty($data['data']) && is_array($data['data'])) {
+                @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
+            }
             jsonResponse($data);
         } catch (Throwable $e) {
             error_log('Switch /institutions failed: ' . $e->getMessage());
+            if (is_file($cacheFile)) {
+                $cached = @json_decode((string) file_get_contents($cacheFile), true);
+                if (is_array($cached) && !empty($cached['data'])) {
+                    jsonResponse($cached);
+                    return;
+                }
+            }
             jsonResponse(successResponse([], 'Switch institutions unavailable'));
         }
     });
@@ -475,7 +497,7 @@ function registerPublicRoutes(Router $router): void
                 'wallet_address' => $walletAddress,
                 'callback_url' => $callbackUrl,
                 'email' => $email !== '' ? $email : null,
-                'meta' => jsonEncodeNullable($d),
+                'meta' => jsonEncodeNullable((is_array($d) ? $d : []) + ($store ? ['store' => $store['merchant']['slug']] : (body($body, 'store') ? ['store' => strtolower(trim((string) body($body, 'store')))] : []))),
             ] + ($store ? storeOrderFields($store, getPlatformFee()) : referralFieldsFor(body($body, 'ref'), $email));
 
             Database::safeInsert('transactions', $txRecord);
