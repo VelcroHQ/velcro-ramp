@@ -79,7 +79,10 @@ function storeOrderContext(string $side, string $symbol, string $provider): ?arr
     }
     $m = storeBySlug($slug);
     if ($m['status'] !== 'APPROVED') {
-        jsonResponse(errorResponse('This store is not taking orders yet.'), 403);
+        $owner = merchantTokenEmail((string) ($_SERVER['HTTP_X_MERCHANT_TOKEN'] ?? ''));
+        if (strtolower((string) $owner) !== strtolower((string) $m['email'])) {
+            jsonResponse(errorResponse('This store is not taking orders yet.'), 403);
+        }
     }
     $customer = storeTokenCustomer($m);
     if (!$customer) {
@@ -217,19 +220,77 @@ function storeSignedIn(array $customer, string $message): never
 function merchantOrders(int $merchantId, ?int $limit = 500): array
 {
     ensureStoreOrderColumns();
+    $merchant = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => $merchantId]);
+    $merchantEmail = strtolower(trim((string) ($merchant['email'] ?? '')));
+    $slug = strtolower(trim((string) ($merchant['slug'] ?? '')));
+
+    // 1. Auto-link transactions where customer email is in store_customers
+    try {
+        Database::execute(
+            'UPDATE `transactions`
+             SET `merchant_id` = :m
+             WHERE (`merchant_id` IS NULL OR `merchant_id` = 0)
+               AND LOWER(`email`) IN (SELECT LOWER(`email`) FROM `store_customers` WHERE `merchant_id` = :m2)',
+            ['m' => $merchantId, 'm2' => $merchantId]
+        );
+    } catch (Throwable $e) { /* ignore */ }
+
+    // 2. Auto-link transactions where customer email is the merchant owner's email (testing)
+    if ($merchantEmail !== '') {
+        try {
+            Database::execute(
+                'UPDATE `transactions`
+                 SET `merchant_id` = :m
+                 WHERE (`merchant_id` IS NULL OR `merchant_id` = 0)
+                   AND LOWER(`email`) = :e',
+                ['m' => $merchantId, 'e' => $merchantEmail]
+            );
+        } catch (Throwable $e) { /* ignore */ }
+    }
+
+    // 3. Auto-link transactions where meta contains the merchant's store slug
+    if ($slug !== '') {
+        try {
+            Database::execute(
+                'UPDATE `transactions`
+                 SET `merchant_id` = :m
+                 WHERE (`merchant_id` IS NULL OR `merchant_id` = 0)
+                   AND (`meta` LIKE :p1 OR `meta` LIKE :p2 OR `meta` LIKE :p3)',
+                [
+                    'm' => $merchantId,
+                    'p1' => '%"store":"' . $slug . '"%',
+                    'p2' => '%"storefront":"' . $slug . '"%',
+                    'p3' => '%"slug":"' . $slug . '"%',
+                ]
+            );
+        } catch (Throwable $e) { /* ignore */ }
+    }
+
     $rows = Database::select(
         'SELECT t.`reference`, t.`type`, t.`status`, t.`channel`, t.`asset`, t.`amount`, t.`destination_amount`, t.`destination_currency`,
-                t.`source_currency`, t.`merchant_markup_percent`, t.`velcro_fee_percent`, t.`hash`, t.`created_at`, t.`store_customer_id`,
+                t.`source_currency`, t.`merchant_markup_percent`, t.`velcro_fee_percent`, t.`rate`, t.`hash`, t.`created_at`, t.`store_customer_id`,
                 COALESCE(c.`email`, t.`email`) AS `customer_email`, c.`name` AS `customer_name`
          FROM `transactions` t
-         LEFT JOIN `store_customers` c ON (c.`id` = t.`store_customer_id` OR (c.`merchant_id` = t.`merchant_id` AND LOWER(c.`email`) = LOWER(t.`email`)))
-         WHERE t.`merchant_id` = :m ORDER BY t.`id` DESC' . ($limit ? ' LIMIT ' . (int) $limit : ''),
-        ['m' => $merchantId]
+         LEFT JOIN `store_customers` c ON (c.`id` = t.`store_customer_id` OR (c.`merchant_id` = :m_join AND LOWER(c.`email`) = LOWER(t.`email`)))
+         WHERE t.`merchant_id` = :m
+            OR (t.`merchant_id` IS NULL AND LOWER(t.`email`) = :m_email AND :m_email != "")
+            OR (t.`merchant_id` IS NULL AND LOWER(t.`email`) IN (SELECT LOWER(`email`) FROM `store_customers` WHERE `merchant_id` = :m_sub))
+            OR (t.`merchant_id` IS NULL AND :slug != "" AND (t.`meta` LIKE :s1 OR t.`meta` LIKE :s2))
+         ORDER BY t.`id` DESC' . ($limit ? ' LIMIT ' . (int) $limit : ''),
+        [
+            'm' => $merchantId,
+            'm_join' => $merchantId,
+            'm_email' => $merchantEmail,
+            'm_sub' => $merchantId,
+            'slug' => $slug,
+            's1' => '%"store":"' . $slug . '"%',
+            's2' => '%"storefront":"' . $slug . '"%',
+        ]
     );
     return array_map(static function (array $t): array {
         $buy = strtoupper((string) $t['type']) === 'ONRAMP';
-        $markup = (float) $t['merchant_markup_percent'];
-        $fees = ($markup + (float) $t['velcro_fee_percent']) / 100;
+        $markup = (float) ($t['merchant_markup_percent'] ?? 0);
+        $fees = ($markup + (float) ($t['velcro_fee_percent'] ?? 0)) / 100;
         $coin = strtoupper((string) ($buy ? $t['destination_currency'] : $t['source_currency']) ?: (explode(':', (string) $t['asset'])[1] ?? $t['asset']));
         if ($buy) {
             $naira = (float) $t['amount'];
@@ -237,7 +298,13 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
             $naira = (float) $t['amount']; // PAJ sells are ordered in naira
         } else {
             $paid = strtoupper((string) $t['destination_currency']) === 'NGN' ? (float) $t['destination_amount'] : 0.0;
-            $naira = $paid > 0 && $fees < 1 ? $paid / (1 - $fees) : 0.0;
+            if ($paid > 0 && $fees < 1) {
+                $naira = $paid / (1 - $fees);
+            } elseif (!empty($t['rate']) && (float)$t['rate'] > 0 && (float)$t['amount'] > 0) {
+                $naira = (float)$t['amount'] * (float)$t['rate'];
+            } else {
+                $naira = (float) $t['amount'];
+            }
         }
         return [
             'reference' => $t['reference'],
@@ -423,18 +490,44 @@ function registerStoreRoutes(Router $router): void
         $email = requireMerchantAuth();
         ensureStoreSchema();
         $m = merchantFor($email);
-        $rows = Database::select('SELECT * FROM `store_customers` WHERE `merchant_id` = :m ORDER BY `id` DESC LIMIT 500', ['m' => $m['id']]);
+        $merchantId = (int) $m['id'];
+
+        // Auto-create customer entries from transactions belonging to this store
+        try {
+            Database::execute(
+                'INSERT IGNORE INTO `store_customers` (`merchant_id`, `email`, `created_at`)
+                 SELECT DISTINCT :m, LOWER(t.`email`), MIN(t.`created_at`)
+                 FROM `transactions` t
+                 WHERE (t.`merchant_id` = :m2 OR LOWER(t.`email`) = :me)
+                   AND t.`email` IS NOT NULL AND t.`email` != ""
+                 GROUP BY LOWER(t.`email`)',
+                ['m' => $merchantId, 'm2' => $merchantId, 'me' => strtolower(trim($email))]
+            );
+        } catch (Throwable $e) { /* ignore */ }
+
+        $rows = Database::select('SELECT * FROM `store_customers` WHERE `merchant_id` = :m ORDER BY `id` DESC LIMIT 500', ['m' => $merchantId]);
         // Orders and completed volume per customer, from the same rows as the Orders tab.
         $stats = [];
-        foreach (merchantOrders((int) $m['id']) as $o) {
-            $s = &$stats[$o['customer_id']];
-            $s['orders'] = ($s['orders'] ?? 0) + 1;
-            $s['volume_ngn'] = ($s['volume_ngn'] ?? 0) + ($o['status'] === 'COMPLETED' ? (float) $o['naira'] : 0);
-            $s['last_order_at'] = max($s['last_order_at'] ?? '', (string) $o['created_at']);
-            unset($s);
+        foreach (merchantOrders($merchantId) as $o) {
+            $cid = (int) ($o['customer_id'] ?? 0);
+            $cemail = strtolower(trim((string) ($o['customer_email'] ?? '')));
+            if ($cid) {
+                $s = &$stats[$cid];
+                $s['orders'] = ($s['orders'] ?? 0) + 1;
+                $s['volume_ngn'] = ($s['volume_ngn'] ?? 0) + ($o['status'] === 'COMPLETED' ? (float) $o['naira'] : 0);
+                $s['last_order_at'] = max($s['last_order_at'] ?? '', (string) $o['created_at']);
+                unset($s);
+            }
+            if ($cemail !== '') {
+                $s = &$stats[$cemail];
+                $s['orders'] = ($s['orders'] ?? 0) + 1;
+                $s['volume_ngn'] = ($s['volume_ngn'] ?? 0) + ($o['status'] === 'COMPLETED' ? (float) $o['naira'] : 0);
+                $s['last_order_at'] = max($s['last_order_at'] ?? '', (string) $o['created_at']);
+                unset($s);
+            }
         }
         jsonResponse(successResponse([
-            'customers' => array_map(static fn ($c) => storeCustomerView($c) + ($stats[(int) $c['id']] ?? []) + ['orders' => 0, 'volume_ngn' => 0, 'last_order_at' => null], $rows),
+            'customers' => array_map(static fn ($c) => storeCustomerView($c) + ($stats[(int) $c['id']] ?? $stats[strtolower(trim((string)$c['email']))] ?? []) + ['orders' => 0, 'volume_ngn' => 0, 'last_order_at' => null], $rows),
             'total' => count($rows),
         ]));
     });
