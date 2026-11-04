@@ -29,6 +29,9 @@ if [ "$(md5sum < ramp.usevelcro.com/php-backend/index.php)" != "$(md5sum < "$DEP
   exit 1
 fi
 echo "copied"
+# Stamp straight away, so /deploy-version.txt shows what is live even if a later step stops.
+git rev-parse --short HEAD > "$DEPLOYPATH/deploy-version.txt" 2>/dev/null || git log -1 --format=%h > "$DEPLOYPATH/deploy-version.txt"
+echo "stamped $(cat "$DEPLOYPATH/deploy-version.txt")"
 
 # Dev-only files, and files deleted from the code that an old deploy left behind.
 rm -rf "$DEPLOYPATH/php-backend/tests" "$DEPLOYPATH/php-backend/.env.test" "$DEPLOYPATH/php-backend/.env.example" \
@@ -45,5 +48,4 @@ if [ -n "$FLUSH_KEY" ] && curl -s -m 20 "${SITE_URL:-https://ramp.usevelcro.com}
   echo "cache cleared"
 fi
 
-git rev-parse --short HEAD > "$DEPLOYPATH/deploy-version.txt"
 echo "DONE: $(cat "$DEPLOYPATH/deploy-version.txt") is live"
