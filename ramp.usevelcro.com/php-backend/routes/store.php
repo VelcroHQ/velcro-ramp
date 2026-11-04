@@ -39,6 +39,26 @@ function ensureStoreSchema(): void
 }
 
 /** v2: store orders carry their store, customer, the merchant's markup and Velcro's fee at order time. */
+/** Undoes the 2026-11-04 auto-link: main-site orders tagged to a store, and customers made from them. */
+function repairStoreLinks(): void
+{
+    $flag = BASE_PATH . '/data/.store_repair_v1';
+    if (file_exists($flag)) {
+        return;
+    }
+    try {
+        $orders = Database::execute('UPDATE `transactions` SET `merchant_id` = NULL WHERE `merchant_id` IS NOT NULL AND `velcro_fee_percent` IS NULL');
+        $customers = Database::execute(
+            'DELETE FROM `store_customers` WHERE `password_hash` IS NULL AND `google_sub` IS NULL
+               AND `id` NOT IN (SELECT `store_customer_id` FROM `transactions` WHERE `store_customer_id` IS NOT NULL)'
+        );
+        auditLog('STORE_LINKS_REPAIRED', ['orders_untagged' => $orders, 'customers_removed' => $customers]);
+        @file_put_contents($flag, gmdate('c'));
+    } catch (Throwable $e) {
+        error_log('[Store] link repair failed: ' . $e->getMessage());
+    }
+}
+
 function ensureStoreOrderColumns(): void
 {
     $flag = BASE_PATH . '/data/.store_schema_v2';
@@ -222,73 +242,18 @@ function storeSignedIn(array $customer, string $message): never
 function merchantOrders(int $merchantId, ?int $limit = 500): array
 {
     ensureStoreOrderColumns();
-    $merchant = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => $merchantId]);
-    $merchantEmail = strtolower(trim((string) ($merchant['email'] ?? '')));
-    $slug = strtolower(trim((string) ($merchant['slug'] ?? '')));
-
-    // 1. Auto-link transactions where customer email is in store_customers
-    try {
-        Database::execute(
-            'UPDATE `transactions`
-             SET `merchant_id` = :m
-             WHERE (`merchant_id` IS NULL OR `merchant_id` = 0)
-               AND LOWER(`email`) IN (SELECT LOWER(`email`) FROM `store_customers` WHERE `merchant_id` = :m2)',
-            ['m' => $merchantId, 'm2' => $merchantId]
-        );
-    } catch (Throwable $e) { /* ignore */ }
-
-    // 2. Auto-link transactions where customer email is the merchant owner's email (testing)
-    if ($merchantEmail !== '') {
-        try {
-            Database::execute(
-                'UPDATE `transactions`
-                 SET `merchant_id` = :m
-                 WHERE (`merchant_id` IS NULL OR `merchant_id` = 0)
-                   AND LOWER(`email`) = :e',
-                ['m' => $merchantId, 'e' => $merchantEmail]
-            );
-        } catch (Throwable $e) { /* ignore */ }
-    }
-
-    // 3. Auto-link transactions where meta contains the merchant's store slug
-    if ($slug !== '') {
-        try {
-            Database::execute(
-                'UPDATE `transactions`
-                 SET `merchant_id` = :m
-                 WHERE (`merchant_id` IS NULL OR `merchant_id` = 0)
-                   AND (`meta` LIKE :p1 OR `meta` LIKE :p2 OR `meta` LIKE :p3)',
-                [
-                    'm' => $merchantId,
-                    'p1' => '%"store":"' . $slug . '"%',
-                    'p2' => '%"storefront":"' . $slug . '"%',
-                    'p3' => '%"slug":"' . $slug . '"%',
-                ]
-            );
-        } catch (Throwable $e) { /* ignore */ }
-    }
-
+    repairStoreLinks();
+    // Only orders placed on this store (tagged when they were created). A customer's orders on the
+    // main site or on another store never show here.
     $rows = Database::select(
         'SELECT t.`reference`, t.`type`, t.`status`, t.`channel`, t.`asset`, t.`amount`, t.`destination_amount`, t.`destination_currency`,
                 t.`source_currency`, t.`merchant_markup_percent`, t.`velcro_fee_percent`, t.`rate`, t.`hash`, t.`created_at`, t.`store_customer_id`,
-                COALESCE(c.`email`, t.`email`) AS `customer_email`, c.`name` AS `customer_name`
+                c.`email` AS `customer_email`, c.`name` AS `customer_name`
          FROM `transactions` t
-         LEFT JOIN `store_customers` c ON (c.`id` = t.`store_customer_id` OR (c.`merchant_id` = :m_join AND LOWER(c.`email`) = LOWER(t.`email`)))
-         WHERE t.`merchant_id` = :m
-            OR ((t.`merchant_id` IS NULL OR t.`merchant_id` = 0) AND LOWER(t.`email`) = :m_email AND :m_email != "")
-            OR ((t.`merchant_id` IS NULL OR t.`merchant_id` = 0) AND LOWER(t.`email`) IN (SELECT LOWER(`email`) FROM `store_customers` WHERE `merchant_id` = :m_sub))
-            OR ((t.`merchant_id` IS NULL OR t.`merchant_id` = 0) AND :slug != "" AND (t.`meta` LIKE :s1 OR t.`meta` LIKE :s2 OR t.`meta` LIKE :s3))
+         LEFT JOIN `store_customers` c ON c.`id` = t.`store_customer_id` AND c.`merchant_id` = t.`merchant_id`
+         WHERE t.`merchant_id` = :m AND t.`velcro_fee_percent` IS NOT NULL
          ORDER BY t.`id` DESC' . ($limit ? ' LIMIT ' . (int) $limit : ''),
-        [
-            'm' => $merchantId,
-            'm_join' => $merchantId,
-            'm_email' => $merchantEmail,
-            'm_sub' => $merchantId,
-            'slug' => $slug,
-            's1' => '%"store":"' . $slug . '"%',
-            's2' => '%"storefront":"' . $slug . '"%',
-            's3' => '%"slug":"' . $slug . '"%',
-        ]
+        ['m' => $merchantId]
     );
     return array_map(static function (array $t): array {
         $buy = strtoupper((string) $t['type']) === 'ONRAMP';
@@ -495,42 +460,18 @@ function registerStoreRoutes(Router $router): void
         $m = merchantFor($email);
         $merchantId = (int) $m['id'];
 
-        // Auto-create customer entries from transactions belonging to this store
-        try {
-            Database::execute(
-                'INSERT IGNORE INTO `store_customers` (`merchant_id`, `email`, `created_at`)
-                 SELECT DISTINCT :m, LOWER(t.`email`), MIN(t.`created_at`)
-                 FROM `transactions` t
-                 WHERE (t.`merchant_id` = :m2 OR LOWER(t.`email`) = :me)
-                   AND t.`email` IS NOT NULL AND t.`email` != ""
-                 GROUP BY LOWER(t.`email`)',
-                ['m' => $merchantId, 'm2' => $merchantId, 'me' => strtolower(trim($email))]
-            );
-        } catch (Throwable $e) { /* ignore */ }
-
         $rows = Database::select('SELECT * FROM `store_customers` WHERE `merchant_id` = :m ORDER BY `id` DESC LIMIT 500', ['m' => $merchantId]);
         // Orders and completed volume per customer, from the same rows as the Orders tab.
         $stats = [];
         foreach (merchantOrders($merchantId) as $o) {
-            $cid = (int) ($o['customer_id'] ?? 0);
-            $cemail = strtolower(trim((string) ($o['customer_email'] ?? '')));
-            if ($cid) {
-                $s = &$stats[$cid];
-                $s['orders'] = ($s['orders'] ?? 0) + 1;
-                $s['volume_ngn'] = ($s['volume_ngn'] ?? 0) + ($o['status'] === 'COMPLETED' ? (float) $o['naira'] : 0);
-                $s['last_order_at'] = max($s['last_order_at'] ?? '', (string) $o['created_at']);
-                unset($s);
-            }
-            if ($cemail !== '') {
-                $s = &$stats[$cemail];
-                $s['orders'] = ($s['orders'] ?? 0) + 1;
-                $s['volume_ngn'] = ($s['volume_ngn'] ?? 0) + ($o['status'] === 'COMPLETED' ? (float) $o['naira'] : 0);
-                $s['last_order_at'] = max($s['last_order_at'] ?? '', (string) $o['created_at']);
-                unset($s);
-            }
+            $s = &$stats[(int) $o['customer_id']];
+            $s['orders'] = ($s['orders'] ?? 0) + 1;
+            $s['volume_ngn'] = ($s['volume_ngn'] ?? 0) + ($o['status'] === 'COMPLETED' ? (float) $o['naira'] : 0);
+            $s['last_order_at'] = max($s['last_order_at'] ?? '', (string) $o['created_at']);
+            unset($s);
         }
         jsonResponse(successResponse([
-            'customers' => array_map(static fn ($c) => storeCustomerView($c) + ($stats[(int) $c['id']] ?? $stats[strtolower(trim((string)$c['email']))] ?? []) + ['orders' => 0, 'volume_ngn' => 0, 'last_order_at' => null], $rows),
+            'customers' => array_map(static fn ($c) => storeCustomerView($c) + ($stats[(int) $c['id']] ?? []) + ['orders' => 0, 'volume_ngn' => 0, 'last_order_at' => null], $rows),
             'total' => count($rows),
         ]));
     });

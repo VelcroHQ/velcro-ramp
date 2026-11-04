@@ -299,7 +299,18 @@ try {
     $addOrder->execute(['ord-sell', 'OFFRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 70, 98500, 'NGN', 'USDT', $id, $custId]);        // ₦98,500 paid after 1.5%
     $addOrder->execute(['ord-open', 'ONRAMP', 'AWAITING_DEPOSIT', 'bitcoin:btc', 'HOSTFI', 50000, null, 'BTC', 'NGN', $id, $custId]);
     $addOrder->execute(['ord-other', 'ONRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 900000, 600, 'USDT', 'NGN', $otherId, null]);
+    // The same customer (and the merchant) trading on the main Velcro site: never the store's.
+    $mainSite = $pdo->prepare('INSERT INTO transactions (reference, type, status, asset, channel, amount, destination_amount, destination_currency, source_currency, email, merchant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $mainSite->execute(['main-shopper', 'ONRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 300000, 200, 'USDT', 'NGN', $shopper, null]);
+    $mainSite->execute(['main-owner', 'ONRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 300000, 200, 'USDT', 'NGN', $email, null]);
+    $mainSite->execute(['main-linked', 'ONRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 300000, 200, 'USDT', 'NGN', $shopper, $id]); // what the old auto-link wrote
+    $pdo->exec("INSERT INTO store_customers (merchant_id, email) VALUES ({$id}, 'fromorder@example.com')"); // and a customer it made up
+    @unlink($tmp . '/data/.store_repair_v1'); // the one-time repair runs on the next dashboard load
     [, $res] = $app_('GET', '/api/merchant/orders', null, $auth($token));
+    $refs = array_column($res['data']['orders'] ?? [], 'reference');
+    check(!array_intersect(['main-shopper', 'main-owner', 'main-linked'], $refs) && $pdo->query("SELECT merchant_id FROM transactions WHERE reference = 'main-linked'")->fetchColumn() === null
+        && !$pdo->query("SELECT 1 FROM store_customers WHERE email = 'fromorder@example.com'")->fetchColumn(),
+        "orders: main-site trades by the store's customer or owner never show; old auto-links and made-up customers are undone");
     $byRef = array_column($res['data']['orders'] ?? [], null, 'reference');
     $sum = $res['data']['summary'] ?? [];
     check(count($byRef) === 3 && !isset($byRef['ord-other']) && near($byRef['ord-buy']['earned'] ?? 0, 1000) && near($byRef['ord-sell']['naira'] ?? 0, 100000)
@@ -347,6 +358,9 @@ try {
     [$c2] = $app_('POST', '/api/admin/merchant-withdrawals/' . $wid, ['action' => 'approve'], $admin);
     [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
     check($c1 === 200 && $c2 === 409 && near($res['data']['paid_ngn'] ?? 0, 7000) && near($res['data']['available_ngn'] ?? -1, 0), 'admin marks paid: counted once as paid out, balance ₦0');
+    [, $res] = $app_('GET', '/api/admin/settings', null, $admin);
+    check(is_array($res) && !array_key_exists('smtp_pass', $res) && !array_key_exists('mailhive_api_key', $res) && array_key_exists('smtp_pass_masked', $res),
+        'admin settings: mail password and API key are never sent to the browser');
     [, $res] = $app_('GET', "/api/admin/merchants/{$id}/customers", null, $admin);
     [, $list] = $app_('GET', '/api/admin/merchants', null, $admin);
     $counts = array_column($list['merchants'] ?? [], 'customers', 'email');

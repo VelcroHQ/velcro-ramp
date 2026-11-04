@@ -208,15 +208,6 @@ class Database
                     error_log('DB safeInsert retry failed: ' . $retryErr->getMessage());
                 }
             }
-            $optionalCols = ['merchant_id', 'store_customer_id', 'merchant_markup_percent', 'velcro_fee_percent', 'fee_developer'];
-            $stripped = array_diff_key($data, array_flip($optionalCols));
-            if ($stripped !== $data) {
-                try {
-                    return self::insert($table, $stripped);
-                } catch (Throwable $fallbackErr) {
-                    error_log('DB safeInsert stripped fallback failed: ' . $fallbackErr->getMessage());
-                }
-            }
             return false;
         }
     }

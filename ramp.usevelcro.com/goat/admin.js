@@ -187,7 +187,7 @@ async function fetchData() {
                 document.getElementById('smtp-user').value = settings.smtp_user || '';
                 document.getElementById('smtp-pass').value = settings.smtp_pass_masked || (settings.smtp_pass ? '••••••••' : '');
                 document.getElementById('smtp-from').value = settings.smtp_from || '';
-                document.getElementById('mailhive-api-key').value = settings.mailhive_api_key || '';
+                document.getElementById('mailhive-api-key').value = settings.mailhive_api_key_set ? '••••••••' : '';
                 const testTarget = document.getElementById('test-email-target');
                 if (testTarget && !testTarget.value) {
                     testTarget.value = settings.paj_email || 'shehukamal6@gmail.com';

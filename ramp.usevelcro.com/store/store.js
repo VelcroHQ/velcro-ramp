@@ -817,12 +817,6 @@ async function resolveAccount(bank, accountNumber) {
   throw lastErr || new Error('Could not verify account name.');
 }
 
-function setManualAccountName(val) {
-  checkout.accountName = String(val || '').trim();
-  const go = $('s-checkout')?.querySelector('[data-act="create"]');
-  if (go) go.disabled = checkout.accountName.length < 3;
-}
-
 function checkAccountName() {
   if ($('co-acct')) {
     checkout.account = $('co-acct').value.replace(/\D/g, '').slice(0, 10);
@@ -880,8 +874,7 @@ function checkAccountName() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <span>${esc(errMsg)}</span>
           </div>
-          <input type="text" id="co-manual-name" class="s-name-manual-input" placeholder="Type your account name to continue" value="${esc(checkout.accountName)}" oninput="setManualAccountName(this.value)">
-          <p class="s-name-manual-hint">If your bank is temporarily slow to respond, you can type your name above.</p>
+          <p class="s-name-manual-hint">Naira is only paid to an account we can verify. Check the details, or try again in a moment.</p>
         </div>`;
     }
   }, 500);

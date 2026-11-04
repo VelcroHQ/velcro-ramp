@@ -8,6 +8,20 @@ require_once __DIR__ . '/../poll_helpers.php';
 require_once __DIR__ . '/../emails.php';
 require_once __DIR__ . '/hostfi.php';
 
+// Settings that are passwords or keys: the admin page only learns whether each is set.
+const ADMIN_SECRET_SETTINGS = ['smtp_pass', 'mailhive_api_key'];
+
+function adminSettingsView(array $s): array
+{
+    $mail = getEmailConfig();
+    foreach (ADMIN_SECRET_SETTINGS as $k) {
+        unset($s[$k]);
+    }
+    $s['smtp_pass_masked'] = $mail['smtp_pass'] !== '' ? '••••••••' : '';
+    $s['mailhive_api_key_set'] = $mail['mailhive_api_key'] !== '';
+    return $s;
+}
+
 function registerAdminRoutes(Router $router): void
 {
     // Trade the password for a session token once; the dashboard stores only the token.
@@ -484,11 +498,7 @@ function registerAdminRoutes(Router $router): void
 
     $router->get('/api/admin/settings', function () {
         requireAdminAuth();
-        $s = loadSettings();
-        if (!empty($s['smtp_pass'])) {
-            $s['smtp_pass_masked'] = '••••••••';
-        }
-        jsonResponse($s);
+        jsonResponse(adminSettingsView(loadSettings()));
     });
 
     $router->get('/api/admin/debug/last-payload', function () {
@@ -635,7 +645,8 @@ function registerAdminRoutes(Router $router): void
         if (isset($body['smtp_from'])) {
             $settings['smtp_from'] = trim((string) $body['smtp_from']);
         }
-        if (isset($body['mailhive_api_key'])) {
+        // The admin page only ever shows dots for the key, so dots or blank mean "keep the saved one".
+        if (isset($body['mailhive_api_key']) && !in_array(trim((string) $body['mailhive_api_key']), ['', '••••••••'], true)) {
             $settings['mailhive_api_key'] = trim((string) $body['mailhive_api_key']);
         }
         if (isset($body['mail_from'])) {
@@ -643,8 +654,8 @@ function registerAdminRoutes(Router $router): void
         }
 
         if (saveSettings($settings)) {
-            auditLog('SETTINGS_UPDATED', ['ip' => $ip, 'changes' => $body]);
-            jsonResponse(['success' => true, ...$settings]);
+            auditLog('SETTINGS_UPDATED', ['ip' => $ip, 'changes' => array_diff_key($body, array_flip(ADMIN_SECRET_SETTINGS))]);
+            jsonResponse(['success' => true, ...adminSettingsView($settings)]);
         } else {
             jsonResponse(['success' => false, 'error' => 'Failed to save settings'], 500);
         }
@@ -705,7 +716,7 @@ function registerAdminRoutes(Router $router): void
             if (!empty($body['smtp_user'])) $overrides['smtp_user'] = trim((string) $body['smtp_user']);
             if (!empty($body['smtp_pass']) && (string) $body['smtp_pass'] !== '••••••••') $overrides['smtp_pass'] = (string) $body['smtp_pass'];
             if (!empty($body['smtp_from'])) $overrides['smtp_from'] = trim((string) $body['smtp_from']);
-            if (!empty($body['mailhive_api_key'])) $overrides['mailhive_api_key'] = trim((string) $body['mailhive_api_key']);
+            if (!empty($body['mailhive_api_key']) && trim((string) $body['mailhive_api_key']) !== '••••••••') $overrides['mailhive_api_key'] = trim((string) $body['mailhive_api_key']);
             if (!empty($body['mail_from'])) $overrides['mail_from'] = trim((string) $body['mail_from']);
 
             $res = testEmailDelivery($target, $overrides);

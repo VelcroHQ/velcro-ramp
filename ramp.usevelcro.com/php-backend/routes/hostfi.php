@@ -1097,7 +1097,7 @@ function registerHostfiRoutes(Router $router): void
                 ] + ($store ? ['fee_percent' => $fee, 'store' => $store['merchant']['slug']] : (body($b, 'store') ? ['store' => strtolower(trim((string) body($b, 'store')))] : []))]), // store orders keep their fee (ours + markup) for the payout
             ] + ($store ? storeOrderFields($store, hostfiFee()) : referralFieldsFor(body($b, 'ref'), $email));
 
-            Database::safeInsert('transactions', $txRecord);
+            Database::insert('transactions', $txRecord);
 
             if ($email !== '') {
                 try {
