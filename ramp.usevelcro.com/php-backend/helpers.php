@@ -1209,6 +1209,9 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
         ? Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $tx['id']])
         : Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :ref1 OR `switch_reference` = :ref2', ['ref1' => $reference, 'ref2' => $reference]);
 
+    if ($finalTx && $normalizedStatus === 'FAILED' && strtoupper((string) ($tx['status'] ?? '')) !== 'FAILED') {
+        notifyMerchantOrderIssue($finalTx, 'failed');
+    }
     if ($finalTx && $normalizedStatus === 'COMPLETED') {
         if (empty($finalTx['receipt_sent_at'])) {
             sendTransactionReceiptNow($finalTx);

@@ -332,7 +332,7 @@ function hostfiNotify(int $id, string $status): void
         if ($status === 'PAYOUT_FAILED' && isValidEmail($email)) {
             $canRetry = hostfiCustomerRetriesLeft($dep) > 0;
             $amount = $ngn($dep['payout_amount']);
-            [$html, $text] = renderEmail([
+            [$html, $text] = renderOrderEmail($order ?: [], [
                 'preheader' => "Your {$amount} payout didn't go through. Your money is safe.",
                 'eyebrow' => 'Payout failed',
                 'title' => "Your payout didn't go through",
@@ -343,7 +343,10 @@ function hostfiNotify(int $id, string $status): void
                 'cta' => ['Open Velcro', EMAIL_SITE_URL],
                 'outro' => 'For your safety, a retry can only go to the bank account on this order.',
             ]);
-            sendEmailTo($email, "Action needed: your {$amount} payout failed", $html, $text);
+            sendEmailTo($email, "Action needed: your {$amount} payout failed", $html, $text, orderFromName($order ?: []));
+        }
+        if ($order) {
+            notifyMerchantOrderIssue($order, $labels[$status] === 'needs review' ? 'is being checked' : "hit a problem ({$labels[$status]})");
         }
     } catch (Throwable $e) {
         error_log("[HostFi] Notify failed for deposit {$id}: " . $e->getMessage());

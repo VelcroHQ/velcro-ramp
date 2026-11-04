@@ -112,14 +112,22 @@
             <ul id="s-coin-list" class="s-select-list" role="listbox" hidden></ul>
           </div>
 
-          <label class="s-field s-field-in" for="f-in">
+          <label class="s-field s-field-in" for="f-in" id="f-in-wrap">
             <span id="f-in-label">You pay</span>
             <span class="s-field-row"><input id="f-in" inputmode="decimal" autocomplete="off" placeholder="0"><b id="f-in-cur">NGN</b></span>
           </label>
           <div class="s-chips" id="s-chips"></div>
-          <div class="s-field s-field-out">
+          <div class="s-field s-field-out" id="f-out-wrap">
             <span id="f-out-label">You get</span>
             <span class="s-field-row"><output id="f-out">0</output><b id="f-out-cur">BTC</b></span>
+          </div>
+
+          <div class="s-any-amount" id="s-any-amount" hidden>
+            <div class="s-any-head">
+              <span class="s-any-badge">Any amount</span>
+              <p class="s-any-title">Send any amount of <span id="s-any-coin">BTC</span></p>
+            </div>
+            <p class="s-any-desc">You don't need to specify an amount in advance. Send whatever you want to your generated deposit address, and we'll calculate and credit the exact naira payout to your bank account at the live rate above as soon as it arrives.</p>
           </div>
 
           <dl class="s-details">

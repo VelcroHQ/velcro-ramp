@@ -769,6 +769,9 @@ function registerPublicRoutes(Router $router): void
                                     'm' => jsonEncodeNullable($res),
                                     'id' => $row['id']
                                 ]);
+                                if ($newStatus === 'FAILED' && strtoupper((string) $row['status']) !== 'FAILED') {
+                                    notifyMerchantOrderIssue($row, 'failed');
+                                }
                                 $row['status'] = $newStatus;
                             }
                         } catch (Throwable $e) {}

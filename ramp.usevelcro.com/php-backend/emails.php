@@ -201,7 +201,7 @@ function receiptEmail(array $t): array
         $rows[] = ['Reference', $short($ref), true];
         $rows[] = ['Date', $date];
         $subject = "Receipt: {$received} delivered";
-        [$html, $text] = renderEmail([
+        [$html, $text] = renderOrderEmail($t, [
             'preheader' => "Your {$received} has arrived in your wallet.",
             'eyebrow' => 'Receipt',
             'title' => 'Your crypto has arrived',
@@ -235,7 +235,7 @@ function receiptEmail(array $t): array
     $rows[] = ['Reference', $short($ref), true];
     $rows[] = ['Date', $date];
     $subject = "Receipt: {$received} sent to your bank";
-    [$html, $text] = renderEmail([
+    [$html, $text] = renderOrderEmail($t, [
         'preheader' => "Your {$received} payout is complete.",
         'eyebrow' => 'Receipt',
         'title' => 'Your payout is complete',
@@ -309,7 +309,7 @@ function orderInitiatedEmail(array $t): array
         $rows[] = ['Reference', $short($ref), true];
 
         $subject = "Order Started: Pay {$fiatPay} for {$expected}";
-        [$html, $text] = renderEmail([
+        [$html, $text] = renderOrderEmail($t, [
             'preheader' => "Please transfer {$fiatPay} within 60 minutes to complete your order.",
             'eyebrow' => 'Order Started',
             'title' => 'Complete your crypto purchase',
@@ -355,7 +355,7 @@ function orderInitiatedEmail(array $t): array
     $rows[] = ['Reference', $short($ref), true];
 
     $subject = "Order Started: Send {$cryptoAmt} for {$payoutFiat} payout";
-    [$html, $text] = renderEmail([
+    [$html, $text] = renderOrderEmail($t, [
         'preheader' => "Send {$cryptoAmt} to deposit address within {$window} to receive payout.",
         'eyebrow' => 'Order Started',
         'title' => 'Complete your cash payout',
@@ -368,6 +368,85 @@ function orderInitiatedEmail(array $t): array
     return [$subject, $html, $text];
 }
 
+/**
+ * The store an order was placed on, for its emails: the merchant row and its branding. Null for a
+ * normal Velcro order.
+ *
+ * @return array{merchant:array,brand:array,url:string}|null
+ */
+function orderStore(array $t): ?array
+{
+    static $cache = [];
+    $id = (int) ($t['merchant_id'] ?? 0);
+    if ($id <= 0 || !function_exists('storeBranding')) {
+        return null;
+    }
+    if (!array_key_exists($id, $cache)) {
+        $m = Database::safeSelect('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => $id], [])[0] ?? null;
+        $cache[$id] = $m ? ['merchant' => $m, 'brand' => storeBranding($m), 'url' => EMAIL_SITE_URL . '/m/' . $m['slug']] : null;
+    }
+    return $cache[$id];
+}
+
+/** renderEmail for a customer's order email: in the store's name ("Powered by Velcro") when it's a store order. */
+function renderOrderEmail(array $t, array $o): array
+{
+    $s = orderStore($t);
+    if ($s) {
+        $o['store'] = $s['brand'];
+        if (!empty($o['cta']) && str_starts_with((string) $o['cta'][1], EMAIL_SITE_URL) && !str_contains((string) $o['cta'][1], '/goat')) {
+            $o['cta'] = [str_replace([' on Velcro', 'Open Velcro'], ['', 'Open ' . $s['brand']['name']], (string) $o['cta'][0]), $s['url']];
+        }
+        foreach (['intro', 'outro'] as $k) {
+            if (isset($o[$k])) {
+                $o[$k] = str_replace(['History on Velcro', 'on Velcro'], ['My orders on ' . $s['brand']['name'], 'on ' . $s['brand']['name']], (string) $o[$k]);
+            }
+        }
+    }
+    return renderEmail($o);
+}
+
+/** Sender name for a customer's order email: "Northline Exchange via Velcro" on store orders. */
+function orderFromName(array $t): string
+{
+    $s = orderStore($t);
+    return $s ? $s['brand']['name'] . ' via Velcro' : 'Velcro';
+}
+
+/**
+ * Tells the merchant when one of their customers' orders needs attention (failed, held for review,
+ * unconfirmed). Velcro handles it; the merchant hears so they can reassure their customer.
+ */
+function notifyMerchantOrderIssue(array $t, string $what): void
+{
+    $s = orderStore($t);
+    if (!$s || !function_exists('merchantMail') || !isValidEmail((string) $s['merchant']['email'])) {
+        return;
+    }
+    $buy = strtoupper((string) ($t['type'] ?? '')) === 'ONRAMP';
+    $asset = (string) ($t['asset'] ?? '');
+    $coin = strtoupper(str_contains($asset, ':') ? explode(':', $asset)[1] : $asset);
+    $customer = (string) ($t['email'] ?? '') ?: 'a customer';
+    try {
+        merchantMail((string) $s['merchant']['email'], "{$s['brand']['name']}: a customer's order {$what}", [
+            'preheader' => "{$customer}'s " . ($buy ? 'buy' : 'sell') . " of {$coin} {$what}. We're on it.",
+            'eyebrow' => 'Order update',
+            'title' => "A customer's order {$what}",
+            'intro' => "One of your customers' orders {$what}. Velcro's team is handling it and your customer's money is safe. "
+                . "If they reach out to you, let them know it's being looked into; they'll get an email from us when it's sorted.",
+            'rows' => [
+                ['Customer', $customer],
+                ['Order', ($buy ? 'Buy ' : 'Sell ') . $coin],
+                ['Amount', $buy ? '₦' . number_format((float) ($t['amount'] ?? 0), 2) : rtrim(rtrim(number_format((float) ($t['amount'] ?? 0), 8, '.', ''), '0'), '.') . ' ' . $coin],
+                ['Reference', (string) ($t['reference'] ?? ''), true],
+            ],
+            'cta' => ['Open your orders', EMAIL_SITE_URL . '/merchant/#orders'],
+        ], 'order_issue');
+    } catch (Throwable $e) {
+        error_log('[Merchant] order issue email failed: ' . $e->getMessage());
+    }
+}
+
 /** Sends an immediate order initiation email to the user if email is valid. */
 function sendOrderInitiatedEmailNow(array $t): bool
 {
@@ -377,7 +456,7 @@ function sendOrderInitiatedEmailNow(array $t): bool
     }
     try {
         [$subject, $html, $text] = orderInitiatedEmail($t);
-        $sent = sendEmailTo($email, $subject, $html, $text);
+        $sent = sendEmailTo($email, $subject, $html, $text, orderFromName($t));
         if ($sent) {
             error_log("Order initiation email sent to {$email} for tx {$t['reference']}");
         }
@@ -417,7 +496,7 @@ function orderReminderEmail(array $t): array
         ];
 
         $subject = "Reminder: Complete your transfer for {$expected}";
-        [$html, $text] = renderEmail([
+        [$html, $text] = renderOrderEmail($t, [
             'preheader' => "Friendly reminder: your order of {$fiatPay} for {$expected} is awaiting payment.",
             'eyebrow' => 'Action Required',
             'title' => 'Your order is waiting for payment',
@@ -453,7 +532,7 @@ function orderReminderEmail(array $t): array
     ];
 
     $subject = "Reminder: Send {$cryptoAmt} for {$payoutFiat} payout";
-    [$html, $text] = renderEmail([
+    [$html, $text] = renderOrderEmail($t, [
         'preheader' => "Friendly reminder: your sell order for {$cryptoAmt} is waiting for deposit.",
         'eyebrow' => 'Action Required',
         'title' => 'Your cash payout is waiting',
@@ -507,7 +586,7 @@ function sendAbandonedOrderReminders(int $limit = 10): int
 
         try {
             [$subject, $html, $text] = orderReminderEmail($t);
-            if (sendEmailTo($t['email'], $subject, $html, $text)) {
+            if (sendEmailTo($t['email'], $subject, $html, $text, orderFromName($t))) {
                 $sent++;
             }
         } catch (Throwable $e) {
@@ -539,7 +618,7 @@ function sendTransactionReceiptNow(array $t, bool $force = false): bool
     }
     try {
         [$subject, $html, $text] = receiptEmail($t);
-        $sent = sendEmailTo($email, $subject, $html, $text);
+        $sent = sendEmailTo($email, $subject, $html, $text, orderFromName($t));
         if ($sent) {
             error_log("Transaction receipt sent to {$email} for tx {$t['reference']}");
         }
@@ -570,7 +649,7 @@ function sendPendingReceipts(int $limit = 5): int
         }
         try {
             [$subject, $html, $text] = receiptEmail($t);
-            if (sendEmailTo($t['email'], $subject, $html, $text)) {
+            if (sendEmailTo($t['email'], $subject, $html, $text, orderFromName($t))) {
                 $sent++;
             }
         } catch (Throwable $e) {

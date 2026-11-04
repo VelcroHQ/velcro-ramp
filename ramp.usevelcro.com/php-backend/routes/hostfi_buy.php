@@ -597,7 +597,8 @@ function hostfiBuySentEmail(array $buy): void
             fastcgi_finish_request();
         }
         try {
-            [$html, $text] = renderEmail([
+            $order = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :r', ['r' => (string) $buy['order_ref']]) ?: [];
+            [$html, $text] = renderOrderEmail($order, [
                 'preheader' => "Your {$amount} is on its way. It shows as pending in your wallet until the network confirms it.",
                 'eyebrow' => "{$sym} sent",
                 'title' => "Your {$sym} is on its way",
@@ -610,7 +611,7 @@ function hostfiBuySentEmail(array $buy): void
                 ],
                 'cta' => $explorer ? ['View on explorer', $explorer] : ['Open Velcro', EMAIL_SITE_URL],
             ]);
-            @sendEmailTo($email, "Your {$amount} is on its way", $html, $text);
+            @sendEmailTo($email, "Your {$amount} is on its way", $html, $text, orderFromName($order));
         } catch (Throwable $e) {
             error_log('[HostFi] Sent email failed for ' . $buy['order_ref'] . ': ' . $e->getMessage());
         }
@@ -871,7 +872,7 @@ function hostfiBuyNotify(int $id, string $status): void
         if ($status === 'SEND_FAILED' && isValidEmail($email)) {
             $canRetry = hostfiBuyRetriesLeft($buy) > 0;
             $amount = $coin($buy['send_amount']);
-            [$html, $text] = renderEmail([
+            [$html, $text] = renderOrderEmail($order ?: [], [
                 'preheader' => "Sending your {$amount} didn't go through. Your money is safe.",
                 'eyebrow' => 'Send failed',
                 'title' => "We couldn't send your crypto yet",
@@ -882,7 +883,10 @@ function hostfiBuyNotify(int $id, string $status): void
                 'cta' => ['Open Velcro', EMAIL_SITE_URL],
                 'outro' => 'For your safety, a retry can only go to the wallet on this order.',
             ]);
-            sendEmailTo($email, "Action needed: sending your {$amount} failed", $html, $text);
+            sendEmailTo($email, "Action needed: sending your {$amount} failed", $html, $text, orderFromName($order ?: []));
+        }
+        if ($order) {
+            notifyMerchantOrderIssue($order, $labels[$status] === 'needs review' ? 'is being checked' : "hit a problem ({$labels[$status]})");
         }
     } catch (Throwable $e) {
         error_log("[HostFi] Notify failed for buy {$id}: " . $e->getMessage());
