@@ -448,7 +448,7 @@ function registerPublicRoutes(Router $router): void
         }
 
         try {
-            Database::insert('transactions', [
+            $txRecord = [
                 'reference' => $txRef,
                 'switch_reference' => $d['id'] ?? ($d['reference'] ?? null),
                 'type' => $direction,
@@ -476,14 +476,14 @@ function registerPublicRoutes(Router $router): void
                 'callback_url' => $callbackUrl,
                 'email' => $email !== '' ? $email : null,
                 'meta' => jsonEncodeNullable($d),
-            ] + ($store ? storeOrderFields($store, getPlatformFee()) : referralFieldsFor(body($body, 'ref'), $email)));
+            ] + ($store ? storeOrderFields($store, getPlatformFee()) : referralFieldsFor(body($body, 'ref'), $email));
+
+            Database::safeInsert('transactions', $txRecord);
 
             if ($email !== '') {
                 try {
                     $insertedTx = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :ref', ['ref' => $txRef]);
-                    if ($insertedTx) {
-                        sendOrderInitiatedEmailNow($insertedTx);
-                    }
+                    sendOrderInitiatedEmailNow($insertedTx ?: $txRecord);
                 } catch (Throwable $mailErr) {
                     error_log('Failed sending initiation email in /api/initiate: ' . $mailErr->getMessage());
                 }

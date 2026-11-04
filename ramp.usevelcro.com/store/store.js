@@ -436,7 +436,20 @@ const CHAIN_LOGOS = {
 function getChainLogo(chain) {
   if (!chain) return '';
   const key = String(chain).toLowerCase().trim();
-  return CHAIN_LOGOS[key] || `/logos/${key}.png`;
+  const alias = {
+    bnb: 'bsc',
+    binance: 'bsc',
+    trx: 'tron',
+    sol: 'solana',
+    eth: 'ethereum',
+    btc: 'bitcoin',
+    matic: 'polygon',
+    arb: 'arbitrum',
+    op: 'optimism',
+    avax: 'avalanche',
+  };
+  const resolved = alias[key] || key;
+  return CHAIN_LOGOS[resolved] || `/logos/${resolved}.png`;
 }
 
 const EVM_RULE = [/^0x[a-fA-F0-9]{40}$/, 'an address that starts with 0x'];
@@ -618,7 +631,7 @@ function sellDetailsHtml() {
     </div>
     ${nets.length > 1 ? `<span class="s-label">Network you'll send on</span><div class="s-seg">${nets.map(n => {
       const logo = getChainLogo(n.chain);
-      return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon">` : ''}<span>${esc(n.label)}</span></button>`;
+      return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon" onerror="this.style.display='none'">` : ''}<span>${esc(n.label)}</span></button>`;
     }).join('')}</div>` : ''}
 
     <label class="s-label" id="co-bank-label">Your bank</label>
@@ -686,7 +699,13 @@ function sellPayHtml() {
     ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn-brand s-go" data-act="paid">I’ve sent the ${esc(o.coin)}</button>
     <p class="s-hint s-center-text">Tap this once it has left your wallet.</p>`}`}
     <ol class="s-progress" id="co-steps">${sellProgressHtml(o)}</ol>
-    <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me.email)}.</p>`;
+    <div class="s-co-foot-actions">
+      <button type="button" class="s-orders-nav-link" onclick="showOrders()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>View all my orders</span>
+      </button>
+    </div>
+    <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me ? me.email : '')}.</p>`;
 }
 
 // Sell steps: waiting for the coin → received → paying the bank → paid.
@@ -833,18 +852,19 @@ async function createSell() {
   btn.disabled = true;
   btn.textContent = 'Creating your order…';
   const base = { side: 'sell', coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT', network: netLabel(), payTo: `${checkout.accountName} · ${bank.name}`, progress: {} };
+  const myEmail = (me && me.email) ? me.email : '';
   try {
     if (checkout.provider === 'hostfi') {
-      const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount || 0 } });
+      const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, email: myEmail, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount || 0 } });
       checkout.order = { ...base, reference: d.reference, address: d.address, memo: d.memo, sendAmount: checkout.amount > 0 ? checkout.amount : null, exact: false, expiresAt: Date.now() + (d.expires_in || 3600) * 1000 };
     } else if (checkout.provider === 'paj') {
-      const d = await api('/api/paj/sell', { method: 'POST', body: { store: SLUG, fiatAmount: Math.floor(payoutFor(checkout.coin, checkout.amount)), mint: PAJ_MINTS[checkout.coin], bank: bank.id, accountNumber: checkout.account } });
+      const d = await api('/api/paj/sell', { method: 'POST', body: { store: SLUG, email: myEmail, fiatAmount: Math.floor(payoutFor(checkout.coin, checkout.amount)), mint: PAJ_MINTS[checkout.coin], bank: bank.id, accountNumber: checkout.account } });
       checkout.order = { ...base, reference: d.id, address: d.address, sendAmount: Number(d.amount) || checkout.amount, exact: true, expiresAt: Date.now() + 3600 * 1000 };
     } else {
       const d = await api('/api/initiate', {
         method: 'POST',
         body: {
-          store: SLUG, direction: 'OFFRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network,
+          store: SLUG, email: myEmail, direction: 'OFFRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network,
           beneficiary: { holder_type: 'INDIVIDUAL', holder_name: checkout.accountName, account_number: checkout.account, bank_code: bank.code },
         },
       });
@@ -854,6 +874,7 @@ async function createSell() {
         sendAmount: Number((d.source || {}).amount) || checkout.amount, exact: true, expiresAt: Date.now() + 3600 * 1000,
       };
     }
+    saveRecentOrder(checkout.order);
     checkout.step = 'pay';
     renderCheckout();
     startPolling();
@@ -877,7 +898,7 @@ function checkoutDetailsHtml() {
     </div>
     ${nets.length > 1 ? `<span class="s-label">Network</span><div class="s-seg">${nets.map(n => {
       const logo = getChainLogo(n.chain);
-      return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon">` : ''}<span>${esc(n.label)}</span></button>`;
+      return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon" onerror="this.style.display='none'">` : ''}<span>${esc(n.label)}</span></button>`;
     }).join('')}</div>` : ''}
     <label class="s-label" for="co-wallet">Your ${esc(c.symbol)} wallet address${nets.length === 1 ? '' : ` on ${esc((nets.find(n => n.code === checkout.network) || {}).label || '')}`}</label>
     <input id="co-wallet" class="s-input s-mono" autocomplete="off" spellcheck="false" placeholder="Paste your address" value="${esc(checkout.wallet)}">
@@ -906,7 +927,13 @@ function checkoutPayHtml() {
     ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn-brand s-go" data-act="paid">I’ve sent the money</button>
     <p class="s-hint s-center-text">Tap this once your transfer has gone through.</p>`}`}
     <ol class="s-progress" id="co-steps">${progressHtml(o)}</ol>
-    <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me.email)}.</p>`;
+    <div class="s-co-foot-actions">
+      <button type="button" class="s-orders-nav-link" onclick="showOrders()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>View all my orders</span>
+      </button>
+    </div>
+    <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me ? me.email : '')}.</p>`;
 }
 
 // After "I've sent it": what we're waiting for, how long we've been looking, and where they'll hear.
@@ -1004,11 +1031,12 @@ async function createBuy() {
   const btn = $('s-checkout').querySelector('[data-act="create"]');
   btn.disabled = true;
   btn.textContent = 'Creating your order…';
+  const myEmail = (me && me.email) ? me.email : '';
   try {
     if (checkout.provider === 'switch') {
       const d = await api('/api/initiate', {
         method: 'POST',
-        body: { store: SLUG, direction: 'ONRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network, wallet_address: wallet },
+        body: { store: SLUG, email: myEmail, direction: 'ONRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network, wallet_address: wallet },
       });
       const dep = d.deposit || {};
       checkout.order = {
@@ -1016,18 +1044,19 @@ async function createBuy() {
         bank: dep.bank_name || '', account: dep.account_number || '', accountName: dep.account_name || 'Velcro checkout', expiresAt: Date.now() + 3600 * 1000, progress: {},
       };
     } else if (checkout.provider === 'paj') {
-      const d = await api('/api/paj/initiate', { method: 'POST', body: { store: SLUG, fiatAmount: checkout.amount, recipient: wallet, mint: PAJ_MINTS[checkout.coin] } });
+      const d = await api('/api/paj/initiate', { method: 'POST', body: { store: SLUG, email: myEmail, fiatAmount: checkout.amount, recipient: wallet, mint: PAJ_MINTS[checkout.coin] } });
       checkout.order = {
         reference: d.id, coin: checkout.coin, amount: Number(d.fiatAmount) > 0 ? Number(d.fiatAmount) : checkout.amount, status: 'AWAITING_DEPOSIT',
         bank: d.bank || 'PAJ Partner Bank', account: d.accountNumber || '', accountName: d.accountName || '', expiresAt: Date.now() + 3600 * 1000, progress: {},
       };
     } else {
-      const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });
+      const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, email: myEmail, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });
       checkout.order = {
         reference: d.reference, coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT',
         bank: d.bank_name, account: d.account_number, accountName: d.account_name, expiresAt: Date.now() + (d.expires_in || 3600) * 1000, progress: {},
       };
     }
+    saveRecentOrder(checkout.order);
     checkout.step = 'pay';
     renderCheckout();
     startPolling();
@@ -1087,16 +1116,55 @@ function startPolling(every = 5000) {
   pollTimer = setInterval(poll, every);
 }
 
-// ── My orders ──
+// ── My orders & Recent Cache ──
+
+function saveRecentOrder(order) {
+  if (!order || !order.reference) return;
+  try {
+    const key = 'velcro_recent_orders_' + SLUG;
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    const filtered = existing.filter(o => o.reference !== order.reference);
+    filtered.unshift({
+      reference: order.reference,
+      type: order.side === 'sell' ? 'OFFRAMP' : 'ONRAMP',
+      status: order.status || 'AWAITING_DEPOSIT',
+      asset: order.coin,
+      amount: order.amount || order.sendAmount || 0,
+      destination_currency: order.side === 'sell' ? 'NGN' : order.coin,
+      source_currency: order.side === 'sell' ? order.coin : 'NGN',
+      deposit_bank_name: order.bank || '',
+      deposit_account_number: order.account || '',
+      deposit_account_name: order.accountName || '',
+      deposit_address: order.address || '',
+      created_at: new Date().toISOString()
+    });
+    localStorage.setItem(key, JSON.stringify(filtered.slice(0, 25)));
+  } catch (e) { /* ignore */ }
+}
 
 async function showOrders() {
-  $('s-menu').hidden = true;
+  const menu = $('s-menu');
+  if (menu) menu.hidden = true;
   if (!me) return openAuth('signin');
+  let localOrders = [];
+  try {
+    localOrders = JSON.parse(localStorage.getItem('velcro_recent_orders_' + SLUG) || '[]');
+  } catch (e) {}
   try {
     const data = await api(`/api/store/${SLUG}/me`);
-    store.orders = data.orders || [];
+    const serverOrders = data.orders || [];
+    const map = new Map();
+    serverOrders.forEach(o => map.set(o.reference, o));
+    localOrders.forEach(o => {
+      if (!map.has(o.reference)) map.set(o.reference, o);
+    });
+    store.orders = Array.from(map.values());
   } catch (e) {
-    return toast(e.message);
+    if (localOrders.length) {
+      store.orders = localOrders;
+    } else {
+      return toast(e.message);
+    }
   }
   clearInterval(pollTimer);
   clearInterval(expiryTimer);
@@ -1133,6 +1201,8 @@ function openOrder(ref) {
   const sell = String(o.type).toUpperCase() === 'OFFRAMP';
   checkout = {
     step: 'pay',
+    side: sell ? 'sell' : 'buy',
+    coin: orderCoin(o),
     order: {
       reference: o.reference, side: sell ? 'sell' : 'buy', coin: orderCoin(o), amount: Number(o.amount), status: String(o.status).toUpperCase(),
       bank: o.deposit_bank_name, account: o.deposit_account_number, accountName: o.deposit_account_name, address: o.deposit_address, expiresAt: 0, progress: {},
@@ -1159,6 +1229,8 @@ function paintAccount() {
   $('s-signin').hidden = !!me;
   $('s-join').hidden = !!me;
   $('s-me').hidden = !me;
+  const historyRow = $('s-form-history-row');
+  if (historyRow) historyRow.hidden = !me;
   if (me) {
     $('s-avatar').textContent = (me.name || me.email).trim().charAt(0).toUpperCase();
     $('s-me-email').textContent = me.email;

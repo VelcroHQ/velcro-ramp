@@ -1061,7 +1061,7 @@ function registerHostfiRoutes(Router $router): void
             $chain = hostfiChain($network);
             $minutes = sellTimerMinutes($symbol);
             $estimate = $amount > 0 ? round($amount * $quote['ngn_per_unit'] - HOSTFI_PAYOUT_FEE_NGN, 2) : null;
-            Database::insert('transactions', [
+            $txRecord = [
                 'reference' => $reference,
                 'type' => 'OFFRAMP',
                 'status' => 'AWAITING_DEPOSIT',
@@ -1095,11 +1095,14 @@ function registerHostfiRoutes(Router $router): void
                     'quote' => ['ngn_per_usd' => $quote['usd_per_unit'] > 0 ? $quote['ngn_per_unit_gross'] / $quote['usd_per_unit'] : null, 'fee_percent' => $fee],
                     'bank' => ['accountName' => $accountName, 'accountNumber' => $accountNumber, 'bankId' => $bank['bankId'], 'bankName' => $bank['bankName']],
                 ] + ($store ? ['fee_percent' => $fee] : [])]), // store orders keep their fee (ours + markup) for the payout
-            ] + ($store ? storeOrderFields($store, hostfiFee()) : referralFieldsFor(body($b, 'ref'), $email)));
+            ] + ($store ? storeOrderFields($store, hostfiFee()) : referralFieldsFor(body($b, 'ref'), $email));
+
+            Database::safeInsert('transactions', $txRecord);
 
             if ($email !== '') {
                 try {
-                    sendOrderInitiatedEmailNow(Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :r', ['r' => $reference]) ?: []);
+                    $freshTx = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :r', ['r' => $reference]);
+                    sendOrderInitiatedEmailNow($freshTx ?: $txRecord);
                 } catch (Throwable $mailErr) {
                     error_log('[HostFi] Order email failed: ' . $mailErr->getMessage());
                 }

@@ -96,12 +96,16 @@ function storeOrderContext(string $side, string $symbol, string $provider): ?arr
 /** Columns that tag a store order. */
 function storeOrderFields(?array $ctx, float $velcroFee): array
 {
-    return $ctx ? [
+    if (!$ctx) {
+        return [];
+    }
+    ensureStoreOrderColumns();
+    return [
         'merchant_id' => (int) $ctx['merchant']['id'],
         'store_customer_id' => (int) $ctx['customer']['id'],
         'merchant_markup_percent' => $ctx['markup'],
         'velcro_fee_percent' => $velcroFee,
-    ] : [];
+    ];
 }
 
 /**
@@ -216,8 +220,9 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
     $rows = Database::select(
         'SELECT t.`reference`, t.`type`, t.`status`, t.`channel`, t.`asset`, t.`amount`, t.`destination_amount`, t.`destination_currency`,
                 t.`source_currency`, t.`merchant_markup_percent`, t.`velcro_fee_percent`, t.`hash`, t.`created_at`, t.`store_customer_id`,
-                c.`email` AS `customer_email`, c.`name` AS `customer_name`
-         FROM `transactions` t LEFT JOIN `store_customers` c ON c.`id` = t.`store_customer_id`
+                COALESCE(c.`email`, t.`email`) AS `customer_email`, c.`name` AS `customer_name`
+         FROM `transactions` t
+         LEFT JOIN `store_customers` c ON (c.`id` = t.`store_customer_id` OR (c.`merchant_id` = t.`merchant_id` AND LOWER(c.`email`) = LOWER(t.`email`)))
          WHERE t.`merchant_id` = :m ORDER BY t.`id` DESC' . ($limit ? ' LIMIT ' . (int) $limit : ''),
         ['m' => $merchantId]
     );
@@ -398,12 +403,16 @@ function registerStoreRoutes(Router $router): void
         if (!$c) {
             jsonResponse(errorResponse('Sign in to continue', 401), 401);
         }
+        ensureStoreOrderColumns();
         // The customer's orders on this store, newest first (status, amounts, and what to pay or send).
         $orders = Database::select(
             'SELECT `reference`, `type`, `status`, `asset`, `amount`, `destination_amount`, `destination_currency`, `source_currency`, `deposit_bank_name`,
                     `deposit_account_number`, `deposit_account_name`, `deposit_address`, `wallet_address`, `hash`, `created_at`
-             FROM `transactions` WHERE `merchant_id` = :m AND `store_customer_id` = :c ORDER BY `id` DESC LIMIT 50',
-            ['m' => $m['id'], 'c' => $c['id']]
+             FROM `transactions`
+             WHERE (`merchant_id` = :m AND `store_customer_id` = :c)
+                OR (`merchant_id` = :m2 AND LOWER(`email`) = LOWER(:email))
+             ORDER BY `id` DESC LIMIT 50',
+            ['m' => $m['id'], 'c' => $c['id'], 'm2' => $m['id'], 'email' => $c['email']]
         );
         jsonResponse(successResponse(['customer' => storeCustomerView($c), 'orders' => $orders]));
     });

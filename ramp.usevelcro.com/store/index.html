@@ -21,8 +21,8 @@
       window.storefrontRequest.catch(function () { /* loadStore reports it */ });
     })();
   </script>
-  <link rel="preload" href="/store/store.js?v=16" as="script">
-  <link href="/store/store.css?v=16" rel="stylesheet">
+  <link rel="preload" href="/store/store.js?v=18" as="script">
+  <link href="/store/store.css?v=18" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- The font never holds up the page: system text shows until Inter arrives. -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -66,6 +66,10 @@
           <button type="button" id="s-signin" class="s-btn-quiet" onclick="openAuth('signin')">Sign in</button>
           <button type="button" id="s-join" class="s-btn-brand s-btn-sm" onclick="openAuth('signup')">Create account</button>
           <div id="s-me" class="s-me" hidden>
+            <button type="button" id="s-top-orders" class="s-top-orders-btn" onclick="showOrders()" title="My Orders">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <span>My Orders</span>
+            </button>
             <button type="button" id="s-avatar" class="s-avatar" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()"></button>
             <div id="s-menu" class="s-menu" role="menu" hidden>
               <p id="s-me-email"></p>
@@ -150,6 +154,12 @@
 
           <p class="s-note" id="s-note"></p>
           <button type="button" id="s-go" class="s-btn-brand s-go" onclick="goTrade()">Continue</button>
+          <div id="s-form-history-row" class="s-form-history-row" hidden>
+            <button type="button" class="s-history-link" onclick="showOrders()">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>View your recent order history</span>
+            </button>
+          </div>
           <p class="s-trust"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are handled by Velcro. You never send money to a person.</p>
           <div class="s-trust-banner">
             <span class="s-trust-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>Non-custodial OTC</span>
@@ -215,7 +225,7 @@
   </div>
 
   <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
-  <script src="/store/store.js?v=16"></script>
+  <script src="/store/store.js?v=18"></script>
 </body>
 
 </html>

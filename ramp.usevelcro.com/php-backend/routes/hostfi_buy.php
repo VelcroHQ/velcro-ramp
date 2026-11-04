@@ -1039,7 +1039,7 @@ function registerHostfiBuyRoutes(Router $router): void
                 throw new RuntimeException('HostFi did not return an account');
             }
             $quote = hostfiQuote($symbol);
-            Database::insert('transactions', [
+            $txRecord = [
                 'reference' => $reference,
                 'type' => 'ONRAMP',
                 'status' => 'AWAITING_DEPOSIT',
@@ -1069,11 +1069,14 @@ function registerHostfiBuyRoutes(Router $router): void
                     // Quote at order time, so History can show "$1 = ₦X" plus our fee.
                     'quote' => ['ngn_per_usd' => $quote['usd_per_unit'] > 0 && $coinPerNgn > 0 ? (1 / $coinPerNgn) / $quote['usd_per_unit'] : null, 'fee_percent' => $fee],
                 ] + ($store ? ['fee_percent' => $fee] : [])]), // store orders keep their fee (ours + markup) for the swap
-            ] + ($store ? storeOrderFields($store, hostfiFee()) : referralFieldsFor(body($b, 'ref'), $email)));
+            ] + ($store ? storeOrderFields($store, hostfiFee()) : referralFieldsFor(body($b, 'ref'), $email));
+
+            Database::safeInsert('transactions', $txRecord);
 
             if ($email !== '') {
                 try {
-                    sendOrderInitiatedEmailNow(Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :r', ['r' => $reference]) ?: []);
+                    $freshTx = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :r', ['r' => $reference]);
+                    sendOrderInitiatedEmailNow($freshTx ?: $txRecord);
                 } catch (Throwable $mailErr) {
                     error_log('[HostFi] Buy order email failed: ' . $mailErr->getMessage());
                 }

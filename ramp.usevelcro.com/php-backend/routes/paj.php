@@ -217,8 +217,9 @@ function registerPajRoutes(Router $router): void
                     break;
                 }
             }
-            Database::safeInsert('transactions', [
-                'reference' => $d['id'] ?? ('paj_' . bin2hex(random_bytes(8))),
+            $txRef = $d['id'] ?? ('paj_' . bin2hex(random_bytes(8)));
+            $txRecord = [
+                'reference' => $txRef,
                 'type' => 'ONRAMP',
                 'status' => mapPajStatus($d['status'] ?? null) ?: 'AWAITING_DEPOSIT',
                 'country' => 'NG',
@@ -234,7 +235,19 @@ function registerPajRoutes(Router $router): void
                 'wallet_address' => $recipient,
                 'email' => $email ? strtolower(trim($email)) : null,
                 'meta' => jsonEncodeNullable($d),
-            ] + ($store ? storeOrderFields($store, getPajFee()) : referralFieldsFor(body($body, 'ref'), $email)));
+            ] + ($store ? storeOrderFields($store, getPajFee()) : referralFieldsFor(body($body, 'ref'), $email));
+
+            Database::safeInsert('transactions', $txRecord);
+
+            if ($email !== '') {
+                try {
+                    $insertedTx = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :ref', ['ref' => $txRef]);
+                    sendOrderInitiatedEmailNow($insertedTx ?: $txRecord);
+                } catch (Throwable $mailErr) {
+                    error_log('Failed sending initiation email in /api/paj/initiate: ' . $mailErr->getMessage());
+                }
+            }
+
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);
@@ -289,8 +302,9 @@ function registerPajRoutes(Router $router): void
                     break;
                 }
             }
-            Database::safeInsert('transactions', [
-                'reference' => $d['id'] ?? ('paj_' . bin2hex(random_bytes(8))),
+            $txRef = $d['id'] ?? ('paj_' . bin2hex(random_bytes(8)));
+            $txRecord = [
+                'reference' => $txRef,
                 'type' => 'OFFRAMP',
                 'status' => mapPajStatus($d['status'] ?? null) ?: 'AWAITING_DEPOSIT',
                 'country' => 'NG',
@@ -303,7 +317,19 @@ function registerPajRoutes(Router $router): void
                 'beneficiary' => jsonEncodeNullable(['bank' => $bank, 'accountNumber' => $accountNumber, 'holder_name' => $d['accountName'] ?? 'Customer']),
                 'email' => $email ? strtolower(trim($email)) : null,
                 'meta' => jsonEncodeNullable($d),
-            ] + ($store ? storeOrderFields($store, getPajFee()) : referralFieldsFor(body($body, 'ref'), $email)));
+            ] + ($store ? storeOrderFields($store, getPajFee()) : referralFieldsFor(body($body, 'ref'), $email));
+
+            Database::safeInsert('transactions', $txRecord);
+
+            if ($email !== '') {
+                try {
+                    $insertedTx = Database::selectOne('SELECT * FROM `transactions` WHERE `reference` = :ref', ['ref' => $txRef]);
+                    sendOrderInitiatedEmailNow($insertedTx ?: $txRecord);
+                } catch (Throwable $mailErr) {
+                    error_log('Failed sending initiation email in /api/paj/sell: ' . $mailErr->getMessage());
+                }
+            }
+
             jsonResponse(successResponse($order));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);
@@ -349,8 +375,9 @@ function registerPajRoutes(Router $router): void
         try {
             $tx = pajApi()->getTransactionStatus($id);
             $d = $tx ?? [];
+            $newStatus = mapPajStatus($d['status'] ?? null) ?: 'AWAITING_DEPOSIT';
             $update = [
-                'status' => mapPajStatus($d['status'] ?? null) ?: 'AWAITING_DEPOSIT',
+                'status' => $newStatus,
                 'meta' => jsonEncodeNullable($d),
             ];
             if (!empty($d['signature']) || !empty($d['hash'])) {
@@ -359,6 +386,13 @@ function registerPajRoutes(Router $router): void
             if (!empty($d['recipient'])) {
                 $update['wallet_address'] = $d['recipient'];
             }
+
+            // Fetch previous transaction to check status change
+            $existingTx = Database::selectOne(
+                'SELECT * FROM `transactions` WHERE `reference` = :id1 OR `switch_reference` = :id2',
+                ['id1' => $id, 'id2' => $id]
+            );
+
             Database::safeExecute(
                 'UPDATE `transactions` SET `status` = :status, `meta` = :meta, `hash` = COALESCE(:hash, `hash`), `wallet_address` = COALESCE(:wallet_address, `wallet_address`) WHERE `reference` = :id1 OR `switch_reference` = :id2',
                 [
@@ -370,6 +404,18 @@ function registerPajRoutes(Router $router): void
                     'id2' => $id,
                 ]
             );
+
+            if ($newStatus === 'COMPLETED' && $existingTx && strtoupper((string)$existingTx['status']) !== 'COMPLETED') {
+                try {
+                    $completedTx = array_merge($existingTx, [
+                        'status' => 'COMPLETED',
+                        'hash' => $update['hash'] ?? $existingTx['hash'],
+                    ]);
+                    sendTransactionReceiptNow($completedTx);
+                } catch (Throwable $recErr) {
+                    error_log('Failed sending completion receipt in /api/paj/status: ' . $recErr->getMessage());
+                }
+            }
             jsonResponse(successResponse($tx));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);
