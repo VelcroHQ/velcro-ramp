@@ -261,7 +261,9 @@ function render() {
   $('s-coin-name').textContent = store.info.rate_display === 'breakdown' && base
     ? `$1 = ${fmtNgn(base)} + ${pct}% fee`
     : `$1 = ${fmtNgn(rate)}`;
-  $('s-time').textContent = buying ? (c.symbol === 'BTC' ? '10–60 minutes' : 'A few minutes') : (c.symbol === 'BTC' ? '20–60 minutes' : 'A few minutes');
+  $('s-time').textContent = (c.symbol === 'BTC' || c.symbol === 'ETH')
+    ? 'Immediately after confirmation'
+    : 'A few minutes';
   const amount = Number(String($('f-in').value).replace(/,/g, '')) || 0;
   if (buying) {
     // naira → $ at the store's rate → coin at its $ price
