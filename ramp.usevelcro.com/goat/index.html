@@ -246,6 +246,13 @@
                             <option value="">All Channels</option>
                             <option value="PAJ">PAJ</option>
                             <option value="BANK">Switch</option>
+                            <option value="HOSTFI">HostFi</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Placed on</label>
+                        <select id="filter-origin" onchange="applyFilters()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; background: var(--input-bg); color: var(--text-main);">
+                            <option value="">Everywhere</option>
                         </select>
                     </div>
                     <div>
@@ -1565,6 +1572,10 @@
                     <span>Channel</span>
                     <b id="modal-channel">-</b>
                 </div>
+                <div>
+                    <span>Placed on</span>
+                    <b id="modal-origin">-</b>
+                </div>
             </div>
             <!-- Amount Breakdown -->
             <div style="margin-bottom: 20px; border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--bg-light);">
@@ -1697,6 +1708,6 @@
         </div>
     </div>
 
-    <script src="admin.js?v=3"></script>
+    <script src="admin.js?v=4"></script>
 </body>
 </html>

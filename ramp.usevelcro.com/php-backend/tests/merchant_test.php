@@ -28,7 +28,7 @@ putenv('PAJ_API_KEY=');
 putenv('MERCHANT_LOGO_DIR=' . $tmp . '/logos');
 
 $pdo = new PDO('sqlite:' . $tmp . '/test.db', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-$pdo->exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, reference TEXT UNIQUE, type TEXT, status TEXT, asset TEXT, channel TEXT, amount REAL, rate REAL, destination_amount REAL,
+$pdo->exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, reference TEXT UNIQUE, switch_reference TEXT, country TEXT, currency TEXT, explorer_url TEXT, receipt_sent_at TEXT, updated_at TEXT, beneficiary TEXT, fee_developer REAL, type TEXT, status TEXT, asset TEXT, channel TEXT, amount REAL, rate REAL, destination_amount REAL,
     destination_currency TEXT, source_currency TEXT, deposit_bank_name TEXT, deposit_account_number TEXT, deposit_account_name TEXT, deposit_address TEXT, wallet_address TEXT,
     hash TEXT, meta TEXT, email TEXT, merchant_id INTEGER, store_customer_id INTEGER, merchant_markup_percent REAL, velcro_fee_percent REAL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
 $pdo->exec('CREATE TABLE otps (otp_key TEXT PRIMARY KEY, code TEXT, expires_at INTEGER, attempts INTEGER DEFAULT 0)');
@@ -358,6 +358,11 @@ try {
     [$c2] = $app_('POST', '/api/admin/merchant-withdrawals/' . $wid, ['action' => 'approve'], $admin);
     [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
     check($c1 === 200 && $c2 === 409 && near($res['data']['paid_ngn'] ?? 0, 7000) && near($res['data']['available_ngn'] ?? -1, 0), 'admin marks paid: counted once as paid out, balance ₦0');
+    [, $res] = $app_('GET', '/api/admin/transactions', null, $admin);
+    $tx = array_column(is_array($res) ? $res : [], null, 'reference');
+    check(($tx['ord-buy']['store']['slug'] ?? '') === 'northline' && (float) ($tx['ord-buy']['store']['markup_percent'] ?? 0) == 1.0
+        && array_key_exists('store', $tx['main-shopper'] ?? []) && $tx['main-shopper']['store'] === null && ($tx['ord-other']['store']['slug'] ?? '') === 'otherstore',
+        'admin transactions: each store order names its store; main-site orders are marked as Velcro');
     [, $res] = $app_('GET', '/api/admin/settings', null, $admin);
     check(is_array($res) && !array_key_exists('smtp_pass', $res) && !array_key_exists('mailhive_api_key', $res) && array_key_exists('smtp_pass_masked', $res),
         'admin settings: mail password and API key are never sent to the browser');

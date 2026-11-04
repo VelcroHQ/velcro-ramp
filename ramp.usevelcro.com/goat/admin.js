@@ -150,6 +150,7 @@ async function fetchData() {
         // 3. Transactions
         if (txRes.ok) {
             currentTxs = scrub(await txRes.json());
+            fillOriginFilter(currentTxs);
             renderTransactions(currentTxs);
             computeStats(currentTxs);
         }
@@ -764,14 +765,40 @@ function getDisplayUser(tx) {
     };
 }
 
+// Which provider moved the money.
+function txProviderLabel(tx) {
+    if (isPajTx(tx)) return 'PAJ';
+    if (String(tx.channel || '').toUpperCase() === 'HOSTFI') return 'HostFi';
+    return 'Switch';
+}
+
+// Orders placed on a merchant store carry the store's name everywhere they're listed.
+function storeBadge(tx) {
+    if (!tx.store) return '';
+    return `<div title="Placed on ${escapeAttr(tx.store.name)}'s store (/m/${escapeAttr(tx.store.slug)}), ${tx.store.markup_percent}% markup" style="margin-top: 4px;"><span style="display: inline-flex; align-items: center; gap: 4px; background: rgba(168, 207, 69, 0.18); color: #4d6a12; padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 700; white-space: nowrap;">🏪 ${escapeHtml(tx.store.name)}</span></div>`;
+}
+
+// Fills the "Placed on" filter with every store that has orders in the list.
+function fillOriginFilter(txs) {
+    const sel = document.getElementById('filter-origin');
+    if (!sel) return;
+    const current = sel.value;
+    const stores = new Map();
+    txs.forEach(tx => { if (tx.store) stores.set(String(tx.store.id), tx.store.name); });
+    sel.innerHTML = '<option value="">Everywhere</option><option value="main">Velcro (main site)</option><option value="stores">All merchant stores</option>'
+        + [...stores.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => `<option value="${escapeAttr(id)}">🏪 ${escapeHtml(name)}</option>`).join('');
+    sel.value = [...sel.options].some(o => o.value === current) ? current : '';
+}
+
 function renderTransactions(txs) {
     const summaryBody = document.getElementById('tx-summary-body');
     const allBody = document.getElementById('all-tx-body');
     
     const channelBadge = (tx) => {
-        const paj = isPajTx(tx);
-        const label = paj ? 'PAJ' : 'Switch';
-        const color = paj ? 'background: rgba(124, 58, 237, 0.1); color: #7c3aed;' : 'background: rgba(13, 13, 89, 0.1); color: var(--velcro-navy);';
+        const label = txProviderLabel(tx);
+        const color = label === 'PAJ' ? 'background: rgba(124, 58, 237, 0.1); color: #7c3aed;'
+            : label === 'HostFi' ? 'background: rgba(14, 165, 233, 0.12); color: #0369a1;'
+            : 'background: rgba(13, 13, 89, 0.1); color: var(--velcro-navy);';
         return `<span style="${color} padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">${label}</span>`;
     };
     const summaryRows = txs.map(tx => {
@@ -780,7 +807,7 @@ function renderTransactions(txs) {
         return `
         <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;" title="Click to view details">
             <td data-label="User" onclick="event.stopPropagation(); ${userVal ? `viewWalletDetails('${userVal}')` : ''}" title="${userVal ? 'Click to view user profile' : ''}"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
-            <td data-label="Type"><b>${tx.type}</b></td>
+            <td data-label="Type"><b>${tx.type}</b>${storeBadge(tx)}</td>
             <td data-label="Channel">${channelBadge(tx)}</td>
             <td data-label="Amount">${formatTxTableAmount(tx)}</td>
             <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${statusLabel(tx.status)}</span></td>
@@ -796,7 +823,7 @@ function renderTransactions(txs) {
         <tr>
             <td data-label="User" onclick="event.stopPropagation(); ${userVal ? `viewWalletDetails('${userVal}')` : ''}" title="${userVal ? 'Click to view user profile' : ''}"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
             <td data-label="Reference" class="hide-mobile">${tx.reference.slice(0, 10)}...</td>
-            <td data-label="Type"><b>${tx.type}</b></td>
+            <td data-label="Type"><b>${tx.type}</b>${storeBadge(tx)}</td>
             <td data-label="Channel">${channelBadge(tx)}</td>
             <td data-label="Amount">${formatTxTableAmount(tx)}</td>
             <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${statusLabel(tx.status)}</span></td>
@@ -1081,7 +1108,10 @@ function viewTransaction(ref) {
         : `~₦${modalVols.ngn.toLocaleString(undefined, {maximumFractionDigits: 0})} NGN`;
     document.getElementById('modal-amount').innerHTML = `${modalPrimary} <span style="font-size: 13px; font-weight: normal; color: var(--text-secondary); margin-left: 6px;">(${modalApprox})</span>`;
     document.getElementById('modal-type').innerText = tx.type;
-    document.getElementById('modal-channel').innerText = isPajTx(tx) ? 'PAJ' : 'Switch';
+    document.getElementById('modal-channel').innerText = txProviderLabel(tx);
+    document.getElementById('modal-origin').innerHTML = tx.store
+        ? `🏪 ${escapeHtml(tx.store.name)} <span style="font-weight: 500; color: var(--text-secondary); font-size: 12px;">/m/${escapeHtml(tx.store.slug)} · ${tx.store.markup_percent}% markup</span>`
+        : 'Velcro (main site)';
     const hashLink = document.getElementById('modal-hash-link');
     const walletExplorerLink = document.getElementById('modal-wallet-explorer-link');
     if (tx.hash) {
@@ -1497,6 +1527,7 @@ function applyFilters() {
     const type = document.getElementById('filter-type').value;
     const status = document.getElementById('filter-status').value;
     const channel = document.getElementById('filter-channel').value;
+    const origin = document.getElementById('filter-origin')?.value || '';
     const dateFrom = document.getElementById('filter-date-from').value;
     const dateTo = document.getElementById('filter-date-to').value;
 
@@ -1506,6 +1537,7 @@ function applyFilters() {
             tx.reference.toLowerCase().includes(search) ||
             tx.wallet_address?.toLowerCase().includes(search) ||
             tx.email?.toLowerCase().includes(search) ||
+            tx.store?.name?.toLowerCase().includes(search) ||
             String(tx.amount).includes(search) ||
             String(tx.destination_amount || '').includes(search);
 
@@ -1517,6 +1549,9 @@ function applyFilters() {
 
         // Channel filter
         const matchesChannel = !channel || tx.channel === channel;
+
+        // Where it was placed: main site, any store, or one store
+        const matchesOrigin = !origin || (origin === 'main' ? !tx.store : origin === 'stores' ? !!tx.store : (tx.store && String(tx.store.id) === origin));
 
         // Date filter
         let matchesDate = true;
@@ -1532,7 +1567,7 @@ function applyFilters() {
             if (txDate > to) matchesDate = false;
         }
 
-        return matchesSearch && matchesType && matchesStatus && matchesChannel && matchesDate;
+        return matchesSearch && matchesType && matchesStatus && matchesChannel && matchesOrigin && matchesDate;
     });
 
     renderTransactions(filtered);
@@ -1544,6 +1579,7 @@ function clearFilters() {
     document.getElementById('filter-type').value = '';
     document.getElementById('filter-status').value = '';
     document.getElementById('filter-channel').value = '';
+    if (document.getElementById('filter-origin')) document.getElementById('filter-origin').value = '';
     document.getElementById('filter-date-from').value = '';
     document.getElementById('filter-date-to').value = '';
     renderTransactions(currentTxs);

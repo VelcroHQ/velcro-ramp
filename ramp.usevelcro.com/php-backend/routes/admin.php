@@ -8,6 +8,45 @@ require_once __DIR__ . '/../poll_helpers.php';
 require_once __DIR__ . '/../emails.php';
 require_once __DIR__ . '/hostfi.php';
 
+/**
+ * Tags each order with where it was made: the store (name, slug, markup) for orders placed on a
+ * merchant store, or null for the main Velcro site. Only orders tagged when they were created count.
+ */
+function adminTagOrigins(array $rows): array
+{
+    $ids = array_values(array_unique(array_filter(array_map(
+        static fn ($r) => isset($r['velcro_fee_percent']) && $r['velcro_fee_percent'] !== null ? (int) ($r['merchant_id'] ?? 0) : 0,
+        $rows
+    ))));
+    $stores = [];
+    if ($ids && function_exists('merchantBrand')) {
+        $in = implode(',', array_map('intval', $ids));
+        foreach (Database::safeSelect("SELECT * FROM `merchants` WHERE `id` IN ({$in})", [], []) as $m) {
+            $stores[(int) $m['id']] = ['id' => (int) $m['id'], 'name' => merchantBrand($m)['name'] ?: (string) $m['business_name'], 'slug' => $m['slug']];
+        }
+    }
+    foreach ($rows as &$r) {
+        $mid = isset($r['velcro_fee_percent']) && $r['velcro_fee_percent'] !== null ? (int) ($r['merchant_id'] ?? 0) : 0;
+        $r['store'] = $mid && isset($stores[$mid]) ? $stores[$mid] + ['markup_percent' => (float) $r['merchant_markup_percent']] : null;
+    }
+    unset($r);
+    return $rows;
+}
+
+/** The store columns exist (they're added the first time a store is used). */
+function adminStoreColumns(): string
+{
+    if (function_exists('ensureStoreOrderColumns')) {
+        try {
+            ensureStoreOrderColumns();
+            return ', `merchant_id`, `store_customer_id`, `merchant_markup_percent`, `velcro_fee_percent`';
+        } catch (Throwable $e) {
+            error_log('[Admin] store columns unavailable: ' . $e->getMessage());
+        }
+    }
+    return '';
+}
+
 // Settings that are passwords or keys: the admin page only learns whether each is set.
 const ADMIN_SECRET_SETTINGS = ['smtp_pass', 'mailhive_api_key'];
 
@@ -140,7 +179,7 @@ function registerAdminRoutes(Router $router): void
     $router->get('/api/admin/transactions', function () {
         requireAdminAuth();
         try {
-            $rows = Database::safeSelect('SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `receipt_sent_at`, `created_at`, `updated_at`, `beneficiary` FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
+            $rows = Database::safeSelect('SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `deposit_address`, `deposit_bank_name`, `deposit_account_number`, `deposit_account_name`, `wallet_address`, `hash`, `explorer_url`, `email`, `receipt_sent_at`, `created_at`, `updated_at`, `beneficiary`' . adminStoreColumns() . ' FROM `transactions` ORDER BY `created_at` DESC LIMIT 200', [], []);
             
             // Build wallet -> email lookup map from known transactions & developer recipient
             $walletToEmail = [];
@@ -189,7 +228,7 @@ function registerAdminRoutes(Router $router): void
                 } catch (Throwable $e) {}
             }
 
-            jsonResponse($rows);
+            jsonResponse(adminTagOrigins($rows));
         } catch (Throwable $e) {
             jsonResponse(['error' => $e->getMessage()], 500);
         }
@@ -215,11 +254,12 @@ function registerAdminRoutes(Router $router): void
             $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
             
             $rows = Database::safeSelect(
-                "SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `fee_developer`, `deposit_bank_name`, `deposit_account_number`, `deposit_address`, `wallet_address`, `hash`, `email`, `created_at` 
+                "SELECT `id`, `reference`, `switch_reference`, `type`, `status`, `country`, `currency`, `asset`, `channel`, `amount`, `rate`, `destination_amount`, `fee_developer`, `deposit_bank_name`, `deposit_account_number`, `deposit_address`, `wallet_address`, `hash`, `email`, `created_at`" . adminStoreColumns() . "
                  FROM `transactions` {$whereSql} ORDER BY `created_at` DESC LIMIT {$limit}",
                 $params,
                 []
             );
+            $rows = adminTagOrigins($rows);
 
             header('Content-Type: text/csv; charset=utf-8');
             header('Content-Disposition: attachment; filename="velcro_transactions_' . gmdate('Y-m-d') . '.csv"');
@@ -232,7 +272,8 @@ function registerAdminRoutes(Router $router): void
             fputcsv($fp, [
                 'ID', 'Reference', 'Provider Ref', 'Type', 'Status', 'Country', 'Currency', 'Asset', 'Channel',
                 'Fiat / Source Amount', 'Rate', 'Destination Amount', 'Developer Fee',
-                'Deposit Bank', 'Deposit Account / Address', 'Customer Wallet', 'TX Hash', 'Customer Email', 'Created At'
+                'Deposit Bank', 'Deposit Account / Address', 'Customer Wallet', 'TX Hash', 'Customer Email', 'Created At',
+                'Placed On', 'Store Markup %'
             ]);
 
             foreach ($rows as $r) {
@@ -256,6 +297,8 @@ function registerAdminRoutes(Router $router): void
                     $r['hash'] ?? '',
                     $r['email'] ?? '',
                     $r['created_at'],
+                    $r['store'] ? $r['store']['name'] . ' (/m/' . $r['store']['slug'] . ')' : 'Velcro (main site)',
+                    $r['store'] ? $r['store']['markup_percent'] : '',
                 ]);
             }
             fclose($fp);
