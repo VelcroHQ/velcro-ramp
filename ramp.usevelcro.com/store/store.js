@@ -107,7 +107,7 @@ async function loadStore() {
   $('s-loading').hidden = true;
   $('s-app').hidden = false;
   const coins = Object.values(store.coins);
-  const first = preferredCoin(coins.filter(c => c.buy_on)) || coins[0];
+  const first = preferredCoin(coins.filter(c => c.buy_on), 'buy') || preferredCoin(coins, 'buy') || coins[0];
   if (!first) {
     $('s-note').textContent = 'This store isn’t quoting any coins right now.';
     $('s-go').disabled = true;
@@ -154,9 +154,17 @@ function markBoard() {
   document.querySelectorAll('#s-board-rows .s-rate-pill').forEach(b => b.classList.toggle('is-on', b.dataset.sym === store.coin));
 }
 
-// USDT first, then USDC, then whatever the store lists first.
-function preferredCoin(list) {
-  return list.find(c => c.symbol === 'USDT') || list.find(c => c.symbol === 'USDC') || list[0];
+// Pick a coin that has a live positive rate first (USDT, USDC, BTC, ETH, SOL, or first available).
+function preferredCoin(list, side = store.side || 'buy') {
+  if (!list || !list.length) return null;
+  const withRate = list.filter(c => c && Number(side === 'buy' ? c.buy_rate : c.sell_rate) > 0);
+  const pool = withRate.length ? withRate : list;
+  return pool.find(c => c.symbol === 'USDT')
+    || pool.find(c => c.symbol === 'USDC')
+    || pool.find(c => c.symbol === 'BTC')
+    || pool.find(c => c.symbol === 'ETH')
+    || pool.find(c => c.symbol === 'SOL')
+    || pool[0];
 }
 
 function isAnyAmountCoin(sym, side) {
@@ -168,7 +176,10 @@ function setSide(side) {
   $('t-buy').setAttribute('aria-selected', String(side === 'buy'));
   $('t-sell').setAttribute('aria-selected', String(side === 'sell'));
   const available = Object.values(store.coins).filter(c => c[side + '_on']);
-  if (!available.some(c => c.symbol === store.coin)) store.coin = (preferredCoin(available) || {}).symbol || null;
+  const currentCoinValid = available.some(c => c.symbol === store.coin && Number(c[side + '_rate']) > 0);
+  if (!currentCoinValid) {
+    store.coin = (preferredCoin(available, side) || {}).symbol || null;
+  }
   // Steps and details read differently for buying and selling.
   const buying = side === 'buy';
   $('how-2-title').textContent = buying ? 'Pay by bank transfer' : 'Send your crypto';
@@ -177,6 +188,9 @@ function setSide(side) {
   $('how-3-text').textContent = buying ? "It's sent to your wallet automatically. Follow every step and get a receipt by email." : 'Naira goes to your bank account automatically. Follow every step and get a receipt by email.';
   $('s-dest-label').textContent = buying ? 'Delivered to' : 'Paid to';
   $('s-dest').textContent = buying ? 'Your wallet' : 'Your bank account';
+  $('s-time').textContent = (store.coin === 'BTC' || store.coin === 'ETH')
+    ? 'Immediately after confirmation'
+    : 'A few minutes';
   $('s-chips').innerHTML = buying ? BUY_CHIPS.map(v => `<button type="button" data-v="${v}">₦${v >= 1000 ? (v / 1000) + 'k' : v}</button>`).join('') : '';
   document.querySelectorAll('#s-chips button').forEach(b => b.addEventListener('click', () => { $('f-in').value = Number(b.dataset.v).toLocaleString('en-NG'); render(); }));
   $('f-in').value = '';
@@ -241,6 +255,9 @@ function render() {
   $('f-out-cur').textContent = buying ? (c ? c.symbol : '') : 'NGN';
   $('s-go').textContent = c ? `${buying ? 'Buy' : 'Sell'} ${c.symbol}` : 'Continue';
   $('s-note').textContent = '';
+  $('s-time').textContent = (c && (c.symbol === 'BTC' || c.symbol === 'ETH'))
+    ? 'Immediately after confirmation'
+    : 'A few minutes';
   if (!c) {
     $('s-note').textContent = `No coins to ${store.side} right now.`;
     $('s-go').disabled = true;
@@ -261,9 +278,6 @@ function render() {
   $('s-coin-name').textContent = store.info.rate_display === 'breakdown' && base
     ? `$1 = ${fmtNgn(base)} + ${pct}% fee`
     : `$1 = ${fmtNgn(rate)}`;
-  $('s-time').textContent = (c.symbol === 'BTC' || c.symbol === 'ETH')
-    ? 'Immediately after confirmation'
-    : 'A few minutes';
   const amount = Number(String($('f-in').value).replace(/,/g, '')) || 0;
   if (buying) {
     // naira → $ at the store's rate → coin at its $ price
@@ -455,6 +469,7 @@ function sellPayHtml() {
       ${o.memo ? `<div><span>Memo</span><b class="s-mono">${esc(o.memo)}</b><button type="button" class="s-copy" data-copy="${esc(o.memo)}">${ICON_COPY}Copy</button></div>` : ''}
       <div><span>Amount</span><b>${o.sendAmount ? amount : 'Any amount'}</b>${o.sendAmount ? `<button type="button" class="s-copy" data-copy="${esc(String(o.sendAmount))}">${ICON_COPY}Copy</button>` : ''}</div>
       ${o.payTo ? `<div><span>Paid to</span><b>${esc(o.payTo)}</b></div>` : ''}
+      <div><span>Usually takes</span><b>${(o.coin === 'BTC' || o.coin === 'ETH') ? 'Immediately after confirmation' : 'A few minutes'}</b></div>
     </div>
     <p class="s-expiry" id="co-expiry"></p>
     ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn-brand s-go" data-act="paid">I’ve sent the ${esc(o.coin)}</button>
