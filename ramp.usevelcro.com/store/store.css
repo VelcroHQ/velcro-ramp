@@ -116,6 +116,11 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .55rem; }
 .s-chips button { font-size: .8rem; font-weight: 600; padding: .32rem .7rem; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .s-chips button:hover { border-color: var(--brand-line); background: var(--brand-soft); color: var(--ink); }
+.s-any-amount { border: 1px dashed var(--line); border-radius: 14px; padding: 1rem; margin-top: .9rem; background: #fafafd; }
+.s-any-head { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; }
+.s-any-badge { display: inline-block; font-size: .72rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: .18rem .55rem; border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
+.s-any-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--ink); }
+.s-any-desc { margin: .45rem 0 0; font-size: .84rem; line-height: 1.5; color: var(--muted); }
 .s-details { margin: 1rem 0 0; }
 .s-details div { display: flex; justify-content: space-between; gap: 1rem; padding: .35rem 0; font-size: .85rem; }
 .s-details dt { color: var(--muted); }

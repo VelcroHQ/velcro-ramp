@@ -145,7 +145,9 @@ function pickFromBoard(sym, side) {
   paintCoin();
   render();
   if (window.innerWidth < 960) document.querySelector('.s-trade').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  setTimeout(() => $('f-in').focus({ preventScroll: true }), 300);
+  if (!isAnyAmountCoin(sym, side)) {
+    setTimeout(() => $('f-in').focus({ preventScroll: true }), 300);
+  }
 }
 
 function markBoard() {
@@ -155,6 +157,10 @@ function markBoard() {
 // USDT first, then USDC, then whatever the store lists first.
 function preferredCoin(list) {
   return list.find(c => c.symbol === 'USDT') || list.find(c => c.symbol === 'USDC') || list[0];
+}
+
+function isAnyAmountCoin(sym, side) {
+  return side === 'sell' && (sym === 'BTC' || sym === 'ETH' || (store.coins && store.coins[sym] && store.coins[sym].provider === 'hostfi'));
 }
 
 function setSide(side) {
@@ -209,7 +215,25 @@ function toggleCoins(open) {
 function render() {
   const c = store.coins[store.coin];
   const buying = store.side === 'buy';
+  const anyAmount = isAnyAmountCoin(store.coin, store.side);
   paintBoard();
+
+  const fInWrap = $('f-in-wrap');
+  const fOutWrap = $('f-out-wrap');
+  const chipsWrap = $('s-chips');
+  const anyWrap = $('s-any-amount');
+
+  if (fInWrap) fInWrap.hidden = anyAmount;
+  if (chipsWrap) chipsWrap.hidden = anyAmount || !buying;
+  if (fOutWrap) fOutWrap.hidden = anyAmount;
+  if (anyWrap) {
+    anyWrap.hidden = !anyAmount;
+    if (anyAmount && c) {
+      const anyCoin = $('s-any-coin');
+      if (anyCoin) anyCoin.textContent = c.symbol;
+    }
+  }
+
   $('f-out').classList.toggle('is-empty', !(Number(String($('f-in').value).replace(/,/g, '')) > 0));
   $('f-in-label').textContent = buying ? 'You pay' : 'You send';
   $('f-out-label').textContent = buying ? 'You get' : 'You receive';
@@ -248,8 +272,14 @@ function render() {
 }
 
 async function goTrade() {
-  const amount = Number(String($('f-in').value).replace(/,/g, '')) || 0;
-  if (!(amount > 0)) {
+  const c = store.coins[store.coin];
+  if (!c) return;
+  const selling = store.side === 'sell';
+  const anyAmount = isAnyAmountCoin(c.symbol, store.side);
+  let amount = Number(String($('f-in').value).replace(/,/g, '')) || 0;
+  if (anyAmount) {
+    amount = 0;
+  } else if (!(amount > 0)) {
     $('s-note').textContent = store.side === 'buy' ? 'Enter how much naira you want to spend.' : 'Enter how much you want to sell.';
     $('f-in').focus();
     return;
@@ -258,8 +288,6 @@ async function goTrade() {
     openAuth('signin');
     return;
   }
-  const c = store.coins[store.coin];
-  const selling = store.side === 'sell';
   const btn = $('s-go');
   btn.disabled = true;
   const nets = await networksFor(c.provider, c.symbol, selling);
@@ -387,13 +415,14 @@ function netLabel() {
 function sellDetailsHtml() {
   const c = store.coins[checkout.coin];
   const nets = checkout.nets;
-  const est = payoutFor(c.symbol, checkout.amount);
+  const isAny = isAnyAmountCoin(c.symbol, checkout.side) || !(checkout.amount > 0);
+  const est = checkout.amount > 0 ? payoutFor(c.symbol, checkout.amount) : 0;
   return `
     <button type="button" class="s-back" data-act="back">${ICON_BACK}Back</button>
     <h2 class="s-co-title">Sell ${esc(c.symbol)}</h2>
     <div class="s-co-sum">
-      <div><span>You send</span><b>${fmtCoin(checkout.amount, c.symbol)} ${esc(c.symbol)}</b></div>
-      <div><span>You receive about</span><b>${est > 0 ? fmtNgn(est) : 'Shown next'}</b></div>
+      <div><span>You send</span><b>${isAny ? `Any amount of ${esc(c.symbol)}` : `${fmtCoin(checkout.amount, c.symbol)} ${esc(c.symbol)}`}</b></div>
+      <div><span>You receive about</span><b>${est > 0 ? fmtNgn(est) : 'Calculated on arrival'}</b></div>
     </div>
     ${nets.length > 1 ? `<span class="s-label">Network you'll send on</span><div class="s-seg">${nets.map(n => `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${esc(n.label)}</button>`).join('')}</div>` : ''}
     <label class="s-label" for="co-bank">Your bank</label>
@@ -416,13 +445,13 @@ function sellPayHtml() {
   const amount = o.sendAmount ? `${fmtCoin(o.sendAmount, o.coin)} ${esc(o.coin)}` : esc(o.coin);
   return `
     <button type="button" class="s-back" data-act="back">${ICON_BACK}${done ? 'New order' : 'Back'}</button>
-    <h2 class="s-co-title">${done ? 'Naira paid' : waiting ? (o.claimed ? `Confirming your ${esc(o.coin)}` : `Send ${amount}`) : `Selling ${esc(o.coin)}`}</h2>
+    <h2 class="s-co-title">${done ? 'Naira paid' : waiting ? (o.claimed ? `Confirming your ${esc(o.coin)}` : (o.sendAmount ? `Send ${amount}` : `Send ${esc(o.coin)}`)) : `Selling ${esc(o.coin)}`}</h2>
     ${!waiting ? '' : o.claimed && !o.showDetails ? checkingHtml(o, `your ${amount}`) : `
-    <p class="s-co-lede">Send ${o.exact ? 'exactly this amount' : 'your ' + esc(o.coin)} to the address below${o.network ? `, on the <b>${esc(o.network)}</b> network` : ''}. We'll detect it automatically.</p>
+    <p class="s-co-lede">Send ${o.exact ? 'exactly this amount' : (o.sendAmount ? 'your ' + esc(o.coin) : 'any amount of ' + esc(o.coin))} to the address below${o.network ? `, on the <b>${esc(o.network)}</b> network` : ''}. We'll detect it automatically.</p>
     <div class="s-bank">
       <div><span>Address</span><b class="s-mono">${esc(o.address)}</b><button type="button" class="s-copy" data-copy="${esc(o.address)}">${ICON_COPY}Copy</button></div>
       ${o.memo ? `<div><span>Memo</span><b class="s-mono">${esc(o.memo)}</b><button type="button" class="s-copy" data-copy="${esc(o.memo)}">${ICON_COPY}Copy</button></div>` : ''}
-      ${o.sendAmount ? `<div><span>Amount</span><b>${amount}</b><button type="button" class="s-copy" data-copy="${esc(String(o.sendAmount))}">${ICON_COPY}Copy</button></div>` : ''}
+      <div><span>Amount</span><b>${o.sendAmount ? amount : 'Any amount'}</b>${o.sendAmount ? `<button type="button" class="s-copy" data-copy="${esc(String(o.sendAmount))}">${ICON_COPY}Copy</button>` : ''}</div>
       ${o.payTo ? `<div><span>Paid to</span><b>${esc(o.payTo)}</b></div>` : ''}
     </div>
     <p class="s-expiry" id="co-expiry"></p>
@@ -501,8 +530,8 @@ async function createSell() {
   const base = { side: 'sell', coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT', network: netLabel(), payTo: `${checkout.accountName} · ${bank.name}`, progress: {} };
   try {
     if (checkout.provider === 'hostfi') {
-      const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount } });
-      checkout.order = { ...base, reference: d.reference, address: d.address, memo: d.memo, sendAmount: checkout.amount, exact: false, expiresAt: Date.now() + (d.expires_in || 3600) * 1000 };
+      const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount || 0 } });
+      checkout.order = { ...base, reference: d.reference, address: d.address, memo: d.memo, sendAmount: checkout.amount > 0 ? checkout.amount : null, exact: false, expiresAt: Date.now() + (d.expires_in || 3600) * 1000 };
     } else if (checkout.provider === 'paj') {
       const d = await api('/api/paj/sell', { method: 'POST', body: { store: SLUG, fiatAmount: Math.floor(payoutFor(checkout.coin, checkout.amount)), mint: PAJ_MINTS[checkout.coin], bank: bank.id, accountNumber: checkout.account } });
       checkout.order = { ...base, reference: d.id, address: d.address, sendAmount: Number(d.amount) || checkout.amount, exact: true, expiresAt: Date.now() + 3600 * 1000 };
