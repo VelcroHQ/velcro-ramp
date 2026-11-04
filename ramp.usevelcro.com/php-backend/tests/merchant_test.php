@@ -28,7 +28,7 @@ putenv('PAJ_API_KEY=');
 putenv('MERCHANT_LOGO_DIR=' . $tmp . '/logos');
 
 $pdo = new PDO('sqlite:' . $tmp . '/test.db', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-$pdo->exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, reference TEXT UNIQUE, type TEXT, status TEXT, asset TEXT, channel TEXT, amount REAL, destination_amount REAL,
+$pdo->exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, reference TEXT UNIQUE, type TEXT, status TEXT, asset TEXT, channel TEXT, amount REAL, rate REAL, destination_amount REAL,
     destination_currency TEXT, source_currency TEXT, deposit_bank_name TEXT, deposit_account_number TEXT, deposit_account_name TEXT, deposit_address TEXT, wallet_address TEXT,
     hash TEXT, meta TEXT, email TEXT, merchant_id INTEGER, store_customer_id INTEGER, merchant_markup_percent REAL, velcro_fee_percent REAL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
 $pdo->exec('CREATE TABLE otps (otp_key TEXT PRIMARY KEY, code TEXT, expires_at INTEGER, attempts INTEGER DEFAULT 0)');
@@ -318,7 +318,9 @@ try {
     $addOrder->execute(['ord-big', 'ONRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 500000, 330, 'USDT', 'NGN', $id, $custId]);
     [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
     $earn = $res['data'] ?? [];
-    check(near($earn['available_ngn'] ?? 0, 7000) && near($earn['available_usd'] ?? 0, 4.65) && ($earn['can_withdraw'] ?? null) === true, 'earnings: ₦7,000 ($4.65) can be withdrawn');
+    // Dollars at whatever rate is current (a background refresh may replace the seeded ₦1,505).
+    $usd7000 = round(7000 / max(1, (float) ($earn['ngn_per_usd'] ?? 0)), 2);
+    check(near($earn['available_ngn'] ?? 0, 7000) && near($earn['available_usd'] ?? 0, $usd7000) && $usd7000 >= 2 && ($earn['can_withdraw'] ?? null) === true, 'earnings: ₦7,000 (over $2) can be withdrawn');
     $wd = ['currency' => 'USDC', 'chain' => 'base', 'address' => '0x' . str_repeat('ab', 20)];
     [$cBad] = $app_('POST', '/api/merchant/withdraw', ['address' => 'nope', 'otp' => $code('merchwd', $email)] + $wd, $auth($token));
     [$cOtp] = $app_('POST', '/api/merchant/withdraw', ['otp' => '000000'] + $wd, $auth($token));
@@ -334,7 +336,7 @@ try {
     [$cMerch] = $app_('GET', '/api/admin/merchant-withdrawals', null, $auth($token));
     [, $res] = $app_('GET', '/api/admin/merchant-withdrawals', null, $admin);
     $w = $res['withdrawals'][0] ?? [];
-    check($cMerch === 401 && ($w['address'] ?? '') === $wd['address'] && near($w['amount_usd'] ?? 0, 4.65) && ($w['slug'] ?? '') === 'northline', 'admin: sees the request with full payout details (merchants can\'t)');
+    check($cMerch === 401 && ($w['address'] ?? '') === $wd['address'] && near($w['amount_usd'] ?? 0, $usd7000) && ($w['slug'] ?? '') === 'northline', 'admin: sees the request with full payout details (merchants can\'t)');
     $app_('POST', '/api/admin/merchant-withdrawals/' . $w['id'], ['action' => 'reject', 'note' => 'Wrong network'], $admin);
     [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
     check(near($res['data']['available_ngn'] ?? 0, 7000), 'admin rejects: the ₦7,000 is back in the balance');

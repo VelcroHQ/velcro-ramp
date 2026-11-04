@@ -85,24 +85,10 @@ function storeOrderContext(string $side, string $symbol, string $provider): ?arr
             jsonResponse(errorResponse('This store is not taking orders yet.'), 403);
         }
     }
+    // Only a signed-in customer of this store can order; an email in the request is never trusted.
     $customer = storeTokenCustomer($m);
     if (!$customer) {
-        $email = strtolower(trim((string) body($body, 'email', '')));
-        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $customer = storeCustomer($m, $email);
-            if (!$customer) {
-                try {
-                    Database::insert('store_customers', [
-                        'merchant_id' => (int) $m['id'],
-                        'email' => $email,
-                        'name' => explode('@', $email)[0],
-                    ]);
-                    $customer = storeCustomer($m, $email);
-                } catch (Throwable $e) {
-                    $customer = storeCustomer($m, $email);
-                }
-            }
-        }
+        jsonResponse(errorResponse('Sign in to continue', 401), 401);
     }
     $symbol = strtoupper($symbol);
     $p = merchantPricing($m)[$symbol] ?? null;
