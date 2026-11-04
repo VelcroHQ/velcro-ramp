@@ -350,6 +350,34 @@ const TOP_BANK_CODES = [
   '000002', // Standard Chartered
 ];
 
+const FALLBACK_NIGERIAN_BANKS = [
+  { code: '100004', name: 'OPay' },
+  { code: '000014', name: 'Access Bank' },
+  { code: '000013', name: 'Guaranty Trust Bank' },
+  { code: '000015', name: 'Zenith Bank' },
+  { code: '000016', name: 'First Bank of Nigeria' },
+  { code: '000004', name: 'United Bank For Africa' },
+  { code: '000007', name: 'Fidelity Bank' },
+  { code: '000018', name: 'Union Bank' },
+  { code: '000017', name: 'Wema Bank (ALAT)' },
+  { code: '000001', name: 'Sterling Bank' },
+  { code: '000010', name: 'Ecobank Nigeria' },
+  { code: '090267', name: 'Kuda Bank' },
+  { code: '000012', name: 'Stanbic IBTC Bank' },
+  { code: '000003', name: 'First City Monument Bank (FCMB)' },
+  { code: '100033', name: 'PalmPay' },
+  { code: '090405', name: 'Moniepoint MFB' },
+  { code: '000011', name: 'Unity Bank' },
+  { code: '000008', name: 'Polaris Bank' },
+  { code: '000023', name: 'Providus Bank' },
+  { code: '000026', name: 'TAJ Bank' },
+  { code: '000027', name: 'Globus Bank' },
+  { code: '000029', name: 'Lotus Bank' },
+  { code: '000031', name: 'Premium Trust Bank' },
+  { code: '000006', name: 'Jaiz Bank' },
+  { code: '000021', name: 'Standard Chartered Bank' }
+];
+
 function sortBanks(banks) {
   return [...banks].sort((a, b) => {
     const aTop = TOP_BANK_CODES.indexOf(a.code);
@@ -365,14 +393,19 @@ function sortBanks(banks) {
 const bankLists = {};
 async function banksFor(provider) {
   const key = provider === 'paj' ? 'paj' : 'switch';
-  if (!bankLists[key]) {
+  if (!bankLists[key] || !bankLists[key].length) {
     try {
       const raw = await api(key === 'paj' ? '/api/paj/banks' : '/api/institutions?country=NG&currency=NGN&channel=BANK');
-      const list = (Array.isArray(raw) ? raw : (raw.data || [])).filter(b => b && b.name)
-        .map(b => ({ id: String(key === 'paj' ? (b.id || b.code) : b.code), code: String(b.code || ''), name: String(b.name).trim() }));
-      bankLists[key] = sortBanks(list);
+      const arr = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
+      const list = arr.filter(b => b && b.name)
+        .map(b => ({
+          id: String(key === 'paj' ? (b.id || b.code) : (b.code || b.id)),
+          code: String(b.code || b.id || ''),
+          name: String(b.name).trim()
+        }));
+      bankLists[key] = sortBanks(list.length ? list : FALLBACK_NIGERIAN_BANKS.map(b => ({ id: b.code, code: b.code, name: b.name })));
     } catch (e) {
-      return [];
+      bankLists[key] = sortBanks(FALLBACK_NIGERIAN_BANKS.map(b => ({ id: b.code, code: b.code, name: b.name })));
     }
   }
   return bankLists[key];
@@ -611,7 +644,22 @@ function sellDetailsHtml() {
 
     <label class="s-label" for="co-acct">Account number</label>
     <input id="co-acct" class="s-input s-mono" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="10 digits" value="${esc(checkout.account)}">
-    <p id="co-name" class="s-name-check${checkout.accountName ? ' is-ok' : ''}">${checkout.accountName ? `${ICON_CHECK}${esc(checkout.accountName)}` : 'We check the name on the account before you send anything.'}</p>
+    <div id="co-name" class="s-name-box">
+      ${checkout.accountName ? `
+        <div class="s-name-verified">
+          <div class="s-name-verified-badge">
+            ${ICON_CHECK}
+            <span>VERIFIED ACCOUNT</span>
+          </div>
+          <div class="s-name-verified-title">${esc(checkout.accountName)}</div>
+        </div>
+      ` : `
+        <p class="s-name-default">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span>We check the name on the account before you send anything.</span>
+        </p>
+      `}
+    </div>
     <p id="co-error" class="s-error" hidden></p>
     <button type="button" class="s-btn-brand s-go" data-act="create"${checkout.accountName ? '' : ' disabled'}>Get deposit address</button>
     <p class="s-trust">Naira is paid only to an account in the name shown above.</p>`;
@@ -661,6 +709,57 @@ function sellProgressHtml(o) {
 
 // Checks the account name with the provider that will pay it.
 let nameTimer = null;
+
+function parseResolvedName(d) {
+  if (!d) return '';
+  const obj = d.data ?? d;
+  const name = obj.accountName || obj.account_name || obj.holder_name || obj.name || (obj.data && (obj.data.account_name || obj.data.accountName)) || '';
+  return String(name).trim();
+}
+
+async function resolveAccount(bank, accountNumber) {
+  const num = String(accountNumber || '').trim();
+  const bankCode = bank.code || bank.id;
+  const bankName = bank.name || '';
+  const pajId = bank.id || bank.code;
+
+  const attempts = [];
+
+  if (checkout.provider === 'paj') {
+    // 1. Try PAJ resolve -> 2. Switch resolve -> 3. HostFi resolve
+    attempts.push(() => api('/api/paj/resolve', { method: 'POST', body: { bank: pajId, accountNumber: num } }));
+    attempts.push(() => api('/api/resolve', { method: 'POST', body: { country: 'NG', beneficiary: { account_number: num, bank_code: bankCode } } }));
+    attempts.push(() => api('/api/hostfi/resolve', { method: 'POST', body: { bankCode, bankName, accountNumber: num } }));
+  } else if (checkout.provider === 'hostfi') {
+    // 1. Try HostFi resolve -> 2. Switch resolve
+    attempts.push(() => api('/api/hostfi/resolve', { method: 'POST', body: { bankCode, bankName, accountNumber: num } }));
+    attempts.push(() => api('/api/resolve', { method: 'POST', body: { country: 'NG', beneficiary: { account_number: num, bank_code: bankCode } } }));
+  } else {
+    // Switch order: 1. Switch resolve -> 2. HostFi resolve
+    attempts.push(() => api('/api/resolve', { method: 'POST', body: { country: 'NG', beneficiary: { account_number: num, bank_code: bankCode } } }));
+    attempts.push(() => api('/api/hostfi/resolve', { method: 'POST', body: { bankCode, bankName, accountNumber: num } }));
+  }
+
+  let lastErr = null;
+  for (const fn of attempts) {
+    try {
+      const res = await fn();
+      const name = parseResolvedName(res);
+      if (name) return name;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  throw lastErr || new Error('Could not verify account name.');
+}
+
+function setManualAccountName(val) {
+  checkout.accountName = String(val || '').trim();
+  const go = $('s-checkout')?.querySelector('[data-act="create"]');
+  if (go) go.disabled = checkout.accountName.length < 3;
+}
+
 function checkAccountName() {
   if ($('co-acct')) {
     checkout.account = $('co-acct').value.replace(/\D/g, '').slice(0, 10);
@@ -671,34 +770,58 @@ function checkAccountName() {
   const go = $('s-checkout')?.querySelector('[data-act="create"]');
   if (go) go.disabled = true;
   if (!out) return;
-  out.className = 's-name-check';
+
   clearTimeout(nameTimer);
-  if (!checkout.bank || checkout.account.length !== 10) {
-    out.textContent = 'We check the name on the account before you send anything.';
+
+  if (!checkout.bank) {
+    out.innerHTML = `<p class="s-name-default"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span>Choose your bank above to check the account.</span></p>`;
     return;
   }
-  out.textContent = 'Checking the account…';
+
+  if (checkout.account.length < 10) {
+    out.innerHTML = `<p class="s-name-default"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span>Enter your 10-digit account number.</span></p>`;
+    return;
+  }
+
+  out.innerHTML = `
+    <div class="s-name-loading">
+      <span class="s-spinner" aria-hidden="true"></span>
+      <span>Verifying account name…</span>
+    </div>`;
+
   const bank = (checkout.banks || []).find(b => b.id === checkout.bank) || {};
-  const key = checkout.bank + checkout.account;
+  const currentKey = checkout.bank + ':' + checkout.account;
+
   nameTimer = setTimeout(async () => {
     try {
-      let d;
-      if (checkout.provider === 'paj') d = await api('/api/paj/resolve', { method: 'POST', body: { bank: bank.id, accountNumber: checkout.account } });
-      else if (checkout.provider === 'hostfi') d = await api('/api/hostfi/resolve', { method: 'POST', body: { bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account } });
-      else d = await api('/api/resolve', { method: 'POST', body: { country: 'NG', beneficiary: { account_number: checkout.account, bank_code: bank.code } } });
-      if (key !== checkout.bank + checkout.account) return;
-      const name = d && (d.accountName || d.account_name || d.holder_name || d.name || (d.data && (d.data.account_name || d.data.accountName)));
-      if (!name) throw new Error('We couldn’t find that account. Check the number and bank.');
-      checkout.accountName = String(name).trim();
-      out.className = 's-name-check is-ok';
-      out.innerHTML = `${ICON_CHECK}${esc(checkout.accountName)}`;
+      const resolvedName = await resolveAccount(bank, checkout.account);
+      if (currentKey !== checkout.bank + ':' + checkout.account) return;
+      if (!resolvedName) throw new Error('We couldn’t find that account. Check the number and bank.');
+
+      checkout.accountName = resolvedName;
+      out.innerHTML = `
+        <div class="s-name-verified">
+          <div class="s-name-verified-badge">
+            ${ICON_CHECK}
+            <span>VERIFIED ACCOUNT</span>
+          </div>
+          <div class="s-name-verified-title">${esc(checkout.accountName)}</div>
+        </div>`;
       if (go) go.disabled = false;
     } catch (e) {
-      if (key !== checkout.bank + checkout.account) return;
-      out.className = 's-name-check is-bad';
-      out.textContent = e.message || 'We couldn’t verify this account.';
+      if (currentKey !== checkout.bank + ':' + checkout.account) return;
+      const errMsg = e.message || 'We couldn’t verify this account.';
+      out.innerHTML = `
+        <div class="s-name-error-box">
+          <div class="s-name-error-msg">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>${esc(errMsg)}</span>
+          </div>
+          <input type="text" id="co-manual-name" class="s-name-manual-input" placeholder="Type your account name to continue" value="${esc(checkout.accountName)}" oninput="setManualAccountName(this.value)">
+          <p class="s-name-manual-hint">If your bank is temporarily slow to respond, you can type your name above.</p>
+        </div>`;
     }
-  }, 300);
+  }, 500);
 }
 
 async function createSell() {
@@ -827,9 +950,15 @@ function progressHtml(o) {
 function wireCheckout() {
   const box = $('s-checkout');
   box.querySelectorAll('[data-act="back"]').forEach(b => b.onclick = () => (checkout.step === 'pay' || checkout.step === 'orders') ? showForm() : showForm());
-  box.querySelectorAll('[data-net]').forEach(b => b.onclick = () => { if ($('co-wallet')) checkout.wallet = $('co-wallet').value.trim(); checkout.network = b.dataset.net; renderCheckout(); });
+  box.querySelectorAll('[data-net]').forEach(b => b.onclick = () => {
+    if ($('co-wallet')) checkout.wallet = $('co-wallet').value.trim();
+    if ($('co-acct')) checkout.account = $('co-acct').value.replace(/\D/g, '').slice(0, 10);
+    checkout.network = b.dataset.net;
+    renderCheckout();
+  });
   if ($('co-acct')) {
     $('co-acct').oninput = checkAccountName;
+    $('co-acct').onpaste = () => setTimeout(checkAccountName, 50);
   }
   box.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
     try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied'); } catch (e) { toast(b.dataset.copy); }
