@@ -348,6 +348,30 @@ async function banksFor(provider) {
 
 // Networks come from HostFi's own list, so the code we send is exactly the one it expects.
 const CHAIN_LABELS = { bitcoin: 'Bitcoin', ethereum: 'Ethereum', base: 'Base', bsc: 'BNB Chain', solana: 'Solana', polygon: 'Polygon', arbitrum: 'Arbitrum', optimism: 'Optimism', tron: 'Tron' };
+const CHAIN_LOGOS = {
+  bitcoin: '/logos/bitcoin.png',
+  ethereum: '/logos/ethereum.png',
+  base: '/logos/base.png',
+  bsc: '/logos/bsc.png',
+  bnb: '/logos/bsc.png',
+  solana: '/logos/solana.png',
+  polygon: '/logos/polygon.png',
+  arbitrum: '/logos/arbitrum.png',
+  optimism: '/logos/optimism.png',
+  tron: '/logos/tron.png',
+  celo: '/logos/celo.png',
+  avalanche: '/logos/avalanche.png',
+  sui: '/logos/sui.png',
+  linea: '/logos/linea.png',
+  mantle: '/logos/mantle.png',
+};
+
+function getChainLogo(chain) {
+  if (!chain) return '';
+  const key = String(chain).toLowerCase().trim();
+  return CHAIN_LOGOS[key] || `/logos/${key}.png`;
+}
+
 const EVM_RULE = [/^0x[a-fA-F0-9]{40}$/, 'an address that starts with 0x'];
 const WALLET_RULES = {
   bitcoin: [/^(bc1[a-z0-9]{25,62}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/, 'a Bitcoin address (starts with bc1, 1 or 3)'],
@@ -440,7 +464,10 @@ function sellDetailsHtml() {
       <div><span>You send</span><b>${isAny ? `Any amount of ${esc(c.symbol)}` : `${fmtCoin(checkout.amount, c.symbol)} ${esc(c.symbol)}`}</b></div>
       <div><span>You receive about</span><b>${est > 0 ? fmtNgn(est) : 'Calculated on arrival'}</b></div>
     </div>
-    ${nets.length > 1 ? `<span class="s-label">Network you'll send on</span><div class="s-seg">${nets.map(n => `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${esc(n.label)}</button>`).join('')}</div>` : ''}
+    ${nets.length > 1 ? `<span class="s-label">Network you'll send on</span><div class="s-seg">${nets.map(n => {
+      const logo = getChainLogo(n.chain);
+      return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon">` : ''}<span>${esc(n.label)}</span></button>`;
+    }).join('')}</div>` : ''}
     <label class="s-label" for="co-bank">Your bank</label>
     <select id="co-bank" class="s-input">
       <option value="">Choose your bank</option>
@@ -587,7 +614,10 @@ function checkoutDetailsHtml() {
       <div><span>You pay</span><b>${fmtNgn(checkout.amount)}</b></div>
       <div><span>You get about</span><b>${estimateFor(c.symbol, checkout.amount) > 0 ? `${fmtCoin(estimateFor(c.symbol, checkout.amount), c.symbol)} ${esc(c.symbol)}` : 'Shown next'}</b></div>
     </div>
-    ${nets.length > 1 ? `<span class="s-label">Network</span><div class="s-seg">${nets.map(n => `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${esc(n.label)}</button>`).join('')}</div>` : ''}
+    ${nets.length > 1 ? `<span class="s-label">Network</span><div class="s-seg">${nets.map(n => {
+      const logo = getChainLogo(n.chain);
+      return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon">` : ''}<span>${esc(n.label)}</span></button>`;
+    }).join('')}</div>` : ''}
     <label class="s-label" for="co-wallet">Your ${esc(c.symbol)} wallet address${nets.length === 1 ? '' : ` on ${esc((nets.find(n => n.code === checkout.network) || {}).label || '')}`}</label>
     <input id="co-wallet" class="s-input s-mono" autocomplete="off" spellcheck="false" placeholder="Paste your address" value="${esc(checkout.wallet)}">
     <p class="s-hint">Double-check it. Crypto sent to the wrong address can't be recovered.</p>
