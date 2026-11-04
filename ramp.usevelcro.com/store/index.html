@@ -49,8 +49,15 @@
 
     <header class="s-top">
       <div class="s-wrap s-top-in">
-        <a id="s-home" class="s-brand" href="#"><span id="s-logo" class="s-logo"></span><span id="s-name"></span></a>
+        <a id="s-home" class="s-brand" href="#">
+          <span id="s-logo" class="s-logo"></span>
+          <span class="s-brand-text">
+            <span id="s-name"></span>
+            <span class="s-verified-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 2.8 3.7-.3 1.2 3.5 3.3 1.7-1 3.5 2 3.1-2.9 2.3-.2 3.7-3.6 1-2.1 3-3.1-2-3.1 2-2.1-3-3.6-1-.2-3.7-2.9-2.3 2-3.1-1-3.5 3.3-1.7 1.2-3.5 3.7.3z"/><path d="m9 12 2 2 4-4"/></svg>Verified</span>
+          </span>
+        </a>
         <nav class="s-nav" aria-label="Store">
+          <span class="s-live-status"><i class="s-pulse-dot"></i>Live rates</span>
           <a href="#rates">Rates</a>
           <a href="#how">How it works</a>
           <a id="s-nav-help" target="_blank" rel="noopener" hidden>Help</a>
@@ -100,8 +107,14 @@
         <section class="s-trade" aria-label="Buy or sell crypto">
           <div id="s-form">
           <div class="s-tabs" role="tablist">
-            <button type="button" role="tab" id="t-buy" aria-selected="true" onclick="setSide('buy')">Buy</button>
-            <button type="button" role="tab" id="t-sell" aria-selected="false" onclick="setSide('sell')">Sell</button>
+            <button type="button" role="tab" id="t-buy" aria-selected="true" onclick="setSide('buy')">
+              <svg class="s-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 17 10-10M17 7H7M17 7v10"/></svg>
+              <span>Buy crypto</span>
+            </button>
+            <button type="button" role="tab" id="t-sell" aria-selected="false" onclick="setSide('sell')">
+              <svg class="s-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 7-10 10M7 17h10M7 17V7"/></svg>
+              <span>Sell crypto</span>
+            </button>
           </div>
 
           <label class="s-label" for="s-coin-btn">Coin</label>
@@ -138,6 +151,10 @@
           <p class="s-note" id="s-note"></p>
           <button type="button" id="s-go" class="s-btn-brand s-go" onclick="goTrade()">Continue</button>
           <p class="s-trust"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are handled by Velcro. You never send money to a person.</p>
+          <div class="s-trust-banner">
+            <span class="s-trust-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>Non-custodial OTC</span>
+            <span class="s-trust-item"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Secured by Velcro</span>
+          </div>
           <a id="s-support" class="s-support" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg><span></span></a>
           </div>
           <div id="s-checkout" class="s-checkout" hidden></div>
@@ -146,11 +163,14 @@
     </section>
 
     <section class="s-wrap s-how" id="how" aria-label="How it works">
-      <h2>How a trade works</h2>
+      <div class="s-how-head">
+        <h2>How a trade works</h2>
+        <p class="s-how-sub">Simple, non-custodial crypto conversion directly with your Nigerian bank account.</p>
+      </div>
       <ol>
-        <li><b>Choose an amount</b><span>Pick a coin and see exactly what you'll get before you start.</span></li>
-        <li><b id="how-2-title">Pay by bank transfer</b><span id="how-2-text">You get an account number for your order. Transfer from any Nigerian bank.</span></li>
-        <li><b id="how-3-title">Receive your crypto</b><span id="how-3-text">It's sent to your wallet automatically. You can follow every step and get a receipt by email.</span></li>
+        <li><span class="s-how-num">01</span><b>Choose an amount</b><span>Pick a coin and view guaranteed live quotes before initiating your trade.</span></li>
+        <li><span class="s-how-num">02</span><b id="how-2-title">Pay by bank transfer</b><span id="how-2-text">You get an account number for your order. Transfer from any Nigerian bank.</span></li>
+        <li><span class="s-how-num">03</span><b id="how-3-title">Receive your crypto</b><span id="how-3-text">It's sent to your wallet automatically. You can follow every step and get a receipt by email.</span></li>
       </ol>
     </section>
 
