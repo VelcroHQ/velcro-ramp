@@ -292,6 +292,24 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
     }, $rows);
 }
 
+/**
+ * An order as its customer sees it, with when its account or address lapses and how much coin a
+ * sale sends. The rest of `meta` (provider ids, fees) stays on the server.
+ */
+function storeCustomerOrderView(array $o): array
+{
+    $meta = json_decode((string) ($o['meta'] ?? ''), true) ?: [];
+    unset($o['meta']);
+    $created = strtotime((string) $o['created_at']) ?: 0;
+    $o['expires_at'] = (int) ($meta['hostfi']['expires_at'] ?? 0) ?: ($created ? $created + 3600 : 0);
+    $o['send_amount'] = null;
+    if (strtoupper((string) $o['type']) === 'OFFRAMP') {
+        // PAJ sells are ordered in naira, so their coin amount is in PAJ's own order.
+        $o['send_amount'] = (float) (strtoupper((string) $o['channel']) === 'PAJ' ? ($meta['amount'] ?? 0) : $o['amount']);
+    }
+    return $o;
+}
+
 function storeCustomerView(array $c): array
 {
     return ['email' => $c['email'], 'name' => $c['name'], 'since' => $c['created_at']];
@@ -442,15 +460,15 @@ function registerStoreRoutes(Router $router): void
         ensureStoreOrderColumns();
         // The customer's orders on this store, newest first (status, amounts, and what to pay or send).
         $orders = Database::select(
-            'SELECT `reference`, `type`, `status`, `asset`, `amount`, `destination_amount`, `destination_currency`, `source_currency`, `deposit_bank_name`,
-                    `deposit_account_number`, `deposit_account_name`, `deposit_address`, `wallet_address`, `hash`, `created_at`
+            'SELECT `reference`, `type`, `status`, `channel`, `asset`, `amount`, `destination_amount`, `destination_currency`, `source_currency`, `deposit_bank_name`,
+                    `deposit_account_number`, `deposit_account_name`, `deposit_address`, `deposit_note`, `wallet_address`, `hash`, `meta`, `created_at`
              FROM `transactions`
              WHERE (`merchant_id` = :m AND `store_customer_id` = :c)
                 OR (`merchant_id` = :m2 AND LOWER(`email`) = LOWER(:email))
              ORDER BY `id` DESC LIMIT 50',
             ['m' => $m['id'], 'c' => $c['id'], 'm2' => $m['id'], 'email' => $c['email']]
         );
-        jsonResponse(successResponse(['customer' => storeCustomerView($c), 'orders' => $orders]));
+        jsonResponse(successResponse(['customer' => storeCustomerView($c), 'orders' => array_map('storeCustomerOrderView', $orders)]));
     });
 
     // ─── The merchant's and admin's view of a store's customers ───

@@ -175,9 +175,9 @@ function merchantVelcroRates(): array
     $file = BASE_PATH . '/data/.merchant_rates.json';
     $cached = is_file($file) ? json_decode((string) @file_get_contents($file), true) : null;
     $age = time() - (int) ($cached['at'] ?? 0);
-    if (is_array($cached) && !empty($cached['rates'])) {
+    if (is_array($cached) && !empty($cached['rates']) && $age < 21600) {
         // Return cached rates immediately without blocking the visitor on remote API roundtrips.
-        // If older than 60s, refresh in the background.
+        // If older than 60s, refresh in the background. Past 6 hours, wait for today's prices instead.
         $lock = $file . '.refreshing';
         if ($age >= 60 && (!is_file($lock) || filemtime($lock) < time() - 30) && @touch($lock)) {
             runAfterResponse(static function () use ($lock): void {
@@ -191,6 +191,13 @@ function merchantVelcroRates(): array
         return $cached['rates'];
     }
     return merchantFetchVelcroRates();
+}
+
+/** How old, in seconds, the rates merchantVelcroRates() just returned are. */
+function merchantRatesAge(): int
+{
+    $cached = json_decode((string) @file_get_contents(BASE_PATH . '/data/.merchant_rates.json'), true);
+    return is_array($cached) ? max(0, time() - (int) ($cached['at'] ?? 0)) : 0;
 }
 
 /** Asks each provider for its rate now and saves the result for merchantVelcroRates(). */
@@ -279,15 +286,20 @@ function merchantFetchVelcroRates(): array
 
         $out[$sym] = ['provider' => $provider, 'buy' => $buy ? round($buy, 2) : null, 'sell' => $sell ? round($sell, 2) : null, 'usd' => $usd];
     }
-    // A provider that didn't answer this time keeps its last good rates (up to 24 hours old),
-    // so one slow provider never blanks the other coins' prices.
+    // A provider that didn't answer this time keeps its last good rates for up to an hour, so one
+    // slow provider never blanks a coin. After that the coin shows as unavailable, not an old price.
     $old = json_decode((string) @file_get_contents($file), true);
-    if (is_array($old) && !empty($old['rates'])) {
-        foreach ($out as $sym => $r) {
-            foreach (['buy', 'sell', 'usd'] as $k) {
-                if ($r[$k] === null && isset($old['rates'][$sym][$k]) && $old['rates'][$sym][$k] !== null) {
-                    $out[$sym][$k] = $old['rates'][$sym][$k];
-                }
+    foreach ($out as $sym => $r) {
+        $out[$sym]['at'] = time();
+        $prev = is_array($old) ? ($old['rates'][$sym] ?? []) : [];
+        $prevAt = (int) ($prev['at'] ?? $old['at'] ?? 0);
+        if (time() - $prevAt >= 3600) {
+            continue;
+        }
+        foreach (['buy', 'sell', 'usd'] as $k) {
+            if ($r[$k] === null && isset($prev[$k])) {
+                $out[$sym][$k] = $prev[$k];
+                $out[$sym]['at'] = $prevAt; // the clock keeps running on a kept rate
             }
         }
     }
@@ -892,6 +904,7 @@ function registerMerchantRoutes(Router $router): void
         }
 
         jsonResponse(successResponse([
+            'rates_age' => merchantRatesAge(),
             'store' => [
                 'name' => $brand['name'] ?: $m['business_name'] ?: 'Store',
                 'slug' => $m['slug'],

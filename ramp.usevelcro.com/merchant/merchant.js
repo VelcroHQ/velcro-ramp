@@ -5,6 +5,7 @@
 const TOKEN_KEY = 'velcro_merchant_token';
 const TOUR_KEY = 'velcro_merchant_tour_done';
 const CLAIM_KEY = 'velcro_merchant_claim'; // store address picked on the landing page, used at set-up
+const CLAIM_NAME_KEY = 'velcro_merchant_claim_name'; // and the name it came from
 const COIN_LOGOS = { BTC: '/logos/bitcoin.png', ETH: '/logos/ethereum.png', SOL: '/logos/solana.png', USDT: '/logos/usdt.png', USDC: '/logos/usdc.png' };
 
 let token = '';
@@ -67,25 +68,35 @@ function initLanding() {
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
+  // Type a name, pick a colour: the store in the window changes as you go, and sign-up remembers it.
   const name = $('pv-name');
   const renderPreview = () => {
     const title = name.value.trim() || 'Your store';
-    $('pv-title').textContent = title;
     $('pv-logo').textContent = title.charAt(0).toUpperCase();
     $('pv-slug').textContent = slugify(title) || 'your-store';
   };
-  name.addEventListener('input', renderPreview);
+  name.addEventListener('input', () => {
+    renderPreview();
+    try {
+      localStorage.setItem(CLAIM_KEY, slugify(name.value));
+      localStorage.setItem(CLAIM_NAME_KEY, name.value.trim());
+    } catch (e) { /* ignore */ }
+  });
   document.querySelectorAll('.m-swatch').forEach(sw => sw.addEventListener('click', () => {
     document.querySelectorAll('.m-swatch').forEach(x => x.classList.toggle('is-on', x === sw));
     $('pv-store').style.setProperty('--brand', sw.dataset.color);
+    $('pv-store').style.setProperty('--on-brand', autoText(sw.dataset.color));
   }));
 
   const vol = $('calc-vol');
   const mk = $('calc-mk');
+  const fill = r => r.style.setProperty('--fill', `${((r.value - r.min) / (r.max - r.min)) * 100}%`);
   const renderCalc = () => {
     $('calc-vol-out').textContent = naira(vol.value);
     $('calc-mk-out').textContent = Number(mk.value).toFixed(1) + '%';
     $('calc-out').textContent = naira(vol.value * mk.value / 100);
+    fill(vol);
+    fill(mk);
   };
   vol.addEventListener('input', renderCalc);
   mk.addEventListener('input', renderCalc);
@@ -128,8 +139,8 @@ function setAuthMode(mode) {
   $('a-email').readOnly = codeStep;
   $('google-wrap').classList.toggle('hidden', !googleReady || codeStep || mode === 'reset');
   $('auth-switch').innerHTML = mode === 'signin'
-    ? 'New to Velcro Merchant? <button type="button" class="font-bold text-velcro-navy" onclick="setAuthMode(\'signup\')">Create an account</button>'
-    : 'Already have an account? <button type="button" class="font-bold text-velcro-navy" onclick="setAuthMode(\'signin\')">Sign in</button>';
+    ? 'New to Velcro Merchant? <button type="button" onclick="setAuthMode(\'signup\')">Create an account</button>'
+    : 'Already have an account? <button type="button" onclick="setAuthMode(\'signin\')">Sign in</button>';
   if (codeStep) setTimeout(() => $('a-code').focus(), 50);
 }
 
@@ -196,7 +207,7 @@ async function initGoogle() {
         } catch (err) { authError(err.message); }
       },
     });
-    google.accounts.id.renderButton($('google-btn'), { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'pill', width: 340 });
+    google.accounts.id.renderButton($('google-btn'), { theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', width: 320 });
     googleReady = true;
     if ($('auth').classList.contains('is-open')) setAuthMode(authMode);
   };
@@ -206,6 +217,10 @@ async function initGoogle() {
 function signOut() {
   setToken('');
   me = merchant = null;
+  // Nothing of this account stays on the page for whoever signs in next.
+  orders = customers = earnings = null;
+  clearTimeout(ordersTimer);
+  ['ord-list', 'cus-list', 'wd-list', 'ov-recent', 'ord-sum', 'cus-sum'].forEach(id => { $(id).innerHTML = ''; });
   endTour();
   $('avatar-menu').classList.add('hidden');
   $('app').classList.add('hidden');
@@ -255,6 +270,10 @@ const ORDER_STATUS = {
   AWAITING_DEPOSIT: ['Awaiting payment', 'wait'], CONFIRMED: ['Payment received', 'busy'], PROCESSING: ['Processing', 'busy'], DETECTED: ['Payment seen', 'busy'],
   COMPLETED: ['Completed', 'live'], REVIEW: ['Needs review', 'warn'], FAILED: ['Failed', 'bad'], CANCELLED: ['Cancelled', 'off'], EXPIRED: ['Expired', 'off'],
 };
+const statusHtml = ([label, cls]) => `<span class="d-st is-${cls}">${esc(label)}</span>`;
+const coinText = o => (o.coin_amount ? `${Number(o.coin_amount).toLocaleString('en-US', { maximumFractionDigits: 8 })} ${esc(o.coin)}` : esc(o.coin));
+const shortRef = r => { const v = String(r || ''); return v.length > 16 ? `${v.slice(0, 8)}…${v.slice(-5)}` : v; };
+const logoImg = sym => (COIN_LOGOS[sym] ? `<img src="${COIN_LOGOS[sym]}" alt="">` : '');
 const when = v => { const d = new Date(String(v).replace(' ', 'T') + (String(v).includes('Z') ? '' : 'Z')); return isNaN(d) ? '' : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
 
 async function loadOrders() {
@@ -267,8 +286,10 @@ async function loadOrders() {
     $('ov-earned').textContent = naira(sm.earned_month_ngn || 0);
     $('ord-sum').innerHTML = `<span><b>${orders.length}</b> orders</span><span><b>${naira(sm.earned_total_ngn || 0)}</b> earned in total</span>`;
     renderOrders();
+    renderRecentOrders();
   } catch (e) {
-    $('ord-list').innerHTML = `<p class="d-list-error">${esc(e.message)}</p>`;
+    $('ord-list').innerHTML = `<p class="d-sheet-msg">${esc(e.message)}</p>`;
+    $('ov-recent').innerHTML = `<p class="d-quiet">${esc(e.message)}</p>`;
   }
   // Orders still moving refresh themselves while the tab is open.
   clearTimeout(ordersTimer);
@@ -287,21 +308,28 @@ function shownOrders() {
 
 function renderOrders() {
   const list = $('ord-list');
-  if (!orders || !orders.length) { list.innerHTML = $('ord-empty').innerHTML; list.classList.remove('d-card-flush'); return; }
-  list.classList.add('d-card-flush');
+  if (!orders || !orders.length) { list.innerHTML = $('ord-empty').innerHTML; return; }
   const rows = shownOrders();
-  list.innerHTML = rows.length ? `<div class="overflow-x-auto"><table class="d-table d-table-orders"><thead><tr><th>Customer</th><th>Order</th><th>Amount</th><th>Your markup</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows.map(o => {
-    const [label, cls] = ORDER_STATUS[o.status] || [o.status, 'off'];
-    const coinAmt = o.coin_amount ? `${Number(o.coin_amount).toLocaleString('en-US', { maximumFractionDigits: 8 })} ${esc(o.coin)}` : esc(o.coin);
+  list.innerHTML = rows.length ? `<table class="d-table d-orders"><thead><tr><th>Order</th><th>Customer</th><th class="is-num">Amount</th><th class="is-num">Your markup</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows.map(o => {
+    const done = o.status === 'COMPLETED';
     return `<tr>
-      <td><span class="d-who"><b>${esc(o.customer_name || (o.customer_email || '').split('@')[0])}</b><small>${esc(o.customer_email || '')}</small></span></td>
-      <td><span class="d-coin"><img src="${COIN_LOGOS[o.coin] || ''}" alt=""><span><span class="d-side is-${o.side}">${o.side === 'buy' ? 'Buy' : 'Sell'}</span> ${esc(o.coin)}<small title="${esc(o.reference)}">${esc(String(o.reference).slice(0, 14))}…</small></span></span></td>
-      <td><span class="d-price"><b>${o.naira ? naira(o.naira) : '—'}</b><small>${coinAmt}</small></span></td>
-      <td><span class="d-price"><b class="${o.status === 'COMPLETED' ? 'text-[#4d7a12]' : 'text-slate-400'}">${o.earned ? naira(o.earned) : '—'}</b><small>${o.markup_percent}%${o.status === 'COMPLETED' ? '' : ' · if completed'}</small></span></td>
-      <td><span class="d-pill ${cls}">${esc(label)}</span></td>
-      <td class="text-slate-500 text-sm">${when(o.created_at)}</td>
+      <td class="c-order"><span class="d-who">${logoImg(o.coin)}<span class="d-cell"><b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b><small title="${esc(o.reference)}">${esc(shortRef(o.reference))}</small></span></span></td>
+      <td class="c-who"><span class="d-cell"><b>${esc(o.customer_name || (o.customer_email || '').split('@')[0])}</b><small>${esc(o.customer_email || '')}</small></span></td>
+      <td class="c-amt is-num"><span class="d-cell"><b>${o.naira ? naira(o.naira) : '—'}</b><small>${coinText(o)}</small></span></td>
+      <td class="c-earn is-num"><span class="d-cell"><b class="${done ? 'is-earned' : 'is-pending'}">${o.earned ? naira(o.earned) : '—'}</b><small>${o.markup_percent}%${done ? '' : ' · if completed'}</small></span></td>
+      <td class="c-st">${statusHtml(ORDER_STATUS[o.status] || [o.status, 'off'])}</td>
+      <td class="c-date is-end"><span class="d-date">${when(o.created_at)}</span></td>
     </tr>`;
-  }).join('')}</tbody></table></div>` : '<p class="d-list-error">No orders match.</p>';
+  }).join('')}</tbody></table>` : '<p class="d-sheet-msg">No orders match.</p>';
+}
+
+// The five newest, on the overview.
+function renderRecentOrders() {
+  const rows = (orders || []).slice(0, 5);
+  $('ov-recent').innerHTML = rows.length ? rows.map(o => `<div class="d-mini">${logoImg(o.coin)}
+      <span class="d-mini-l"><b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b><small>${esc(o.customer_name || o.customer_email || '')}</small></span>
+      <span class="d-mini-r"><b>${o.naira ? naira(o.naira) : coinText(o)}</b>${statusHtml(ORDER_STATUS[o.status] || [o.status, 'off'])}</span>
+    </div>`).join('') : `<div class="d-mini-empty"><p>Every buy and sell on your store shows up here.</p><button type="button" class="d-btn-quiet" onclick="shareStore()">Share your store</button></div>`;
 }
 
 function exportOrders() {
@@ -329,23 +357,22 @@ async function loadCustomers() {
     $('cus-sum').innerHTML = `<span><b>${customers.length}</b> customers</span><span><b>${active}</b> have ordered</span>`;
     renderCustomers();
   } catch (e) {
-    $('cus-list').innerHTML = `<p class="d-list-error">${esc(e.message)}</p>`;
+    $('cus-list').innerHTML = `<p class="d-sheet-msg">${esc(e.message)}</p>`;
   }
 }
 
 function renderCustomers() {
   const list = $('cus-list');
-  if (!customers || !customers.length) { list.innerHTML = $('cus-empty').innerHTML; list.classList.remove('d-card-flush'); return; }
-  list.classList.add('d-card-flush');
+  if (!customers || !customers.length) { list.innerHTML = $('cus-empty').innerHTML; return; }
   const q = ($('cus-q').value || '').trim().toLowerCase();
   const rows = customers.filter(c => !q || [c.email, c.name].some(v => String(v || '').toLowerCase().includes(q)));
-  list.innerHTML = rows.length ? `<div class="overflow-x-auto"><table class="d-table"><thead><tr><th>Customer</th><th>Orders</th><th>Completed volume</th><th>Last order</th><th>Joined</th></tr></thead><tbody>${rows.map(c => `<tr>
-      <td><span class="d-who"><span class="d-who-av">${esc((c.name || c.email).trim().charAt(0).toUpperCase())}</span><span><b>${esc(c.name || c.email.split('@')[0])}</b><small>${esc(c.email)}</small></span></span></td>
-      <td><b>${c.orders}</b></td>
-      <td>${c.volume_ngn ? naira(c.volume_ngn) : '<span class="text-slate-400">—</span>'}</td>
-      <td class="text-slate-500 text-sm">${c.last_order_at ? when(c.last_order_at) : '—'}</td>
-      <td class="text-slate-500 text-sm">${when(c.since)}</td>
-    </tr>`).join('')}</tbody></table></div>` : '<p class="d-list-error">No customers match.</p>';
+  list.innerHTML = rows.length ? `<table class="d-table d-customers"><thead><tr><th>Customer</th><th class="is-num">Orders</th><th class="is-num">Completed volume</th><th>Last order</th><th>Joined</th></tr></thead><tbody>${rows.map(c => `<tr>
+      <td class="c-who"><span class="d-who"><span class="d-av">${esc((c.name || c.email).trim().charAt(0).toUpperCase())}</span><span class="d-cell"><b>${esc(c.name || c.email.split('@')[0])}</b><small>${esc(c.email)}</small></span></span></td>
+      <td class="c-orders is-num" data-label="Orders"><b>${c.orders}</b></td>
+      <td class="c-vol is-num" data-label="Volume"><b>${c.volume_ngn ? naira(c.volume_ngn) : '—'}</b></td>
+      <td class="c-last" data-label="Last order"><span class="d-date">${c.last_order_at ? when(c.last_order_at) : '—'}</span></td>
+      <td class="c-joined is-end" data-label="Joined"><span class="d-date">${when(c.since)}</span></td>
+    </tr>`).join('')}</tbody></table>` : '<p class="d-sheet-msg">No customers match.</p>';
 }
 
 // ── Earnings and withdrawals ──
@@ -361,11 +388,12 @@ async function loadEarnings() {
   try {
     earnings = await api('/api/merchant/earnings');
   } catch (e) {
-    $('wd-list').innerHTML = `<p class="d-list-error">${esc(e.message)}</p>`;
+    $('wd-list').innerHTML = `<p class="d-sheet-msg">${esc(e.message)}</p>`;
     return;
   }
   const e = earnings;
   $('earn-available').textContent = naira(e.available_ngn);
+  $('ov-available').textContent = naira(e.available_ngn);
   $('earn-usd').textContent = e.available_usd !== null ? `≈ $${Number(e.available_usd).toFixed(2)} · minimum $${e.min_usd}` : '';
   $('earn-total').textContent = naira(e.earned_ngn);
   $('earn-pending').textContent = naira(e.pending_ngn);
@@ -374,12 +402,12 @@ async function loadEarnings() {
   $('earn-reason').classList.toggle('hidden', !e.reason);
   $('earn-withdraw').disabled = !e.can_withdraw;
   $('wd-chain').innerHTML = Object.entries(e.chains || {}).map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join('');
-  $('wd-list').innerHTML = e.withdrawals.length ? `<div class="overflow-x-auto"><table class="d-table"><thead><tr><th>Amount</th><th>To</th><th>Status</th><th>Requested</th></tr></thead><tbody>${e.withdrawals.map(w => {
-    const [label, cls] = WD_STATUS[w.status] || [w.status, 'off'];
-    return `<tr><td><span class="d-price"><b>${w.currency === 'NGN' ? naira(w.amount_ngn) : '$' + Number(w.amount_usd).toFixed(2) + ' USDC'}</b><small>${w.currency === 'NGN' ? 'Naira' : naira(w.amount_ngn) + ' of earnings'}</small></span></td>
-      <td class="text-sm">${esc(w.to)}${w.payout_ref ? `<small class="block text-slate-400">Ref ${esc(w.payout_ref)}</small>` : ''}${w.status === 'REJECTED' && w.note ? `<small class="block text-red-700">${esc(w.note)}</small>` : ''}</td>
-      <td><span class="d-pill ${cls}">${esc(label)}</span></td><td class="text-slate-500 text-sm">${when(w.created_at)}</td></tr>`;
-  }).join('')}</tbody></table></div>` : '<p class="d-list-error">No withdrawals yet. Your markup on every completed order adds up here.</p>';
+  $('wd-list').innerHTML = e.withdrawals.length ? `<table class="d-table d-wds"><thead><tr><th>Amount</th><th>To</th><th>Status</th><th>Requested</th></tr></thead><tbody>${e.withdrawals.map(w => `<tr>
+      <td class="c-amt"><span class="d-cell"><b>${w.currency === 'NGN' ? naira(w.amount_ngn) : '$' + Number(w.amount_usd).toFixed(2) + ' USDC'}</b><small>${w.currency === 'NGN' ? 'Naira' : naira(w.amount_ngn) + ' of earnings'}</small></span></td>
+      <td class="c-to"><span class="d-cell">${esc(w.to)}${w.payout_ref ? `<small>Ref ${esc(w.payout_ref)}</small>` : ''}${w.status === 'REJECTED' && w.note ? `<small class="is-bad-note">${esc(w.note)}</small>` : ''}</span></td>
+      <td class="c-st">${statusHtml(WD_STATUS[w.status] || [w.status, 'off'])}</td>
+      <td class="c-date is-end"><span class="d-date">${when(w.created_at)}</span></td>
+    </tr>`).join('')}</tbody></table>` : '<p class="d-sheet-msg">No withdrawals yet. Your markup on every completed order adds up here.</p>';
 }
 
 async function openWithdraw() {
@@ -421,7 +449,7 @@ function checkWdAccount() {
   $('wd-acct').value = acct;
   wdAccountName = '';
   const out = $('wd-name');
-  out.className = 'm-hint sm:col-span-2';
+  out.className = 'm-hint d-span-2';
   clearTimeout(wdNameTimer);
   const bank = (wdBanks || []).find(b => b.code === $('wd-bank').value);
   if (!bank || acct.length !== 10) { out.textContent = 'We check the name on the account before anything is sent.'; return; }
@@ -431,10 +459,10 @@ function checkWdAccount() {
       const d = await api('/api/hostfi/resolve', { method: 'POST', body: { bankCode: bank.code, bankName: bank.name, accountNumber: acct } });
       if (!d.accountName) throw new Error('We couldn’t find that account.');
       wdAccountName = d.accountName;
-      out.className = 'm-hint sm:col-span-2 is-ok';
+      out.className = 'm-hint d-span-2 is-ok';
       out.textContent = '✓ ' + d.accountName;
     } catch (e) {
-      out.className = 'm-hint sm:col-span-2 is-bad';
+      out.className = 'm-hint d-span-2 is-bad';
       out.textContent = e.message;
     }
   }, 300);
@@ -490,7 +518,7 @@ function openTab(name) {
   if (name === 'settings') openSettings(null);
   if (name === 'orders' || name === 'overview') loadOrders();
   if (name === 'customers') loadCustomers();
-  if (name === 'earnings') loadEarnings();
+  if (name === 'earnings' || name === 'overview') loadEarnings();
   document.querySelectorAll('.d-tab').forEach(t => t.classList.toggle('hidden', t.id !== 'tab-' + name));
   document.querySelectorAll('.d-tabs button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === name));
   history.replaceState(null, '', '#' + name);
@@ -508,77 +536,82 @@ function renderHeader() {
   $('menu-name').textContent = me.name || storeName();
   $('avatar-initial').textContent = (me.name || me.email).trim().charAt(0).toUpperCase();
   const [cls, words] = HDR_STATUS[merchant.status] || HDR_STATUS.DRAFT;
-  $('hdr-status').className = 'd-hdr-status is-' + cls;
+  $('hdr-status').className = 'd-st is-' + cls;
   $('hdr-status').textContent = words;
   const url = merchant.storefront_url;
-  $('hdr-link-text').textContent = url ? url.replace(/^https?:\/\//, '') : 'Pick your store link';
-  $('hdr-link').onclick = () => (url ? shareStore() : (openTab('settings'), openSettings('store')));
-  const view = $('hdr-view');
-  view.classList.toggle('hidden', !url);
-  if (url) view.href = url;
+  ['hdr-view', 'menu-view'].forEach(id => {
+    $(id).classList.toggle('hidden', !url);
+    if (url) $(id).href = url;
+  });
 }
 
-const HDR_STATUS = { DRAFT: ['draft', 'Not live'], PENDING: ['pending', 'In review'], REJECTED: ['bad', 'Needs changes'], APPROVED: ['live', 'Live'], SUSPENDED: ['bad', 'Suspended'] };
+const HDR_STATUS = { DRAFT: ['off', 'Not live'], PENDING: ['wait', 'In review'], REJECTED: ['bad', 'Needs changes'], APPROVED: ['live', 'Live'], SUSPENDED: ['bad', 'Suspended'] };
 
 const BANNERS = {
-  DRAFT: ['', 'Verify your business to put your store live.', 'It takes about three minutes. You can set up your store while we review it.', 'Start verification', () => goToKyb()],
-  PENDING: ['is-pending', "We're reviewing your business.", "Usually within a working day. We'll email you as soon as you're approved.", 'View details', () => goToKyb()],
-  REJECTED: ['is-bad', 'We need a few changes before your store can go live.', '', 'Fix details', () => goToKyb()],
-  SUSPENDED: ['is-bad', 'Your store is suspended and offline.', '', 'Contact support', () => window.open('https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab', '_blank')],
-  APPROVED: ['is-live', 'Your store is live.', '', 'Copy store link', () => shareStore()],
+  DRAFT: ['Verify your business to put your store live.', 'It takes about three minutes. You can set up your store while we review it.', 'Start verification', () => goToKyb()],
+  PENDING: ["We're reviewing your business.", "Usually within a working day. We'll email you as soon as you're approved.", 'View details', () => goToKyb()],
+  REJECTED: ['We need a few changes before your store can go live.', '', 'Fix details', () => goToKyb()],
+  SUSPENDED: ['Your store is suspended and offline.', '', 'Contact support', () => window.open('https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab', '_blank')],
 };
 
 function renderOverview() {
-  const now = new Date();
-  $('ov-date').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const h = now.getHours();
+  const h = new Date().getHours();
   const part = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-  const who = (me.name || '').split(' ')[0] || merchant.brand.name || me.email.split('@')[0];
+  const who = (me.name || '').split(' ')[0] || storeName();
   $('ov-hello').textContent = `${part}, ${who}`;
+  paintStrip();
+  paintSteps();
+  paintOverviewPrices();
+}
 
-  const [cls, title, sub, btn, action] = BANNERS[merchant.status] || BANNERS.DRAFT;
+// The bottom of the ledger: the live link, or what's between the merchant and going live.
+function paintStrip() {
+  const strip = $('ov-strip');
+  const url = merchant.storefront_url;
+  if (merchant.status === 'APPROVED' && url) {
+    strip.innerHTML = `<span class="d-st is-live">Live</span><span class="d-strip-url">${esc(url.replace(/^https?:\/\//, ''))}</span>
+      <span class="d-strip-btns"><button type="button" onclick="shareStore()">Copy link</button><a href="${esc(url)}" target="_blank" rel="noopener">Open store</a></span>`;
+    return;
+  }
+  const [title, sub, btn, action] = BANNERS[merchant.status] || BANNERS.DRAFT;
   const note = merchant.review_note ? `Reason: ${merchant.review_note}` : sub;
-  const liveSub = merchant.status === 'APPROVED' ? (merchant.storefront_url ? 'Your store is live at ' + merchant.storefront_url.replace(/^https?:\/\//, '') + '. Share the link with your customers.' : 'Choose your store address to get your link.') : note;
-  const banner = $('ov-banner');
-  banner.className = 'd-banner mt-6 ' + cls;
-  banner.innerHTML = `<div><b>${esc(title)}</b><small>${esc(liveSub)}</small></div><button type="button" class="d-banner-btn">${esc(btn)} →</button>`;
-  banner.querySelector('button').onclick = action;
+  strip.innerHTML = `<span class="d-strip-text"><b>${esc(title)}</b>${note ? `<small>${esc(note)}</small>` : ''}</span><span class="d-strip-btns"><button type="button" class="d-btn-lime">${esc(btn)}</button></span>`;
+  strip.querySelector('button').onclick = action;
+}
 
-  // Launch checklist.
+// Set-up steps show only until they're done.
+function paintSteps() {
   const ck = merchant.checklist;
   const steps = [
-    ['branded', 'Personalize your store', 'Name, address and look', () => openTab('settings')],
+    ['branded', 'Personalize your store', 'Name, address and look', () => openPanel('store')],
     ['priced', 'Set your prices', 'Your markup per coin', () => openTab('prices')],
     ['verified', 'Verify your business', merchant.status === 'PENDING' ? 'Under review' : 'Goes live after approval', () => goToKyb()],
   ];
-  const done = steps.filter(s => ck[s[0]]).length;
-  $('ck-count').textContent = `${done}/${steps.length}`;
-  requestAnimationFrame(() => { $('ck-bar').style.width = `${(done / steps.length) * 100}%`; });
-  const list = $('ck-list');
-  list.innerHTML = steps.map(([key, label, hint], i) => `<li><button type="button" class="d-check ${ck[key] ? 'is-done' : ''}" data-i="${i}"><i>✓</i><span>${esc(label)}</span><em>${ck[key] ? 'Done' : esc(hint)}</em></button></li>`).join('');
-  list.querySelectorAll('button').forEach(b => { b.onclick = steps[b.dataset.i][3]; });
-  $('qa-brand').classList.toggle('is-done', !!ck.branded);
-  $('qa-prices').classList.toggle('is-done', !!ck.priced);
-  $('qa-share-sub').textContent = merchant.slug ? `…/m/${merchant.slug}` : 'Pick your store address first.';
+  const box = $('ov-steps');
+  const waiting = steps.filter(([key]) => !ck[key] && !(key === 'verified' && merchant.status === 'PENDING'));
+  box.classList.toggle('hidden', !waiting.length);
+  box.innerHTML = steps.map(([key, label, hint], i) => `<button type="button" class="${ck[key] ? 'is-done' : ''}" data-i="${i}"><i>${ck[key] ? '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>' : i + 1}</i><span><b>${esc(label)}</b><small>${ck[key] ? 'Done' : esc(hint)}</small></span></button>`).join('');
+  box.querySelectorAll('button').forEach(b => { b.onclick = steps[b.dataset.i][3]; });
+}
 
-  // Price list, as customers see it.
-  $('ov-price-rows').innerHTML = Object.entries(me.coins).map(([sym, name]) => {
+// What customers pay right now, coin by coin.
+function paintOverviewPrices() {
+  const cell = (sym, side) => {
     const p = merchant.pricing[sym];
-    const on = p.buy_on || p.sell_on;
-    const cell = side => {
-      if (!p[side + '_on']) return '<span class="d-pill off">Off</span>';
-      const rate = customerRate(sym, side, p[side]);
-      return rate ? `<span class="d-price"><b>${rateText(rate)}</b><small>${side === 'buy' ? '+' : '−'}${p[side]}% on Velcro</small></span>` : '<span class="text-slate-400">—</span>';
-    };
-    return `<tr><td><span class="d-coin"><img src="${COIN_LOGOS[sym]}" alt=""><span>${sym}<small>${esc(name)}</small></span></span></td>
-      <td>${cell('buy')}</td><td>${cell('sell')}</td>
-      <td><span class="d-pill ${on && merchant.status === 'APPROVED' ? 'live' : 'off'}">${on ? (merchant.status === 'APPROVED' ? 'Live' : 'Ready') : 'Off'}</span></td></tr>`;
-  }).join('');
+    if (!p[side + '_on']) return '<i>Off</i>';
+    const rate = customerRate(sym, side, p[side]);
+    return rate ? nairaRate(rate) : '<i>—</i>';
+  };
+  $('ov-price-rows').innerHTML = `<div class="d-rate-head"><span></span><span>They buy at</span><span>They sell at</span></div>` + Object.keys(me.coins).map(sym => `<div class="d-rate"><span>${logoImg(sym)}${sym}</span><span>${cell(sym, 'buy')}</span><span>${cell(sym, 'sell')}</span></div>`).join('');
+}
+
+function openPanel(panel) {
+  openTab('settings');
+  openSettings(panel);
 }
 
 function goToKyb() {
-  openTab('settings');
-  openSettings('kyb');
+  openPanel('kyb');
 }
 
 // Settings: a home of cards, each opening one panel.
@@ -591,14 +624,14 @@ function openSettings(panel) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-const STATUS_WORDS = { DRAFT: ['pending', 'Not verified yet'], PENDING: ['pending', 'Verification under review'], REJECTED: ['rejected', 'Changes needed'], APPROVED: ['approved', 'Verified'], SUSPENDED: ['suspended', 'Suspended'] };
+const STATUS_WORDS = { DRAFT: ['wait', 'Not verified yet'], PENDING: ['wait', 'Verification under review'], REJECTED: ['bad', 'Changes needed'], APPROVED: ['live', 'Verified'], SUSPENDED: ['bad', 'Suspended'] };
 
 function renderSettingsHome() {
   paintLogo($('set-logo'), merchant.brand, storeName());
   $('set-name').textContent = storeName();
   $('set-email').textContent = me.email;
   const [cls, words] = STATUS_WORDS[merchant.status] || STATUS_WORDS.DRAFT;
-  $('set-badge').className = 'm-status-badge ' + cls;
+  $('set-badge').className = 'd-st is-' + cls;
   $('set-badge').textContent = words;
   const live = merchant.status === 'APPROVED' && merchant.storefront_url;
   $('set-cta').textContent = live ? 'View store' : merchant.status === 'PENDING' ? 'View details' : 'Complete verification';
@@ -669,7 +702,7 @@ async function submitSupport(e) {
 async function shareStore() {
   if (!merchant.slug) {
     toast('Choose your store address first');
-    openTab('settings');
+    openPanel('store');
     setTimeout(() => $('b-slug').focus(), 150);
     return;
   }
@@ -690,7 +723,8 @@ function customerRate(sym, side, markup) {
   return side === 'buy' ? base * (1 + markup / 100) : base * (1 - markup / 100);
 }
 
-const rateText = v => '$1 = ₦' + Number(v).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nairaRate = v => '₦' + Number(v).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const rateText = v => '$1 = ' + nairaRate(v);
 
 function renderPrices() {
   pricingDraft = JSON.parse(JSON.stringify(merchant.pricing));
@@ -701,11 +735,13 @@ function renderPrices() {
   });
   $('max-markup').textContent = me.max_markup;
   $('price-rows').innerHTML = Object.entries(me.coins).map(([sym, name]) => {
-    const toggle = side => `<button type="button" class="d-toggle" role="switch" aria-label="${sym} ${side} on/off" data-sym="${sym}" data-side="${side}"></button>`;
-    const markup = side => `<label class="d-markup"><input type="number" inputmode="decimal" min="0" max="${me.max_markup}" step="0.05" data-sym="${sym}" data-side="${side}" aria-label="${sym} ${side} markup %"><span>%</span></label>`;
-    return `<tr data-row="${sym}"><td><span class="d-coin"><img src="${COIN_LOGOS[sym]}" alt=""><span>${sym}<small>${esc(name)}</small></span></span></td>
-      <td><span class="d-cell">${toggle('buy')}${markup('buy')}</span></td><td class="d-price" data-out="${sym}-buy"></td>
-      <td><span class="d-cell">${toggle('sell')}${markup('sell')}</span></td><td class="d-price" data-out="${sym}-sell"></td></tr>`;
+    const side = (key, label) => `<div class="d-side-cell" data-cell="${sym}-${key}">
+        <span class="d-side-label">${label}</span>
+        <button type="button" class="d-toggle" role="switch" aria-label="${sym} ${key} on/off" data-sym="${sym}" data-side="${key}"></button>
+        <label class="d-markup"><input type="number" inputmode="decimal" min="0" max="${me.max_markup}" step="0.05" data-sym="${sym}" data-side="${key}" aria-label="${sym} ${key} markup %"><span>%</span></label>
+        <div class="d-result" data-out="${sym}-${key}"></div>
+      </div>`;
+    return `<div class="d-price-row" data-row="${sym}"><span class="d-coin">${logoImg(sym)}<span><b>${sym}</b><small>${esc(name)}</small></span></span>${side('buy', 'Customers buy')}${side('sell', 'Customers sell')}</div>`;
   }).join('');
   document.querySelectorAll('#price-rows input').forEach(inp => {
     inp.value = pricingDraft[inp.dataset.sym][inp.dataset.side];
@@ -732,9 +768,9 @@ function paintPriceRows(dirty) {
       document.querySelector(`.d-toggle[data-sym="${sym}"][data-side="${side}"]`).setAttribute('aria-checked', String(on));
       document.querySelector(`input[data-sym="${sym}"][data-side="${side}"]`).disabled = !on;
       const out = document.querySelector(`[data-out="${sym}-${side}"]`);
-      out.closest('td').classList.toggle('is-off', !on);
-      out.innerHTML = !on ? '<span class="d-pill off">Hidden</span>'
-        : rate ? `<b>${rateText(rate)}</b><small>Velcro ${rateText(base)}</small>` : '<span class="text-slate-400">Rate unavailable</span>';
+      document.querySelector(`[data-cell="${sym}-${side}"]`).classList.toggle('is-off', !on);
+      out.innerHTML = !on ? '<span class="is-none">Hidden</span>'
+        : rate ? `<b>${rateText(rate)}</b><small>Velcro ${nairaRate(base)}</small>` : '<span class="is-none">Rate unavailable</span>';
     });
   });
   // Example for the display choice, from the first coin with a buy rate.
@@ -743,7 +779,7 @@ function paintPriceRows(dirty) {
     $('disp-final').textContent = rateText(customerRate(ex, 'buy', pricingDraft[ex].buy)) + ` · ${ex}`;
     $('disp-breakdown').textContent = `${rateText(velcroRates[ex].buy)} + ${pricingDraft[ex].buy}% fee · ${ex}`;
   }
-  $('prices-save').disabled = !dirty;
+  $('prices-bar').classList.toggle('is-on', dirty);
 }
 
 async function savePrices() {
@@ -766,10 +802,15 @@ async function savePrices() {
 // ── Settings: branding ──
 
 function renderSettings() {
+  // The name they tried on the public page carries over until they've saved their own.
   let claimed = '';
-  try { claimed = merchant.slug ? '' : (localStorage.getItem(CLAIM_KEY) || ''); } catch (e) { /* ignore */ }
+  let claimedName = '';
+  try {
+    claimed = merchant.slug ? '' : (localStorage.getItem(CLAIM_KEY) || '');
+    claimedName = merchant.slug ? '' : (localStorage.getItem(CLAIM_NAME_KEY) || '');
+  } catch (e) { /* ignore */ }
   brandDraft = {
-    name: merchant.brand.name || merchant.business_name || '',
+    name: merchant.brand.name || merchant.business_name || claimedName,
     slug: merchant.slug || claimed,
     color: merchant.brand.color,
     buttonText: merchant.brand.button_text || null,
@@ -787,6 +828,7 @@ function renderSettings() {
   $('b-slug').readOnly = locked;
   $('b-slug-msg').className = 'm-hint';
   $('b-slug-msg').textContent = locked ? 'Your address is fixed now that you’re verified.' : "Lowercase letters, numbers and hyphens. It's fixed once you're verified.";
+  delete $('b-slug').dataset.edited;
   $('brand-error').classList.add('hidden');
   paintBrand();
   renderKyb();
@@ -854,37 +896,37 @@ function renderPhone(brand, btnText) {
   screen.style.setProperty('--brand', d.color);
   screen.style.setProperty('--on-brand', btnText);
   screen.style.setProperty('--on-brand-auto', autoText(d.color));
-  const coins = Object.keys((me && me.coins) || {}).filter(sym => merchant.pricing[sym] && (merchant.pricing[sym].buy_on || merchant.pricing[sym].sell_on));
-  const rate = (sym, side) => {
-    const p = merchant.pricing[sym];
-    const r = p[side + '_on'] ? customerRate(sym, side, p[side]) : null;
-    return r ? '₦' + Number(r).toLocaleString('en-NG', { maximumFractionDigits: 0 }) : '—';
-  };
-  // Rates are naira per $1, so a stablecoin shows the amount exactly; anything else shows its dollar value.
-  const first = ['USDT', 'USDC'].find(sym => coins.includes(sym) && merchant.pricing[sym].buy_on) || coins.find(sym => merchant.pricing[sym].buy_on) || 'USDT';
-  const firstRate = merchant.pricing[first] ? customerRate(first, 'buy', merchant.pricing[first].buy) : null;
-  const usd = firstRate ? 100000 / firstRate : null;
-  const stable = first === 'USDT' || first === 'USDC';
+  const coins = Object.keys((me && me.coins) || {}).filter(sym => merchant.pricing[sym] && merchant.pricing[sym].buy_on);
+  const buyRate = sym => customerRate(sym, 'buy', merchant.pricing[sym].buy);
+  // USDT first, like the store itself.
+  const first = ['USDT', 'USDC'].find(sym => coins.includes(sym) && buyRate(sym)) || coins.find(buyRate) || coins[0] || 'USDT';
+  const rate = coins.includes(first) ? buyRate(first) : null;
+  const usdPrice = ['USDT', 'USDC'].includes(first) ? 1 : (velcroRates[first] || {}).usd;
+  const getAmount = rate && usdPrice ? 100000 / rate / usdPrice : null;
+  const getText = getAmount ? getAmount.toLocaleString('en-US', ['USDT', 'USDC'].includes(first) ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 6 }) : '…';
   const name = d.name.trim() || 'Your store';
+  const welcome = d.welcome.trim();
+  const shown = coins.filter(buyRate);
   screen.innerHTML = `
-    <div class="pv-status"><b>9:41</b><span><i></i><i></i><i></i></span></div>
-    <div class="pv-top"><span class="pv-logo" id="pv-logo"></span><b>${esc(name)}</b><span class="pv-signin">Sign in</span></div>
-    <div class="pv-hero">
-      <h3>${esc(name)}</h3>
-      <p>${esc(d.welcome.trim() || 'Buy and sell crypto with naira. Pay by bank transfer, get paid to any Nigerian bank.')}</p>
+    <div class="bp-status"><span>9:41</span><span aria-hidden="true"><i></i><i></i><i></i></span></div>
+    <div class="bp-top"><span class="bp-logo" id="bp-logo"></span><b>${esc(name)}</b><span>Sign in</span></div>
+    ${welcome ? `<p class="bp-welcome">${esc(welcome)}</p>` : ''}
+    <div class="bp-ticket">
+      <div class="bp-tabs"><span class="is-on">Buy</span><span>Sell</span></div>
+      <div class="bp-stack">
+        <div class="bp-coin">${logoImg(first)}<span><b>${first}</b><small>${rate ? rateText(rate) : 'Rate unavailable right now'}</small></span></div>
+        <div class="bp-field"><small>You pay</small><p><b>100,000</b><em>NGN</em></p></div>
+        <div class="bp-field is-out"><small>You get</small><p><b>${getText}</b><em>${first}</em></p></div>
+      </div>
+      <div class="bp-tear" aria-hidden="true"></div>
+      <span class="bp-cta">Buy ${first}</span>
     </div>
-    <div class="pv-card">
-      <div class="pv-tabs"><span class="is-on">Buy</span><span>Sell</span></div>
-      <div class="pv-field"><small>You pay</small><b>₦100,000</b><em>NGN</em></div>
-      <div class="pv-field"><small>${stable ? 'You get' : 'You get (in dollars)'}</small><b>${usd ? (stable ? '' : '$') + usd.toFixed(2) : '…'}</b><em>${first}</em></div>
-      <span class="pv-cta">Buy ${first}</span>
+    <div class="bp-rates">
+      <b>Today's rates <small>to buy, per $1</small></b>
+      ${shown.length ? `<div class="bp-rate-row">${shown.map(sym => `<div class="bp-rate"><span>${logoImg(sym)}${sym}</span><b>${nairaRate(buyRate(sym))}</b></div>`).join('')}</div>` : '<p class="bp-empty">Switch on coins in Prices to show rates.</p>'}
     </div>
-    <div class="pv-rates">
-      <div class="pv-rates-head"><b>Today's rates</b><span>We sell · We buy</span></div>
-      ${coins.length ? coins.map(sym => `<div class="pv-rate"><img src="${COIN_LOGOS[sym]}" alt=""><b>${sym}</b><span>${rate(sym, 'buy')}</span><span>${rate(sym, 'sell')}</span></div>`).join('') : '<p class="pv-empty">Switch on coins in Listed offers to show rates.</p>'}
-    </div>
-    <p class="pv-foot">${esc(name)} · Powered by Velcro</p>`;
-  paintLogo($('pv-logo'), brand, 'Y');
+    <p class="bp-foot">${esc(name)} · Powered by Velcro</p>`;
+  paintLogo($('bp-logo'), brand, 'Y');
   $('bp-open').href = '/m/' + (merchant.slug || '');
   $('bp-open').classList.toggle('hidden', !merchant.slug);
 }
@@ -942,7 +984,7 @@ async function saveBrand(e) {
     if (brandDraft.logoData) body.logo = brandDraft.logoData;
     if (brandDraft.removeLogo) body.remove_logo = true;
     merchant = await api('/api/merchant/brand', { method: 'POST', body });
-    try { localStorage.removeItem(CLAIM_KEY); } catch (e2) { /* ignore */ }
+    try { localStorage.removeItem(CLAIM_KEY); localStorage.removeItem(CLAIM_NAME_KEY); } catch (e2) { /* ignore */ }
     toast('Changes saved');
     renderAll();
   } catch (ex) {
@@ -956,7 +998,7 @@ async function saveBrand(e) {
 
 // ── Settings: business verification ──
 
-const KYB_BADGES = { DRAFT: ['pending', 'Not started'], PENDING: ['pending', 'Under review'], REJECTED: ['rejected', 'Changes needed'], APPROVED: ['approved', 'Verified'], SUSPENDED: ['suspended', 'Suspended'] };
+const KYB_BADGES = { DRAFT: ['off', 'Not started'], PENDING: ['wait', 'Under review'], REJECTED: ['bad', 'Changes needed'], APPROVED: ['live', 'Verified'], SUSPENDED: ['bad', 'Suspended'] };
 
 function fillSelect(sel, options, placeholder, value) {
   sel.innerHTML = `<option value="">${esc(placeholder)}</option>` + Object.entries(options).map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
@@ -971,7 +1013,7 @@ function renderKyb() {
   if (!f.elements.contact_name.value && me.name) f.elements.contact_name.value = me.name;
   $('f-reg-row').classList.toggle('hidden', $('f-type').value !== 'registered');
   const [cls, label] = KYB_BADGES[merchant.status] || KYB_BADGES.DRAFT;
-  $('kyb-badge').className = 'm-status-badge ' + cls;
+  $('kyb-badge').className = 'd-st is-' + cls;
   $('kyb-badge').textContent = label;
   $('kyb-note').classList.toggle('hidden', !merchant.review_note);
   $('kyb-note').textContent = merchant.review_note ? 'Reason: ' + merchant.review_note : '';
@@ -990,9 +1032,9 @@ async function submitKyb(e) {
   err.classList.add('hidden');
   const slug = merchant.slug || $('b-slug').value.trim();
   if (!slug) {
-    err.textContent = 'Choose your store address in "Your store" above first.';
-    err.classList.remove('hidden');
-    $('b-slug').focus();
+    toast('Choose your store link first, then come back to verify');
+    openSettings('store');
+    setTimeout(() => $('b-slug').focus(), 150);
     return;
   }
   const body = Object.fromEntries(['business_name', 'business_type', 'registration_number', 'contact_name', 'phone', 'website', 'monthly_volume', 'description'].map(k => [k, f.elements[k].value.trim()]));
@@ -1018,18 +1060,22 @@ async function submitKyb(e) {
 
 // ── Guided tour ──
 
-const TOUR = [
-  ['ov-banner', 'Verify your business', 'Submit your business details here. Your store goes live as soon as we approve them.'],
-  ['qa-brand', 'Make it yours', 'Pick your store name and address, upload your logo and choose your colours.'],
-  ['qa-prices', 'Set your prices', 'Add your markup on top of Velcro’s price, coin by coin. That margin is what you earn.'],
-  ['qa-share', 'Share your store', 'Copy your store link and send it to your customers. Every order lands in your dashboard.'],
+// A live store has its link to share; any other has verification to finish.
+const tourSteps = () => [
+  merchant.status === 'APPROVED'
+    ? ['ov-strip', 'Share your store', 'Copy your store link and send it to your customers. Every order lands in your dashboard.']
+    : ['ov-strip', 'Verify your business', 'Submit your business details here. Your store goes live as soon as we approve them.'],
+  ['tabbtn-settings', 'Make it yours', 'Pick your store name and address, upload your logo and choose your colours.'],
+  ['tabbtn-prices', 'Set your prices', 'Add your markup on top of Velcro’s price, coin by coin. That margin is what you earn.'],
 ];
+let TOUR = [];
 let tourIndex = -1;
 
 function startTour(force) {
   if (!force && tourIndex >= 0) return;
   $('avatar-menu').classList.add('hidden');
   openTab('overview');
+  TOUR = tourSteps();
   tourIndex = 0;
   setTimeout(showTourStep, 250);
 }
@@ -1053,10 +1099,8 @@ function showTourStep() {
     const th = tip.offsetHeight;
     const left = Math.max(16, Math.min(window.innerWidth - tw - 16, r.left + Math.min(r.width / 2, 120) - 40));
     const below = r.bottom + 14 + th < window.innerHeight;
-    tip.classList.toggle('is-above', !below);
     tip.style.left = left + window.scrollX + 'px';
     tip.style.top = (below ? r.bottom + 14 : r.top - th - 14) + window.scrollY + 'px';
-    tip.style.setProperty('--arrow', Math.max(16, Math.min(tw - 30, r.left + Math.min(r.width / 2, 120) - left - 7)) + 'px');
   }, 380);
 }
 

@@ -1,12 +1,13 @@
 // Merchant store page (/m/{slug}): the store's branding, live rates with the merchant's markup,
-// and customer sign-in (per store: password or Google). Talks to /api/merchant/storefront/{slug}
-// and /api/store/{slug}/*.
+// checkout, and customer sign-in (per store: password or Google). Talks to
+// /api/merchant/storefront/{slug} and /api/store/{slug}/*.
 
 const SLUG = (location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/) || [])[1] || '';
 const TOKEN_KEY = 'velcro_store_' + SLUG;
 const MERCHANT_TOKEN_KEY = 'velcro_merchant_token'; // lets a merchant preview their own store before approval
 const COIN_LOGOS = { BTC: '/logos/bitcoin.png', ETH: '/logos/ethereum.png', SOL: '/logos/solana.png', USDT: '/logos/usdt.png', USDC: '/logos/usdc.png' };
 const BUY_CHIPS = [10000, 50000, 100000, 500000];
+const RATE_REFRESH_MS = 60000;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
 const $ = id => document.getElementById(id);
@@ -15,10 +16,18 @@ let token = '';
 let me = null;
 let authMode = 'signin';
 let googleReady = false;
+let pendingTrade = false; // they tapped Buy/Sell before signing in; carry on once they have
 try { token = localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { /* private mode */ }
 
 const fmtNgn = v => '₦' + Number(v).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtCoin = (v, sym) => Number(v).toLocaleString('en-US', ['USDT', 'USDC'].includes(sym) ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 8 });
+const fmtDate = v => {
+  const s = String(v || '');
+  const d = new Date(/[zZ]$|[+-]\d\d:?\d\d$/.test(s) ? s : s.replace(' ', 'T') + 'Z');
+  return isNaN(d) ? '' : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+};
+const shortRef = r => { const s = String(r || ''); return s.length > 18 ? `${s.slice(0, 8)}…${s.slice(-6)}` : s; };
+const tradeTime = (sym, buying) => (sym === 'BTC' ? (buying ? '10–60 minutes' : '20–60 minutes') : 'A few minutes');
 
 function toast(msg) {
   const t = $('s-toast');
@@ -72,9 +81,10 @@ function paintLogo(el) {
 
 async function loadStore() {
   if (!SLUG) return showMissing();
+  let data;
   try {
     // Started in the page's <head>, so it is usually back by the time this script runs.
-    const data = await (window.storefrontRequest || api('/api/merchant/storefront/' + SLUG));
+    data = await (window.storefrontRequest || api('/api/merchant/storefront/' + SLUG));
     store.info = data.store;
     store.coins = data.coins || {};
     store.googleClientId = data.google_client_id;
@@ -87,28 +97,33 @@ async function loadStore() {
   document.documentElement.style.setProperty('--on-brand', s.button_text || onBrand(s.color));
   document.documentElement.style.setProperty('--on-brand-auto', onBrand(s.color));
   document.body.classList.add('s-layout-' + (s.layout || 'classic'));
-  if (s.welcome) document.querySelector('.s-lede').textContent = s.welcome;
   $('s-name').textContent = s.name;
-  $('s-eyebrow').textContent = `${s.name} · live rates`;
+  $('s-title').textContent = s.name;
+  if (s.welcome) {
+    $('s-lede').textContent = s.welcome;
+    $('s-lede').classList.add('has-welcome');
+  }
   document.querySelector('.s-ngn-store').textContent = s.name;
   $('s-foot-name').textContent = s.name;
   $('s-home').href = '/m/' + SLUG;
   paintLogo($('s-logo'));
   paintLogo($('auth-logo'));
-  paintBoard();
   if (s.support_url) {
     $('s-support').href = s.support_url;
     $('s-support').querySelector('span').textContent = `Need help? Chat with ${s.name}`;
     $('s-support').hidden = false;
-    $('s-nav-help').href = s.support_url;
-    $('s-nav-help').hidden = false;
   }
   $('s-preview').hidden = !s.is_owner_preview;
   $('s-loading').hidden = true;
   $('s-app').hidden = false;
+  // Older visits may have kept orders and an email in this browser; the account is the only record now.
+  try { localStorage.removeItem('velcro_recent_orders_' + SLUG); localStorage.removeItem('velcro_email'); } catch (e) { /* ignore */ }
   const coins = Object.values(store.coins);
   const first = preferredCoin(coins.filter(c => c.buy_on), 'buy') || preferredCoin(coins, 'buy') || coins[0];
+  initGoogle();
+  if (token) loadMe();
   if (!first) {
+    paintBoard();
     $('s-note').textContent = 'This store isn’t quoting any coins right now.';
     $('s-go').disabled = true;
     return;
@@ -116,8 +131,20 @@ async function loadStore() {
   store.side = first.buy_on ? 'buy' : 'sell';
   store.coin = first.symbol;
   setSide(store.side);
-  initGoogle();
-  if (token) loadMe();
+  // Keep the prices live while the page is open; sooner if these came from an older copy.
+  if (Number(data.rates_age) >= 60) setTimeout(refreshRates, 6000);
+  setInterval(refreshRates, RATE_REFRESH_MS);
+}
+
+async function refreshRates() {
+  if (document.hidden || !$('s-coin-list').hidden) return;
+  try {
+    const data = await api('/api/merchant/storefront/' + SLUG);
+    store.coins = data.coins || store.coins;
+    paintBoard();
+    paintCoin();
+    render();
+  } catch (e) { /* keep showing the last rates */ }
 }
 
 function showMissing() {
@@ -125,15 +152,14 @@ function showMissing() {
   $('s-missing').hidden = false;
 }
 
-// Today's rates: per $1, what the store sells at (customers buy) and buys at (customers sell).
-// Today's rates as one row of pills for the side the customer is on; a pill picks that coin.
+// Today's rates for the side the customer is on, per $1. Tapping one picks that coin.
 function paintBoard() {
   const side = store.side || 'buy';
   $('s-rates-side').textContent = side === 'buy' ? 'to buy, per $1' : 'to sell, per $1';
   $('s-board-rows').innerHTML = Object.values(store.coins).filter(c => c[side + '_on'] && c[side + '_rate']).map(c =>
-    `<button type="button" class="s-rate-pill" data-sym="${c.symbol}" aria-label="${side === 'buy' ? 'Buy' : 'Sell'} ${esc(c.symbol)} at ${fmtNgn(c[side + '_rate'])} per dollar"><img src="${COIN_LOGOS[c.symbol]}" alt=""><b>${esc(c.symbol)}</b><span>${fmtNgn(c[side + '_rate'])}</span></button>`
+    `<button type="button" class="s-rate" data-sym="${c.symbol}" aria-label="${side === 'buy' ? 'Buy' : 'Sell'} ${esc(c.symbol)} at ${fmtNgn(c[side + '_rate'])} per dollar"><span><img src="${COIN_LOGOS[c.symbol]}" alt="">${esc(c.symbol)}</span><b>${fmtNgn(c[side + '_rate'])}</b></button>`
   ).join('') || '<p class="s-rates-empty">No rates right now.</p>';
-  document.querySelectorAll('#s-board-rows .s-rate-pill').forEach(b => b.addEventListener('click', () => pickFromBoard(b.dataset.sym, side)));
+  document.querySelectorAll('#s-board-rows .s-rate').forEach(b => b.addEventListener('click', () => pickFromBoard(b.dataset.sym, side)));
   markBoard();
 }
 
@@ -145,13 +171,13 @@ function pickFromBoard(sym, side) {
   paintCoin();
   render();
   if (window.innerWidth < 960) document.querySelector('.s-trade').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  if (!isAnyAmountCoin(sym, side)) {
+  if (!isAnyAmountCoin(sym, side) && window.innerWidth >= 960) {
     setTimeout(() => $('f-in').focus({ preventScroll: true }), 300);
   }
 }
 
 function markBoard() {
-  document.querySelectorAll('#s-board-rows .s-rate-pill').forEach(b => b.classList.toggle('is-on', b.dataset.sym === store.coin));
+  document.querySelectorAll('#s-board-rows .s-rate').forEach(b => b.classList.toggle('is-on', b.dataset.sym === store.coin));
 }
 
 // Pick a coin that has a live positive rate first (USDT, USDC, BTC, ETH, SOL, or first available).
@@ -186,14 +212,11 @@ function setSide(side) {
   $('how-2-text').textContent = buying ? 'You get an account number for your order. Transfer from any Nigerian bank.' : 'You get a deposit address for your order. Send from any wallet or exchange.';
   $('how-3-title').textContent = buying ? 'Receive your crypto' : 'Get paid in naira';
   $('how-3-text').textContent = buying ? "It's sent to your wallet automatically. Follow every step and get a receipt by email." : 'Naira goes to your bank account automatically. Follow every step and get a receipt by email.';
-  $('s-dest-label').textContent = buying ? 'Delivered to' : 'Paid to';
-  $('s-dest').textContent = buying ? 'Your wallet' : 'Your bank account';
-  $('s-time').textContent = (store.coin === 'BTC' || store.coin === 'ETH')
-    ? 'Immediately after confirmation'
-    : 'A few minutes';
-  $('s-chips').innerHTML = buying ? BUY_CHIPS.map(v => `<button type="button" data-v="${v}">₦${v >= 1000 ? (v / 1000) + 'k' : v}</button>`).join('') : '';
-  document.querySelectorAll('#s-chips button').forEach(b => b.addEventListener('click', () => { $('f-in').value = Number(b.dataset.v).toLocaleString('en-NG'); render(); }));
+  $('s-dest').textContent = buying ? 'Delivered to your wallet' : 'Paid to your bank account';
+  $('s-chips').innerHTML = buying ? BUY_CHIPS.map(v => `<button type="button" data-v="${v}" aria-label="Pay ${fmtNgn(v)}">₦${v / 1000}k</button>`).join('') : '';
+  document.querySelectorAll('#s-chips button').forEach(b => b.addEventListener('click', () => { $('f-in').value = Number(b.dataset.v).toLocaleString('en-US'); render(); }));
   $('f-in').value = '';
+  paintBoard();
   paintCoin(available);
   render();
 }
@@ -209,7 +232,7 @@ function paintCoin(available) {
   const side = store.side;
   $('s-coin-list').innerHTML = (available || Object.values(store.coins).filter(x => x[side + '_on'])).map(x => {
     const rate = side === 'buy' ? x.buy_rate : x.sell_rate;
-    return `<li><button type="button" role="option" aria-selected="${x.symbol === store.coin}" data-sym="${x.symbol}"><img src="${COIN_LOGOS[x.symbol]}" alt=""><span><b>${esc(x.symbol)}</b><small>${esc(x.name)}</small></span><em>${rate ? '$1 = ' + fmtNgn(rate) : ''}</em></button></li>`;
+    return `<li><button type="button" role="option" aria-selected="${x.symbol === store.coin}" data-sym="${x.symbol}"><img src="${COIN_LOGOS[x.symbol]}" alt=""><span><b>${esc(x.symbol)}</b><small>${esc(x.name)}</small></span><em>${rate ? '$1 = ' + fmtNgn(rate) : 'Unavailable'}</em></button></li>`;
   }).join('');
   document.querySelectorAll('#s-coin-list button').forEach(b => b.addEventListener('click', () => {
     store.coin = b.dataset.sym;
@@ -226,43 +249,52 @@ function toggleCoins(open) {
   $('s-coin-btn').setAttribute('aria-expanded', String(show));
 }
 
+const amountEntered = () => Number(String($('f-in').value).replace(/,/g, '')) || 0;
+
+// Commas as they type, keeping the cursor where it was among the digits.
+function onAmountInput() {
+  const el = $('f-in');
+  const caret = el.selectionStart ?? el.value.length;
+  const digitsBefore = el.value.slice(0, caret).replace(/[^0-9.]/g, '').length;
+  const [whole, ...rest] = el.value.replace(/[^0-9.]/g, '').split('.');
+  const int = whole.replace(/^0+(?=\d)/, '').slice(0, 12);
+  const dec = rest.length ? '.' + rest.join('').slice(0, store.side === 'buy' ? 2 : 8) : '';
+  el.value = (int ? Number(int).toLocaleString('en-US') : (dec ? '0' : '')) + dec;
+  let seen = 0;
+  let pos = 0;
+  while (pos < el.value.length && seen < digitsBefore) {
+    if (/[0-9.]/.test(el.value[pos])) seen += 1;
+    pos += 1;
+  }
+  try { el.setSelectionRange(pos, pos); } catch (e) { /* not focused */ }
+  render();
+}
+
 function render() {
   const c = store.coins[store.coin];
   const buying = store.side === 'buy';
   const anyAmount = isAnyAmountCoin(store.coin, store.side);
-  paintBoard();
+  markBoard();
 
-  const fInWrap = $('f-in-wrap');
-  const fOutWrap = $('f-out-wrap');
-  const chipsWrap = $('s-chips');
-  const anyWrap = $('s-any-amount');
+  $('f-in-wrap').hidden = anyAmount;
+  $('f-out-wrap').hidden = anyAmount;
+  $('s-chips').hidden = !buying;
+  $('s-any-amount').hidden = !anyAmount;
+  if (anyAmount && c) $('s-any-coin').textContent = c.symbol;
 
-  if (fInWrap) fInWrap.hidden = anyAmount;
-  if (chipsWrap) chipsWrap.hidden = anyAmount || !buying;
-  if (fOutWrap) fOutWrap.hidden = anyAmount;
-  if (anyWrap) {
-    anyWrap.hidden = !anyAmount;
-    if (anyAmount && c) {
-      const anyCoin = $('s-any-coin');
-      if (anyCoin) anyCoin.textContent = c.symbol;
-    }
-  }
-
-  $('f-out').classList.toggle('is-empty', !(Number(String($('f-in').value).replace(/,/g, '')) > 0));
+  $('f-out').classList.toggle('is-empty', !(amountEntered() > 0));
   $('f-in-label').textContent = buying ? 'You pay' : 'You send';
   $('f-out-label').textContent = buying ? 'You get' : 'You receive';
   $('f-in-cur').textContent = buying ? 'NGN' : (c ? c.symbol : '');
   $('f-out-cur').textContent = buying ? (c ? c.symbol : '') : 'NGN';
   $('s-go').textContent = c ? `${buying ? 'Buy' : 'Sell'} ${c.symbol}` : 'Continue';
   $('s-note').textContent = '';
-  $('s-time').textContent = (c && (c.symbol === 'BTC' || c.symbol === 'ETH'))
-    ? 'Immediately after confirmation'
-    : 'A few minutes';
   if (!c) {
     $('s-note').textContent = `No coins to ${store.side} right now.`;
     $('s-go').disabled = true;
     return;
   }
+  $('s-time').textContent = tradeTime(c.symbol, buying);
   const rate = buying ? c.buy_rate : c.sell_rate;
   if (!rate || !c.usd_price) {
     $('s-coin-name').textContent = 'Rate unavailable right now';
@@ -278,7 +310,7 @@ function render() {
   $('s-coin-name').textContent = store.info.rate_display === 'breakdown' && base
     ? `$1 = ${fmtNgn(base)} + ${pct}% fee`
     : `$1 = ${fmtNgn(rate)}`;
-  const amount = Number(String($('f-in').value).replace(/,/g, '')) || 0;
+  const amount = amountEntered();
   if (buying) {
     // naira → $ at the store's rate → coin at its $ price
     $('f-out').textContent = amount > 0 ? fmtCoin(amount / rate / c.usd_price, c.symbol) : '0';
@@ -292,7 +324,7 @@ async function goTrade() {
   if (!c) return;
   const selling = store.side === 'sell';
   const anyAmount = isAnyAmountCoin(c.symbol, store.side);
-  let amount = Number(String($('f-in').value).replace(/,/g, '')) || 0;
+  let amount = amountEntered();
   if (anyAmount) {
     amount = 0;
   } else if (!(amount > 0)) {
@@ -300,7 +332,9 @@ async function goTrade() {
     $('f-in').focus();
     return;
   }
+  if (!me && token) await loadMe();
   if (!me) {
+    pendingTrade = true;
     openAuth('signin');
     return;
   }
@@ -315,11 +349,9 @@ async function goTrade() {
     toast(`${selling ? 'Selling' : 'Buying'} ${c.symbol} isn't available right now. Try again shortly.`);
     return;
   }
-  let savedEmail = '';
-  try { savedEmail = localStorage.getItem('velcro_email') || ''; } catch (e) {}
   checkout = {
     step: 'details', side: store.side, coin: c.symbol, provider: c.provider, amount, nets, network: nets[0].code,
-    wallet: '', banks, bank: '', account: '', accountName: '', email: (me && me.email) || savedEmail, order: null,
+    wallet: '', banks, bank: '', account: '', accountName: '', order: null,
   };
   renderCheckout();
 }
@@ -423,7 +455,7 @@ async function banksFor(provider) {
   return bankLists[key];
 }
 
-// ── Checkout (buy) ──
+// ── Checkout ──
 
 // Networks come from HostFi's own list, so the code we send is exactly the one it expects.
 const CHAIN_LABELS = { bitcoin: 'Bitcoin', ethereum: 'Ethereum', base: 'Base', bsc: 'BNB Chain', solana: 'Solana', polygon: 'Polygon', arbitrum: 'Arbitrum', optimism: 'Optimism', tron: 'Tron' };
@@ -530,16 +562,25 @@ async function hostfiSellNetworks(symbol) {
 }
 
 const PAJ_MINTS = { SOL: 'So11111111111111111111111111111111111111112' };
+const WAITING_STATUSES = ['AWAITING_DEPOSIT', 'PENDING', 'INITIATED'];
+const RECEIVED_STATUSES = ['DETECTED', 'RECEIVED', 'VERIFIED', 'CONFIRMED', 'PROCESSING', 'COMPLETED'];
+const ENDED_STATUSES = ['FAILED', 'CANCELLED', 'EXPIRED'];
 let checkout = null;
 let pollTimer = null;
 let expiryTimer = null;
 const ICON_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 const ICON_COPY = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
 const ICON_CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>';
+const ICON_DOWN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const ICON_SEARCH = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>';
 
-function showForm() {
+function stopTimers() {
   clearInterval(pollTimer);
   clearInterval(expiryTimer);
+}
+
+function showForm() {
+  stopTimers();
   checkout = null;
   $('s-checkout').hidden = true;
   $('s-form').hidden = false;
@@ -554,7 +595,9 @@ function renderCheckout() {
   else if (checkout.step === 'pay') box.innerHTML = selling ? sellPayHtml() : checkoutPayHtml();
   else if (checkout.step === 'orders') box.innerHTML = ordersHtml();
   wireCheckout();
-  if (checkout.step === 'details') setTimeout(() => { const f = $('co-wallet') || $('co-bank'); if (f && !f.value) f.focus(); }, 50);
+  const top = document.querySelector('.s-trade').getBoundingClientRect().top;
+  if (top < 0) window.scrollBy({ top: top - 12, behavior: 'smooth' });
+  if (checkout.step === 'details' && window.innerWidth >= 960) setTimeout(() => { const f = $('co-wallet'); if (f && !f.value) f.focus(); }, 50);
 }
 
 function estimateFor(symbol, ngn) {
@@ -572,16 +615,41 @@ function netLabel() {
   return (checkout.nets.find(n => n.code === checkout.network) || {}).label || '';
 }
 
+function netPickerHtml(label) {
+  const nets = checkout.nets;
+  if (nets.length < 2) return '';
+  return `<span class="s-label">${label}</span><div class="s-seg" data-cols="${nets.length === 2 ? '2' : '3'}">${nets.map(n => {
+    const logo = getChainLogo(n.chain || n.code || n.label);
+    return `<button type="button" data-net="${esc(n.code)}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon" onerror="this.style.display='none'">` : ''}<span>${esc(n.label)}</span></button>`;
+  }).join('')}</div>`;
+}
+
+const bankRow = (label, value, copy, cls = '') => `<div><div class="s-bank-k"><span>${label}</span><b class="${cls}">${value}</b></div>${copy ? `<button type="button" class="s-copy" data-copy="${esc(copy)}" aria-label="Copy ${label}">${ICON_COPY}Copy</button>` : ''}</div>`;
+
+const orderFootHtml = o => `<p class="s-order-ref">Order <button type="button" data-copy="${esc(o.reference)}" title="Copy order number"><code>${esc(shortRef(o.reference))}</code></button> · your receipt goes to ${esc(me ? me.email : 'your email')}</p>`;
+
+// Where an order stands. An account or address past its time is never shown as payable.
+function orderState(o) {
+  const waiting = WAITING_STATUSES.includes(o.status);
+  const lapsed = waiting && o.expiresAt > 0 && Date.now() > o.expiresAt;
+  return { waiting: waiting && !lapsed, ended: lapsed || ENDED_STATUSES.includes(o.status), done: o.status === 'COMPLETED' };
+}
+
+function endedHtml(o) {
+  const sell = o.side === 'sell';
+  const s = store.info;
+  const help = s.support_url ? `<a href="${esc(s.support_url)}" target="_blank" rel="noopener">Chat with ${esc(s.name)}</a>` : `Contact ${esc(s.name)}`;
+  if (o.status === 'FAILED') return `<div class="s-ended"><b>This order didn't go through</b>${help} if you've already ${sell ? 'sent your crypto' : 'paid'}.</div>`;
+  return `<div class="s-ended"><b>This order has expired</b>Don't ${sell ? 'send anything to this address' : 'pay into this account'}. Start a new order instead. Already ${sell ? 'sent it' : 'paid'}? ${help}.</div>`;
+}
+
 function toggleBankDropdown(open) {
   const dd = $('co-bank-dropdown');
   const btn = $('co-bank-btn');
-  const bd = $('co-bank-backdrop');
   if (!dd || !btn) return;
-  const isHidden = dd.hidden;
-  const show = typeof open === 'boolean' ? open : isHidden;
+  const show = typeof open === 'boolean' ? open : dd.hidden;
   dd.hidden = !show;
   btn.setAttribute('aria-expanded', String(show));
-  if (bd) bd.hidden = !show;
   if (show) {
     renderBankList($('co-bank-search')?.value || '');
     setTimeout(() => $('co-bank-search')?.focus({ preventScroll: true }), 50);
@@ -621,24 +689,10 @@ function renderBankList(query) {
   const q = String(query || '').toLowerCase().trim();
   const banks = (checkout.banks || []).filter(b => !q || b.name.toLowerCase().includes(q) || b.code.includes(q));
   if (!banks.length) {
-    listEl.innerHTML = `
-      <div class="s-bank-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <span>No banks found matching "${esc(query)}"</span>
-      </div>`;
+    listEl.innerHTML = `<div class="s-bank-empty">No banks found matching "${esc(query)}"</div>`;
     return;
   }
-  listEl.innerHTML = banks.map(b => {
-    const isSelected = b.id === checkout.bank;
-    return `
-      <button type="button" role="option" class="s-bank-item${isSelected ? ' is-selected' : ''}" data-bid="${esc(b.id)}">
-        <span class="s-bank-item-left">
-          <svg class="s-bank-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/></svg>
-          <span class="s-bank-item-name">${esc(b.name)}</span>
-        </span>
-        ${isSelected ? `<svg class="s-bank-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 5 5L20 7"/></svg>` : ''}
-      </button>`;
-  }).join('');
+  listEl.innerHTML = banks.map(b => `<button type="button" role="option" class="s-bank-item${b.id === checkout.bank ? ' is-selected' : ''}" data-bid="${esc(b.id)}"><span>${esc(b.name)}</span>${b.id === checkout.bank ? ICON_CHECK : ''}</button>`).join('');
   listEl.querySelectorAll('.s-bank-item').forEach(btn => {
     btn.onclick = (e) => {
       e.stopPropagation();
@@ -654,9 +708,10 @@ document.addEventListener('click', e => {
   }
 });
 
+const nameOkHtml = name => `<div class="s-name-ok">${ICON_CHECK}<span>${esc(name)}</span></div>`;
+
 function sellDetailsHtml() {
   const c = store.coins[checkout.coin];
-  const nets = checkout.nets;
   const isAny = isAnyAmountCoin(c.symbol, checkout.side) || !(checkout.amount > 0);
   const est = checkout.amount > 0 ? payoutFor(c.symbol, checkout.amount) : 0;
   const currentBank = (checkout.banks || []).find(b => b.id === checkout.bank);
@@ -667,95 +722,67 @@ function sellDetailsHtml() {
     <h2 class="s-co-title">Sell ${esc(c.symbol)}</h2>
     <div class="s-co-sum">
       <div><span>You send</span><b>${isAny ? `Any amount of ${esc(c.symbol)}` : `${fmtCoin(checkout.amount, c.symbol)} ${esc(c.symbol)}`}</b></div>
-      <div><span>You receive about</span><b>${est > 0 ? fmtNgn(est) : 'Calculated on arrival'}</b></div>
+      <div><span>You receive about</span><b>${est > 0 ? fmtNgn(est) : 'Worked out on arrival'}</b></div>
     </div>
-    ${nets.length > 1 ? `<span class="s-label">Network you'll send on</span><div class="s-seg" data-cols="${nets.length === 2 ? '2' : '3'}">${nets.map(n => {
-      const logo = getChainLogo(n.chain || n.code || n.label);
-      return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon" onerror="this.style.display='none'">` : ''}<span>${esc(n.label)}</span></button>`;
-    }).join('')}</div>` : ''}
+    ${netPickerHtml("Network you'll send on")}
 
-    <label class="s-label" id="co-bank-label">Your bank</label>
+    <span class="s-label" id="co-bank-label">Your bank</span>
     <div class="s-bank-select" id="co-bank-wrap">
-      <button type="button" class="s-bank-trigger" id="co-bank-btn" aria-haspopup="listbox" aria-expanded="false" onclick="toggleBankDropdown()">
-        <span class="s-bank-trigger-info">
-          <svg class="s-bank-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/></svg>
-          <span id="co-bank-selected" class="${selectedBankName ? 'has-bank' : 'is-empty'}">${esc(selectedBankName || 'Choose your bank')}</span>
-        </span>
-        <svg class="s-bank-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      <button type="button" class="s-bank-trigger" id="co-bank-btn" aria-labelledby="co-bank-label" aria-haspopup="listbox" aria-expanded="false" onclick="toggleBankDropdown()">
+        <span id="co-bank-selected" class="${selectedBankName ? 'has-bank' : 'is-empty'}">${esc(selectedBankName || 'Choose your bank')}</span>
+        ${ICON_DOWN}
       </button>
-
       <div class="s-bank-dropdown" id="co-bank-dropdown" hidden>
         <div class="s-bank-search-bar">
-          <svg class="s-bank-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="co-bank-search" placeholder="Search Nigerian banks…" autocomplete="off" autocorrect="off" spellcheck="false" oninput="filterBanks(this.value)">
+          ${ICON_SEARCH}
+          <input type="text" id="co-bank-search" placeholder="Search banks" aria-label="Search banks" autocomplete="off" autocorrect="off" spellcheck="false" oninput="filterBanks(this.value)">
           <button type="button" class="s-bank-search-clear" id="co-bank-clear" onclick="clearBankSearch()" hidden aria-label="Clear search">✕</button>
         </div>
         <div class="s-bank-list" id="co-bank-list" role="listbox"></div>
       </div>
-      <div class="s-bank-backdrop" id="co-bank-backdrop" onclick="toggleBankDropdown(false)" hidden></div>
     </div>
 
     <label class="s-label" for="co-acct">Account number</label>
     <input id="co-acct" class="s-input s-mono" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="10 digits" value="${esc(checkout.account)}">
-    <div id="co-name" class="s-name-box">
-      ${checkout.accountName ? `
-        <div class="s-name-verified">
-          <div class="s-name-verified-badge">
-            ${ICON_CHECK}
-            <span>VERIFIED ACCOUNT</span>
-          </div>
-          <div class="s-name-verified-title">${esc(checkout.accountName)}</div>
-        </div>
-      ` : `
-        <p class="s-name-default">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-          <span>We check the name on the account before you send anything.</span>
-        </p>
-      `}
-    </div>
-
-    <label class="s-label" for="co-email">Your email <small style="font-weight:500;color:var(--muted);">(for payment receipt & updates)</small></label>
-    <input id="co-email" type="email" class="s-input" autocomplete="email" placeholder="you@example.com" value="${esc(checkout.email || (me ? me.email : ''))}">
+    <div id="co-name" class="s-name-box">${checkout.accountName ? nameOkHtml(checkout.accountName) : 'We check the name on the account before you send anything.'}</div>
 
     <p id="co-error" class="s-error" hidden></p>
-    <button type="button" class="s-btn-brand s-go" data-act="create"${checkout.accountName ? '' : ' disabled'}>Get deposit address</button>
+    <button type="button" class="s-btn s-go" data-act="create"${checkout.accountName ? '' : ' disabled'}>Get deposit address</button>
     <p class="s-trust">Naira is paid only to an account in the name shown above.</p>`;
 }
 
 function sellPayHtml() {
   const o = checkout.order;
-  const done = o.status === 'COMPLETED';
-  const waiting = o.status === 'AWAITING_DEPOSIT';
+  const { waiting, ended, done } = orderState(o);
   const amount = o.sendAmount ? `${fmtCoin(o.sendAmount, o.coin)} ${esc(o.coin)}` : esc(o.coin);
+  const title = done ? 'Naira paid'
+    : ended ? (o.status === 'FAILED' ? "Order didn't go through" : 'Order expired')
+    : waiting ? (o.claimed ? `Confirming your ${esc(o.coin)}` : (o.sendAmount ? `Send ${amount}` : `Send ${esc(o.coin)}`))
+    : `Selling ${esc(o.coin)}`;
   return `
-    <button type="button" class="s-back" data-act="back">${ICON_BACK}${done ? 'New order' : 'Back'}</button>
-    <h2 class="s-co-title">${done ? 'Naira paid' : waiting ? (o.claimed ? `Confirming your ${esc(o.coin)}` : (o.sendAmount ? `Send ${amount}` : `Send ${esc(o.coin)}`)) : `Selling ${esc(o.coin)}`}</h2>
-    ${!waiting ? '' : o.claimed && !o.showDetails ? checkingHtml(o, `your ${amount}`) : `
+    <button type="button" class="s-back" data-act="back">${ICON_BACK}Back</button>
+    <h2 class="s-co-title">${title}</h2>
+    ${ended ? endedHtml(o) : !waiting ? '' : o.claimed && !o.showDetails ? checkingHtml(o, `your ${amount}`) : `
     <p class="s-co-lede">Send ${o.exact ? 'exactly this amount' : (o.sendAmount ? 'your ' + esc(o.coin) : 'any amount of ' + esc(o.coin))} to the address below${o.network ? `, on the <b>${esc(o.network)}</b> network` : ''}. We'll detect it automatically.</p>
     <div class="s-bank">
-      <div><span>Address</span><b class="s-mono">${esc(o.address)}</b><button type="button" class="s-copy" data-copy="${esc(o.address)}">${ICON_COPY}Copy</button></div>
-      ${o.memo ? `<div><span>Memo</span><b class="s-mono">${esc(o.memo)}</b><button type="button" class="s-copy" data-copy="${esc(o.memo)}">${ICON_COPY}Copy</button></div>` : ''}
-      <div><span>Amount</span><b>${o.sendAmount ? amount : 'Any amount'}</b>${o.sendAmount ? `<button type="button" class="s-copy" data-copy="${esc(String(o.sendAmount))}">${ICON_COPY}Copy</button>` : ''}</div>
-      ${o.payTo ? `<div><span>Paid to</span><b>${esc(o.payTo)}</b></div>` : ''}
-      <div><span>Usually takes</span><b>${(o.coin === 'BTC' || o.coin === 'ETH') ? 'Immediately after confirmation' : 'A few minutes'}</b></div>
+      ${bankRow('Address', esc(o.address), o.address, 's-mono')}
+      ${o.memo ? bankRow('Memo', esc(o.memo), o.memo, 's-mono') : ''}
+      ${o.sendAmount ? bankRow('Amount', amount, String(o.sendAmount)) : ''}
+      ${o.payTo ? bankRow('Paid to', esc(o.payTo)) : ''}
     </div>
     <p class="s-expiry" id="co-expiry"></p>
-    ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn-brand s-go" data-act="paid">I’ve sent the ${esc(o.coin)}</button>
+    ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn s-go" data-act="paid">I’ve sent the ${esc(o.coin)}</button>
     <p class="s-hint s-center-text">Tap this once it has left your wallet.</p>`}`}
+    <div class="s-tear" aria-hidden="true"></div>
     <ol class="s-progress" id="co-steps">${sellProgressHtml(o)}</ol>
-    <div class="s-co-foot-actions">
-      <button type="button" class="s-orders-nav-link" onclick="showOrders()">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        <span>View all my orders</span>
-      </button>
-    </div>
-    <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me ? me.email : '')}.</p>`;
+    ${done ? '<button type="button" class="s-btn s-go" data-act="new">Start a new order</button>' : ''}
+    ${orderFootHtml(o)}`;
 }
 
 // Sell steps: waiting for the coin → received → paying the bank → paid.
 function sellProgressHtml(o) {
   const p = o.progress || {};
-  const received = ['DETECTED', 'RECEIVED', 'VERIFIED', 'CONFIRMED', 'PROCESSING', 'COMPLETED'].includes(o.status) || !!p.amount;
+  const received = RECEIVED_STATUSES.includes(o.status) || !!p.amount;
   const paying = received && (p.payout === 'pending' || p.converted === 'done' || o.status === 'PROCESSING');
   const paid = p.payout === 'done' || o.status === 'COMPLETED';
   const steps = [
@@ -831,20 +858,16 @@ function checkAccountName() {
   clearTimeout(nameTimer);
 
   if (!checkout.bank) {
-    out.innerHTML = `<p class="s-name-default"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span>Choose your bank above to check the account.</span></p>`;
+    out.textContent = 'Choose your bank above to check the account.';
     return;
   }
 
   if (checkout.account.length < 10) {
-    out.innerHTML = `<p class="s-name-default"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span>Enter your 10-digit account number.</span></p>`;
+    out.textContent = 'Enter your 10-digit account number.';
     return;
   }
 
-  out.innerHTML = `
-    <div class="s-name-loading">
-      <span class="s-spinner" aria-hidden="true"></span>
-      <span>Verifying account name…</span>
-    </div>`;
+  out.innerHTML = '<div class="s-name-wait"><span class="s-spinner" aria-hidden="true"></span>Checking the account…</div>';
 
   const bank = (checkout.banks || []).find(b => b.id === checkout.bank) || {};
   const currentKey = checkout.bank + ':' + checkout.account;
@@ -856,26 +879,11 @@ function checkAccountName() {
       if (!resolvedName) throw new Error('We couldn’t find that account. Check the number and bank.');
 
       checkout.accountName = resolvedName;
-      out.innerHTML = `
-        <div class="s-name-verified">
-          <div class="s-name-verified-badge">
-            ${ICON_CHECK}
-            <span>VERIFIED ACCOUNT</span>
-          </div>
-          <div class="s-name-verified-title">${esc(checkout.accountName)}</div>
-        </div>`;
+      out.innerHTML = nameOkHtml(checkout.accountName);
       if (go) go.disabled = false;
     } catch (e) {
       if (currentKey !== checkout.bank + ':' + checkout.account) return;
-      const errMsg = e.message || 'We couldn’t verify this account.';
-      out.innerHTML = `
-        <div class="s-name-error-box">
-          <div class="s-name-error-msg">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span>${esc(errMsg)}</span>
-          </div>
-          <p class="s-name-manual-hint">Naira is only paid to an account we can verify. Check the details, or try again in a moment.</p>
-        </div>`;
+      out.innerHTML = `<div class="s-name-bad">${esc(e.message || 'We couldn’t verify this account.')}<small>Naira is only paid to an account we can verify. Check the details, or try again in a moment.</small></div>`;
     }
   }, 500);
 }
@@ -888,32 +896,19 @@ async function createSell() {
   const btn = $('s-checkout').querySelector('[data-act="create"]');
   btn.disabled = true;
   btn.textContent = 'Creating your order…';
-  const emailInput = $('co-email');
-  const emailVal = emailInput ? emailInput.value.trim() : (checkout.email || '');
-  checkout.email = emailVal;
-  try { if (emailVal) localStorage.setItem('velcro_email', emailVal); } catch (e) {}
-  const myEmail = emailVal || (me && me.email) || '';
-  if (!myEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(myEmail)) {
-    err.textContent = 'Please enter a valid email address so we can send your receipt.';
-    err.hidden = false;
-    btn.disabled = false;
-    btn.textContent = 'Get deposit address';
-    emailInput?.focus();
-    return;
-  }
-  const base = { side: 'sell', coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT', network: netLabel(), payTo: `${checkout.accountName} · ${bank.name}`, email: myEmail, progress: {} };
+  const base = { side: 'sell', coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT', network: netLabel(), payTo: `${checkout.accountName} · ${bank.name}`, progress: {} };
   try {
     if (checkout.provider === 'hostfi') {
-      const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, email: myEmail, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount || 0 } });
+      const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount || 0 } });
       checkout.order = { ...base, reference: d.reference, address: d.address, memo: d.memo, sendAmount: checkout.amount > 0 ? checkout.amount : null, exact: false, expiresAt: Date.now() + (d.expires_in || 3600) * 1000 };
     } else if (checkout.provider === 'paj') {
-      const d = await api('/api/paj/sell', { method: 'POST', body: { store: SLUG, email: myEmail, fiatAmount: Math.floor(payoutFor(checkout.coin, checkout.amount)), mint: PAJ_MINTS[checkout.coin], bank: bank.id, accountNumber: checkout.account } });
+      const d = await api('/api/paj/sell', { method: 'POST', body: { store: SLUG, fiatAmount: Math.floor(payoutFor(checkout.coin, checkout.amount)), mint: PAJ_MINTS[checkout.coin], bank: bank.id, accountNumber: checkout.account } });
       checkout.order = { ...base, reference: d.id, address: d.address, sendAmount: Number(d.amount) || checkout.amount, exact: true, expiresAt: Date.now() + 3600 * 1000 };
     } else {
       const d = await api('/api/initiate', {
         method: 'POST',
         body: {
-          store: SLUG, email: myEmail, direction: 'OFFRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network,
+          store: SLUG, direction: 'OFFRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network,
           beneficiary: { holder_type: 'INDIVIDUAL', holder_name: checkout.accountName, account_number: checkout.account, bank_code: bank.code },
         },
       });
@@ -923,7 +918,6 @@ async function createSell() {
         sendAmount: Number((d.source || {}).amount) || checkout.amount, exact: true, expiresAt: Date.now() + 3600 * 1000,
       };
     }
-    saveRecentOrder(checkout.order);
     checkout.step = 'pay';
     renderCheckout();
     startPolling();
@@ -938,66 +932,58 @@ async function createSell() {
 function checkoutDetailsHtml() {
   const c = store.coins[checkout.coin];
   const nets = checkout.nets;
+  const est = estimateFor(c.symbol, checkout.amount);
   return `
     <button type="button" class="s-back" data-act="back">${ICON_BACK}Back</button>
     <h2 class="s-co-title">Buy ${esc(c.symbol)}</h2>
     <div class="s-co-sum">
       <div><span>You pay</span><b>${fmtNgn(checkout.amount)}</b></div>
-      <div><span>You get about</span><b>${estimateFor(c.symbol, checkout.amount) > 0 ? `${fmtCoin(estimateFor(c.symbol, checkout.amount), c.symbol)} ${esc(c.symbol)}` : 'Shown next'}</b></div>
+      <div><span>You get about</span><b>${est > 0 ? `${fmtCoin(est, c.symbol)} ${esc(c.symbol)}` : 'Shown next'}</b></div>
     </div>
-    ${nets.length > 1 ? `<span class="s-label">Network</span><div class="s-seg" data-cols="${nets.length === 2 ? '2' : '3'}">${nets.map(n => {
-      const logo = getChainLogo(n.chain || n.code);
-      return `<button type="button" data-net="${n.code}" aria-pressed="${n.code === checkout.network}">${logo ? `<img src="${logo}" alt="" class="s-net-icon" onerror="this.style.display='none'">` : ''}<span>${esc(n.label)}</span></button>`;
-    }).join('')}</div>` : ''}
-    <label class="s-label" for="co-wallet">Your ${esc(c.symbol)} wallet address${nets.length === 1 ? '' : ` on ${esc((nets.find(n => n.code === checkout.network) || {}).label || '')}`}</label>
+    ${netPickerHtml('Network')}
+    <label class="s-label" for="co-wallet">Your ${esc(c.symbol)} wallet address${nets.length === 1 ? '' : ` on ${esc(netLabel())}`}</label>
     <input id="co-wallet" class="s-input s-mono" autocomplete="off" spellcheck="false" placeholder="Paste your address" value="${esc(checkout.wallet)}">
     <p class="s-hint">Double-check it. Crypto sent to the wrong address can't be recovered.</p>
-
-    <label class="s-label" for="co-email">Your email <small style="font-weight:500;color:var(--muted);">(for payment receipt & updates)</small></label>
-    <input id="co-email" type="email" class="s-input" autocomplete="email" placeholder="you@example.com" value="${esc(checkout.email || (me ? me.email : ''))}">
-
     <p id="co-error" class="s-error" hidden></p>
-    <button type="button" class="s-btn-brand s-go" data-act="create">Get payment details</button>
-    <p class="s-trust">The network fee is taken from the ${esc(c.symbol)} you receive. Your final amount is shown on the next step.</p>`;
+    <button type="button" class="s-btn s-go" data-act="create">Get payment details</button>
+    <p class="s-trust">The network fee is taken from the ${esc(c.symbol)} you receive.</p>`;
 }
 
 function checkoutPayHtml() {
   const o = checkout.order;
-  const done = o.status === 'COMPLETED';
-  const waiting = o.status === 'AWAITING_DEPOSIT';
+  const { waiting, ended, done } = orderState(o);
+  const title = done ? `${esc(o.coin)} sent`
+    : ended ? (o.status === 'FAILED' ? "Order didn't go through" : 'Order expired')
+    : waiting ? (o.claimed ? 'Confirming your payment' : `Transfer ${fmtNgn(o.amount)}`)
+    : `Buying ${esc(o.coin)}`;
   return `
-    <button type="button" class="s-back" data-act="back">${ICON_BACK}${done ? 'New order' : 'Back'}</button>
-    <h2 class="s-co-title">${done ? `${esc(o.coin)} sent` : waiting ? (o.claimed ? 'Confirming your payment' : `Transfer ${fmtNgn(o.amount)}`) : `Buying ${esc(o.coin)}`}</h2>
-    ${!waiting ? '' : o.claimed && !o.showDetails ? checkingHtml(o, `your ${fmtNgn(o.amount)} transfer`) : `
+    <button type="button" class="s-back" data-act="back">${ICON_BACK}Back</button>
+    <h2 class="s-co-title">${title}</h2>
+    ${ended ? endedHtml(o) : !waiting ? '' : o.claimed && !o.showDetails ? checkingHtml(o, `your ${fmtNgn(o.amount)} transfer`) : `
     <p class="s-co-lede">Send exactly this amount from any Nigerian bank to the account below. We'll detect it automatically.</p>
     <div class="s-bank">
-      <div><span>Bank</span><b>${esc(o.bank)}</b></div>
-      <div><span>Account number</span><b class="s-mono">${esc(o.account)}</b><button type="button" class="s-copy" data-copy="${esc(o.account)}">${ICON_COPY}Copy</button></div>
-      <div><span>Account name</span><b>${esc(o.accountName)}</b></div>
-      <div><span>Amount</span><b>${fmtNgn(o.amount)}</b><button type="button" class="s-copy" data-copy="${esc(String(o.amount))}">${ICON_COPY}Copy</button></div>
+      ${bankRow('Account number', esc(o.account), o.account, 'is-big')}
+      ${bankRow('Bank', esc(o.bank))}
+      ${bankRow('Account name', esc(o.accountName))}
+      ${bankRow('Amount', fmtNgn(o.amount), String(o.amount))}
     </div>
     <p class="s-expiry" id="co-expiry"></p>
-    ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn-brand s-go" data-act="paid">I’ve sent the money</button>
+    ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn s-go" data-act="paid">I’ve sent the money</button>
     <p class="s-hint s-center-text">Tap this once your transfer has gone through.</p>`}`}
+    <div class="s-tear" aria-hidden="true"></div>
     <ol class="s-progress" id="co-steps">${progressHtml(o)}</ol>
-    <div class="s-co-foot-actions">
-      <button type="button" class="s-orders-nav-link" onclick="showOrders()">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        <span>View all my orders</span>
-      </button>
-    </div>
-    <p class="s-trust">Order ${esc(o.reference)} · you'll get a receipt at ${esc(me ? me.email : '')}.</p>`;
+    ${done ? '<button type="button" class="s-btn s-go" data-act="new">Start a new order</button>' : ''}
+    ${orderFootHtml(o)}`;
 }
 
 // After "I've sent it": what we're waiting for, how long we've been looking, and where they'll hear.
 function checkingHtml(o, what) {
-  const displayEmail = (o && o.email) || checkout.email || (me && me.email) || 'your email';
   return `
     <div class="s-checking">
       <span class="s-checking-ring" aria-hidden="true"></span>
       <div>
         <b>Checking for ${what}</b>
-        <p>Most ${o.side === 'sell' ? 'deposits' : 'transfers'} show up within 1–5 minutes. You can leave this page; we'll email you at ${esc(displayEmail)} at each step.</p>
+        <p>Most ${o.side === 'sell' ? 'deposits' : 'transfers'} show up within 1–5 minutes. You can leave this page; we'll email you at ${esc(me ? me.email : 'your email')} at each step.</p>
         <span class="s-checking-time" id="co-checking"></span>
       </div>
     </div>
@@ -1012,7 +998,7 @@ function paidAt(ref) {
 // Steps from the order's live status: waiting → received → converting/sending → sent → confirmed.
 function progressHtml(o) {
   const p = o.progress || {};
-  const received = ['DETECTED', 'RECEIVED', 'VERIFIED', 'CONFIRMED', 'PROCESSING', 'COMPLETED'].includes(o.status) || !!p.amount;
+  const received = RECEIVED_STATUSES.includes(o.status) || !!p.amount;
   const sent = p.payout === 'sent' || p.payout === 'done' || o.status === 'COMPLETED';
   const confirmed = p.payout === 'done' || o.status === 'COMPLETED';
   const steps = [
@@ -1030,7 +1016,8 @@ function progressHtml(o) {
 
 function wireCheckout() {
   const box = $('s-checkout');
-  box.querySelectorAll('[data-act="back"]').forEach(b => b.onclick = () => (checkout.step === 'pay' || checkout.step === 'orders') ? showForm() : showForm());
+  box.querySelectorAll('[data-act="back"]').forEach(b => b.onclick = () => (checkout.from === 'orders' ? showOrders() : showForm()));
+  box.querySelectorAll('[data-act="new"]').forEach(b => b.onclick = showForm);
   box.querySelectorAll('[data-net]').forEach(b => b.onclick = () => {
     if ($('co-wallet')) checkout.wallet = $('co-wallet').value.trim();
     if ($('co-acct')) checkout.account = $('co-acct').value.replace(/\D/g, '').slice(0, 10);
@@ -1040,11 +1027,6 @@ function wireCheckout() {
   if ($('co-acct')) {
     $('co-acct').oninput = checkAccountName;
     $('co-acct').onpaste = () => setTimeout(checkAccountName, 50);
-  }
-  const emInput = $('co-email');
-  if (emInput) {
-    emInput.oninput = () => { checkout.email = emInput.value.trim(); try { localStorage.setItem('velcro_email', checkout.email); } catch (e) {} };
-    emInput.onchange = () => { checkout.email = emInput.value.trim(); try { localStorage.setItem('velcro_email', checkout.email); } catch (e) {} };
   }
   box.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
     try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copied'); } catch (e) { toast(b.dataset.copy); }
@@ -1090,24 +1072,11 @@ async function createBuy() {
   const btn = $('s-checkout').querySelector('[data-act="create"]');
   btn.disabled = true;
   btn.textContent = 'Creating your order…';
-  const emailInput = $('co-email');
-  const emailVal = emailInput ? emailInput.value.trim() : (checkout.email || '');
-  checkout.email = emailVal;
-  try { if (emailVal) localStorage.setItem('velcro_email', emailVal); } catch (e) {}
-  const myEmail = emailVal || (me && me.email) || '';
-  if (!myEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(myEmail)) {
-    err.textContent = 'Please enter a valid email address so we can send your receipt.';
-    err.hidden = false;
-    btn.disabled = false;
-    btn.textContent = 'Get payment details';
-    emailInput?.focus();
-    return;
-  }
   try {
     if (checkout.provider === 'switch') {
       const d = await api('/api/initiate', {
         method: 'POST',
-        body: { store: SLUG, email: myEmail, direction: 'ONRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network, wallet_address: wallet },
+        body: { store: SLUG, direction: 'ONRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network, wallet_address: wallet },
       });
       const dep = d.deposit || {};
       checkout.order = {
@@ -1115,19 +1084,18 @@ async function createBuy() {
         bank: dep.bank_name || '', account: dep.account_number || '', accountName: dep.account_name || 'Velcro checkout', expiresAt: Date.now() + 3600 * 1000, progress: {},
       };
     } else if (checkout.provider === 'paj') {
-      const d = await api('/api/paj/initiate', { method: 'POST', body: { store: SLUG, email: myEmail, fiatAmount: checkout.amount, recipient: wallet, mint: PAJ_MINTS[checkout.coin] } });
+      const d = await api('/api/paj/initiate', { method: 'POST', body: { store: SLUG, fiatAmount: checkout.amount, recipient: wallet, mint: PAJ_MINTS[checkout.coin] } });
       checkout.order = {
         reference: d.id, coin: checkout.coin, amount: Number(d.fiatAmount) > 0 ? Number(d.fiatAmount) : checkout.amount, status: 'AWAITING_DEPOSIT',
         bank: d.bank || 'PAJ Partner Bank', account: d.accountNumber || '', accountName: d.accountName || '', expiresAt: Date.now() + 3600 * 1000, progress: {},
       };
     } else {
-      const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, email: myEmail, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });
+      const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });
       checkout.order = {
         reference: d.reference, coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT',
         bank: d.bank_name, account: d.account_number, accountName: d.account_name, expiresAt: Date.now() + (d.expires_in || 3600) * 1000, progress: {},
       };
     }
-    saveRecentOrder(checkout.order);
     checkout.step = 'pay';
     renderCheckout();
     startPolling();
@@ -1140,8 +1108,7 @@ async function createBuy() {
 }
 
 function startPolling(every = 5000) {
-  clearInterval(pollTimer);
-  clearInterval(expiryTimer);
+  stopTimers();
   const o = checkout.order;
   if (!o.claimed) o.claimed = paidAt(o.reference);
   if (o.claimed) every = 3000;
@@ -1151,11 +1118,16 @@ function startPolling(every = 5000) {
       const s2 = Math.max(0, Math.floor((Date.now() - o.claimed) / 1000));
       chk.textContent = `Checking for ${Math.floor(s2 / 60)}:${String(s2 % 60).padStart(2, '0')}`;
     }
+    if (!o.expiresAt || !WAITING_STATUSES.includes(o.status)) return;
+    const left = Math.floor((o.expiresAt - Date.now()) / 1000);
+    if (left < 0) {
+      // Time's up: take the account or address off the screen.
+      clearInterval(expiryTimer);
+      if (checkout && checkout.order === o) renderCheckout();
+      return;
+    }
     const el = $('co-expiry');
-    if (!el || !o.expiresAt) return;
-    const left = Math.max(0, Math.floor((o.expiresAt - Date.now()) / 1000));
-    const what = o.side === 'sell' ? 'address' : 'account';
-    el.textContent = left > 0 ? `This ${what} is for this order only and expires in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : `This ${what} has expired. Start a new order if you haven’t ${o.side === 'sell' ? 'sent anything' : 'paid'}.`;
+    if (el) el.textContent = `This ${o.side === 'sell' ? 'address' : 'account'} is for this order only and expires in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
   };
   tickExpiry();
   expiryTimer = setInterval(tickExpiry, 1000);
@@ -1169,13 +1141,13 @@ function startPolling(every = 5000) {
         explorer_url: t.explorer_url || null,
         payout_amount: Number(t.destination_amount) || null,
       };
-      if (o.status !== 'AWAITING_DEPOSIT') {
+      if (!WAITING_STATUSES.includes(o.status)) {
         clearInterval(expiryTimer);
         try { localStorage.removeItem(PAID_KEY(o.reference)); } catch (e) { /* ignore */ }
       }
-      if (['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'].includes(o.status)) clearInterval(pollTimer);
-      // Paid (or finished): redraw without the bank details.
-      if (was !== o.status && (was === 'AWAITING_DEPOSIT' || o.status === 'COMPLETED')) {
+      if (o.status === 'COMPLETED' || ENDED_STATUSES.includes(o.status)) clearInterval(pollTimer);
+      // Paid or finished: redraw without the bank details.
+      if (was !== o.status && (WAITING_STATUSES.includes(was) || o.status === 'COMPLETED' || ENDED_STATUSES.includes(o.status))) {
         if (checkout && checkout.order === o) renderCheckout();
         return;
       }
@@ -1187,64 +1159,26 @@ function startPolling(every = 5000) {
   pollTimer = setInterval(poll, every);
 }
 
-// ── My orders & Recent Cache ──
-
-function saveRecentOrder(order) {
-  if (!order || !order.reference) return;
-  try {
-    const key = 'velcro_recent_orders_' + SLUG;
-    const existing = JSON.parse(localStorage.getItem(key) || '[]');
-    const filtered = existing.filter(o => o.reference !== order.reference);
-    filtered.unshift({
-      reference: order.reference,
-      type: order.side === 'sell' ? 'OFFRAMP' : 'ONRAMP',
-      status: order.status || 'AWAITING_DEPOSIT',
-      asset: order.coin,
-      amount: order.amount || order.sendAmount || 0,
-      destination_currency: order.side === 'sell' ? 'NGN' : order.coin,
-      source_currency: order.side === 'sell' ? order.coin : 'NGN',
-      deposit_bank_name: order.bank || '',
-      deposit_account_number: order.account || '',
-      deposit_account_name: order.accountName || '',
-      deposit_address: order.address || '',
-      created_at: new Date().toISOString()
-    });
-    localStorage.setItem(key, JSON.stringify(filtered.slice(0, 25)));
-  } catch (e) { /* ignore */ }
-}
+// ── My orders ──
 
 async function showOrders() {
   const menu = $('s-menu');
   if (menu) menu.hidden = true;
+  if (!me && token) await loadMe();
   if (!me) return openAuth('signin');
-  let localOrders = [];
-  try {
-    localOrders = JSON.parse(localStorage.getItem('velcro_recent_orders_' + SLUG) || '[]');
-  } catch (e) {}
   try {
     const data = await api(`/api/store/${SLUG}/me`);
-    const serverOrders = data.orders || [];
-    const map = new Map();
-    serverOrders.forEach(o => map.set(o.reference, o));
-    localOrders.forEach(o => {
-      if (!map.has(o.reference)) map.set(o.reference, o);
-    });
-    store.orders = Array.from(map.values());
+    store.orders = data.orders || [];
   } catch (e) {
-    if (localOrders.length) {
-      store.orders = localOrders;
-    } else {
-      return toast(e.message);
-    }
+    return toast(e.message);
   }
-  clearInterval(pollTimer);
-  clearInterval(expiryTimer);
+  stopTimers();
   checkout = { step: 'orders' };
   renderCheckout();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (window.innerWidth < 960) document.querySelector('.s-trade').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-const STATUS_LABELS = { AWAITING_DEPOSIT: ['Awaiting payment', 'wait'], CONFIRMED: ['Payment received', 'busy'], PROCESSING: ['Processing', 'busy'], COMPLETED: ['Completed', 'ok'], REVIEW: ['Being checked', 'warn'], CANCELLED: ['Cancelled', 'off'], EXPIRED: ['Expired', 'off'], FAILED: ['Failed', 'warn'] };
+const STATUS_LABELS = { AWAITING_DEPOSIT: ['Awaiting payment', 'wait'], PENDING: ['Awaiting payment', 'wait'], INITIATED: ['Awaiting payment', 'wait'], DETECTED: ['Payment seen', 'busy'], RECEIVED: ['Payment received', 'busy'], VERIFIED: ['Payment received', 'busy'], CONFIRMED: ['Payment received', 'busy'], PROCESSING: ['Processing', 'busy'], COMPLETED: ['Completed', 'ok'], REVIEW: ['Being checked', 'warn'], CANCELLED: ['Cancelled', 'off'], EXPIRED: ['Expired', 'off'], FAILED: ['Failed', 'warn'] };
 
 function ordersHtml() {
   const rows = store.orders || [];
@@ -1254,8 +1188,12 @@ function ordersHtml() {
     ${rows.length ? `<ul class="s-orders">${rows.map(o => {
       const buy = String(o.type).toUpperCase() === 'ONRAMP';
       const sym = orderCoin(o);
-      const [label, cls] = STATUS_LABELS[String(o.status).toUpperCase()] || [o.status, 'off'];
-      return `<li><button type="button" data-order="${esc(o.reference)}"><span><b>${buy ? 'Buy' : 'Sell'} ${esc(sym)}</b><small>${new Date(String(o.created_at).replace(' ', 'T') + 'Z').toLocaleString()}</small></span><span class="s-orders-right"><b>${fmtNgn(o.amount)}</b><em class="s-pill is-${cls}">${esc(label)}</em></span></button></li>`;
+      const status = String(o.status).toUpperCase();
+      const lapsed = WAITING_STATUSES.includes(status) && Number(o.expires_at) > 0 && Date.now() > Number(o.expires_at) * 1000;
+      const [label, cls] = lapsed ? STATUS_LABELS.EXPIRED : (STATUS_LABELS[status] || [o.status, 'off']);
+      // A buy is priced in naira; a sell in the coin the customer sends.
+      const amount = buy ? fmtNgn(o.amount) : (Number(o.send_amount) > 0 ? `${fmtCoin(o.send_amount, sym)} ${esc(sym)}` : esc(sym));
+      return `<li><button type="button" data-order="${esc(o.reference)}">${COIN_LOGOS[sym] ? `<img src="${COIN_LOGOS[sym]}" alt="">` : ''}<span class="s-orders-l"><b>${buy ? 'Buy' : 'Sell'} ${esc(sym)}</b><small>${fmtDate(o.created_at)}</small></span><span class="s-orders-r"><b>${amount}</b><em class="s-pill is-${cls}">${esc(label)}</em></span></button></li>`;
     }).join('')}</ul>` : '<p class="s-co-lede">No orders yet. Your buys and sells on this store will show up here.</p>'}`;
 }
 
@@ -1270,13 +1208,22 @@ function openOrder(ref) {
   const o = (store.orders || []).find(x => x.reference === ref);
   if (!o) return;
   const sell = String(o.type).toUpperCase() === 'OFFRAMP';
+  const channel = String(o.channel || '').toUpperCase();
+  const chain = String(o.asset || '').includes(':') ? String(o.asset).split(':')[0] : '';
   checkout = {
     step: 'pay',
+    from: 'orders',
     side: sell ? 'sell' : 'buy',
     coin: orderCoin(o),
     order: {
       reference: o.reference, side: sell ? 'sell' : 'buy', coin: orderCoin(o), amount: Number(o.amount), status: String(o.status).toUpperCase(),
-      bank: o.deposit_bank_name, account: o.deposit_account_number, accountName: o.deposit_account_name, address: o.deposit_address, expiresAt: 0, progress: {},
+      bank: o.deposit_bank_name, account: o.deposit_account_number, accountName: o.deposit_account_name, address: o.deposit_address,
+      memo: String(o.deposit_note || '').replace(/^Memo:\s*/, '') || null,
+      network: CHAIN_LABELS[chain] || (channel === 'PAJ' ? 'Solana' : ''),
+      sendAmount: Number(o.send_amount) > 0 ? Number(o.send_amount) : null,
+      exact: channel !== 'HOSTFI',
+      expiresAt: Number(o.expires_at) > 0 ? Number(o.expires_at) * 1000 : 0,
+      progress: {},
     },
   };
   renderCheckout();
@@ -1300,8 +1247,6 @@ function paintAccount() {
   $('s-signin').hidden = !!me;
   $('s-join').hidden = !!me;
   $('s-me').hidden = !me;
-  const historyRow = $('s-form-history-row');
-  if (historyRow) historyRow.hidden = !me;
   if (me) {
     $('s-avatar').textContent = (me.name || me.email).trim().charAt(0).toUpperCase();
     $('s-me-email').textContent = me.email;
@@ -1318,6 +1263,8 @@ function signOut() {
   setToken('');
   me = null;
   $('s-menu').hidden = true;
+  store.orders = [];
+  showForm(); // nothing of theirs stays on screen
   paintAccount();
   toast('Signed out');
 }
@@ -1336,7 +1283,10 @@ function openAuth(mode) {
   setTimeout(() => $('a-email').focus(), 50);
 }
 
-function closeAuth() { $('auth').hidden = true; }
+function closeAuth() {
+  pendingTrade = false;
+  $('auth').hidden = true;
+}
 
 function setAuthMode(mode) {
   authMode = mode;
@@ -1392,6 +1342,7 @@ function authError(msg) {
 }
 
 function signedIn(data) {
+  const carryOn = pendingTrade;
   setToken(data.token);
   me = { email: data.email, name: data.name };
   closeAuth();
@@ -1399,6 +1350,7 @@ function signedIn(data) {
   $('a-code').value = '';
   paintAccount();
   toast(`Signed in to ${store.info.name}`);
+  if (carryOn) goTrade(); // they'd already tapped Buy or Sell
 }
 
 function initGoogle() {
@@ -1423,7 +1375,7 @@ function initGoogle() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  $('f-in').addEventListener('input', render);
+  $('f-in').addEventListener('input', onAmountInput);
   $('auth-form').addEventListener('submit', submitAuth);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAuth(); });
   document.addEventListener('click', e => {

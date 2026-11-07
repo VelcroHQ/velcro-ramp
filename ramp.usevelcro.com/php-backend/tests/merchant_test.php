@@ -29,7 +29,7 @@ putenv('MERCHANT_LOGO_DIR=' . $tmp . '/logos');
 
 $pdo = new PDO('sqlite:' . $tmp . '/test.db', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
 $pdo->exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, reference TEXT UNIQUE, switch_reference TEXT, country TEXT, currency TEXT, explorer_url TEXT, receipt_sent_at TEXT, updated_at TEXT, beneficiary TEXT, fee_developer REAL, type TEXT, status TEXT, asset TEXT, channel TEXT, amount REAL, rate REAL, destination_amount REAL,
-    destination_currency TEXT, source_currency TEXT, deposit_bank_name TEXT, deposit_account_number TEXT, deposit_account_name TEXT, deposit_address TEXT, wallet_address TEXT,
+    destination_currency TEXT, source_currency TEXT, deposit_bank_name TEXT, deposit_account_number TEXT, deposit_account_name TEXT, deposit_address TEXT, deposit_note TEXT, wallet_address TEXT,
     hash TEXT, meta TEXT, email TEXT, merchant_id INTEGER, store_customer_id INTEGER, merchant_markup_percent REAL, velcro_fee_percent REAL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
 $pdo->exec('CREATE TABLE otps (otp_key TEXT PRIMARY KEY, code TEXT, expires_at INTEGER, attempts INTEGER DEFAULT 0)');
 $pdo->exec('CREATE TABLE audit_logs (id INTEGER PRIMARY KEY, action TEXT, ip TEXT, user_agent TEXT, details TEXT)');

@@ -133,8 +133,9 @@ function registerPublicRoutes(Router $router): void
     });
 
     $router->get('/api/institutions', function () {
-        $country = strtolower((string) (query('country') ?: 'ng'));
-        $cacheFile = BASE_PATH . '/data/institutions_cache_' . $country . '.json';
+        // One saved list per country, currency and channel; only letters and digits reach the file name.
+        $cacheKey = preg_replace('/[^a-z0-9]/', '', strtolower(query('country') ?: 'ng') . '_' . strtolower(query('currency') ?: 'ngn') . '_' . strtolower(query('channel') ?: 'bank'));
+        $cacheFile = BASE_PATH . '/data/institutions_cache_' . $cacheKey . '.json';
         $cacheTtl = 86400; // 24 hours
 
         if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
