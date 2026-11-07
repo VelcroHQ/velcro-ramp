@@ -820,7 +820,7 @@ function renderTransactions(txs) {
         const user = getDisplayUser(tx);
         const userVal = tx.email || tx.wallet_address || tx.deposit_address || '';
         return `
-        <tr>
+        <tr onclick="viewTransaction('${tx.reference}')" style="cursor: pointer;">
             <td data-label="User" onclick="event.stopPropagation(); ${userVal ? `viewWalletDetails('${userVal}')` : ''}" title="${userVal ? 'Click to view user profile' : ''}"><div class="user-cell" style="cursor: pointer;"><div class="avatar">${user.avatar}</div><b style="font-size: 11px; max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--primary-link);" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${user.display}</b></div></td>
             <td data-label="Reference" class="hide-mobile">${tx.reference.slice(0, 10)}...</td>
             <td data-label="Type"><b>${tx.type}</b>${storeBadge(tx)}</td>
@@ -828,7 +828,7 @@ function renderTransactions(txs) {
             <td data-label="Amount">${formatTxTableAmount(tx)}</td>
             <td data-label="Status"><span class="status-pill ${tx.status.toLowerCase()}">${statusLabel(tx.status)}</span></td>
             <td data-label="Date" class="hide-mobile">${new Date(tx.created_at).toLocaleDateString()}</td>
-            <td data-label="Action"><button class="btn-view" onclick="viewTransaction('${tx.reference}')">Details</button></td>
+            <td data-label="Action"><button class="btn-view">Details</button></td>
         </tr>
         `;
     });
@@ -1571,6 +1571,7 @@ function applyFilters() {
     });
 
     renderTransactions(filtered);
+    updateFiltersToggle(document.getElementById('tx-filters')?.classList.contains('is-open') || false);
     document.getElementById('filter-count').innerText = `Showing ${filtered.length} of ${currentTxs.length} transactions`;
 }
 
@@ -1583,6 +1584,7 @@ function clearFilters() {
     document.getElementById('filter-date-from').value = '';
     document.getElementById('filter-date-to').value = '';
     renderTransactions(currentTxs);
+    updateFiltersToggle(document.getElementById('tx-filters')?.classList.contains('is-open') || false);
     document.getElementById('filter-count').innerText = 'Showing all transactions';
 }
 
@@ -2881,7 +2883,25 @@ function scrub(v) {
     return v;
 }
 
+// Phones: everything but search folds away, so the orders are on the first screen.
+function toggleTxFilters() {
+    const box = document.getElementById('tx-filters');
+    const open = box.classList.toggle('is-open');
+    updateFiltersToggle(open);
+}
+
+function updateFiltersToggle(open) {
+    const btn = document.getElementById('filters-toggle');
+    if (!btn) return;
+    const active = ['filter-type', 'filter-status', 'filter-channel', 'filter-origin', 'filter-date-from', 'filter-date-to']
+        .filter(id => document.getElementById(id)?.value).length;
+    btn.setAttribute('aria-expanded', String(open));
+    btn.textContent = (open ? 'Fewer filters' : 'More filters') + (active ? ` (${active} on)` : '');
+}
+
 function switchSection(id) {
+    window.scrollTo(0, 0);
+    document.querySelectorAll('#phone-tabs button[data-tab]').forEach(b => b.classList.toggle('is-on', b.dataset.tab === (id === 'user-detail' ? 'users' : id)));
     document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
     const targetSection = document.getElementById(`section-${id}`);
     if (targetSection) targetSection.classList.add('active');

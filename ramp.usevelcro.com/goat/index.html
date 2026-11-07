@@ -15,7 +15,7 @@
     <title>Velcro Private Admin | Insights</title>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="admin.css?v=1">
+    <link rel="stylesheet" href="admin.css?v=2">
 </head>
 
 <body>
@@ -44,6 +44,15 @@
 
     <!-- Sidebar Overlay -->
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- Phones: the sections used most, always one tap away -->
+    <div class="phone-tabs" id="phone-tabs">
+        <button type="button" class="is-on" data-tab="dashboard" onclick="switchSection('dashboard')"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button type="button" data-tab="transactions" onclick="switchSection('transactions')"><i data-lucide="refresh-ccw"></i><span>Orders</span></button>
+        <button type="button" data-tab="merchants" onclick="switchSection('merchants')"><i data-lucide="store"></i><span>Merchants</span></button>
+        <button type="button" data-tab="users" onclick="switchSection('users')"><i data-lucide="users"></i><span>Users</span></button>
+        <button type="button" onclick="toggleSidebar()"><i data-lucide="menu"></i><span>More</span></button>
+    </div>
 
     <!-- Sidebar -->
     <aside id="main-sidebar">
@@ -213,7 +222,7 @@
             </header>
 
             <!-- Search & Filters -->
-            <div class="table-card" style="margin-bottom: 20px; padding: 20px;">
+            <div class="table-card" id="tx-filters" style="margin-bottom: 20px; padding: 20px;">
                 <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
                     <div>
                         <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Search</label>
@@ -264,7 +273,8 @@
                         <input type="date" id="filter-date-to" onchange="applyFilters()" style="margin-bottom: 0; padding: 10px 12px; font-size: 13px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px;">
                     </div>
                 </div>
-                <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <button type="button" class="filters-toggle" id="filters-toggle" onclick="toggleTxFilters()" aria-expanded="false">More filters</button>
+                <div class="filters-foot" style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <span id="filter-count" style="font-size: 12px; color: var(--text-secondary);">Showing all transactions</span>
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <button onclick="setFilterPreset('today')" style="background: var(--input-bg); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text-main);">Today</button>
@@ -1708,6 +1718,6 @@
         </div>
     </div>
 
-    <script src="admin.js?v=4"></script>
+    <script src="admin.js?v=5"></script>
 </body>
 </html>

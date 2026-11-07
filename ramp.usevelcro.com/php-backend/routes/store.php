@@ -100,8 +100,9 @@ function storeOrderContext(string $side, string $symbol, string $provider): ?arr
     }
     $m = storeBySlug($slug);
     if ($m['status'] !== 'APPROVED') {
+        // The owner can test a store that's still waiting for approval, but never a suspended or rejected one.
         $owner = merchantTokenEmail((string) ($_SERVER['HTTP_X_MERCHANT_TOKEN'] ?? ''));
-        if (strtolower((string) $owner) !== strtolower((string) $m['email'])) {
+        if (!in_array($m['status'], ['DRAFT', 'PENDING'], true) || strtolower((string) $owner) !== strtolower((string) $m['email'])) {
             jsonResponse(errorResponse('This store is not taking orders yet.'), 403);
         }
     }

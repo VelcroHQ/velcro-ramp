@@ -78,6 +78,7 @@ function merchantEarnings(array $m): array
         'earned_ngn' => round($earned, 2),
         'pending_ngn' => $pending,
         'paid_ngn' => $paid,
+        'suspended' => $m['status'] === 'SUSPENDED',
         'available_ngn' => $available,
         'available_usd' => $rate > 0 ? round($available / $rate, 2) : null,
         'ngn_per_usd' => $rate > 0 ? $rate : null,
@@ -90,6 +91,7 @@ function merchantEarnings(array $m): array
 function merchantWithdrawProblem(array $e): ?string
 {
     return match (true) {
+        $e['suspended'] => 'Withdrawals are paused while your store is suspended. Contact support.',
         $e['pending_ngn'] > 0 => 'You already have a withdrawal waiting to be paid.',
         $e['ngn_per_usd'] === null => 'Rates are unavailable right now. Try again in a minute.',
         $e['available_usd'] < MERCHANT_MIN_WITHDRAWAL_USD => 'The minimum withdrawal is $' . number_format(MERCHANT_MIN_WITHDRAWAL_USD, 2) . ' (about ₦' . number_format((float) $e['min_ngn']) . ').',

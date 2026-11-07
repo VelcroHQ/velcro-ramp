@@ -370,6 +370,21 @@ try {
     [, $list] = $app_('GET', '/api/admin/merchants', null, $admin);
     $counts = array_column($list['merchants'] ?? [], 'customers', 'email');
     check(count($res['customers'] ?? []) === 1 && (int) ($counts[$email] ?? 0) === 1 && (int) ($counts[$other] ?? 0) === 1, 'admin: customers per store, and a count on the merchants list');
+
+    // ── Suspended store: no new orders (even by the owner) and no new withdrawals ──
+    $addOrder->execute(['ord-more', 'ONRAMP', 'COMPLETED', 'tron:usdt', 'SWITCH', 500000, 330, 'USDT', 'NGN', $id, $custId]);
+    [, $res] = $app_('POST', '/api/store/northline/auth/login', ['email' => $shopper, 'password' => 'NewShop456']);
+    $ownerAsCustomer = ['X-Store-Token' => (string) ($res['data']['token'] ?? '')] + $auth($token);
+    $app_('POST', "/api/admin/merchants/{$id}/status", ['status' => 'SUSPENDED', 'note' => 'Under review'], $admin);
+    [$cOrder] = $app_('POST', '/api/initiate', ['store' => 'northline', 'direction' => 'ONRAMP', 'amount' => 5000, 'country' => 'NG', 'asset' => 'tron:usdt'], $ownerAsCustomer);
+    check($cOrder === 403, "suspended store: the owner can't place orders on it");
+    [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
+    [$cCode] = $app_('POST', '/api/merchant/withdraw/code', null, $auth($token));
+    [$cWd] = $app_('POST', '/api/merchant/withdraw', ['otp' => $code('merchwd', $email)] + $wd, $auth($token));
+    check(($res['data']['can_withdraw'] ?? null) === false && str_contains((string) ($res['data']['reason'] ?? ''), 'suspended') && $cCode === 400 && $cWd === 400, 'suspended store: withdrawals refused, and the merchant is told why');
+    $app_('POST', "/api/admin/merchants/{$id}/status", ['status' => 'APPROVED'], $admin);
+    [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
+    check(($res['data']['can_withdraw'] ?? null) === true, 'reinstated store: withdrawals work again, nothing earned is lost');
 } finally {
     proc_terminate($app);
 }

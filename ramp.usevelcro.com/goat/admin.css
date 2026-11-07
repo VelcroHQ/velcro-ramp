@@ -1207,3 +1207,107 @@ code, pre {
     .stat-icon svg { width: 18px; height: 18px; }
     .stat-info span { font-size: 16px; line-height: 1.25; word-break: break-word; }
 }
+
+/* ─── Phones: tab bar, compact order cards, folded filters ─── */
+.phone-tabs, .filters-toggle { display: none; }
+@media (max-width: 1024px) {
+    main { padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important; }
+    aside { overflow-y: auto; }
+    .phone-tabs {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        z-index: 1000;
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+        background: var(--card-bg);
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -6px 20px rgba(13, 13, 89, 0.06);
+    }
+    .phone-tabs button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 6px 2px;
+        background: none;
+        border: 0;
+        border-radius: 10px;
+        cursor: pointer;
+        color: var(--text-secondary);
+        font-family: inherit;
+        font-size: 10.5px;
+        font-weight: 600;
+    }
+    .phone-tabs svg { width: 20px; height: 20px; }
+    .phone-tabs button.is-on { color: var(--velcro-navy); background: rgba(13, 13, 89, 0.06); }
+    .dark .phone-tabs button.is-on { color: var(--text-main); background: rgba(255, 255, 255, 0.08); }
+}
+@media (max-width: 640px) {
+    /* Action rows: buttons full size, label beside them. */
+    .table-card td.hostfi-action-cell { width: 100%; }
+    .table-card .hostfi-actions { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+    .table-card .hostfi-actions button { width: auto; min-height: 38px; }
+
+    /* Dashboard: small tiles so recent activity is near the top. */
+    .stats-row, .stats-grid, .stats-grid-2 { gap: 8px !important; margin-bottom: 8px !important; }
+    .stat-card, .stat-card-sm { display: block !important; position: relative; padding: 12px !important; min-height: 0 !important; }
+    .stat-icon, .stat-icon-sm { position: absolute; top: 10px; right: 10px; width: 26px !important; height: 26px !important; border-radius: 8px !important; margin: 0 !important; }
+    .stat-icon svg, .stat-icon-sm svg { width: 14px !important; height: 14px !important; }
+    .stat-info h4, .stat-info-sm h4 { font-size: 10.5px !important; line-height: 1.25; padding-right: 30px; margin-bottom: 4px; }
+    .stat-info span, .stat-info-sm span { font-size: 15px !important; line-height: 1.25; }
+    .stat-info-sm .stat-sub { font-size: 10.5px !important; margin-top: 2px; }
+
+    /* Orders: one compact card per order; tap it for the details. */
+    #all-tx-body tr, #tx-summary-body tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 6px 10px;
+        align-items: center;
+        padding: 12px 14px;
+        margin-bottom: 8px;
+    }
+    #all-tx-body td, #tx-summary-body td {
+        display: block;
+        padding: 0 !important;
+        border: 0 !important;
+        text-align: left;
+    }
+    #all-tx-body td::before, #tx-summary-body td::before { display: none; }
+    #all-tx-body td[data-label="User"], #tx-summary-body td[data-label="User"] { grid-column: 1; grid-row: 1; }
+    #all-tx-body td[data-label="Amount"], #tx-summary-body td[data-label="Amount"] { grid-column: 2; grid-row: 1; text-align: right; }
+    #all-tx-body td[data-label="Type"], #tx-summary-body td[data-label="Type"] { grid-column: 1; grid-row: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; }
+    #all-tx-body td[data-label="Type"] > div, #tx-summary-body td[data-label="Type"] > div { margin-top: 0 !important; }
+    #all-tx-body td[data-label="Status"], #tx-summary-body td[data-label="Status"] { grid-column: 2; grid-row: 2; text-align: right; }
+    #all-tx-body td[data-label="Channel"], #tx-summary-body td[data-label="Channel"] { grid-column: 1; grid-row: 3; }
+    #all-tx-body td[data-label="Date"], #tx-summary-body td[data-label="Time"] { display: block !important; grid-column: 2; grid-row: 3; text-align: right; font-size: 11px; color: var(--text-secondary); }
+    #all-tx-body td[data-label="Action"] { display: none; }
+    #all-tx-body .avatar, #tx-summary-body .avatar { width: 30px; height: 30px; font-size: 11px; flex-shrink: 0; }
+    #all-tx-body .user-cell b, #tx-summary-body .user-cell b { max-width: 130px !important; }
+
+    /* Filters: search stays, the rest folds behind a button. */
+    #tx-filters { padding: 12px !important; margin-bottom: 12px !important; }
+    #tx-filters .filters-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    #tx-filters .filters-grid > div:first-child { grid-column: 1 / -1; }
+    #tx-filters:not(.is-open) .filters-grid > div:not(:first-child) { display: none; }
+    #tx-filters:not(.is-open) .filters-foot > div { display: none !important; }
+    #tx-filters .filters-foot { margin-top: 6px !important; }
+    .filters-toggle {
+        display: block;
+        width: 100%;
+        margin-top: 8px;
+        padding: 9px;
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* Order details: room to type an email next to the button. */
+    #modal-email-input { min-width: 0; flex: 1 1 0 !important; }
+    #modal-send-receipt-btn { width: auto !important; flex: 0 0 auto !important; }
+}
