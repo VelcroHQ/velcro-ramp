@@ -124,7 +124,7 @@ async function loadStore() {
   if (token) loadMe();
   if (!first) {
     paintBoard();
-    $('s-note').textContent = 'This store isn’t quoting any coins right now.';
+    $('s-note').textContent = 'This exchange isn’t quoting any coins right now.';
     $('s-go').disabled = true;
     return;
   }
@@ -1194,7 +1194,7 @@ function ordersHtml() {
       // A buy is priced in naira; a sell in the coin the customer sends.
       const amount = buy ? fmtNgn(o.amount) : (Number(o.send_amount) > 0 ? `${fmtCoin(o.send_amount, sym)} ${esc(sym)}` : esc(sym));
       return `<li><button type="button" data-order="${esc(o.reference)}">${COIN_LOGOS[sym] ? `<img src="${COIN_LOGOS[sym]}" alt="">` : ''}<span class="s-orders-l"><b>${buy ? 'Buy' : 'Sell'} ${esc(sym)}</b><small>${fmtDate(o.created_at)}</small></span><span class="s-orders-r"><b>${amount}</b><em class="s-pill is-${cls}">${esc(label)}</em></span></button></li>`;
-    }).join('')}</ul>` : '<p class="s-co-lede">No orders yet. Your buys and sells on this store will show up here.</p>'}`;
+    }).join('')}</ul>` : '<p class="s-co-lede">No orders yet. Your buys and sells on this exchange will show up here.</p>'}`;
 }
 
 // The coin of an order, whichever side: "base:usdt", "USDT" or the currency columns.

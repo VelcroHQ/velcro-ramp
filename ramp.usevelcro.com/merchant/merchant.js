@@ -68,12 +68,12 @@ function initLanding() {
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  // Type a name, pick a colour: the store in the window changes as you go, and sign-up remembers it.
+  // Type a name, pick a colour: the exchange in the window changes as you go, and sign-up remembers it.
   const name = $('pv-name');
   const renderPreview = () => {
-    const title = name.value.trim() || 'Your store';
+    const title = name.value.trim() || 'Your exchange';
     $('pv-logo').textContent = title.charAt(0).toUpperCase();
-    $('pv-slug').textContent = slugify(title) || 'your-store';
+    $('pv-slug').textContent = slugify(title) || 'your-exchange';
   };
   name.addEventListener('input', () => {
     renderPreview();
@@ -329,7 +329,7 @@ function renderRecentOrders() {
   $('ov-recent').innerHTML = rows.length ? rows.map(o => `<div class="d-mini">${logoImg(o.coin)}
       <span class="d-mini-l"><b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b><small>${esc(o.customer_name || o.customer_email || '')}</small></span>
       <span class="d-mini-r"><b>${o.naira ? naira(o.naira) : coinText(o)}</b>${statusHtml(ORDER_STATUS[o.status] || [o.status, 'off'])}</span>
-    </div>`).join('') : `<div class="d-mini-empty"><p>Every buy and sell on your store shows up here.</p><button type="button" class="d-btn-quiet" onclick="shareStore()">Share your store</button></div>`;
+    </div>`).join('') : `<div class="d-mini-empty"><p>Every buy and sell on your exchange shows up here.</p><button type="button" class="d-btn-quiet" onclick="shareStore()">Share your exchange</button></div>`;
 }
 
 function exportOrders() {
@@ -341,7 +341,7 @@ function exportOrders() {
     .map(r => r.map(cell).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  a.download = `${(merchant.slug || 'store')}-orders.csv`;
+  a.download = `${(merchant.slug || 'exchange')}-orders.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
@@ -526,7 +526,7 @@ function openTab(name) {
 }
 
 function storeName() {
-  return merchant.brand.name || merchant.business_name || 'Your store';
+  return merchant.brand.name || merchant.business_name || 'Your exchange';
 }
 
 function renderHeader() {
@@ -548,10 +548,10 @@ function renderHeader() {
 const HDR_STATUS = { DRAFT: ['off', 'Not live'], PENDING: ['wait', 'In review'], REJECTED: ['bad', 'Needs changes'], APPROVED: ['live', 'Live'], SUSPENDED: ['bad', 'Suspended'] };
 
 const BANNERS = {
-  DRAFT: ['Verify your business to put your store live.', 'It takes about three minutes. You can set up your store while we review it.', 'Start verification', () => goToKyb()],
+  DRAFT: ['Verify your business to put your exchange live.', 'It takes about three minutes. You can set up your exchange while we review it.', 'Start verification', () => goToKyb()],
   PENDING: ["We're reviewing your business.", "Usually within a working day. We'll email you as soon as you're approved.", 'View details', () => goToKyb()],
-  REJECTED: ['We need a few changes before your store can go live.', '', 'Fix details', () => goToKyb()],
-  SUSPENDED: ['Your store is suspended and offline.', '', 'Contact support', () => window.open('https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab', '_blank')],
+  REJECTED: ['We need a few changes before your exchange can go live.', '', 'Fix details', () => goToKyb()],
+  SUSPENDED: ['Your exchange is suspended and offline.', '', 'Contact support', () => window.open('https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab', '_blank')],
 };
 
 function renderOverview() {
@@ -570,7 +570,7 @@ function paintStrip() {
   const url = merchant.storefront_url;
   if (merchant.status === 'APPROVED' && url) {
     strip.innerHTML = `<span class="d-st is-live">Live</span><span class="d-strip-url">${esc(url.replace(/^https?:\/\//, ''))}</span>
-      <span class="d-strip-btns"><button type="button" onclick="shareStore()">Copy link</button><a href="${esc(url)}" target="_blank" rel="noopener">Open store</a></span>`;
+      <span class="d-strip-btns"><button type="button" onclick="shareStore()">Copy link</button><a href="${esc(url)}" target="_blank" rel="noopener">Open exchange</a></span>`;
     return;
   }
   const [title, sub, btn, action] = BANNERS[merchant.status] || BANNERS.DRAFT;
@@ -583,7 +583,7 @@ function paintStrip() {
 function paintSteps() {
   const ck = merchant.checklist;
   const steps = [
-    ['branded', 'Personalize your store', 'Name, address and look', () => openPanel('store')],
+    ['branded', 'Personalize your exchange', 'Name, address and look', () => openPanel('store')],
     ['priced', 'Set your prices', 'Your markup per coin', () => openTab('prices')],
     ['verified', 'Verify your business', merchant.status === 'PENDING' ? 'Under review' : 'Goes live after approval', () => goToKyb()],
   ];
@@ -634,14 +634,14 @@ function renderSettingsHome() {
   $('set-badge').className = 'd-st is-' + cls;
   $('set-badge').textContent = words;
   const live = merchant.status === 'APPROVED' && merchant.storefront_url;
-  $('set-cta').textContent = live ? 'View store' : merchant.status === 'PENDING' ? 'View details' : 'Complete verification';
+  $('set-cta').textContent = live ? 'View exchange' : merchant.status === 'PENDING' ? 'View details' : 'Complete verification';
   $('set-cta').onclick = () => (live ? window.open(merchant.storefront_url, '_blank') : openSettings('kyb'));
   $('set-kyb-sub').textContent = {
-    DRAFT: 'Verify your business to put your store live.',
+    DRAFT: 'Verify your business to put your exchange live.',
     PENDING: "We're reviewing your details. Usually within a working day.",
     REJECTED: 'We need a few changes. Open to see what.',
     APPROVED: 'Your business is verified.',
-    SUSPENDED: 'Your store is suspended.',
+    SUSPENDED: 'Your exchange is suspended.',
   }[merchant.status] || '';
   $('sec-email').textContent = me.email;
   $('sup-url').value = merchant.brand.support_url || '';
@@ -701,14 +701,14 @@ async function submitSupport(e) {
 
 async function shareStore() {
   if (!merchant.slug) {
-    toast('Choose your store address first');
+    toast('Choose your exchange address first');
     openPanel('store');
     setTimeout(() => $('b-slug').focus(), 150);
     return;
   }
   try {
     await navigator.clipboard.writeText(merchant.storefront_url);
-    toast(merchant.status === 'APPROVED' ? 'Store link copied' : 'Link copied. It goes live once you’re verified');
+    toast(merchant.status === 'APPROVED' ? 'Exchange link copied' : 'Link copied. It goes live once you’re verified');
   } catch (e) {
     toast(merchant.storefront_url);
   }
@@ -904,7 +904,7 @@ function renderPhone(brand, btnText) {
   const usdPrice = ['USDT', 'USDC'].includes(first) ? 1 : (velcroRates[first] || {}).usd;
   const getAmount = rate && usdPrice ? 100000 / rate / usdPrice : null;
   const getText = getAmount ? getAmount.toLocaleString('en-US', ['USDT', 'USDC'].includes(first) ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 6 }) : '…';
-  const name = d.name.trim() || 'Your store';
+  const name = d.name.trim() || 'Your exchange';
   const welcome = d.welcome.trim();
   const shown = coins.filter(buyRate);
   screen.innerHTML = `
@@ -1032,7 +1032,7 @@ async function submitKyb(e) {
   err.classList.add('hidden');
   const slug = merchant.slug || $('b-slug').value.trim();
   if (!slug) {
-    toast('Choose your store link first, then come back to verify');
+    toast('Choose your exchange link first, then come back to verify');
     openSettings('store');
     setTimeout(() => $('b-slug').focus(), 150);
     return;
@@ -1060,12 +1060,12 @@ async function submitKyb(e) {
 
 // ── Guided tour ──
 
-// A live store has its link to share; any other has verification to finish.
+// A live exchange has its link to share; any other has verification to finish.
 const tourSteps = () => [
   merchant.status === 'APPROVED'
-    ? ['ov-strip', 'Share your store', 'Copy your store link and send it to your customers. Every order lands in your dashboard.']
-    : ['ov-strip', 'Verify your business', 'Submit your business details here. Your store goes live as soon as we approve them.'],
-  ['tabbtn-settings', 'Make it yours', 'Pick your store name and address, upload your logo and choose your colours.'],
+    ? ['ov-strip', 'Share your exchange', 'Copy your exchange link and send it to your customers. Every order lands in your dashboard.']
+    : ['ov-strip', 'Verify your business', 'Submit your business details here. Your exchange goes live as soon as we approve them.'],
+  ['tabbtn-settings', 'Make it yours', 'Pick your exchange name and address, upload your logo and choose your colours.'],
   ['tabbtn-prices', 'Set your prices', 'Add your markup on top of Velcro’s price, coin by coin. That margin is what you earn.'],
 ];
 let TOUR = [];

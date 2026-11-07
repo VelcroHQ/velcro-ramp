@@ -16,12 +16,12 @@
       var h = {};
       try { var t = localStorage.getItem('velcro_merchant_token'); if (t) h['X-Merchant-Token'] = t; } catch (e) { /* ignore */ }
       window.storefrontRequest = fetch('/api/merchant/storefront/' + m[1], { headers: h }).then(function (r) {
-        return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || 'Store not found'); return j.data || j; });
+        return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || 'Exchange not found'); return j.data || j; });
       });
       window.storefrontRequest.catch(function () { /* loadStore reports it */ });
     })();
   </script>
-  <link rel="preload" href="/store/store.js?v=24" as="script">
+  <link rel="preload" href="/store/store.js?v=25" as="script">
   <link href="/store/store.css?v=23" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- The fonts never hold up the page: system text shows until they arrive. -->
@@ -41,11 +41,11 @@
     })();
   </script>
   <div id="s-missing" class="s-center" hidden>
-    <div><h1>This store isn't available</h1><p>Check the link, or ask the business that shared it with you.</p><a href="/">Go to Velcro</a></div>
+    <div><h1>This exchange isn't available</h1><p>Check the link, or ask the business that shared it with you.</p><a href="/">Go to Velcro</a></div>
   </div>
 
   <div id="s-app" hidden>
-    <div id="s-preview" class="s-preview" hidden>Preview · only you can see this store until it's approved</div>
+    <div id="s-preview" class="s-preview" hidden>Preview · only you can see this exchange until it's approved</div>
 
     <header class="s-top">
       <div class="s-wrap s-top-in">
@@ -87,7 +87,7 @@
 
         <div class="s-ngn" aria-label="Naira account, coming soon">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3 3 8h18z"/></svg>
-          <p><b>Your own naira account</b> <em>Coming soon</em><small>A personal account number with <span class="s-ngn-store">this store</span>. Fund it once and buy instantly, and get paid straight into it when you sell.</small></p>
+          <p><b>Your own naira account</b> <em>Coming soon</em><small>A personal account number with <span class="s-ngn-store">this exchange</span>. Fund it once and buy instantly, and get paid straight into it when you sell.</small></p>
         </div>
       </div>
 
@@ -177,7 +177,7 @@
   </div>
 
   <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
-  <script src="/store/store.js?v=24"></script>
+  <script src="/store/store.js?v=25"></script>
 </body>
 
 </html>
