@@ -310,7 +310,7 @@ function renderOrders() {
   const list = $('ord-list');
   if (!orders || !orders.length) { list.innerHTML = $('ord-empty').innerHTML; return; }
   const rows = shownOrders();
-  list.innerHTML = rows.length ? `<table class="d-table d-orders"><thead><tr><th>Order</th><th>Customer</th><th class="is-num">Amount</th><th class="is-num">Your markup</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows.map(o => {
+  list.innerHTML = rows.length ? `<table class="d-table d-orders"><thead><tr><th>Order</th><th>Customer</th><th class="is-num">Amount</th><th class="is-num">Your markup</th><th>Status</th><th class="is-end">Date</th></tr></thead><tbody>${rows.map(o => {
     const done = o.status === 'COMPLETED';
     return `<tr>
       <td class="c-order"><span class="d-who">${logoImg(o.coin)}<span class="d-cell"><b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b><small title="${esc(o.reference)}">${esc(shortRef(o.reference))}</small></span></span></td>
@@ -366,7 +366,7 @@ function renderCustomers() {
   if (!customers || !customers.length) { list.innerHTML = $('cus-empty').innerHTML; return; }
   const q = ($('cus-q').value || '').trim().toLowerCase();
   const rows = customers.filter(c => !q || [c.email, c.name].some(v => String(v || '').toLowerCase().includes(q)));
-  list.innerHTML = rows.length ? `<table class="d-table d-customers"><thead><tr><th>Customer</th><th class="is-num">Orders</th><th class="is-num">Completed volume</th><th>Last order</th><th>Joined</th></tr></thead><tbody>${rows.map(c => `<tr>
+  list.innerHTML = rows.length ? `<table class="d-table d-customers"><thead><tr><th>Customer</th><th class="is-num">Orders</th><th class="is-num">Completed volume</th><th>Last order</th><th class="is-end">Joined</th></tr></thead><tbody>${rows.map(c => `<tr>
       <td class="c-who"><span class="d-who"><span class="d-av">${esc((c.name || c.email).trim().charAt(0).toUpperCase())}</span><span class="d-cell"><b>${esc(c.name || c.email.split('@')[0])}</b><small>${esc(c.email)}</small></span></span></td>
       <td class="c-orders is-num" data-label="Orders"><b>${c.orders}</b></td>
       <td class="c-vol is-num" data-label="Volume"><b>${c.volume_ngn ? naira(c.volume_ngn) : '—'}</b></td>
@@ -402,7 +402,7 @@ async function loadEarnings() {
   $('earn-reason').classList.toggle('hidden', !e.reason);
   $('earn-withdraw').disabled = !e.can_withdraw;
   $('wd-chain').innerHTML = Object.entries(e.chains || {}).map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join('');
-  $('wd-list').innerHTML = e.withdrawals.length ? `<table class="d-table d-wds"><thead><tr><th>Amount</th><th>To</th><th>Status</th><th>Requested</th></tr></thead><tbody>${e.withdrawals.map(w => `<tr>
+  $('wd-list').innerHTML = e.withdrawals.length ? `<table class="d-table d-wds"><thead><tr><th>Amount</th><th>To</th><th>Status</th><th class="is-end">Requested</th></tr></thead><tbody>${e.withdrawals.map(w => `<tr>
       <td class="c-amt"><span class="d-cell"><b>${w.currency === 'NGN' ? naira(w.amount_ngn) : '$' + Number(w.amount_usd).toFixed(2) + ' USDC'}</b><small>${w.currency === 'NGN' ? 'Naira' : naira(w.amount_ngn) + ' of earnings'}</small></span></td>
       <td class="c-to"><span class="d-cell">${esc(w.to)}${w.payout_ref ? `<small>Ref ${esc(w.payout_ref)}</small>` : ''}${w.status === 'REJECTED' && w.note ? `<small class="is-bad-note">${esc(w.note)}</small>` : ''}</span></td>
       <td class="c-st">${statusHtml(WD_STATUS[w.status] || [w.status, 'off'])}</td>

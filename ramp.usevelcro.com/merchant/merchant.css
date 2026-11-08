@@ -387,25 +387,25 @@ fieldset { border: 0; min-width: 0; }
 .d-search:focus-within { border-color: var(--navy); }
 .d-search .ico { width: 16px; height: 16px; }
 .d-search input { flex: 1; min-width: 0; padding: 9px 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 14.5px; }
-.d-filter { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: #ebebe5; overflow-x: auto; scrollbar-width: none; }
+.d-filter { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: #ebebe5; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .d-filter::-webkit-scrollbar { display: none; }
 .d-filter button { padding: 6px 11px; border-radius: 8px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); white-space: nowrap; transition: background .15s; }
 .d-filter button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(20, 20, 40, .08); }
 .d-filter-wide { margin: 12px 0 2px; }
 .d-filter-wide button { flex: 1; padding: 8px 11px; }
-.d-sheet { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.d-sheet { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .d-sheet:empty { display: none; }
 .d-sheet-msg { padding: 22px 20px; font-size: 14px; color: var(--muted); }
 .d-empty { padding: 44px 24px 48px; text-align: center; }
 .d-empty h2 { font-size: 18px; font-weight: 700; }
 .d-empty p { max-width: 28em; margin: 6px auto 16px; font-size: 14.5px; color: var(--muted); }
-.d-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.d-table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; }
 .d-table th { padding: 10px 14px; border-bottom: 1px solid var(--line); text-align: left; font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
 .d-table td { padding: 12px 14px; border-top: 1px solid var(--line-soft); vertical-align: middle; }
 .d-table tbody tr:first-child td { border-top: 0; }
 .d-table th:first-child, .d-table td:first-child { padding-left: 20px; }
 .d-table th:last-child, .d-table td:last-child { padding-right: 20px; }
-.d-table .is-num { text-align: right; font-variant-numeric: tabular-nums; }
+.d-table .is-num, .d-table .is-end { text-align: right; font-variant-numeric: tabular-nums; }
 .d-cell b { display: block; font-size: 14px; font-weight: 700; line-height: 1.35; }
 .d-cell small { display: block; font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
 .d-cell .is-earned { color: var(--lime-deep); }
@@ -414,7 +414,38 @@ fieldset { border: 0; min-width: 0; }
 .d-date { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .d-av { width: 32px; height: 32px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--line-soft); font-size: 13px; font-weight: 700; color: var(--ink-2); }
 .d-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.d-who img { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; object-fit: contain; }
 .d-who > span:last-child { min-width: 0; }
+
+/* Table and recent-card status pills */
+.d-table .d-st,
+.d-mini .d-st { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 99px; font-size: 12px; font-weight: 600; background: #f3f4f6; color: var(--ink-2); white-space: nowrap; }
+.d-table .d-st::before,
+.d-mini .d-st::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--off); flex-shrink: 0; }
+.d-table .d-st.is-live,
+.d-mini .d-st.is-live { background: #eaf6ea; color: #1e7e34; }
+.d-table .d-st.is-live::before,
+.d-mini .d-st.is-live::before { background: #1e7e34; }
+.d-table .d-st.is-wait,
+.d-mini .d-st.is-wait { background: #fef3c7; color: #b45309; }
+.d-table .d-st.is-wait::before,
+.d-mini .d-st.is-wait::before { background: #b45309; }
+.d-table .d-st.is-busy,
+.d-mini .d-st.is-busy { background: #eff4ff; color: #2563eb; }
+.d-table .d-st.is-busy::before,
+.d-mini .d-st.is-busy::before { background: #2563eb; }
+.d-table .d-st.is-warn,
+.d-mini .d-st.is-warn { background: #fef3c7; color: #b45309; }
+.d-table .d-st.is-warn::before,
+.d-mini .d-st.is-warn::before { background: #b45309; }
+.d-table .d-st.is-bad,
+.d-mini .d-st.is-bad { background: #fef2f2; color: #dc2626; }
+.d-table .d-st.is-bad::before,
+.d-mini .d-st.is-bad::before { background: #dc2626; }
+.d-table .d-st.is-off,
+.d-mini .d-st.is-off { background: #f3f4f6; color: #6b7280; }
+.d-table .d-st.is-off::before,
+.d-mini .d-st.is-off::before { background: #9ca3af; }
 
 /* Earnings */
 .d-wd { margin-top: 16px; scroll-margin-top: 84px; }
@@ -726,15 +757,59 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
   .d-grid-2, .d-grid-wd { grid-template-columns: minmax(0, 1fr); }
   .d-soon-line { padding: 14px 16px; }
 
-  /* A table becomes one small card per row. */
+  /* A table becomes one clean card per row on mobile */
+  .d-table { min-width: 0; }
   .d-table thead { display: none; }
   .d-table, .d-table tbody { display: block; }
-  .d-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 12px; padding: 13px 16px; border-top: 1px solid var(--line-soft); }
+  .d-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px 16px; border-top: 1px solid var(--line-soft); }
   .d-table tbody tr:first-child { border-top: 0; }
   .d-table td, .d-table td:first-child, .d-table td:last-child { display: block; padding: 0; border: 0; min-width: 0; }
   .d-table .is-num { text-align: right; }
   .d-table .is-end { text-align: right; }
-  .d-table td[data-label]::before { content: attr(data-label) ' '; font-size: 12.5px; color: var(--muted); }
+
+  /* Orders cards */
+  .d-table.d-orders tr {
+    grid-template-areas:
+      "order status"
+      "who   who"
+      "amt   earn"
+      "date  date";
+  }
+  .d-orders .c-order { grid-area: order; }
+  .d-orders .c-st { grid-area: status; justify-self: end; align-self: start; }
+  .d-orders .c-who { grid-area: who; padding: 3px 0 2px; }
+  .d-orders .c-amt { grid-area: amt; text-align: left !important; }
+  .d-orders .c-earn { grid-area: earn; text-align: right !important; }
+  .d-orders .c-date { grid-area: date; text-align: left !important; font-size: 12.5px; color: var(--muted); }
+
+  /* Customers cards */
+  .d-table.d-customers tr {
+    grid-template-areas:
+      "who  num"
+      "vol  vol"
+      "date last";
+  }
+  .d-customers .c-who { grid-area: who; }
+  .d-customers .c-num { grid-area: num; text-align: right !important; }
+  .d-customers .c-vol { grid-area: vol; padding: 2px 0; }
+  .d-customers .c-vol b { font-size: 15px; color: var(--ink); }
+  .d-customers .c-vol::before { content: 'Total volume: '; font-size: 12.5px; color: var(--muted); font-weight: 500; }
+  .d-customers .c-date { grid-area: date; text-align: left !important; font-size: 12.5px; color: var(--muted); }
+  .d-customers .c-date::before { content: 'Joined '; }
+  .d-customers .c-last { grid-area: last; text-align: right !important; font-size: 12.5px; color: var(--muted); }
+  .d-customers .c-last::before { content: 'Last: '; }
+
+  /* Withdrawals cards */
+  .d-table.d-wds tr {
+    grid-template-areas:
+      "amt  status"
+      "to   to"
+      "date date";
+  }
+  .d-wds .c-amt { grid-area: amt; }
+  .d-wds .c-st { grid-area: status; justify-self: end; align-self: start; }
+  .d-wds .c-to { grid-area: to; padding: 2px 0; }
+  .d-wds .c-date { grid-area: date; text-align: left !important; font-size: 12.5px; color: var(--muted); }
 }
 @media (max-width: 480px) {
   .m-modal { align-items: flex-end; padding: 0; }
