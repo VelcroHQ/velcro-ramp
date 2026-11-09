@@ -1,6 +1,0 @@
----
-deployment:
-  tasks:
-    # Same steps as running deploy.sh by hand in cPanel → Terminal (see that file).
-    - export DEPLOYPATH=/home/velcrohq/ramp.usevelcro.com
-    - /bin/bash deploy.sh --no-pull
