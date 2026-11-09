@@ -2365,12 +2365,12 @@ function renderMerchantsTable(rows) {
             <td data-label="Domain Address">${domHtml}</td>
             <td data-label="Shoppers & Trades">${activityHtml}</td>
             <td data-label="Status">${statusPill}</td>
-            <td data-label="Actions" style="white-space: nowrap !important; text-align: right; vertical-align: middle;">
-                <div class="m-action-group" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: flex-end !important; gap: 6px !important;">
-                    <button class="m-btn-action m-btn-inspect" onclick="openMerchantDetailModal(${m.id})" style="width: auto !important; max-width: none !important; display: inline-flex !important; flex: 0 0 auto !important; padding: 5px 10px !important; font-size: 11.5px !important; font-weight: 600 !important; border-radius: 7px !important; white-space: nowrap !important; line-height: 1.2 !important;">Inspect 🔍</button>
-                    ${actions.map(([s, l, c]) => `<button class="m-btn-action ${c}" onclick="setMerchantStatus(${Number(m.id)}, '${s}', '${l}')" style="width: auto !important; max-width: none !important; display: inline-flex !important; flex: 0 0 auto !important; padding: 5px 10px !important; font-size: 11.5px !important; font-weight: 600 !important; border-radius: 7px !important; white-space: nowrap !important; line-height: 1.2 !important;">${l}</button>`).join('')}
-                    ${liveStoreUrl ? `<a href="${liveStoreUrl}" target="_blank" rel="noopener" class="m-btn-action m-btn-visit" title="Open live storefront" style="width: auto !important; max-width: none !important; display: inline-flex !important; flex: 0 0 auto !important; padding: 5px 10px !important; font-size: 11.5px !important; font-weight: 600 !important; border-radius: 7px !important; white-space: nowrap !important; text-decoration: none !important; line-height: 1.2 !important;">Visit ↗</a>` : ''}
-                    <button class="m-btn-action m-btn-domain" onclick="openDomainModal(${m.id})" title="Configure or activate dedicated subdomain" style="width: auto !important; max-width: none !important; display: inline-flex !important; flex: 0 0 auto !important; padding: 5px 10px !important; font-size: 11.5px !important; font-weight: 600 !important; border-radius: 7px !important; white-space: nowrap !important; line-height: 1.2 !important;">Domain</button>
+            <td data-label="Actions" class="m-actions-cell">
+                <div class="m-action-group">
+                    <button class="m-btn-action m-btn-inspect" onclick="openMerchantDetailModal(${m.id})">Inspect 🔍</button>
+                    ${actions.map(([s, l, c]) => `<button class="m-btn-action ${c}" onclick="setMerchantStatus(${Number(m.id)}, '${s}', '${l}')">${l}</button>`).join('')}
+                    ${liveStoreUrl ? `<a href="${liveStoreUrl}" target="_blank" rel="noopener" class="m-btn-action m-btn-visit" title="Open live storefront">Visit ↗</a>` : ''}
+                    <button class="m-btn-action m-btn-domain" onclick="openDomainModal(${m.id})" title="Configure or activate dedicated subdomain">Domain</button>
                 </div>
             </td>
         </tr>`;
@@ -2574,25 +2574,23 @@ function renderDomainUpgrades(merchants, requests) {
                     ? `<span class="status-pill completed">Active</span>${m.domain_expires_at ? muted('Renews ' + escapeHtml(m.domain_expires_at.slice(0, 10))) : muted('Lifetime')}`
                     : `<span class="status-pill draft">Standard (/m/)</span>`);
 
-            const btnBase = 'width: auto !important; max-width: none !important; flex: 0 0 auto !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; padding: 5px 10px !important; font-size: 11.5px !important; font-weight: 600 !important; border-radius: 7px !important; white-space: nowrap !important; text-decoration: none !important; line-height: 1.2 !important; cursor: pointer !important;';
-
             let actions = '';
             if (isPending) {
                 actions = `
-                    <button class="m-btn-action m-btn-approve" onclick="openDomainModal(${m.id})" style="${btnBase}">Confirm Paid &amp; Setup</button>
-                    <button class="m-btn-action m-btn-reject" onclick="rejectDomainPayment(${m.id})" style="${btnBase}">Reject</button>
-                    <button class="m-btn-action m-btn-domain" onclick="passMerchantDomain(${m.id})" style="${btnBase}">Pass (VIP)</button>
+                    <button class="m-btn-action m-btn-approve" onclick="openDomainModal(${m.id})">Confirm Paid &amp; Setup</button>
+                    <button class="m-btn-action m-btn-reject" onclick="rejectDomainPayment(${m.id})">Reject</button>
+                    <button class="m-btn-action m-btn-domain" onclick="passMerchantDomain(${m.id})">Pass (VIP)</button>
                 `;
             } else if (isActive) {
                 actions = `
-                    <a class="m-btn-action m-btn-visit" href="https://${sub}" target="_blank" rel="noopener" style="${btnBase}">Visit ↗</a>
-                    <button class="m-btn-action m-btn-inspect" onclick="openDomainModal(${m.id})" style="${btnBase}">Edit Slug</button>
-                    <button class="m-btn-action m-btn-domain" onclick="passMerchantDomain(${m.id})" style="${btnBase}">Extend</button>
-                    <button class="m-btn-action m-btn-suspend" onclick="revokeDomain(${m.id})" style="${btnBase}">Revoke</button>
+                    <a class="m-btn-action m-btn-visit" href="https://${sub}" target="_blank" rel="noopener">Visit ↗</a>
+                    <button class="m-btn-action m-btn-inspect" onclick="openDomainModal(${m.id})">Edit Slug</button>
+                    <button class="m-btn-action m-btn-domain" onclick="passMerchantDomain(${m.id})">Extend</button>
+                    <button class="m-btn-action m-btn-suspend" onclick="revokeDomain(${m.id})">Revoke</button>
                 `;
             } else {
                 actions = `
-                    <button class="m-btn-action m-btn-approve" onclick="openDomainModal(${m.id})" style="${btnBase}">Setup Subdomain (VIP)</button>
+                    <button class="m-btn-action m-btn-approve" onclick="openDomainModal(${m.id})">Setup Subdomain (VIP)</button>
                 `;
             }
 
@@ -2603,7 +2601,7 @@ function renderDomainUpgrades(merchants, requests) {
                 <td data-label="Plan & Amount"><b>${planName}</b>${m.domain_paid_amount ? muted(ngn(m.domain_paid_amount)) : ''}</td>
                 <td data-label="Sender / Reference">${ref}${m.domain_requested_at ? muted(escapeHtml(m.domain_requested_at)) : ''}</td>
                 <td data-label="Status">${statusPill}</td>
-                <td data-label="Action" style="white-space: nowrap !important; text-align: right; vertical-align: middle;"><div class="m-action-group" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: flex-end !important; gap: 6px !important;">${actions}</div></td>
+                <td data-label="Action" class="m-actions-cell"><div class="m-action-group">${actions}</div></td>
             </tr>`;
         }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No dedicated domain upgrades yet. Use "Pass Merchant (VIP)" on any merchant to grant one.</td></tr>';
     } catch (err) {

@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../paj_api.php';
 
+// One-time patch for reference 6af1ef48fec311bde2ba26b2 (1000 NGN SOL buy rounded to 999.99)
+try {
+    Database::safeExecute("UPDATE `transactions` SET `amount` = 1000.00 WHERE `reference` = '6af1ef48fec311bde2ba26b2' AND `amount` < 1000.00");
+} catch (Throwable $e) {}
+
 if (!function_exists('getPajFee')) {
     function getPajFee(): float
     {
@@ -32,16 +37,16 @@ function pajSymbolForMint(string $mint): string
 }
 
 /** PAJ's live naira per USD for a direction (fallback 1350). */
-function pajLiveRate(string $direction = 'ONRAMP'): float
+function pajLiveRate(string $direction = 'ONRAMP', bool $forceFresh = false): float
 {
     static $cache = [];
     $key = strtolower($direction) === 'offramp' ? 'offramp' : 'onramp';
-    if (isset($cache[$key])) {
+    if (!$forceFresh && isset($cache[$key])) {
         return $cache[$key];
     }
     $rate = 1350.0;
     try {
-        $rates = pajApi()->getPajRate();
+        $rates = pajApi()->getPajRate($forceFresh);
         if (!empty($rates[$key]['rate']) && is_numeric($rates[$key]['rate']) && (float) $rates[$key]['rate'] > 0) {
             $rate = (float) $rates[$key]['rate'];
         }
@@ -202,14 +207,25 @@ function registerPajRoutes(Router $router): void
                 $businessUSDCFee = max(0.01, calculatePajDeveloperFee($totalInputAmount, 'ONRAMP', $feePercent));
             }
 
-            // PAJ adds businessUSDCFee on top of fiatAmount. Take it out first, so the amount the
-            // customer typed is the amount they transfer.
+            // PAJ adds businessUSDCFee on top of fiatAmount. Take it out first using live rate,
+            // so the amount the customer typed is the amount they transfer.
             $fiatForPaj = $totalInputAmount;
             if ($businessUSDCFee !== null) {
-                $fiatForPaj = round($totalInputAmount - $businessUSDCFee * pajLiveRate('ONRAMP'), 2);
+                $rate = pajLiveRate('ONRAMP', true);
+                $feeInNgn = round($businessUSDCFee * $rate, 2);
+                $fiatForPaj = round($totalInputAmount - $feeInNgn, 2);
             }
             $order = pajApi()->createOnrampOrder($fiatForPaj, $recipient, $mint, $businessUSDCFee);
             $d = $order ?? [];
+
+            // If PAJ's internal rate added 1-2 kobo rounding difference (e.g. 999.99 vs 1000.00),
+            // snap it to the exact amount the user entered so bank transfer instructions match
+            if (isset($order['fiatAmount']) && abs((float) $order['fiatAmount'] - $totalInputAmount) < 0.15) {
+                $order['fiatAmount'] = $totalInputAmount;
+                if (isset($d['fiatAmount'])) {
+                    $d['fiatAmount'] = $totalInputAmount;
+                }
+            }
             $assetInfo = null;
             foreach (pajApi()->getAssets() as $a) {
                 if ($a['mint'] === $mint) {
@@ -218,6 +234,10 @@ function registerPajRoutes(Router $router): void
                 }
             }
             $txRef = $d['id'] ?? ('paj_' . bin2hex(random_bytes(8)));
+            $savedAmount = $totalInputAmount;
+            if (isset($d['fiatAmount']) && (float) $d['fiatAmount'] > 0) {
+                $savedAmount = abs((float) $d['fiatAmount'] - $totalInputAmount) < 0.15 ? $totalInputAmount : (float) $d['fiatAmount'];
+            }
             $txRecord = [
                 'reference' => $txRef,
                 'type' => 'ONRAMP',
@@ -226,7 +246,7 @@ function registerPajRoutes(Router $router): void
                 'currency' => 'NGN',
                 'asset' => $assetInfo ? $assetInfo['symbol'] : 'SOL',
                 'channel' => 'PAJ',
-                'amount' => isset($d['fiatAmount']) && (float) $d['fiatAmount'] > 0 ? (float) $d['fiatAmount'] : $totalInputAmount,
+                'amount' => $savedAmount,
                 'destination_amount' => isset($d['amount']) ? (float) $d['amount'] : null,
                 'fee_developer' => $businessUSDCFee,
                 'deposit_bank_name' => $d['bank'] ?? 'PAJ Partner Bank',

@@ -1420,8 +1420,16 @@ code, pre {
 }
 
 /* Compact Table Action Buttons */
+.m-actions-cell {
+    white-space: nowrap !important;
+    text-align: right !important;
+    vertical-align: middle !important;
+    min-width: 270px !important;
+    width: 1% !important;
+}
+
 .m-action-group {
-    display: flex !important;
+    display: inline-flex !important;
     flex-direction: row !important;
     gap: 6px !important;
     align-items: center !important;
@@ -1438,7 +1446,7 @@ code, pre {
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 5px 10px !important;
+    padding: 6px 12px !important;
     font-size: 11.5px !important;
     font-weight: 600;
     border-radius: 7px !important;

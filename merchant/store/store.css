@@ -858,33 +858,37 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 
 /* Network caution alert */
 .s-net-alert,
-.s-layout-card .s-net-alert {
+.s-layout-card .s-net-alert,
+.s-layout-minimal .s-net-alert {
   margin: 12px 0 14px;
   padding: 12px 14px;
   background: #fffbeb !important;
-  border: 1.5px solid #fde68a !important;
+  border: 1.5px solid #f59e0b !important;
   border-radius: 14px;
   text-align: left;
   color: #78350f !important;
 }
-.s-layout-minimal .s-net-alert {
-  background: #fefce8 !important;
-  border-color: #fef08a !important;
-  color: #78350f !important;
-}
 .s-net-badge,
-.s-layout-card .s-net-badge {
+.s-layout-card .s-net-badge,
+.s-layout-minimal .s-net-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 3px 9px;
-  background: #fef3c7 !important;
-  border: 1px solid #fde68a !important;
+  background: #fde68a !important;
+  border: 1px solid #f59e0b !important;
   border-radius: 20px;
   font-size: 11.5px;
   font-weight: 700;
-  color: #92400e !important;
+  color: #78350f !important;
   margin-bottom: 6px;
+}
+.s-net-badge span,
+.s-net-badge b,
+.s-layout-card .s-net-badge span,
+.s-layout-card .s-net-badge b {
+  color: #78350f !important;
+  font-weight: 700;
 }
 .s-net-dot {
   width: 7px;
@@ -894,17 +898,19 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
   display: inline-block;
 }
 .s-net-desc,
-.s-layout-card .s-net-desc {
+.s-layout-card .s-net-desc,
+.s-layout-minimal .s-net-desc {
   margin: 0;
   font-size: 12.5px;
   line-height: 1.45;
-  color: #78350f !important;
-  font-weight: 500;
+  color: #92400e !important;
+  font-weight: 600;
 }
 .s-net-desc b,
-.s-layout-card .s-net-desc b {
+.s-layout-card .s-net-desc b,
+.s-layout-minimal .s-net-desc b {
   color: #451a03 !important;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* Offline / online floating banner */

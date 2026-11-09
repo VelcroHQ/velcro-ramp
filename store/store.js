@@ -785,7 +785,21 @@ function resolveStoreBankName(o) {
 }
 
 function orderReceiptHtml(o) {
-  const isBuy = o.side === 'buy' || (checkout && checkout.side === 'buy') || (o.type && String(o.type).toUpperCase() === 'ONRAMP') || (o.direction && String(o.direction).toUpperCase() === 'ONRAMP') || (!o.side && !o.address && !!o.account);
+  let isBuy = (o.side === 'buy') ||
+    (typeof checkout !== 'undefined' && checkout && checkout.side === 'buy') ||
+    (o.type && String(o.type).toUpperCase() === 'ONRAMP') ||
+    (o.direction && String(o.direction).toUpperCase() === 'ONRAMP') ||
+    (Boolean(o.account) && !o.address) ||
+    (Boolean(o.wallet) && !o.address);
+
+  // Absolute safety guard: if order has bank transfer details or recipient wallet without a deposit address, it is definitively a BUY
+  if (!o.address && (o.account || o.bank || o.wallet)) {
+    isBuy = true;
+  }
+  if (o.address && !o.account) {
+    isBuy = false;
+  }
+
   const cryptoAmt = isBuy
     ? (o.destAmount ? `${fmtCoin(o.destAmount, o.coin)} ${esc(o.coin)}` : (o.amount ? `${fmtCoin(estimateFor(o.coin, o.amount), o.coin)} ${esc(o.coin)}` : esc(o.coin)))
     : (o.sendAmount ? `${fmtCoin(o.sendAmount, o.coin)} ${esc(o.coin)}` : (o.amount ? `${fmtCoin(o.amount, o.coin)} ${esc(o.coin)}` : esc(o.coin)));
@@ -1004,7 +1018,7 @@ function sellPayHtml() {
       ${bankRow('Address', esc(o.address), o.address, 's-mono')}
       ${o.memo ? bankRow('Memo', esc(o.memo), o.memo, 's-mono') : ''}
       ${o.sendAmount ? bankRow('Amount', amount, String(o.sendAmount)) : ''}
-      ${o.payTo ? bankRow('Paid to', esc(o.payTo)) : ''}
+      ${o.payTo ? bankRow('Payout destination', esc(o.payTo)) : ''}
     </div>
     <p class="s-expiry" id="co-expiry"></p>
     ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn s-go" data-act="paid">I’ve sent the ${esc(o.coin)}</button>
@@ -1354,10 +1368,13 @@ async function createBuy() {
       };
     } else if (checkout.provider === 'paj') {
       const d = await api('/api/paj/initiate', { method: 'POST', body: { store: SLUG, fiatAmount: checkout.amount, recipient: wallet, mint: PAJ_MINTS[checkout.coin] } });
+      const orderAmount = (Number(d.fiatAmount) > 0 && Math.abs(Number(d.fiatAmount) - checkout.amount) < 0.15)
+        ? checkout.amount
+        : (Number(d.fiatAmount) > 0 ? Number(d.fiatAmount) : checkout.amount);
       checkout.order = {
         ...base,
         reference: d.id,
-        amount: Number(d.fiatAmount) > 0 ? Number(d.fiatAmount) : checkout.amount,
+        amount: orderAmount,
         destAmount: Number(d.cryptoAmount) || base.destAmount,
         bank: d.bank || 'Partner Bank',
         account: d.accountNumber || '',
@@ -1416,13 +1433,21 @@ function startPolling(every = 5000) {
       const t = await api('/api/transactions/' + encodeURIComponent(o.reference));
       const was = o.status;
       o.status = String(t.status || '').toUpperCase();
-      if (t.type) o.side = String(t.type).toUpperCase() === 'OFFRAMP' ? 'sell' : 'buy';
-      if (t.direction) o.side = String(t.direction).toUpperCase() === 'OFFRAMP' ? 'sell' : 'buy';
+      if (t.type) {
+        const isOff = String(t.type).toUpperCase() === 'OFFRAMP';
+        o.side = isOff ? 'sell' : 'buy';
+        if (typeof checkout !== 'undefined' && checkout) checkout.side = o.side;
+      }
+      if (t.direction) {
+        const isOff = String(t.direction).toUpperCase() === 'OFFRAMP';
+        o.side = isOff ? 'sell' : 'buy';
+        if (typeof checkout !== 'undefined' && checkout) checkout.side = o.side;
+      }
       if (t.destination_amount) {
         o.destAmount = Number(t.destination_amount);
         if (o.side === 'sell') o.payoutAmount = Number(t.destination_amount);
       }
-      if (t.source_amount) {
+      if (t.source_amount && o.side === 'sell') {
         o.sendAmount = Number(t.source_amount);
       }
       o.progress = (t.hostfi_progress || [])[0] || {

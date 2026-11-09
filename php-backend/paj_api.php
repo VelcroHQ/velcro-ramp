@@ -212,10 +212,10 @@ class PajApiClient
 
     // ─── Rates & Values ───
 
-    public function getPajRate(): array
+    public function getPajRate(bool $forceFresh = false): array
     {
         $cacheFile = BASE_PATH . '/data/.paj_rate.json';
-        if (is_file($cacheFile) && (time() - (int) filemtime($cacheFile)) < 60) {
+        if (!$forceFresh && is_file($cacheFile) && (time() - (int) filemtime($cacheFile)) < 60) {
             $cached = @json_decode((string) file_get_contents($cacheFile), true);
             if (is_array($cached) && !empty($cached['onramp'])) {
                 return $cached;
