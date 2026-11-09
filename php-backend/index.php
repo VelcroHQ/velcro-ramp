@@ -77,23 +77,33 @@ registerMerchantRoutes($router);
 registerStoreRoutes($router);
 registerMerchantPayoutRoutes($router);
 
-// Receipts and campaign batches: sent after the response is flushed, at most every 20s.
+// Receipts and status poller: run after the HTTP response has finished flushing.
 register_shutdown_function(static function (): void {
-    $tick = BASE_PATH . '/data/.receipts_tick';
-    if (!mailConfigured() || (is_file($tick) && time() - filemtime($tick) < 20)) {
-        return;
-    }
-    @touch($tick);
     if (function_exists('litespeed_finish_request')) {
         litespeed_finish_request();
     } elseif (function_exists('fastcgi_finish_request')) {
         fastcgi_finish_request();
     }
-    try {
-        sendPendingReceipts();
-        sendCampaignBatch(20);
-    } catch (Throwable $e) {
-        error_log('Receipt sending failed: ' . $e->getMessage());
+
+    $tick = BASE_PATH . '/data/.receipts_tick';
+    if (mailConfigured() && (!is_file($tick) || time() - filemtime($tick) >= 20)) {
+        @touch($tick);
+        try {
+            sendPendingReceipts();
+            sendCampaignBatch(20);
+        } catch (Throwable $e) {
+            error_log('Receipt sending failed: ' . $e->getMessage());
+        }
+    }
+
+    $pollTick = BASE_PATH . '/data/.poller_tick';
+    if (!is_file($pollTick) || time() - filemtime($pollTick) >= 60) {
+        @touch($pollTick);
+        try {
+            runBackgroundPoller();
+        } catch (Throwable $e) {
+            error_log('[Poller] Shutdown poll failed: ' . $e->getMessage());
+        }
     }
 });
 
