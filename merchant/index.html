@@ -14,7 +14,7 @@
   <meta property="og:title" content="Velcro Merchant — Your own crypto exchange, live in minutes">
   <meta property="og:description" content="Sell crypto to your customers under your own brand. Velcro handles the naira accounts, the swaps and the payouts.">
   <meta property="og:image" content="https://merchant.usevelcro.com/og-image.png">
-  <link href="merchant.css?v=29" rel="stylesheet">
+  <link href="merchant.css?v=30" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- The fonts never hold up the page: system text shows until they arrive. -->
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -300,8 +300,8 @@
       <section id="tab-prices" class="d-tab hidden">
         <div class="d-head d-prices-head-bar">
           <div>
-            <h1>Prices & Markup</h1>
-            <p>Velcro provides live base rates with zero liquidity fees. Set your markup on top—every naira above or below the base is 100% your earnings.</p>
+            <h1>Prices &amp; Markup</h1>
+            <p>Velcro provides real-time base rates with zero liquidity fees. Set your profit markup per coin—customer rates calculate automatically.</p>
           </div>
           <div class="d-rates-status-pill">
             <span class="d-pulse-dot"></span>
@@ -312,46 +312,57 @@
           </div>
         </div>
 
-        <!-- Quick Presets & Bulk Actions -->
-        <div class="d-preset-card">
-          <div class="d-preset-header">
-            <span class="d-preset-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
-            <div class="d-preset-info">
-              <b>Quick Markup Presets</b>
-              <small>Apply a uniform margin across all active coins in one tap</small>
+        <!-- Mature Unified Controls Bar -->
+        <div class="d-pricing-ctrl-bar">
+          <div class="d-pricing-ctrl-block">
+            <span class="d-pricing-ctrl-title">Customer Rate Format</span>
+            <div class="d-rate-format-seg">
+              <label class="d-seg-item">
+                <input type="radio" name="rate-display" value="final">
+                <span class="d-seg-box">
+                  <b>Final rate only</b>
+                  <small id="disp-final">e.g. $1 = ₦1,426</small>
+                </span>
+              </label>
+              <label class="d-seg-item">
+                <input type="radio" name="rate-display" value="breakdown">
+                <span class="d-seg-box">
+                  <b>Rate + fee breakdown</b>
+                  <small id="disp-breakdown">e.g. ₦1,412 + 1%</small>
+                </span>
+              </label>
             </div>
           </div>
-          <div class="d-preset-actions">
-            <div class="d-preset-chips">
-              <button type="button" class="d-chip" onclick="applyMarkupPreset(0.5)"><b>0.5%</b> <small>Competitive</small></button>
-              <button type="button" class="d-chip" onclick="applyMarkupPreset(1.0)"><b>1.0%</b> <small>Standard</small></button>
-              <button type="button" class="d-chip" onclick="applyMarkupPreset(1.5)"><b>1.5%</b> <small>Recommended</small></button>
-              <button type="button" class="d-chip" onclick="applyMarkupPreset(2.0)"><b>2.0%</b> <small>High Margin</small></button>
+
+          <div class="d-pricing-ctrl-block d-pricing-ctrl-right">
+            <div class="d-pricing-preset-row">
+              <span class="d-pricing-ctrl-title">Set markup for all</span>
+              <div class="d-preset-pill-group">
+                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(0.5)">0.5%</button>
+                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(1.0)">1.0%</button>
+                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(1.5)">1.5%</button>
+                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(2.0)">2.0%</button>
+              </div>
             </div>
-            <div class="d-preset-bulk">
-              <button type="button" class="d-bulk-btn" onclick="toggleAllSides('buy', true)">Enable all Buys</button>
+            <div class="d-pricing-bulk-row">
+              <button type="button" class="d-bulk-link" onclick="toggleAllSides('buy', true)">Enable all buys</button>
               <span class="d-bulk-sep">·</span>
-              <button type="button" class="d-bulk-btn" onclick="toggleAllSides('sell', true)">Enable all Sells</button>
+              <button type="button" class="d-bulk-link" onclick="toggleAllSides('sell', true)">Enable all sells</button>
               <span class="d-bulk-sep">·</span>
-              <button type="button" class="d-bulk-btn is-warn" onclick="toggleAllSides('all', false)">Disable all</button>
+              <button type="button" class="d-bulk-link is-danger" onclick="toggleAllSides('all', false)">Disable all</button>
             </div>
           </div>
         </div>
 
-        <fieldset class="d-display">
-          <legend>How customers see your rate</legend>
-          <div class="d-display-opts">
-            <label><input type="radio" name="rate-display" value="final"><span><b>Final rate only</b><em>Simplest. One number, like any exchange.</em><small id="disp-final">$1 = ₦1,426</small></span></label>
-            <label><input type="radio" name="rate-display" value="breakdown"><span><b>Velcro rate + your markup</b><em>Open about your margin.</em><small id="disp-breakdown">$1 = ₦1,412 + 1% fee</small></span></label>
+        <!-- Clean Financial Pricing Table -->
+        <div class="d-pricing-table-card">
+          <div class="d-pricing-table-head">
+            <div class="d-th d-th-asset">Cryptocurrency</div>
+            <div class="d-th d-th-buy">Customers Buy (NGN → Crypto)</div>
+            <div class="d-th d-th-sell">Customers Sell (Crypto → NGN)</div>
+            <div class="d-th d-th-spread">Spread &amp; Status</div>
           </div>
-        </fieldset>
-
-        <div class="d-prices-container">
-          <div class="d-prices-toolbar">
-            <span class="d-prices-count" id="prices-live-summary">Supported Cryptocurrencies</span>
-            <span class="d-prices-hint">Rates are per $1 and update every minute. Markups can be 0%–<span id="max-markup">5</span>%. A side that's switched off is hidden from your exchange.</span>
-          </div>
-          <div id="price-rows" class="d-price-cards"></div>
+          <div id="price-rows" class="d-pricing-table-body"></div>
         </div>
 
         <div class="d-savebar d-savebar-pop" id="prices-bar">
@@ -861,7 +872,7 @@
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="merchant.js?v=31"></script>
+  <script src="merchant.js?v=32"></script>
 </body>
 
 </html>

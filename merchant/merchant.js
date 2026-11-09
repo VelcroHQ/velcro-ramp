@@ -1950,67 +1950,57 @@ function renderPrices() {
   if ($('max-markup')) $('max-markup').textContent = me.max_markup;
 
   const coins = Object.entries(me.coins || {});
-  if ($('prices-live-summary')) $('prices-live-summary').textContent = `${coins.length} Supported Cryptocurrencies`;
 
   const rows = $('price-rows');
   if (rows) {
     rows.innerHTML = coins.map(([sym, name]) => {
-      const sideBlock = (sideKey, sideLabel, subText) => `
-        <div class="d-asset-side is-${sideKey}" data-cell="${sym}-${sideKey}">
-          <div class="d-side-head">
-            <div class="d-side-title-wrap">
-              <span class="d-side-pill is-${sideKey}">${sideLabel}</span>
-              <small class="d-side-sub">${subText}</small>
-            </div>
-            <button type="button" class="d-toggle" role="switch" aria-label="${sym} ${sideKey} on/off" data-sym="${sym}" data-side="${sideKey}"></button>
-          </div>
-
-          <div class="d-side-controls">
-            <div class="d-control-label-row">
-              <span class="d-control-label">Your Markup %</span>
-              <span class="d-control-hint">0%–${me.max_markup}%</span>
-            </div>
-            <div class="d-markup-stepper">
-              <button type="button" class="d-step-btn" onclick="stepMarkup('${sym}', '${sideKey}', -0.1)" title="Decrease markup">−</button>
-              <label class="d-markup">
+      const sideBlock = (sideKey, sideLabel) => `
+        <div class="d-side-mature-wrap is-${sideKey}" data-cell="${sym}-${sideKey}">
+          <div class="d-side-mature-top">
+            <span class="d-side-mature-badge is-${sideKey}">${sideLabel}</span>
+            <div class="d-side-mature-input-group">
+              <button type="button" class="d-mature-step-btn" onclick="stepMarkup('${sym}', '${sideKey}', -0.1)" title="Decrease markup">−</button>
+              <label class="d-mature-markup-box">
                 <input type="number" inputmode="decimal" min="0" max="${me.max_markup}" step="0.05" data-sym="${sym}" data-side="${sideKey}" aria-label="${sym} ${sideKey} markup %">
                 <span>%</span>
               </label>
-              <button type="button" class="d-step-btn" onclick="stepMarkup('${sym}', '${sideKey}', 0.1)" title="Increase markup">+</button>
+              <button type="button" class="d-mature-step-btn" onclick="stepMarkup('${sym}', '${sideKey}', 0.1)" title="Increase markup">+</button>
             </div>
-            <div class="d-quick-chips">
-              <button type="button" class="d-quick-chip" onclick="setCoinMarkup('${sym}', '${sideKey}', 0.5)">0.5%</button>
-              <button type="button" class="d-quick-chip" onclick="setCoinMarkup('${sym}', '${sideKey}', 1.0)">1.0%</button>
-              <button type="button" class="d-quick-chip" onclick="setCoinMarkup('${sym}', '${sideKey}', 1.5)">1.5%</button>
-              <button type="button" class="d-quick-chip" onclick="setCoinMarkup('${sym}', '${sideKey}', 2.0)">2.0%</button>
-            </div>
+            <button type="button" class="d-toggle" role="switch" aria-label="${sym} ${sideKey} on/off" data-sym="${sym}" data-side="${sideKey}"></button>
           </div>
-
           <div class="d-side-result" data-out="${sym}-${sideKey}"></div>
         </div>
       `;
 
       return `
-        <div class="d-asset-card" data-card="${sym}">
-          <div class="d-asset-head">
-            <div class="d-asset-info">
-              ${logoImg(sym)}
-              <div>
-                <div class="d-asset-name-row">
-                  <b class="d-asset-sym">${sym}</b>
-                  <span class="d-asset-name">${esc(name)}</span>
-                </div>
-                <div class="d-asset-spread-tag" data-spread="${sym}">Spread: calculating…</div>
+        <div class="d-pricing-row-mature" data-card="${sym}">
+          <div class="d-td d-td-asset">
+            ${logoImg(sym)}
+            <div class="d-asset-title-block">
+              <div class="d-asset-main-name">
+                <b class="d-asset-sym-txt">${sym}</b>
+                <span class="d-asset-name-txt">${esc(name)}</span>
               </div>
-            </div>
-            <div class="d-asset-status" data-card-status="${sym}">
-              <span class="d-st is-live">Active</span>
+              <small class="d-asset-base-txt" data-base-display="${sym}">Live base rates active</small>
             </div>
           </div>
 
-          <div class="d-asset-grid">
-            ${sideBlock('buy', 'Customers Buy', `They pay NGN → receive ${sym}`)}
-            ${sideBlock('sell', 'Customers Sell', `They send ${sym} → receive NGN`)}
+          <div class="d-td d-td-buy">
+            <span class="d-mobile-side-label">Customers Buy</span>
+            ${sideBlock('buy', 'Buy')}
+          </div>
+
+          <div class="d-td d-td-sell">
+            <span class="d-mobile-side-label">Customers Sell</span>
+            ${sideBlock('sell', 'Sell')}
+          </div>
+
+          <div class="d-td d-td-spread">
+            <span class="d-mobile-side-label">Spread &amp; Status</span>
+            <div class="d-spread-mature-box">
+              <div class="d-asset-spread-tag" data-spread="${sym}">—</div>
+              <div class="d-asset-status" data-card-status="${sym}"></div>
+            </div>
           </div>
         </div>
       `;
@@ -2063,48 +2053,46 @@ function paintPriceRows(dirty) {
       const cell = document.querySelector(`[data-cell="${sym}-${side}"]`);
       if (cell) cell.classList.toggle('is-off', !on);
 
-      // Active chips highlight
-      if (cell) {
-        cell.querySelectorAll('.d-quick-chip').forEach(ch => {
-          const chVal = parseFloat(ch.textContent);
-          ch.classList.toggle('is-active', on && Math.abs(chVal - markup) < 0.01);
-        });
-      }
-
       const out = document.querySelector(`[data-out="${sym}-${side}"]`);
       if (out) {
         if (!on) {
           out.innerHTML = `
-            <div class="d-rate-off-box">
-              <span class="d-off-icon">✕</span>
-              <div class="d-off-text">
-                <b>Hidden from exchange</b>
-                <small>Customers cannot ${side} ${sym}</small>
-              </div>
-              <button type="button" class="d-btn-turn-on" onclick="toggleSide('${sym}', '${side}', true)">Enable</button>
+            <div class="d-rate-mature-off">
+              <span class="d-rate-off-dot"></span>
+              <span>Inactive</span>
+              <button type="button" class="d-btn-inline-enable" onclick="toggleSide('${sym}', '${side}', true)">Enable</button>
             </div>
           `;
         } else if (rate && base) {
           const profitPerDollar = Math.abs(rate - base);
           out.innerHTML = `
-            <div class="d-rate-box">
-              <div class="d-rate-main">
-                <small class="d-rate-lbl">${side === 'buy' ? 'Customer Pays' : 'Customer Gets'}</small>
-                <b class="d-rate-val">${rateText(rate)}</b>
+            <div class="d-rate-mature-box">
+              <div class="d-rate-mature-main">
+                <span class="d-rate-mature-lbl">${side === 'buy' ? 'Customer Pays' : 'Customer Gets'}</span>
+                <b class="d-rate-mature-val">${rateText(rate)}</b>
               </div>
-              <div class="d-rate-sub">
-                <span class="d-base-tag">Velcro Base: ${nairaRate(base)}</span>
-                <span class="d-profit-tag">+${nairaRate(profitPerDollar)} / $1 profit (${markup.toFixed(2)}%)</span>
+              <div class="d-rate-mature-sub">
+                <span class="d-mature-base-tag">Base: ${nairaRate(base)}</span>
+                <span class="d-mature-profit-tag">+${nairaRate(profitPerDollar)} / $1 (${markup.toFixed(2)}%)</span>
               </div>
             </div>
           `;
         } else {
-          out.innerHTML = `<div class="d-rate-off-box"><span class="is-none">Rate temporarily unavailable</span></div>`;
+          out.innerHTML = `<div class="d-rate-mature-off"><span class="is-none">Rate temporarily unavailable</span></div>`;
         }
       }
     });
 
-    // Spread calculation & status badge for the coin card
+    const baseDisplay = document.querySelector(`[data-base-display="${sym}"]`);
+    if (baseDisplay) {
+      if (baseBuy && baseSell) {
+        baseDisplay.textContent = `Base: ${nairaRate(baseBuy)} / $1`;
+      } else if (baseBuy || baseSell) {
+        baseDisplay.textContent = `Base: ${nairaRate(baseBuy || baseSell)} / $1`;
+      }
+    }
+
+    // Spread calculation & status badge for the coin row
     const cardSpread = document.querySelector(`[data-spread="${sym}"]`);
     const cardStatus = document.querySelector(`[data-card-status="${sym}"]`);
     const buyOn = Boolean(p.buy_on);
@@ -2112,13 +2100,13 @@ function paintPriceRows(dirty) {
 
     if (cardStatus) {
       if (buyOn && sellOn) {
-        cardStatus.innerHTML = '<span class="d-st is-live">Both Sides Live</span>';
+        cardStatus.innerHTML = '<span class="d-st is-live">Active</span>';
       } else if (buyOn) {
         cardStatus.innerHTML = '<span class="d-st is-wait">Buy Only</span>';
       } else if (sellOn) {
         cardStatus.innerHTML = '<span class="d-st is-wait">Sell Only</span>';
       } else {
-        cardStatus.innerHTML = '<span class="d-st is-off">Hidden</span>';
+        cardStatus.innerHTML = '<span class="d-st is-off">Disabled</span>';
       }
     }
 
@@ -2127,13 +2115,13 @@ function paintPriceRows(dirty) {
         const diff = activeBuyRate - activeSellRate;
         const avgBase = ((baseBuy || activeBuyRate) + (baseSell || activeSellRate)) / 2;
         const spreadPct = (diff / avgBase) * 100;
-        cardSpread.innerHTML = `<span>Spread: <b>${nairaRate(diff)}</b> / $1 (${spreadPct.toFixed(2)}%)</span>`;
+        cardSpread.innerHTML = `<span>Spread: <b>${nairaRate(diff)}</b> (${spreadPct.toFixed(2)}%)</span>`;
         cardSpread.className = 'd-asset-spread-tag is-positive';
       } else if (buyOn || sellOn) {
-        cardSpread.innerHTML = `<span>Single side active</span>`;
+        cardSpread.innerHTML = `<span>Single side</span>`;
         cardSpread.className = 'd-asset-spread-tag is-neutral';
       } else {
-        cardSpread.innerHTML = `<span>Pair disabled</span>`;
+        cardSpread.innerHTML = `<span>Disabled</span>`;
         cardSpread.className = 'd-asset-spread-tag is-muted';
       }
     }
