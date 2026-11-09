@@ -1660,7 +1660,7 @@ function registerMerchantRoutes(Router $router): void
         if (!$m) {
             jsonResponse(['success' => false, 'error' => 'Merchant not found'], 404);
         }
-        if ($m['status'] === 'DRAFT') {
+        if ($m['status'] === 'DRAFT' && $status !== 'APPROVED') {
             jsonResponse(['success' => false, 'error' => 'This merchant hasn’t submitted verification yet'], 400);
         }
         Database::execute(

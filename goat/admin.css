@@ -1551,14 +1551,14 @@ code, pre {
 }
 
 .m-btn-suspend {
-    background: rgba(239, 68, 68, 0.08);
-    color: #dc2626;
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: rgba(217, 119, 6, 0.08);
+    color: #b45309;
+    border: 1px solid rgba(217, 119, 6, 0.25);
 }
 .m-btn-suspend:hover {
-    background: #dc2626;
+    background: #d97706;
     color: #fff;
-    border-color: #dc2626;
+    border-color: #d97706;
 }
 
 .m-btn-approve {
@@ -1573,13 +1573,14 @@ code, pre {
 }
 
 .m-btn-reject {
-    background: rgba(100, 116, 139, 0.1);
-    color: var(--text-secondary);
-    border: 1px solid var(--border);
+    background: rgba(239, 68, 68, 0.08);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.25);
 }
 .m-btn-reject:hover {
-    background: var(--border);
-    color: var(--text-main);
+    background: #dc2626;
+    color: #fff;
+    border-color: #dc2626;
 }
 
 /* Dark mode for table actions */
@@ -1597,4 +1598,19 @@ code, pre {
     background: rgba(139, 92, 246, 0.15);
     color: #a78bfa;
     border-color: rgba(139, 92, 246, 0.3);
+}
+.dark .m-btn-approve {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+.dark .m-btn-suspend {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+.dark .m-btn-reject {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
 }

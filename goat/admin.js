@@ -2197,7 +2197,7 @@ let selectedMerchantForDetail = null;
 
 function setMerchantFilter(filter) {
     currentMerchantFilter = filter;
-    ['ALL', 'PENDING', 'APPROVED', 'DOMAINS', 'DRAFT'].forEach(f => {
+    ['ALL', 'PENDING', 'APPROVED', 'DOMAINS', 'DRAFT', 'REJECTED'].forEach(f => {
         const btn = document.getElementById('mf-btn-' + f);
         if (btn) {
             btn.classList.toggle('active', f === filter);
@@ -2219,6 +2219,8 @@ function filterMerchantsList() {
         filtered = filtered.filter(m => (m.domain_status && m.domain_status !== 'NONE') || m.domain_subdomain);
     } else if (currentMerchantFilter === 'DRAFT') {
         filtered = filtered.filter(m => m.status === 'DRAFT');
+    } else if (currentMerchantFilter === 'REJECTED') {
+        filtered = filtered.filter(m => m.status === 'REJECTED' || m.status === 'SUSPENDED');
     }
 
     // Filter by search query
@@ -2244,6 +2246,7 @@ function updateMerchantStats() {
     const approved = allMerchants.filter(m => m.status === 'APPROVED').length;
     const drafts = allMerchants.filter(m => m.status === 'DRAFT').length;
     const pending = allMerchants.filter(m => m.status === 'PENDING').length;
+    const rejected = allMerchants.filter(m => m.status === 'REJECTED' || m.status === 'SUSPENDED').length;
     const domains = allMerchants.filter(m => m.domain_status === 'ACTIVE').length;
     const domainPending = allMerchants.filter(m => m.domain_status === 'PENDING').length;
     const totalShoppers = allMerchants.reduce((sum, m) => sum + (Number(m.customers) || 0), 0);
@@ -2281,6 +2284,8 @@ function updateMerchantStats() {
     if (cDom) cDom.textContent = allMerchants.filter(m => (m.domain_status && m.domain_status !== 'NONE') || m.domain_subdomain).length;
     const cDraft = document.getElementById('mf-count-DRAFT');
     if (cDraft) cDraft.textContent = drafts;
+    const cRej = document.getElementById('mf-count-REJECTED');
+    if (cRej) cRej.textContent = rejected;
 
     const badge = document.getElementById('merchants-pending');
     if (badge) {
@@ -2336,13 +2341,14 @@ function renderMerchantsTable(rows) {
 
         // Action buttons
         const actions = {
-            PENDING: [['APPROVED', 'Approve', 'm-btn-approve'], ['REJECTED', 'Reject', 'm-btn-reject']],
-            APPROVED: [['SUSPENDED', 'Suspend', 'm-btn-suspend']],
-            SUSPENDED: [['APPROVED', 'Reinstate', 'm-btn-approve']],
-            REJECTED: [], DRAFT: [],
+            PENDING: [['APPROVED', 'Approve', 'm-btn-approve'], ['REJECTED', 'Disapprove', 'm-btn-reject']],
+            APPROVED: [['REJECTED', 'Disapprove', 'm-btn-reject'], ['SUSPENDED', 'Suspend', 'm-btn-suspend']],
+            SUSPENDED: [['APPROVED', 'Reinstate', 'm-btn-approve'], ['REJECTED', 'Disapprove', 'm-btn-reject']],
+            REJECTED: [['APPROVED', 'Approve', 'm-btn-approve']],
+            DRAFT: [['APPROVED', 'Approve (VIP)', 'm-btn-approve']],
         }[m.status] || [];
 
-        const statusPill = `<span class="status-pill ${String(m.status).toLowerCase()}">${statusLabel(m.status === 'DRAFT' ? 'Not submitted' : m.status)}</span>${m.review_note ? `<div class="hostfi-note" style="margin-top: 4px;">${escapeHtml(m.review_note)}</div>` : ''}`;
+        const statusPill = `<span class="status-pill ${String(m.status).toLowerCase()}">${statusLabel(m.status === 'DRAFT' ? 'Not submitted' : (m.status === 'REJECTED' ? 'Disapproved' : m.status))}</span>${m.review_note ? `<div class="hostfi-note" style="margin-top: 4px;">${escapeHtml(m.review_note)}</div>` : ''}`;
 
         return `
         <tr>
@@ -2409,7 +2415,7 @@ function openMerchantDetailModal(id) {
     const statusPill = document.getElementById('md-status-pill');
     if (statusPill) {
         statusPill.className = `status-pill ${String(m.status).toLowerCase()}`;
-        statusPill.textContent = statusLabel(m.status === 'DRAFT' ? 'Not submitted' : m.status);
+        statusPill.textContent = statusLabel(m.status === 'DRAFT' ? 'Not submitted' : (m.status === 'REJECTED' ? 'Disapproved' : m.status));
     }
     const domPill = document.getElementById('md-domain-pill');
     if (domPill) {
@@ -2497,15 +2503,25 @@ function openMerchantDetailModal(id) {
         if (m.status === 'PENDING') {
             actBtns += `
                 <button type="button" class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Approve')">Approve Business</button>
-                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'REJECTED', 'Reject')">Reject</button>
+                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px; color: #dc2626; border-color: rgba(220, 38, 38, 0.3);" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'REJECTED', 'Disapprove')">Disapprove</button>
             `;
         } else if (m.status === 'APPROVED') {
             actBtns += `
-                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px; color: #ff8a8a;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'SUSPENDED', 'Suspend')">Suspend Merchant</button>
+                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px; color: #dc2626; border-color: rgba(220, 38, 38, 0.3);" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'REJECTED', 'Disapprove')">Disapprove</button>
+                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px; color: #b45309; border-color: rgba(180, 83, 9, 0.3);" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'SUSPENDED', 'Suspend')">Suspend Merchant</button>
             `;
         } else if (m.status === 'SUSPENDED') {
             actBtns += `
                 <button type="button" class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Reinstate')">Reinstate Merchant</button>
+                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px; color: #dc2626; border-color: rgba(220, 38, 38, 0.3);" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'REJECTED', 'Disapprove')">Disapprove</button>
+            `;
+        } else if (m.status === 'REJECTED') {
+            actBtns += `
+                <button type="button" class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Approve')">Approve Business</button>
+            `;
+        } else if (m.status === 'DRAFT') {
+            actBtns += `
+                <button type="button" class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Approve (VIP)')">Approve (VIP)</button>
             `;
         }
         actBtns += `
@@ -2765,7 +2781,8 @@ async function setMerchantStatus(id, status, label) {
     }
     try {
         const res = await adminPost(`/api/admin/merchants/${id}/status`, { status, note });
-        const done = `Merchant ${statusLabel(status).toLowerCase()}`;
+        const labelText = status === 'REJECTED' ? 'disapproved' : statusLabel(status).toLowerCase();
+        const done = `Merchant ${labelText}`;
         res.email_sent
             ? showToast(`${done} · email sent`, 'success')
             : showToast(`${done}, but the email to them failed. Check the audit log, or contact them directly.`, 'error');
