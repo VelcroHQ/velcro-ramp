@@ -199,6 +199,9 @@ async function fetchData() {
         // 6. PAJ Session
         await fetchPajSession();
 
+        // 7. Background pre-fetch merchants & domain upgrades for instant tab rendering
+        fetchMerchants();
+
         lucide.createIcons();
     } catch (e) {
         console.error(e);
@@ -2231,68 +2234,73 @@ function renderDomainUpgrades(merchants, requests) {
     const badge = document.getElementById('mdom-pending');
     if (!tbody) return;
 
-    const pendingMerchants = merchants.filter(m => m.domain_status === 'PENDING');
-    const totalPending = pendingMerchants.length;
+    try {
+        const pendingMerchants = (merchants || []).filter(m => m.domain_status === 'PENDING');
+        const totalPending = pendingMerchants.length;
 
-    if (badge) {
-        badge.style.display = totalPending ? 'inline-block' : 'none';
-        badge.innerText = `${totalPending} to confirm`;
-    }
-
-    // Display merchants that have requested/active domains or general merchants
-    const withDomain = merchants.filter(m => m.domain_status && m.domain_status !== 'NONE' || m.domain_requested_at || m.domain_subdomain);
-    const displayList = withDomain.length ? withDomain : merchants.slice(0, 10);
-
-    const ngn = v => '₦' + Number(v || 0).toLocaleString('en-NG');
-    const muted = s => `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${s}</div>`;
-    const dash = '<span style="color: var(--text-secondary);">—</span>';
-
-    tbody.innerHTML = displayList.length ? displayList.map(m => {
-        let brand = {};
-        try { brand = JSON.parse(m.brand || '{}') || {}; } catch (e) { brand = {}; }
-        const store = escapeHtml(brand.name || m.business_name || '(no name)');
-        const sub = escapeHtml(m.domain_subdomain || (m.slug ? m.slug + '.usevelcro.com' : 'none'));
-        const planName = m.domain_plan === 'LIFETIME' ? 'Lifetime (₦200,000)' : (m.domain_plan === 'PASSED' ? 'VIP Pass (Waived)' : (m.domain_plan === 'MONTHLY' ? 'Monthly (₦10,000)' : 'Standard'));
-        const ref = m.domain_payment_ref ? escapeHtml(m.domain_payment_ref) : dash;
-
-        const isPending = m.domain_status === 'PENDING';
-        const isActive = m.domain_status === 'ACTIVE';
-
-        const statusPill = isPending
-            ? `<span class="status-pill pending">Pending Payment</span>`
-            : (isActive
-                ? `<span class="status-pill completed">Active</span>${m.domain_expires_at ? muted('Renews ' + escapeHtml(m.domain_expires_at.slice(0, 10))) : muted('Lifetime')}`
-                : `<span class="status-pill draft">Standard (/m/)</span>`);
-
-        let actions = '';
-        if (isPending) {
-            actions = `
-                <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="confirmDomainPayment(${m.id}, '${escapeAttr(m.domain_plan || 'MONTHLY')}')">Confirm Paid</button>
-                <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="rejectDomainPayment(${m.id})">Reject</button>
-                <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Pass (VIP)</button>
-            `;
-        } else if (isActive) {
-            actions = `
-                <a class="btn-secondary" href="https://${sub}" target="_blank" style="padding: 6px 10px; font-size: 12px; text-decoration: none;">Visit ↗</a>
-                <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Extend</button>
-                <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px; color: #ff8a8a;" onclick="revokeDomain(${m.id})">Revoke</button>
-            `;
-        } else {
-            actions = `
-                <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Pass Merchant (VIP)</button>
-            `;
+        if (badge) {
+            badge.style.display = totalPending ? 'inline-block' : 'none';
+            badge.innerText = `${totalPending} to confirm`;
         }
 
-        return `
-        <tr>
-            <td data-label="Store"><b>${store}</b>${muted(escapeHtml(m.email))}</td>
-            <td data-label="Domain Address"><code>https://${sub}</code></td>
-            <td data-label="Plan & Amount"><b>${planName}</b>${m.domain_paid_amount ? muted(ngn(m.domain_paid_amount)) : ''}</td>
-            <td data-label="Sender / Reference">${ref}${m.domain_requested_at ? muted(escapeHtml(m.domain_requested_at)) : ''}</td>
-            <td data-label="Status">${statusPill}</td>
-            <td data-label="Action" style="white-space: nowrap;"><div style="display: flex; gap: 6px; flex-wrap: wrap;">${actions}</div></td>
-        </tr>`;
-    }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No dedicated domain upgrades yet. Use "Pass Merchant (VIP)" on any merchant to grant one.</td></tr>';
+        // Display merchants that have requested/active domains or general merchants
+        const withDomain = (merchants || []).filter(m => (m.domain_status && m.domain_status !== 'NONE') || m.domain_requested_at || m.domain_subdomain);
+        const displayList = withDomain.length ? withDomain : (merchants || []).slice(0, 10);
+
+        const ngn = v => '₦' + Number(v || 0).toLocaleString('en-NG');
+        const muted = s => `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${s}</div>`;
+        const dash = '<span style="color: var(--text-secondary);">—</span>';
+
+        tbody.innerHTML = displayList.length ? displayList.map(m => {
+            let brand = {};
+            try { brand = JSON.parse(m.brand || '{}') || {}; } catch (e) { brand = {}; }
+            const store = escapeHtml(brand.name || m.business_name || '(no name)');
+            const sub = escapeHtml(m.domain_subdomain || (m.slug ? m.slug + '.usevelcro.com' : 'none'));
+            const planName = m.domain_plan === 'LIFETIME' ? 'Lifetime (₦200,000)' : (m.domain_plan === 'PASSED' ? 'VIP Pass (Waived)' : (m.domain_plan === 'MONTHLY' ? 'Monthly (₦10,000)' : 'Standard'));
+            const ref = m.domain_payment_ref ? escapeHtml(m.domain_payment_ref) : dash;
+
+            const isPending = m.domain_status === 'PENDING';
+            const isActive = m.domain_status === 'ACTIVE';
+
+            const statusPill = isPending
+                ? `<span class="status-pill pending">Pending Payment</span>`
+                : (isActive
+                    ? `<span class="status-pill completed">Active</span>${m.domain_expires_at ? muted('Renews ' + escapeHtml(m.domain_expires_at.slice(0, 10))) : muted('Lifetime')}`
+                    : `<span class="status-pill draft">Standard (/m/)</span>`);
+
+            let actions = '';
+            if (isPending) {
+                actions = `
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="confirmDomainPayment(${m.id}, '${escapeAttr(m.domain_plan || 'MONTHLY')}')">Confirm Paid</button>
+                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="rejectDomainPayment(${m.id})">Reject</button>
+                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Pass (VIP)</button>
+                `;
+            } else if (isActive) {
+                actions = `
+                    <a class="btn-secondary" href="https://${sub}" target="_blank" style="padding: 6px 10px; font-size: 12px; text-decoration: none;">Visit ↗</a>
+                    <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Extend</button>
+                    <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px; color: #ff8a8a;" onclick="revokeDomain(${m.id})">Revoke</button>
+                `;
+            } else {
+                actions = `
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Pass Merchant (VIP)</button>
+                `;
+            }
+
+            return `
+            <tr>
+                <td data-label="Store"><b>${store}</b>${muted(escapeHtml(m.email))}</td>
+                <td data-label="Domain Address"><code>https://${sub}</code></td>
+                <td data-label="Plan & Amount"><b>${planName}</b>${m.domain_paid_amount ? muted(ngn(m.domain_paid_amount)) : ''}</td>
+                <td data-label="Sender / Reference">${ref}${m.domain_requested_at ? muted(escapeHtml(m.domain_requested_at)) : ''}</td>
+                <td data-label="Status">${statusPill}</td>
+                <td data-label="Action" style="white-space: nowrap;"><div style="display: flex; gap: 6px; flex-wrap: wrap;">${actions}</div></td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No dedicated domain upgrades yet. Use "Pass Merchant (VIP)" on any merchant to grant one.</td></tr>';
+    } catch (err) {
+        console.error('renderDomainUpgrades error:', err);
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">${escapeHtml(err.message)}</td></tr>`;
+    }
 }
 
 async function confirmDomainPayment(id, plan) {
