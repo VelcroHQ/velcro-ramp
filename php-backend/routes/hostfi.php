@@ -684,7 +684,11 @@ function hostfiSendPayout(array $dep, array $hf): void
             $res = hostfiApi()->payout($clientRef);
         } catch (Throwable $lookup) {
             // A 4xx answer plus no record of the payout means HostFi refused it: nothing went out.
-            if ($e->getCode() >= 400 && $e->getCode() < 500 && $lookup->getCode() === 404) {
+            $refused = $e->getCode() >= 400 && $e->getCode() < 500 && $lookup->getCode() === 404;
+            if ($refused && stripos($e->getMessage(), 'insufficient') !== false) {
+                // HostFi holds swapped naira under lien briefly; reset to SWAPPED so poller & screen payout as soon as free
+                hostfiClaim($id, ['PAYING'], 'SWAPPED', ['note' => 'HostFi is briefly holding the NGN from the swap; payout will send automatically once released']);
+            } elseif ($refused) {
                 hostfiClaim($id, ['PAYING'], 'PAYOUT_FAILED', ['note' => 'HostFi refused the payout: ' . substr($e->getMessage(), 0, 200)]);
             } else {
                 hostfiClaim($id, ['PAYING'], 'PAYOUT_UNCERTAIN', ['note' => 'Payout request failed (' . substr($e->getMessage(), 0, 200) . '); waiting for HostFi to confirm before any retry']);
@@ -843,8 +847,14 @@ function hostfiReconcileOrder(string $orderRef): void
             continue;
         }
         if ($dep['status'] === 'SWAPPED') {
-            // Its payout after the swap was interrupted; send it now.
-            if (strtotime((string) $dep['updated_at']) < time() - 300) {
+            // Check if HostFi has released the naira (or if 120s passed since last attempt)
+            $need = (float) $dep['payout_amount'] + HOSTFI_PAYOUT_FEE_NGN;
+            try {
+                $free = hostfiApi()->freeBalance('NGN');
+            } catch (Throwable $e) {
+                $free = 0.0;
+            }
+            if ($free + 1e-9 >= $need || strtotime((string) $dep['updated_at']) < time() - 120) {
                 hostfiSendPayout($dep, hostfiOrderFor($dep)[1]);
             }
             continue;

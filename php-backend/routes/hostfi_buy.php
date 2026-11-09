@@ -488,8 +488,16 @@ function hostfiBuyResumeOrder(string $orderRef): void
                 hostfiProcessPayment((int) $buy['id']);
             }
         } elseif ($buy['status'] === 'SWAPPED') {
-            // Its send after the swap was interrupted; send it now.
-            if (strtotime((string) $buy['updated_at']) < time() - 300) {
+            // Coin is swapped; send as soon as free balance permits (or after 120s max).
+            $currency = (string) $buy['currency'];
+            try {
+                $need = (float) $buy['send_amount'] + hostfiSendFee($currency, (string) $buy['network'], (float) $buy['send_amount'])['fee'];
+                $free = hostfiApi()->freeBalance($currency);
+            } catch (Throwable $e) {
+                $need = (float) $buy['send_amount'];
+                $free = 0.0;
+            }
+            if ($free + 1e-9 >= $need || strtotime((string) $buy['updated_at']) < time() - 120) {
                 hostfiBuySend($buy);
             }
         } elseif ($buy['status'] === 'SEND_WAITING') {
