@@ -126,7 +126,7 @@ function setAuthMode(mode) {
   authMode = mode;
   const [title, sub, btn] = AUTH_COPY[mode];
   $('auth-title').textContent = title;
-  $('auth-sub').textContent = sub || `We sent a 6-digit code to ${$('a-email').value.trim()}.`;
+  $('auth-sub').textContent = sub || `We sent a 6-digit code to ${$('a-email').value.trim()}. (Check your spam folder if it isn't in your inbox.)`;
   $('auth-btn').textContent = btn;
   $('auth-error').classList.add('hidden');
   const codeStep = mode === 'signup-code' || mode === 'reset-code';

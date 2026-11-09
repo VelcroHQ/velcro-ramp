@@ -1540,9 +1540,9 @@ function signOut() {
 const AUTH_COPY = {
   signin: () => ['Sign in', `Sign in to ${store.info.name} to buy and sell.`, 'Sign in'],
   signup: () => ['Create your account', `Join ${store.info.name}. We'll email you a code to confirm it's you.`, 'Continue'],
-  'signup-code': () => ['Check your email', `We sent a 6-digit code to ${$('a-email').value.trim()}.`, 'Create account'],
+  'signup-code': () => ['Check your email', `We sent a 6-digit code to ${$('a-email').value.trim()}. (Check your spam or junk folder if you don't see it.)`, 'Create account'],
   reset: () => ['Reset your password', "Enter your email and we'll send you a code.", 'Send code'],
-  'reset-code': () => ['Set a new password', `We sent a 6-digit code to ${$('a-email').value.trim()}.`, 'Update password'],
+  'reset-code': () => ['Set a new password', `We sent a 6-digit code to ${$('a-email').value.trim()}. (Check your spam or junk folder if you don't see it.)`, 'Update password'],
 };
 
 function openAuth(mode) {

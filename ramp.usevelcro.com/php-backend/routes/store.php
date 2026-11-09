@@ -485,7 +485,7 @@ function registerStoreRoutes(Router $router): void
         }
         $name = storeBranding($m)['name'];
         storeSendCode($m, $email, 'stsu', "Confirm your {$name} email", "Use this code to finish creating your {$name} account:");
-        jsonResponse(successResponse(['sent' => true], 'Code sent to ' . $email));
+        jsonResponse(successResponse(['sent' => true], 'Code sent to ' . $email . '. Please check your spam folder if not found in inbox.'));
     });
 
     $router->post("/api/store/{$slug}/auth/signup", function (string $slug) {
@@ -543,7 +543,7 @@ function registerStoreRoutes(Router $router): void
         if (storeCustomer($m, $email)) {
             storeSendCode($m, $email, 'strs', 'Reset your password', 'Use this code to set a new password:');
         }
-        jsonResponse(successResponse(['sent' => true], 'If that email has an account, a code is on its way'));
+        jsonResponse(successResponse(['sent' => true], 'If that email has an account, a code is on its way. Please check your spam folder.'));
     });
 
     $router->post("/api/store/{$slug}/auth/reset", function (string $slug) {

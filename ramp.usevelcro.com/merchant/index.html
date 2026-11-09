@@ -477,6 +477,7 @@
           <div id="wd-step2" class="d-field hidden">
             <label class="m-label" for="wd-code">6-digit code from your email</label>
             <input id="wd-code" class="m-input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••">
+            <p class="m-hint">Check your spam folder if it doesn't appear in your inbox.</p>
           </div>
           <p id="wd-error" class="m-error hidden"></p>
           <button type="submit" id="wd-btn" class="d-btn">Email me a code</button>
@@ -636,7 +637,11 @@
           <form id="panel-security" class="d-panel d-form d-form-sm" novalidate>
             <div class="d-head"><h1>Sign-in &amp; security</h1><p>We'll email a code to <b id="sec-email"></b> to confirm it's you.</p></div>
             <div id="sec-step2" class="hidden">
-              <div class="d-field"><label class="m-label" for="sec-code">6-digit code</label><input id="sec-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="m-input m-code"></div>
+              <div class="d-field">
+                <label class="m-label" for="sec-code">6-digit code</label>
+                <input id="sec-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="m-input m-code">
+                <p class="m-hint">Check your spam folder if you don't see it in a moment.</p>
+              </div>
               <div class="d-field"><label class="m-label" for="sec-pass">New password</label><input id="sec-pass" type="password" autocomplete="new-password" class="m-input"><p class="m-hint">At least 8 characters, with letters and numbers. Every other device is signed out.</p></div>
             </div>
             <p id="sec-error" class="hidden m-error"></p>
@@ -688,6 +693,7 @@
         <div id="a-code-row" class="hidden">
           <label class="m-label" for="a-code">6-digit code from your email</label>
           <input id="a-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="m-input m-code" placeholder="••••••">
+          <p class="m-hint">Can't find the code? Check your spam or junk folder.</p>
         </div>
         <div id="a-pass-row">
           <div class="m-label-row"><label class="m-label" for="a-pass" id="a-pass-label">Password</label><button type="button" id="a-forgot" onclick="setAuthMode('reset')">Forgot password?</button></div>

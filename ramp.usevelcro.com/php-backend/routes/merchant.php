@@ -618,7 +618,7 @@ function registerMerchantRoutes(Router $router): void
         }
         try {
             sendReferralCode($email, referralOtpKey('merchsignup', $email), 'Confirm your Velcro Merchant email', 'Use this code to finish creating your Velcro Merchant account:');
-            jsonResponse(successResponse(['sent' => true], 'Code sent to ' . $email));
+            jsonResponse(successResponse(['sent' => true], 'Code sent to ' . $email . '. Please check your spam folder if not found in inbox.'));
         } catch (Throwable $e) {
             jsonResponse(errorResponse(publicError($e)), 500);
         }
@@ -691,7 +691,7 @@ function registerMerchantRoutes(Router $router): void
                 jsonResponse(errorResponse(publicError($e)), 500);
             }
         }
-        jsonResponse(successResponse(['sent' => true], 'If that email has an account, a code is on its way'));
+        jsonResponse(successResponse(['sent' => true], 'If that email has an account, a code is on its way. Please check your spam folder.'));
     });
 
     $router->post('/api/merchant/auth/reset', function () {
