@@ -14,7 +14,7 @@
   <meta property="og:title" content="Velcro Merchant — Your own crypto exchange, live in minutes">
   <meta property="og:description" content="Sell crypto to your customers under your own brand. Velcro handles the naira accounts, the swaps and the payouts.">
   <meta property="og:image" content="https://merchant.usevelcro.com/og-image.png">
-  <link href="merchant.css?v=28" rel="stylesheet">
+  <link href="merchant.css?v=29" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- The fonts never hold up the page: system text shows until they arrive. -->
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -309,42 +309,6 @@
             <button type="button" class="d-btn-icon-subtle" id="btn-refresh-rates" onclick="refreshRates()" title="Refresh live rates" aria-label="Refresh live rates">
               <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
             </button>
-          </div>
-        </div>
-
-        <!-- Margin Simulator & Calculator -->
-        <div class="d-sim-card">
-          <div class="d-sim-head">
-            <div class="d-sim-title">
-              <span class="d-sim-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-              <div>
-                <h3>Earnings Simulator</h3>
-                <p>Simulate customer trade volume to see your projected pure profit.</p>
-              </div>
-            </div>
-            <div class="d-sim-quick-chips">
-              <button type="button" class="d-sim-chip" onclick="setSimVolume(50000)">₦50k</button>
-              <button type="button" class="d-sim-chip is-active" onclick="setSimVolume(100000)">₦100k</button>
-              <button type="button" class="d-sim-chip" onclick="setSimVolume(500000)">₦500k</button>
-              <button type="button" class="d-sim-chip" onclick="setSimVolume(1000000)">₦1M</button>
-            </div>
-          </div>
-          <div class="d-sim-body">
-            <div class="d-sim-stat">
-              <small>Simulated Trade Volume</small>
-              <div class="d-sim-input-wrap">
-                <span class="d-sim-prefix">₦</span>
-                <input type="number" id="sim-vol-input" value="100000" min="5000" step="10000" oninput="updateSimEarnings()">
-              </div>
-            </div>
-            <div class="d-sim-stat">
-              <small>Average Margin</small>
-              <b id="sim-avg-markup">1.00%</b>
-            </div>
-            <div class="d-sim-stat is-highlight">
-              <small>Your Net Profit per Trade</small>
-              <b id="sim-profit">₦1,000.00</b>
-            </div>
           </div>
         </div>
 
@@ -897,7 +861,7 @@
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="merchant.js?v=30"></script>
+  <script src="merchant.js?v=31"></script>
 </body>
 
 </html>

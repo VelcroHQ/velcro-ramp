@@ -2220,35 +2220,8 @@ async function refreshRates() {
   }
 }
 
-let simVolume = 100000;
-function setSimVolume(amt) {
-  simVolume = amt;
-  const inp = $('sim-vol-input');
-  if (inp) inp.value = amt;
-  document.querySelectorAll('.d-sim-chip').forEach(c => {
-    const chipAmt = parseInt(c.textContent.replace(/\D/g, '')) * (c.textContent.includes('M') ? 1000000 : 1000);
-    c.classList.toggle('is-active', chipAmt === amt);
-  });
-  updateSimEarnings();
-}
-
 function updateSimEarnings() {
-  const inp = $('sim-vol-input');
-  const vol = inp ? Math.max(1000, Number(inp.value) || 0) : simVolume;
-
-  let totalMarkup = 0;
-  let activeSides = 0;
-  Object.keys(me.coins || {}).forEach(sym => {
-    const p = (pricingDraft || merchant.pricing || {})[sym] || {};
-    if (p.buy_on) { totalMarkup += Number(p.buy || 0); activeSides++; }
-    if (p.sell_on) { totalMarkup += Number(p.sell || 0); activeSides++; }
-  });
-
-  const avgMarkup = activeSides > 0 ? (totalMarkup / activeSides) : 1.0;
-  const netProfit = vol * (avgMarkup / 100);
-
-  if ($('sim-avg-markup')) $('sim-avg-markup').textContent = `${avgMarkup.toFixed(2)}%`;
-  if ($('sim-profit')) $('sim-profit').textContent = nairaRate(netProfit);
+  // Simulator removed
 }
 
 // Keyboard shortcut (Ctrl+S / Cmd+S) to save prices
