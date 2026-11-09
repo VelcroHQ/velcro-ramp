@@ -625,10 +625,8 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 .m-slug-wrap { display: flex; align-items: center; border: 1px solid #dcdcd6; border-radius: 11px; background: #fff; overflow: hidden; transition: border-color .15s, box-shadow .15s; }
 .m-slug-wrap:focus-within { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(13, 13, 89, .12); }
 .m-slug-wrap:has(input[readonly]) { background: #fafaf7; }
-.m-slug-wrap span { flex-shrink: 0; padding: 0 8px; font-size: 14.5px; color: var(--muted); }
-.m-slug-wrap span:first-child { padding-left: 13px; }
-.m-slug-wrap span:last-child { padding-right: 13px; }
-.m-slug-wrap input { flex: 1; min-width: 0; padding: 11px 4px; border: 0; outline: 0; background: transparent; font-size: 15px; font-weight: 600; }
+.m-slug-wrap span { flex-shrink: 0; padding-left: 13px; font-size: 14.5px; color: var(--muted); }
+.m-slug-wrap input { flex: 1; min-width: 0; padding: 11px 13px 11px 0; border: 0; outline: 0; background: transparent; font-size: 15px; font-weight: 600; }
 .m-slug-wrap input[readonly] { color: var(--ink-2); cursor: not-allowed; }
 
 /* Customize */

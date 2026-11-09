@@ -385,7 +385,7 @@ function orderStore(array $t): ?array
     }
     if (!array_key_exists($id, $cache)) {
         $m = Database::safeSelect('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => $id], [])[0] ?? null;
-        $cache[$id] = $m ? ['merchant' => $m, 'brand' => storeBranding($m), 'url' => 'https://' . $m['slug'] . '.usevelcro.com'] : null;
+        $cache[$id] = $m ? ['merchant' => $m, 'brand' => storeBranding($m), 'url' => EMAIL_SITE_URL . '/m/' . $m['slug']] : null;
     }
     return $cache[$id];
 }

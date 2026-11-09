@@ -345,7 +345,7 @@ function merchantView(array $m): array
         'brand' => $brand,
         'pricing' => merchantPricing($m),
         'rate_display' => merchantRateDisplay($m),
-        'storefront_url' => $m['slug'] ? 'https://' . $m['slug'] . '.usevelcro.com' : null,
+        'storefront_url' => $m['slug'] ? EMAIL_SITE_URL . '/m/' . $m['slug'] : null,
         // What's left before the store can go live, for the dashboard checklist.
         'checklist' => [
             'branded' => $m['slug'] !== null && $brand['name'] !== '',
@@ -526,7 +526,7 @@ function merchantMail(string $to, string $subject, array $email, string $kind): 
 function notifyMerchantStatus(array $m): bool
 {
     $name = (string) (merchantBrand($m)['name'] ?: $m['business_name']);
-    $url = 'https://' . $m['slug'] . '.usevelcro.com';
+    $url = EMAIL_SITE_URL . '/m/' . $m['slug'];
     $copy = [
         'APPROVED' => ['Your Velcro Merchant store is approved', "Good news: {$name} is verified. Your store link is ready to share, and your customers will be able to trade on it as soon as it opens.", 'Open your dashboard'],
         'REJECTED' => ['We need a few changes to your Velcro Merchant store', "We couldn't verify {$name} yet. Update your business details in Settings and resubmit, and we'll take another look.", 'Fix my details'],
@@ -1019,7 +1019,7 @@ function registerMerchantRoutes(Router $router): void
                 'eyebrow' => 'Velcro Merchant',
                 'title' => $resubmit ? 'Thanks, we’ll take another look' : 'Thanks, we’re reviewing your business',
                 'intro' => 'We usually review new stores within one working day. We’ll email you as soon as you’re approved, or tell you exactly what we need.',
-                'rows' => [['Business', (string) $m['business_name']], ['Store address', 'https://' . $m['slug'] . '.usevelcro.com', true]],
+                'rows' => [['Business', (string) $m['business_name']], ['Store address', EMAIL_SITE_URL . '/m/' . $m['slug'], true]],
                 'cta' => ['Open your dashboard', 'https://merchant.usevelcro.com/'],
             ], 'verification received'), 'Merchant verification email');
         }
