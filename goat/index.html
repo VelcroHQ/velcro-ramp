@@ -1727,6 +1727,87 @@
         </div>
     </div>
 
-    <script src="admin.js?v=6"></script>
+    <!-- Dedicated Subdomain Activation Modal -->
+    <div id="modal-domain-confirm" onclick="if(event.target === this) closeDomainModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px;">
+        <div class="tx-modal-content" style="max-width: 540px; width: 100%;">
+            <button onclick="closeDomainModal()" aria-label="Close" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--text-main); font-size: 18px; font-weight: bold;">✕</button>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span class="status-pill completed" style="font-size: 11px;">Subdomain Setup</span>
+                <span id="mdom-modal-plan-pill" class="status-pill pending" style="font-size: 11px;">₦10,000 / mo</span>
+            </div>
+            <h2 style="margin-bottom: 4px; font-size: 20px;">Activate Dedicated Subdomain</h2>
+            <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 16px;">Verify the bank payment, create the subdomain in Hostinger, and activate the merchant's live exchange.</p>
+
+            <!-- Payment & Merchant Info -->
+            <div class="tx-modal-info" style="margin: 0 0 16px;">
+                <div>
+                    <span style="color: var(--text-secondary);">Merchant</span>
+                    <b id="mdom-modal-merchant-name">-</b>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary);">Email</span>
+                    <span id="mdom-modal-merchant-email" style="font-family: monospace; font-size: 12px;">-</span>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary);">Plan &amp; Amount</span>
+                    <b id="mdom-modal-plan">-</b>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary);">Payment Sender / Ref</span>
+                    <span id="mdom-modal-ref" style="color: var(--success); font-weight: 600;">-</span>
+                </div>
+            </div>
+
+            <!-- Hostinger Manual Setup Guide -->
+            <div style="background: rgba(13,13,89,0.06); border: 1px solid rgba(13,13,89,0.18); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <b style="font-size: 13px; color: var(--velcro-navy, #0d0d59); display: flex; align-items: center; gap: 6px;">
+                        <span>⚙️</span> Hostinger Subdomain Setup
+                    </b>
+                    <span style="font-size: 11px; color: var(--text-secondary);">hPanel &rarr; Domains &rarr; Subdomains</span>
+                </div>
+                <p style="font-size: 11px; color: var(--text-secondary); margin: 0 0 10px;">
+                    Create this subdomain in Hostinger pointed to the merchant root folder:
+                </p>
+                <div style="display: grid; gap: 8px; font-size: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card, #fff); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);">
+                        <span>Subdomain: <b id="mdom-hostinger-slug-txt" style="font-family: monospace; color: var(--primary-link);">slug</b></span>
+                        <button type="button" class="btn-view" style="padding: 2px 8px; font-size: 11px;" onclick="copyHostingerField('mdom-hostinger-slug-txt')">Copy</button>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card, #fff); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);">
+                        <span>Folder: <code id="mdom-hostinger-folder-txt" style="color: var(--text-main);">public_html/ramp/merchant/</code></span>
+                        <button type="button" class="btn-view" style="padding: 2px 8px; font-size: 11px;" onclick="copyHostingerField('mdom-hostinger-folder-txt')">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approved Subdomain Slug Input -->
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px;">Approved Subdomain Address</label>
+                <div style="display: flex; align-items: center; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--input-bg);">
+                    <span style="padding: 8px 10px; font-size: 12px; color: var(--text-secondary); background: rgba(0,0,0,0.04); border-right: 1px solid var(--border);">https://</span>
+                    <input type="text" id="mdom-modal-slug-input" style="flex: 1; border: none; background: transparent; padding: 8px 10px; font-size: 13px; font-weight: 600; color: var(--text-main); outline: none;" oninput="updateModalSlugPreview(this.value)">
+                    <span style="padding: 8px 10px; font-size: 12px; color: var(--text-secondary); background: rgba(0,0,0,0.04); border-left: 1px solid var(--border);">.usevelcro.com</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Review or edit the slug before activation. Must match Hostinger.</div>
+            </div>
+
+            <!-- Optional Note -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px;">Audit / Review Note</label>
+                <input type="text" id="mdom-modal-note-input" value="Payment verified in Kuda Bank" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; background: var(--input-bg); color: var(--text-main);">
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn-secondary" onclick="closeDomainModal()" style="padding: 10px 16px; font-size: 13px;">Cancel</button>
+                <button type="button" id="mdom-modal-submit-btn" class="btn-primary" onclick="submitDomainActivation()" style="padding: 10px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>✓</span> Confirm &amp; Activate Subdomain
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js?v=7"></script>
 </body>
 </html>

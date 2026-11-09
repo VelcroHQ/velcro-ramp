@@ -1538,6 +1538,23 @@ function copyDomAccount() {
   });
 }
 
+function updateDomainPreviewSlug(val) {
+  const clean = (val || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  const sub = clean ? clean + '.usevelcro.com' : ((merchant && merchant.slug) ? merchant.slug + '.usevelcro.com' : 'yourbrand.usevelcro.com');
+  const headPreview = $('dom-head-preview');
+  if (headPreview) headPreview.textContent = sub;
+  const standardUpgradePreview = $('dom-standard-upgrade-preview');
+  if (standardUpgradePreview) standardUpgradePreview.textContent = sub;
+}
+
+function copyDomActiveLink() {
+  const d = merchant.domain || {};
+  const sub = d.subdomain || (merchant.slug ? merchant.slug + '.usevelcro.com' : '');
+  if (sub) {
+    navigator.clipboard.writeText('https://' + sub).then(() => toast('Dedicated exchange link copied!'));
+  }
+}
+
 function renderDomainPanel() {
   const d = merchant.domain || {};
   const slug = merchant.slug || '';
@@ -1547,6 +1564,12 @@ function renderDomainPanel() {
 
   const bPreview = $('b-domain-preview');
   if (bPreview) bPreview.textContent = sub;
+
+  const stdDisplay = $('dom-standard-link-display');
+  if (stdDisplay) stdDisplay.textContent = 'https://ramp.usevelcro.com/m/' + (slug || 'your-store');
+
+  const stdUpgrade = $('dom-standard-upgrade-preview');
+  if (stdUpgrade) stdUpgrade.textContent = sub;
 
   const viewActive = $('dom-view-active');
   const viewPending = $('dom-view-pending');
@@ -1583,6 +1606,8 @@ function renderDomainPanel() {
 
     const subEl = $('dom-pending-sub');
     if (subEl) subEl.textContent = sub;
+    const fullUrlEl = $('dom-pending-full-url');
+    if (fullUrlEl) fullUrlEl.textContent = 'https://' + sub;
     const amtEl = $('dom-pending-amount');
     if (amtEl) amtEl.textContent = d.paid_amount ? '₦' + Number(d.paid_amount).toLocaleString() : (d.plan === 'LIFETIME' ? '₦200,000' : '₦10,000');
     const refEl = $('dom-pending-ref');
@@ -1592,6 +1617,11 @@ function renderDomainPanel() {
     if (viewActive) viewActive.classList.add('hidden');
     if (viewPending) viewPending.classList.add('hidden');
     if (viewForm) viewForm.classList.remove('hidden');
+    
+    const slugInput = $('dom-custom-slug');
+    if (slugInput && !slugInput.value) {
+      slugInput.value = d.subdomain ? d.subdomain.replace('.usevelcro.com', '') : (slug || '');
+    }
     selectDomainPlan('MONTHLY');
   }
 }
@@ -1612,11 +1642,20 @@ async function submitDomainUpgrade(e) {
   const btn = $('dom-submit-btn');
   const err = $('dom-error');
   const ref = ($('dom-sender-ref').value || '').trim();
+  const slugInput = $('dom-custom-slug');
+  const customSlug = slugInput ? slugInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '') : (merchant.slug || '');
+
   if (!ref) {
     err.textContent = 'Please enter your sender name or bank transfer reference.';
     err.classList.remove('hidden');
     return;
   }
+  if (!customSlug || customSlug.length < 3) {
+    err.textContent = 'Subdomain slug must be at least 3 characters.';
+    err.classList.remove('hidden');
+    return;
+  }
+
   err.classList.add('hidden');
   btn.disabled = true;
   btn.textContent = 'Submitting verification…';
@@ -1627,6 +1666,7 @@ async function submitDomainUpgrade(e) {
       body: {
         plan: selectedDomainPlan,
         payment_reference: ref,
+        slug: customSlug,
       },
     });
     merchant = res;
@@ -1638,7 +1678,7 @@ async function submitDomainUpgrade(e) {
     err.classList.remove('hidden');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'I have made this bank transfer';
+    btn.textContent = 'Submit Payment Verification';
   }
 }
 

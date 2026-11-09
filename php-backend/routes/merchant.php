@@ -1262,7 +1262,27 @@ function registerMerchantRoutes(Router $router): void
             jsonResponse(errorResponse('Please enter your sender name or bank transfer reference'), 400);
         }
         $amount = $plan === 'MONTHLY' ? 10000 : 200000;
-        $subdomain = $m['slug'] . '.usevelcro.com';
+        
+        $requestedSlug = trim((string) body($b, 'slug', ''));
+        if ($requestedSlug === '') {
+            $requestedSlug = (string) ($m['slug'] ?? '');
+        }
+        $requestedSlug = strtolower(preg_replace('/[^a-z0-9-]/', '', $requestedSlug));
+        if (strlen($requestedSlug) < 3 || strlen($requestedSlug) > 30) {
+            jsonResponse(errorResponse('Subdomain slug must be between 3 and 30 characters'), 400);
+        }
+        $reserved = ['www', 'ramp', 'goat', 'merchant', 'api', 'admin', 'mail', 'cpanel', 'webmail', 'app', 'dashboard', 'support', 'help', 'status'];
+        if (in_array($requestedSlug, $reserved, true)) {
+            jsonResponse(errorResponse("The slug '{$requestedSlug}' is reserved and cannot be used"), 400);
+        }
+        $existing = Database::selectOne(
+            "SELECT id FROM `merchants` WHERE `domain_subdomain` = :sub AND `id` != :id",
+            ['sub' => $requestedSlug . '.usevelcro.com', 'id' => (int) $m['id']]
+        );
+        if ($existing) {
+            jsonResponse(errorResponse("The subdomain '{$requestedSlug}.usevelcro.com' is already registered by another merchant"), 400);
+        }
+        $subdomain = $requestedSlug . '.usevelcro.com';
         $now = gmdate('Y-m-d H:i:s');
 
         Database::execute(
@@ -1396,7 +1416,18 @@ function registerMerchantRoutes(Router $router): void
         }
         $note = mb_substr(trim((string) body($b, 'note', '')), 0, 255);
         $now = gmdate('Y-m-d H:i:s');
-        $subdomain = trim((string) body($b, 'subdomain', $m['domain_subdomain'] ?: ($m['slug'] . '.usevelcro.com')));
+        $rawSub = trim((string) body($b, 'subdomain', ''));
+        if ($rawSub === '') {
+            $rawSub = trim((string) body($b, 'slug', ''));
+        }
+        if ($rawSub === '') {
+            $rawSub = (string) ($m['domain_subdomain'] ?: ($m['slug'] ? $m['slug'] . '.usevelcro.com' : ''));
+        }
+        $cleanSub = strtolower(preg_replace('/[^a-z0-9.-]/i', '', $rawSub));
+        if (!str_ends_with($cleanSub, '.usevelcro.com')) {
+            $cleanSub = explode('.', $cleanSub)[0] . '.usevelcro.com';
+        }
+        $subdomain = $cleanSub;
 
         $expiresAt = null;
         if ($plan === 'MONTHLY') {
@@ -1468,7 +1499,18 @@ function registerMerchantRoutes(Router $router): void
         $days = (int) body($b, 'days', 0); // 0 = permanent/lifetime
         $expiresAt = $days > 0 ? gmdate('Y-m-d H:i:s', time() + ($days * 86400)) : null;
         $note = mb_substr(trim((string) body($b, 'note', 'Complimentary VIP Pass')), 0, 255);
-        $subdomain = trim((string) body($b, 'subdomain', $m['domain_subdomain'] ?: ($m['slug'] . '.usevelcro.com')));
+        $rawSub = trim((string) body($b, 'subdomain', ''));
+        if ($rawSub === '') {
+            $rawSub = trim((string) body($b, 'slug', ''));
+        }
+        if ($rawSub === '') {
+            $rawSub = (string) ($m['domain_subdomain'] ?: ($m['slug'] ? $m['slug'] . '.usevelcro.com' : ''));
+        }
+        $cleanSub = strtolower(preg_replace('/[^a-z0-9.-]/i', '', $rawSub));
+        if (!str_ends_with($cleanSub, '.usevelcro.com')) {
+            $cleanSub = explode('.', $cleanSub)[0] . '.usevelcro.com';
+        }
+        $subdomain = $cleanSub;
         $now = gmdate('Y-m-d H:i:s');
 
         Database::execute(

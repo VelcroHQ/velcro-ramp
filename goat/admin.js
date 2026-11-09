@@ -2271,19 +2271,20 @@ function renderDomainUpgrades(merchants, requests) {
             let actions = '';
             if (isPending) {
                 actions = `
-                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="confirmDomainPayment(${m.id}, '${escapeAttr(m.domain_plan || 'MONTHLY')}')">Confirm Paid</button>
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="openDomainModal(${m.id})">Confirm Paid &amp; Setup</button>
                     <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="rejectDomainPayment(${m.id})">Reject</button>
                     <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Pass (VIP)</button>
                 `;
             } else if (isActive) {
                 actions = `
                     <a class="btn-secondary" href="https://${sub}" target="_blank" style="padding: 6px 10px; font-size: 12px; text-decoration: none;">Visit ↗</a>
+                    <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="openDomainModal(${m.id})">Edit Slug</button>
                     <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Extend</button>
                     <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px; color: #ff8a8a;" onclick="revokeDomain(${m.id})">Revoke</button>
                 `;
             } else {
                 actions = `
-                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Pass Merchant (VIP)</button>
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="openDomainModal(${m.id})">Setup Subdomain (VIP)</button>
                 `;
             }
 
@@ -2303,23 +2304,103 @@ function renderDomainUpgrades(merchants, requests) {
     }
 }
 
-async function confirmDomainPayment(id, plan) {
-    const p = prompt(`Confirm payment for this dedicated domain upgrade?\n\nPlan (MONTHLY or LIFETIME):`, plan || 'MONTHLY');
-    if (p === null) return;
-    const cleanPlan = p.trim().toUpperCase() === 'LIFETIME' ? 'LIFETIME' : 'MONTHLY';
-    const note = prompt(`Optional payment confirmation note (e.g. Kuda transfer confirmed from sender):`, 'Payment confirmed to Kuda Bank 3000911925');
-    if (note === null) return;
+let currentDomainModalMerchant = null;
+
+function copyHostingerField(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const text = el.innerText || el.textContent;
+    navigator.clipboard.writeText(text.trim()).then(() => {
+        showToast(`Copied "${text.trim()}" to clipboard!`, 'success');
+    });
+}
+
+function updateModalSlugPreview(val) {
+    const clean = (val || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const slugEl = document.getElementById('mdom-hostinger-slug-txt');
+    if (slugEl) slugEl.textContent = clean || 'slug';
+}
+
+function openDomainModal(id) {
+    const m = (allMerchants || []).find(x => Number(x.id) === Number(id));
+    if (!m) {
+        showToast('Merchant not found', 'error');
+        return;
+    }
+    currentDomainModalMerchant = m;
+
+    let brand = {};
+    try { brand = JSON.parse(m.brand || '{}') || {}; } catch (e) { brand = {}; }
+    const storeName = brand.name || m.business_name || '(Unnamed Store)';
+
+    const isLifetime = m.domain_plan === 'LIFETIME';
+    const planName = isLifetime ? 'Lifetime VIP (₦200,000)' : 'Monthly (₦10,000)';
+    const planPill = isLifetime ? '₦200,000 Lifetime' : '₦10,000 / mo';
+    const initialSlug = (m.domain_subdomain ? m.domain_subdomain.replace('.usevelcro.com', '') : (m.slug || '')).toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+    const nameEl = document.getElementById('mdom-modal-merchant-name');
+    if (nameEl) nameEl.textContent = storeName;
+    const emailEl = document.getElementById('mdom-modal-merchant-email');
+    if (emailEl) emailEl.textContent = m.email || '—';
+    const planEl = document.getElementById('mdom-modal-plan');
+    if (planEl) planEl.textContent = planName;
+    const pillEl = document.getElementById('mdom-modal-plan-pill');
+    if (pillEl) pillEl.textContent = planPill;
+    const refEl = document.getElementById('mdom-modal-ref');
+    if (refEl) refEl.textContent = m.domain_payment_ref || 'Reference submitted by merchant';
+    const slugInput = document.getElementById('mdom-modal-slug-input');
+    if (slugInput) slugInput.value = initialSlug;
+    const slugTxt = document.getElementById('mdom-hostinger-slug-txt');
+    if (slugTxt) slugTxt.textContent = initialSlug || 'slug';
+    const noteInput = document.getElementById('mdom-modal-note-input');
+    if (noteInput) noteInput.value = 'Payment verified in Kuda Bank';
+
+    const modal = document.getElementById('modal-domain-confirm');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeDomainModal() {
+    const modal = document.getElementById('modal-domain-confirm');
+    if (modal) modal.style.display = 'none';
+    currentDomainModalMerchant = null;
+}
+
+async function submitDomainActivation() {
+    if (!currentDomainModalMerchant) return;
+    const id = currentDomainModalMerchant.id;
+    const slugInput = document.getElementById('mdom-modal-slug-input');
+    const slug = (slugInput ? slugInput.value : '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const note = (document.getElementById('mdom-modal-note-input').value || '').trim();
+    const btn = document.getElementById('mdom-modal-submit-btn');
+
+    if (!slug || slug.length < 3) {
+        showToast('Please enter a valid subdomain slug (min 3 characters).', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = 'Activating…';
 
     try {
         const res = await adminPost(`/api/admin/merchants/${id}/domain/confirm`, {
-            plan: cleanPlan,
-            note: note.trim(),
+            plan: currentDomainModalMerchant.domain_plan || 'MONTHLY',
+            slug: slug,
+            subdomain: slug + '.usevelcro.com',
+            note: note || 'Payment verified in Kuda Bank',
         });
-        showToast('Payment confirmed! Dedicated domain activated' + (res.email_sent ? ' and email sent to merchant.' : '.'), 'success');
+        showToast(`Activated! https://${slug}.usevelcro.com is live.` + (res.email_sent ? ' Confirmation email sent.' : ''), 'success');
+        closeDomainModal();
         fetchMerchants();
     } catch (e) {
         showToast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✓</span> Confirm &amp; Activate Subdomain';
     }
+}
+
+async function confirmDomainPayment(id, plan) {
+    openDomainModal(id);
 }
 
 async function passMerchantDomain(id) {

@@ -651,8 +651,23 @@
           <!-- Dedicated Domain Panel -->
           <div id="panel-domain" class="d-panel d-form" style="max-width: 580px;">
             <div class="d-head">
-              <h1>Dedicated Domain</h1>
-              <p>Upgrade your exchange to a clean, standalone address like <code id="dom-head-preview">your-store.usevelcro.com</code> without <code>/m/</code>.</p>
+              <span class="d-st is-live" style="font-size: 11px; margin-bottom: 6px; display: inline-block;">Premium Upgrade</span>
+              <h1>Dedicated Subdomain</h1>
+              <p>Run your exchange on your own exclusive address like <code id="dom-head-preview">yourbrand.usevelcro.com</code> with zero <code>/m/</code> in the link.</p>
+            </div>
+
+            <!-- Standard Free Link Callout -->
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.5px;">Standard Exchange Link (Active &amp; Free)</span>
+                <span class="d-st is-live" style="font-size: 10px; padding: 2px 6px;">Free Forever</span>
+              </div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                <code id="dom-standard-link-display" style="color: var(--brand);">https://ramp.usevelcro.com/m/your-store</code>
+              </div>
+              <p style="font-size: 11px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                Your customers can always trade on your standard link. Upgrading gives you a dedicated subdomain (<span id="dom-standard-upgrade-preview" style="color: var(--text-primary); font-weight: 600;">yourbrand.usevelcro.com</span>) for a standalone, executive presence.
+              </p>
             </div>
 
             <!-- Active State -->
@@ -667,6 +682,7 @@
               <p id="dom-active-expires" style="font-size: 12px; color: var(--text-secondary); margin: 0 0 16px;">Active permanent VIP pass.</p>
               <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <a id="dom-open-btn" href="#" target="_blank" rel="noopener" class="d-btn-lime" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 9px 18px; font-size: 13px;">Open dedicated exchange ↗</a>
+                <button type="button" class="d-btn-quiet" style="padding: 9px 14px; font-size: 13px;" onclick="copyDomActiveLink()">Copy link</button>
                 <button type="button" id="dom-renew-btn" class="d-btn-quiet hidden" onclick="startDomainUpgrade()">Renew subscription</button>
               </div>
             </div>
@@ -674,23 +690,35 @@
             <!-- Pending Verification State -->
             <div id="dom-view-pending" class="hidden" style="background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                <span class="d-st is-wait" style="font-size: 13px;">Payment Pending Verification</span>
+                <span class="d-st is-wait" style="font-size: 13px;">Setup in Progress</span>
                 <span id="dom-pending-amount" style="font-weight: 600; font-size: 13px;">₦10,000</span>
               </div>
-              <p style="font-size: 13px; margin: 0 0 12px; color: var(--text-primary);">
-                We received your bank transfer confirmation for <code id="dom-pending-sub">...</code>. Our team verifies payments to Novastaq Technologies Limited and activates your dedicated domain within a few hours.
+              <p style="font-size: 13px; margin: 0 0 12px; color: var(--text-primary); line-height: 1.5;">
+                We received your payment verification for <code id="dom-pending-sub" style="color: var(--brand); font-weight: 700;">...</code>. Our infrastructure team is verifying the funds with Kuda Bank and provisioning your dedicated subdomain on our servers. You'll receive an email as soon as it goes live (usually 1–2 hours).
               </p>
-              <div style="font-size: 12px; color: var(--text-secondary); background: rgba(0,0,0,0.15); padding: 10px 12px; border-radius: 8px;">
-                <b>Payment Reference:</b> <span id="dom-pending-ref">—</span><br>
+              <div style="font-size: 12px; color: var(--text-secondary); background: rgba(0,0,0,0.15); padding: 12px 14px; border-radius: 8px; line-height: 1.6;">
+                <b>Requested Address:</b> <span id="dom-pending-full-url" style="color: var(--text-primary); font-family: monospace;">—</span><br>
+                <b>Payment Reference:</b> <span id="dom-pending-ref" style="color: var(--text-primary);">—</span><br>
                 <b>Bank:</b> Kuda Bank &middot; <code>3000911925</code> &middot; Novastaq Technologies Limited
               </div>
             </div>
 
             <!-- Upgrade / Subscribe Form -->
             <div id="dom-view-form">
-              <!-- Plan Selection Cards -->
+              <!-- Step 1: Subdomain Slug Selection -->
+              <div class="d-field" style="margin-bottom: 20px;">
+                <label class="m-label" for="dom-custom-slug">1. Choose Your Desired Subdomain Slug</label>
+                <div style="display: flex; align-items: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+                  <span style="padding: 10px 12px; color: var(--text-secondary); font-size: 13px; background: rgba(255,255,255,0.03); border-right: 1px solid var(--border);">https://</span>
+                  <input id="dom-custom-slug" type="text" maxlength="30" placeholder="yourbrand" style="flex: 1; border: none; background: transparent; padding: 10px 12px; font-size: 14px; color: var(--text-primary); outline: none; font-weight: 600;" oninput="updateDomainPreviewSlug(this.value)">
+                  <span style="padding: 10px 12px; color: var(--brand); font-size: 13px; font-weight: 600; background: rgba(168,207,69,0.08); border-left: 1px solid var(--border);">.usevelcro.com</span>
+                </div>
+                <p class="m-hint">Your exchange will be live at this address without <code>/m/</code>. Use 3–30 lowercase letters, numbers, or hyphens.</p>
+              </div>
+
+              <!-- Step 2: Plan Selection Cards -->
               <div style="margin-bottom: 20px;">
-                <span class="m-label" style="display: block; margin-bottom: 10px;">Select Your Upgrade Plan</span>
+                <span class="m-label" style="display: block; margin-bottom: 10px;">2. Select Your Upgrade Plan</span>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="dom-plan-grid">
                   <!-- Monthly Card -->
                   <label id="plan-card-monthly" style="border: 2px solid var(--brand); background: rgba(168,207,69,0.06); border-radius: 10px; padding: 16px; cursor: pointer; display: block; position: relative;">
@@ -710,11 +738,11 @@
                 </div>
               </div>
 
-              <!-- Payment Details Box -->
+              <!-- Step 3: Payment Details Box -->
               <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border, #2a344d); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
-                <span class="m-label" style="margin-bottom: 10px; display: block;">Bank Transfer Payment</span>
+                <span class="m-label" style="margin-bottom: 10px; display: block;">3. Transfer Funds to Velcro Company Account</span>
                 <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 14px;">
-                  Transfer <b id="dom-amount-highlight" style="color: var(--brand); font-size: 14px;">₦10,000</b> to the Velcro parent account below:
+                  Transfer <b id="dom-amount-highlight" style="color: var(--brand); font-size: 14px;">₦10,000</b> to the parent account below:
                 </p>
                 <div style="display: grid; gap: 10px; font-size: 13px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
@@ -735,15 +763,15 @@
                 </div>
               </div>
 
-              <!-- Payment Form -->
+              <!-- Step 4: Submit Payment Verification -->
               <form id="dom-pay-form" onsubmit="submitDomainUpgrade(event)">
                 <div class="d-field" style="margin-bottom: 16px;">
-                  <label class="m-label" for="dom-sender-ref">Sender name or transfer reference</label>
-                  <input id="dom-sender-ref" type="text" maxlength="150" required placeholder="e.g. John Doe / Access Bank transfer" class="m-input">
-                  <p class="m-hint">Name on your bank account or reference so our team can instantly identify your transfer.</p>
+                  <label class="m-label" for="dom-sender-ref">4. Sender Name or Transfer Narration</label>
+                  <input id="dom-sender-ref" type="text" maxlength="150" required placeholder="e.g. Megamind Tech / Access Bank transfer" class="m-input">
+                  <p class="m-hint">Name on the bank account you transferred from or transaction reference so our team can immediately verify your payment.</p>
                 </div>
                 <p id="dom-error" class="hidden m-error" style="margin-bottom: 12px;"></p>
-                <button type="submit" id="dom-submit-btn" class="d-btn-lime" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;">I have made this bank transfer</button>
+                <button type="submit" id="dom-submit-btn" class="d-btn-lime" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;">Submit Payment Verification</button>
               </form>
             </div>
           </div>
@@ -878,7 +906,7 @@
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="merchant.js?v=32"></script>
+  <script src="merchant.js?v=33"></script>
 </body>
 
 </html>
