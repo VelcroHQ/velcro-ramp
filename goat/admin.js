@@ -2949,7 +2949,7 @@ function hostfiNoteHtml(note) {
 }
 
 function renderHostfiBuys(buys, fmt) {
-    const needsAction = ['REVIEW', 'SEND_FAILED', 'SEND_UNCERTAIN', 'SWAP_PENDING'];
+    const needsAction = ['REVIEW', 'SEND_FAILED', 'SEND_UNCERTAIN', 'SWAP_PENDING', 'RECEIVED'];
     const canAct = [...needsAction, 'SEND_WAITING']; // waiting sends itself, but can be pushed by hand
     const attention = buys.filter(b => needsAction.includes(b.status)).length;
     const badge = document.getElementById('hostfi-buy-review-count');

@@ -480,9 +480,14 @@ function hostfiBuyResumeWaiting(array $buy): void
 function hostfiBuyResumeOrder(string $orderRef): void
 {
     ensureHostfiBuySchema();
-    $rows = Database::select("SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r AND `status` IN ('SWAPPED','SEND_WAITING','SEND_PENDING')", ['r' => $orderRef]);
+    $rows = Database::select("SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r AND `status` IN ('RECEIVED','SWAPPED','SEND_WAITING','SEND_PENDING')", ['r' => $orderRef]);
     foreach ($rows as $buy) {
-        if ($buy['status'] === 'SWAPPED') {
+        if ($buy['status'] === 'RECEIVED') {
+            // Payment arrived; if still sitting after 60s, process the swap and send now.
+            if (strtotime((string) $buy['updated_at']) < time() - 60) {
+                hostfiProcessPayment((int) $buy['id']);
+            }
+        } elseif ($buy['status'] === 'SWAPPED') {
             // Its send after the swap was interrupted; send it now.
             if (strtotime((string) $buy['updated_at']) < time() - 300) {
                 hostfiBuySend($buy);

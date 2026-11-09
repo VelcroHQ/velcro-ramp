@@ -771,7 +771,7 @@ function registerPublicRoutes(Router $router): void
             if (($row['channel'] ?? '') === 'HOSTFI') {
                 // HostFi's webhooks move these orders along. The one exception: a buy whose coin HostFi
                 // was still holding is sent once it's free (same order, same wallet, same amount).
-                if (strtoupper((string) $row['type']) === 'ONRAMP' && $currentStatus === 'PROCESSING') {
+                if (strtoupper((string) $row['type']) === 'ONRAMP' && in_array($currentStatus, ['PROCESSING', 'CONFIRMED'], true)) {
                     try {
                         hostfiBuyResumeOrder((string) $row['reference']);
                         $row = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $row['id']]) ?: $row;
