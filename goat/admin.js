@@ -2496,21 +2496,21 @@ function openMerchantDetailModal(id) {
         let actBtns = '';
         if (m.status === 'PENDING') {
             actBtns += `
-                <button type="button" class="btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Approve')">Approve Business</button>
-                <button type="button" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'REJECTED', 'Reject')">Reject</button>
+                <button type="button" class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Approve')">Approve Business</button>
+                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'REJECTED', 'Reject')">Reject</button>
             `;
         } else if (m.status === 'APPROVED') {
             actBtns += `
-                <button type="button" class="btn-secondary" style="padding: 8px 16px; font-size: 13px; color: #ff8a8a;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'SUSPENDED', 'Suspend')">Suspend Merchant</button>
+                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px; color: #ff8a8a;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'SUSPENDED', 'Suspend')">Suspend Merchant</button>
             `;
         } else if (m.status === 'SUSPENDED') {
             actBtns += `
-                <button type="button" class="btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Reinstate')">Reinstate Merchant</button>
+                <button type="button" class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Reinstate')">Reinstate Merchant</button>
             `;
         }
         actBtns += `
-            <button type="button" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); openDomainModal(${m.id})">Configure Subdomain</button>
-            <button type="button" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal()">Close</button>
+            <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); openDomainModal(${m.id})">Configure Subdomain</button>
+            <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal()">Close</button>
         `;
         actionsBar.innerHTML = actBtns;
     }
@@ -2530,17 +2530,7 @@ function switchMerchantDetailTab(tab) {
     ['kyb', 'brand', 'pricing', 'domain'].forEach(t => {
         const btn = document.getElementById('md-tab-btn-' + t);
         const pane = document.getElementById('md-tab-' + t);
-        if (btn) {
-            if (t === tab) {
-                btn.classList.add('active');
-                btn.style.background = 'var(--velcro-navy)';
-                btn.style.color = '#fff';
-            } else {
-                btn.classList.remove('active');
-                btn.style.background = '';
-                btn.style.color = '';
-            }
-        }
+        if (btn) btn.classList.toggle('active', t === tab);
         if (pane) pane.style.display = t === tab ? 'block' : 'none';
     });
 }
@@ -2587,20 +2577,20 @@ function renderDomainUpgrades(merchants, requests) {
             let actions = '';
             if (isPending) {
                 actions = `
-                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="openDomainModal(${m.id})">Confirm Paid &amp; Setup</button>
-                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="rejectDomainPayment(${m.id})">Reject</button>
-                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Pass (VIP)</button>
+                    <button class="m-btn-action m-btn-approve" onclick="openDomainModal(${m.id})">Confirm Paid &amp; Setup</button>
+                    <button class="m-btn-action m-btn-reject" onclick="rejectDomainPayment(${m.id})">Reject</button>
+                    <button class="m-btn-action m-btn-domain" onclick="passMerchantDomain(${m.id})">Pass (VIP)</button>
                 `;
             } else if (isActive) {
                 actions = `
-                    <a class="btn-secondary" href="https://${sub}" target="_blank" style="padding: 6px 10px; font-size: 12px; text-decoration: none;">Visit ↗</a>
-                    <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="openDomainModal(${m.id})">Edit Slug</button>
-                    <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="passMerchantDomain(${m.id})">Extend</button>
-                    <button class="btn-secondary" style="padding: 6px 10px; font-size: 12px; color: #ff8a8a;" onclick="revokeDomain(${m.id})">Revoke</button>
+                    <a class="m-btn-action m-btn-visit" href="https://${sub}" target="_blank" rel="noopener">Visit ↗</a>
+                    <button class="m-btn-action m-btn-inspect" onclick="openDomainModal(${m.id})">Edit Slug</button>
+                    <button class="m-btn-action m-btn-domain" onclick="passMerchantDomain(${m.id})">Extend</button>
+                    <button class="m-btn-action m-btn-suspend" onclick="revokeDomain(${m.id})">Revoke</button>
                 `;
             } else {
                 actions = `
-                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="openDomainModal(${m.id})">Setup Subdomain (VIP)</button>
+                    <button class="m-btn-action m-btn-approve" onclick="openDomainModal(${m.id})">Setup Subdomain (VIP)</button>
                 `;
             }
 
@@ -2611,7 +2601,7 @@ function renderDomainUpgrades(merchants, requests) {
                 <td data-label="Plan & Amount"><b>${planName}</b>${m.domain_paid_amount ? muted(ngn(m.domain_paid_amount)) : ''}</td>
                 <td data-label="Sender / Reference">${ref}${m.domain_requested_at ? muted(escapeHtml(m.domain_requested_at)) : ''}</td>
                 <td data-label="Status">${statusPill}</td>
-                <td data-label="Action" style="white-space: nowrap;"><div style="display: flex; gap: 6px; flex-wrap: wrap;">${actions}</div></td>
+                <td data-label="Action" style="white-space: nowrap; text-align: right;"><div class="m-action-group">${actions}</div></td>
             </tr>`;
         }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">No dedicated domain upgrades yet. Use "Pass Merchant (VIP)" on any merchant to grant one.</td></tr>';
     } catch (err) {
