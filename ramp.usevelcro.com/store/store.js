@@ -624,6 +624,61 @@ function netPickerHtml(label) {
   }).join('')}</div>`;
 }
 
+const shortAddr = a => { const s = String(a || ''); return s.length > 18 ? `${s.slice(0, 8)}…${s.slice(-6)}` : s; };
+
+function getExplorerUrl(hash, network) {
+  if (!hash) return '';
+  const net = String(network || '').toLowerCase();
+  if (net.includes('sol')) return `https://solscan.io/tx/${hash}`;
+  if (net.includes('eth')) return `https://etherscan.io/tx/${hash}`;
+  if (net.includes('btc') || net.includes('bitcoin')) return `https://mempool.space/tx/${hash}`;
+  if (net.includes('bsc') || net.includes('binance')) return `https://bscscan.com/tx/${hash}`;
+  if (net.includes('tron') || net.includes('trc')) return `https://tronscan.org/#/transaction/${hash}`;
+  if (net.includes('base')) return `https://basescan.org/tx/${hash}`;
+  if (net.includes('poly') || net.includes('matic')) return `https://polygonscan.com/tx/${hash}`;
+  if (net.includes('arb')) return `https://arbiscan.io/tx/${hash}`;
+  return '';
+}
+
+function orderReceiptHtml(o) {
+  const isBuy = o.side === 'buy';
+  const cryptoAmt = isBuy
+    ? (o.destAmount ? `${fmtCoin(o.destAmount, o.coin)} ${esc(o.coin)}` : (o.amount ? `${fmtCoin(estimateFor(o.coin, o.amount), o.coin)} ${esc(o.coin)}` : esc(o.coin)))
+    : (o.sendAmount ? `${fmtCoin(o.sendAmount, o.coin)} ${esc(o.coin)}` : esc(o.coin));
+  const fiatAmt = fmtNgn(o.amount);
+  const explorerUrl = (o.progress && o.progress.explorer_url) ? o.progress.explorer_url : (o.hash ? getExplorerUrl(o.hash, o.network || o.coin) : '');
+  const shortW = shortAddr(o.wallet);
+  const shortH = shortAddr(o.hash);
+
+  return `
+    <div class="s-receipt-box">
+      <div class="s-receipt-grid">
+        <div class="s-receipt-item"><small>${isBuy ? 'You pay' : 'You send'}</small><b>${isBuy ? fiatAmt : cryptoAmt}</b></div>
+        <div class="s-receipt-item"><small>${isBuy ? 'You receive' : 'You receive'}</small><b>${isBuy ? cryptoAmt : fiatAmt}</b></div>
+      </div>
+      ${isBuy && o.wallet ? `
+        <div class="s-receipt-row">
+          <small>Receiving wallet (${esc(o.network || o.coin)})</small>
+          <div class="s-receipt-val"><code title="${esc(o.wallet)}">${esc(shortW)}</code><button type="button" class="s-copy-sm" data-copy="${esc(o.wallet)}">Copy</button></div>
+        </div>` : ''}
+      ${!isBuy && (o.payoutBank || o.payoutAccount) ? `
+        <div class="s-receipt-row">
+          <small>Payout destination</small>
+          <div class="s-receipt-val"><b>${esc(o.payoutBank || 'Bank')}</b> · <code>${esc(o.payoutAccount || '')}</code>${o.payoutName ? ` <small>(${esc(o.payoutName)})</small>` : ''}</div>
+        </div>` : ''}
+      ${o.hash ? `
+        <div class="s-receipt-row">
+          <small>Transaction hash</small>
+          <div class="s-receipt-val"><code title="${esc(o.hash)}">${esc(shortH)}</code><button type="button" class="s-copy-sm" data-copy="${esc(o.hash)}">Copy</button>${explorerUrl ? `<a href="${esc(explorerUrl)}" target="_blank" rel="noopener" class="s-exp-sm">Explorer ↗</a>` : ''}</div>
+        </div>` : ''}
+      ${o.createdAt ? `
+        <div class="s-receipt-row">
+          <small>Order date</small>
+          <div class="s-receipt-val"><span>${fmtDate(o.createdAt)}</span></div>
+        </div>` : ''}
+    </div>`;
+}
+
 const bankRow = (label, value, copy, cls = '') => `<div><div class="s-bank-k"><span>${label}</span><b class="${cls}">${value}</b></div>${copy ? `<button type="button" class="s-copy" data-copy="${esc(copy)}" aria-label="Copy ${label}">${ICON_COPY}Copy</button>` : ''}</div>`;
 
 const orderFootHtml = o => `<p class="s-order-ref">Order <button type="button" data-copy="${esc(o.reference)}" title="Copy order number"><code>${esc(shortRef(o.reference))}</code></button> · your receipt goes to ${esc(me ? me.email : 'your email')}</p>`;
@@ -773,6 +828,7 @@ function sellPayHtml() {
     <p class="s-expiry" id="co-expiry"></p>
     ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn s-go" data-act="paid">I’ve sent the ${esc(o.coin)}</button>
     <p class="s-hint s-center-text">Tap this once it has left your wallet.</p>`}`}
+    ${orderReceiptHtml(o)}
     <div class="s-tear" aria-hidden="true"></div>
     <ol class="s-progress" id="co-steps">${sellProgressHtml(o)}</ol>
     ${done ? '<button type="button" class="s-btn s-go" data-act="new">Start a new order</button>' : ''}
@@ -970,6 +1026,7 @@ function checkoutPayHtml() {
     <p class="s-expiry" id="co-expiry"></p>
     ${o.claimed ? '<button type="button" class="s-link-btn" data-act="hide-details">Back to checking</button>' : `<button type="button" class="s-btn s-go" data-act="paid">I’ve sent the money</button>
     <p class="s-hint s-center-text">Tap this once your transfer has gone through.</p>`}`}
+    ${orderReceiptHtml(o)}
     <div class="s-tear" aria-hidden="true"></div>
     <ol class="s-progress" id="co-steps">${progressHtml(o)}</ol>
     ${done ? '<button type="button" class="s-btn s-go" data-act="new">Start a new order</button>' : ''}
@@ -1216,11 +1273,26 @@ function openOrder(ref) {
     side: sell ? 'sell' : 'buy',
     coin: orderCoin(o),
     order: {
-      reference: o.reference, side: sell ? 'sell' : 'buy', coin: orderCoin(o), amount: Number(o.amount), status: String(o.status).toUpperCase(),
-      bank: o.deposit_bank_name, account: o.deposit_account_number, accountName: o.deposit_account_name, address: o.deposit_address,
+      reference: o.reference,
+      side: sell ? 'sell' : 'buy',
+      coin: orderCoin(o),
+      amount: Number(o.amount),
+      status: String(o.status).toUpperCase(),
+      bank: o.deposit_bank_name,
+      account: o.deposit_account_number,
+      accountName: o.deposit_account_name,
+      address: o.deposit_address,
       memo: String(o.deposit_note || '').replace(/^Memo:\s*/, '') || null,
-      network: CHAIN_LABELS[chain] || (channel === 'PAJ' ? 'Solana' : ''),
+      network: o.network || CHAIN_LABELS[chain] || (channel === 'PAJ' ? 'Solana' : ''),
+      wallet: o.wallet_address || null,
+      destAmount: o.destination_amount ? Number(o.destination_amount) : null,
       sendAmount: Number(o.send_amount) > 0 ? Number(o.send_amount) : null,
+      payoutBank: o.payout_bank_name || null,
+      payoutAccount: o.payout_account_number || null,
+      payoutName: o.payout_account_name || null,
+      hash: o.hash || null,
+      rate: o.rate ? Number(o.rate) : null,
+      createdAt: o.created_at || null,
       exact: channel !== 'HOSTFI',
       expiresAt: Number(o.expires_at) > 0 ? Number(o.expires_at) * 1000 : 0,
       progress: {},

@@ -306,13 +306,168 @@ function shownOrders() {
   });
 }
 
+function getExplorerUrl(hash, network) {
+  if (!hash) return '';
+  const net = String(network || '').toLowerCase();
+  if (net.includes('sol')) return `https://solscan.io/tx/${hash}`;
+  if (net.includes('eth')) return `https://etherscan.io/tx/${hash}`;
+  if (net.includes('btc') || net.includes('bitcoin')) return `https://mempool.space/tx/${hash}`;
+  if (net.includes('bsc') || net.includes('binance')) return `https://bscscan.com/tx/${hash}`;
+  if (net.includes('tron') || net.includes('trc')) return `https://tronscan.org/#/transaction/${hash}`;
+  if (net.includes('base')) return `https://basescan.org/tx/${hash}`;
+  if (net.includes('poly') || net.includes('matic')) return `https://polygonscan.com/tx/${hash}`;
+  if (net.includes('arb')) return `https://arbiscan.io/tx/${hash}`;
+  return '';
+}
+
+function copyOrdText(text, msg = 'Copied to clipboard') {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => toast(msg)).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    toast(msg);
+  });
+}
+
+function closeOrderModal() {
+  const m = $('ord-modal');
+  if (m) m.classList.remove('is-open');
+}
+
+function openOrderDetail(ref) {
+  const o = (orders || []).find(x => x.reference === ref);
+  if (!o) return;
+  const done = o.status === 'COMPLETED';
+  const isBuy = o.side === 'buy';
+  const [statusName, statusCls] = ORDER_STATUS[o.status] || [o.status, 'off'];
+  const explorerUrl = o.hash ? getExplorerUrl(o.hash, o.network || o.coin) : '';
+  const shortH = o.hash && o.hash.length > 18 ? `${o.hash.slice(0, 10)}…${o.hash.slice(-8)}` : (o.hash || '');
+  const shortW = o.wallet_address && o.wallet_address.length > 18 ? `${o.wallet_address.slice(0, 10)}…${o.wallet_address.slice(-8)}` : (o.wallet_address || '');
+
+  $('ord-modal-body').innerHTML = `
+    <div class="ord-head">
+      <div class="ord-head-main">
+        ${logoImg(o.coin)}
+        <div>
+          <h2 id="ord-modal-title">${isBuy ? 'Buy' : 'Sell'} ${esc(o.coin)}</h2>
+          <p>${when(o.created_at)}</p>
+        </div>
+      </div>
+      <span class="d-st is-${statusCls}">${esc(statusName)}</span>
+    </div>
+
+    <div class="ord-receipt">
+      <div class="ord-receipt-hero">
+        <div>
+          <small>${isBuy ? 'Customer pays' : 'Customer sends'}</small>
+          <b>${isBuy ? (o.naira ? naira(o.naira) : '—') : coinText(o)}</b>
+        </div>
+        <div>
+          <small>${isBuy ? 'Customer gets' : 'Customer receives'}</small>
+          <b>${isBuy ? coinText(o) : (o.naira ? naira(o.naira) : '—')}</b>
+        </div>
+      </div>
+
+      <div class="ord-dl">
+        <div class="ord-row">
+          <dt>Reference</dt>
+          <dd class="ord-val-copy">
+            <code>${esc(o.reference)}</code>
+            <button type="button" class="ord-copy" onclick="copyOrdText('${esc(o.reference)}', 'Reference copied')">Copy</button>
+          </dd>
+        </div>
+        <div class="ord-row">
+          <dt>Customer</dt>
+          <dd><b>${esc(o.customer_name || 'Customer')}</b> <span style="font-weight:400;color:var(--muted)">(${esc(o.customer_email || '—')})</span></dd>
+        </div>
+        ${o.rate ? `<div class="ord-row"><dt>Rate</dt><dd>${naira(o.rate)}</dd></div>` : ''}
+        <div class="ord-row">
+          <dt>Your markup</dt>
+          <dd>${o.markup_percent}%</dd>
+        </div>
+        <div class="ord-row">
+          <dt>Your earnings</dt>
+          <dd><b class="${done ? 'is-earned' : 'is-pending'}">${o.earned ? naira(o.earned) : '₦0'}</b>${done ? '' : ' <small style="font-weight:400;color:var(--muted)">(pending completion)</small>'}</dd>
+        </div>
+      </div>
+    </div>
+
+    <div class="ord-dl" style="padding: 0 4px;">
+      ${isBuy && o.wallet_address ? `
+        <div class="ord-row">
+          <dt>Customer wallet</dt>
+          <dd class="ord-val-copy">
+            <code title="${esc(o.wallet_address)}">${esc(shortW)}</code>
+            <button type="button" class="ord-copy" onclick="copyOrdText('${esc(o.wallet_address)}', 'Wallet address copied')">Copy</button>
+          </dd>
+        </div>` : ''}
+
+      ${!isBuy && (o.payout_bank_name || o.payout_account_number) ? `
+        <div class="ord-row">
+          <dt>Payout destination</dt>
+          <dd class="ord-val-copy">
+            <span>${esc(o.payout_bank_name || 'Bank')} · <code>${esc(o.payout_account_number || '')}</code></span>
+            ${o.payout_account_number ? `<button type="button" class="ord-copy" onclick="copyOrdText('${esc(o.payout_account_number)}', 'Account number copied')">Copy</button>` : ''}
+          </dd>
+        </div>
+        ${o.payout_account_name ? `
+        <div class="ord-row">
+          <dt>Account name</dt>
+          <dd>${esc(o.payout_account_name)}</dd>
+        </div>` : ''}` : ''}
+
+      ${o.deposit_bank_name && !done ? `
+        <div class="ord-row">
+          <dt>Pay to</dt>
+          <dd class="ord-val-copy">
+            <span>${esc(o.deposit_bank_name)} · <code>${esc(o.deposit_account_number || '')}</code></span>
+            ${o.deposit_account_number ? `<button type="button" class="ord-copy" onclick="copyOrdText('${esc(o.deposit_account_number)}', 'Account number copied')">Copy</button>` : ''}
+          </dd>
+        </div>` : ''}
+
+      ${o.deposit_address && !done ? `
+        <div class="ord-row">
+          <dt>Deposit address</dt>
+          <dd class="ord-val-copy">
+            <code>${esc(o.deposit_address.length > 18 ? o.deposit_address.slice(0, 10) + '…' + o.deposit_address.slice(-8) : o.deposit_address)}</code>
+            <button type="button" class="ord-copy" onclick="copyOrdText('${esc(o.deposit_address)}', 'Deposit address copied')">Copy</button>
+          </dd>
+        </div>` : ''}
+
+      ${o.hash ? `
+        <div class="ord-row">
+          <dt>Transaction hash</dt>
+          <dd class="ord-val-copy">
+            <code title="${esc(o.hash)}">${esc(shortH)}</code>
+            <button type="button" class="ord-copy" onclick="copyOrdText('${esc(o.hash)}', 'Transaction hash copied')">Copy</button>
+          </dd>
+        </div>` : ''}
+    </div>
+
+    ${explorerUrl ? `
+      <a href="${esc(explorerUrl)}" target="_blank" rel="noopener" class="ord-btn-link">
+        View on Blockchain Explorer ↗
+      </a>` : ''}
+  `;
+
+  $('ord-modal').classList.add('is-open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeOrderModal();
+});
+
 function renderOrders() {
   const list = $('ord-list');
   if (!orders || !orders.length) { list.innerHTML = $('ord-empty').innerHTML; return; }
   const rows = shownOrders();
   list.innerHTML = rows.length ? `<table class="d-table d-orders"><thead><tr><th>Order</th><th>Customer</th><th class="is-num">Amount</th><th class="is-num">Your markup</th><th>Status</th><th class="is-end">Date</th></tr></thead><tbody>${rows.map(o => {
     const done = o.status === 'COMPLETED';
-    return `<tr>
+    return `<tr class="is-clickable" onclick="openOrderDetail('${esc(o.reference)}')">
       <td class="c-order"><span class="d-who">${logoImg(o.coin)}<span class="d-cell"><b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b><small title="${esc(o.reference)}">${esc(shortRef(o.reference))}</small></span></span></td>
       <td class="c-who"><span class="d-cell"><b>${esc(o.customer_name || (o.customer_email || '').split('@')[0])}</b><small>${esc(o.customer_email || '')}</small></span></td>
       <td class="c-amt is-num"><span class="d-cell"><b>${o.naira ? naira(o.naira) : '—'}</b><small>${coinText(o)}</small></span></td>
@@ -326,7 +481,7 @@ function renderOrders() {
 // The five newest, on the overview.
 function renderRecentOrders() {
   const rows = (orders || []).slice(0, 5);
-  $('ov-recent').innerHTML = rows.length ? rows.map(o => `<div class="d-mini">${logoImg(o.coin)}
+  $('ov-recent').innerHTML = rows.length ? rows.map(o => `<div class="d-mini is-clickable" onclick="openOrderDetail('${esc(o.reference)}')">${logoImg(o.coin)}
       <span class="d-mini-l"><b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b><small>${esc(o.customer_name || o.customer_email || '')}</small></span>
       <span class="d-mini-r"><b>${o.naira ? naira(o.naira) : coinText(o)}</b>${statusHtml(ORDER_STATUS[o.status] || [o.status, 'off'])}</span>
     </div>`).join('') : `<div class="d-mini-empty"><p>Every buy and sell on your exchange shows up here.</p><button type="button" class="d-btn-quiet" onclick="shareStore()">Share your exchange</button></div>`;

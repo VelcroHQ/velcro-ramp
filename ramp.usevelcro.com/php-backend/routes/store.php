@@ -249,6 +249,8 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
     $rows = Database::select(
         'SELECT t.`reference`, t.`type`, t.`status`, t.`channel`, t.`asset`, t.`amount`, t.`destination_amount`, t.`destination_currency`,
                 t.`source_currency`, t.`merchant_markup_percent`, t.`velcro_fee_percent`, t.`rate`, t.`hash`, t.`created_at`, t.`store_customer_id`,
+                t.`wallet_address`, t.`deposit_bank_name`, t.`deposit_account_number`, t.`deposit_account_name`, t.`deposit_address`, t.`deposit_note`,
+                t.`beneficiary`, t.`meta`,
                 c.`email` AS `customer_email`, c.`name` AS `customer_name`
          FROM `transactions` t
          LEFT JOIN `store_customers` c ON c.`id` = t.`store_customer_id` AND c.`merchant_id` = t.`merchant_id`
@@ -275,6 +277,10 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
                 $naira = (float) $t['amount'];
             }
         }
+        $ben = json_decode((string) ($t['beneficiary'] ?? ''), true) ?: [];
+        $meta = json_decode((string) ($t['meta'] ?? ''), true) ?: [];
+        $chain = str_contains((string) $t['asset'], ':') ? explode(':', (string) $t['asset'])[0] : '';
+        $network = (string) ($meta['network'] ?? $meta['chain'] ?? $chain);
         return [
             'reference' => $t['reference'],
             'side' => $buy ? 'buy' : 'sell',
@@ -282,11 +288,23 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
             'coin' => $coin,
             'coin_amount' => $buy ? ($t['destination_amount'] !== null ? (float) $t['destination_amount'] : null) : (float) $t['amount'],
             'naira' => round($naira, 2),
+            'rate' => !empty($t['rate']) && (float)$t['rate'] > 0 ? (float)$t['rate'] : null,
             'markup_percent' => $markup,
             'earned' => round($naira * $markup / 100, 2),
             'customer_email' => $t['customer_email'],
             'customer_name' => $t['customer_name'],
             'customer_id' => (int) $t['store_customer_id'],
+            'wallet_address' => $t['wallet_address'] ?: ($ben['wallet_address'] ?? null),
+            'network' => $network ?: null,
+            'hash' => $t['hash'] ?: null,
+            'deposit_bank_name' => $t['deposit_bank_name'] ?: null,
+            'deposit_account_number' => $t['deposit_account_number'] ?: null,
+            'deposit_account_name' => $t['deposit_account_name'] ?: null,
+            'deposit_address' => $t['deposit_address'] ?: null,
+            'deposit_note' => $t['deposit_note'] ?: null,
+            'payout_bank_name' => $ben['bank_name'] ?? $ben['bankName'] ?? null,
+            'payout_account_number' => $ben['account_number'] ?? null,
+            'payout_account_name' => $ben['holder_name'] ?? null,
             'created_at' => $t['created_at'],
         ];
     }, $rows);
@@ -299,13 +317,19 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
 function storeCustomerOrderView(array $o): array
 {
     $meta = json_decode((string) ($o['meta'] ?? ''), true) ?: [];
-    unset($o['meta']);
+    $ben = json_decode((string) ($o['beneficiary'] ?? ''), true) ?: [];
+    unset($o['meta'], $o['beneficiary']);
     $created = strtotime((string) $o['created_at']) ?: 0;
     $o['expires_at'] = (int) ($meta['hostfi']['expires_at'] ?? 0) ?: ($created ? $created + 3600 : 0);
     $o['send_amount'] = null;
+    $chain = str_contains((string) $o['asset'], ':') ? explode(':', (string) $o['asset'])[0] : '';
+    $o['network'] = (string) ($meta['network'] ?? $meta['chain'] ?? $chain);
     if (strtoupper((string) $o['type']) === 'OFFRAMP') {
         // PAJ sells are ordered in naira, so their coin amount is in PAJ's own order.
         $o['send_amount'] = (float) (strtoupper((string) $o['channel']) === 'PAJ' ? ($meta['amount'] ?? 0) : $o['amount']);
+        $o['payout_bank_name'] = $ben['bank_name'] ?? $ben['bankName'] ?? null;
+        $o['payout_account_number'] = $ben['account_number'] ?? null;
+        $o['payout_account_name'] = $ben['holder_name'] ?? null;
     }
     return $o;
 }
@@ -461,7 +485,7 @@ function registerStoreRoutes(Router $router): void
         // The customer's orders on this store, newest first (status, amounts, and what to pay or send).
         $orders = Database::select(
             'SELECT `reference`, `type`, `status`, `channel`, `asset`, `amount`, `destination_amount`, `destination_currency`, `source_currency`, `deposit_bank_name`,
-                    `deposit_account_number`, `deposit_account_name`, `deposit_address`, `deposit_note`, `wallet_address`, `hash`, `meta`, `created_at`
+                    `deposit_account_number`, `deposit_account_name`, `deposit_address`, `deposit_note`, `wallet_address`, `hash`, `meta`, `beneficiary`, `rate`, `created_at`
              FROM `transactions`
              WHERE (`merchant_id` = :m AND `store_customer_id` = :c)
                 OR (`merchant_id` = :m2 AND LOWER(`email`) = LOWER(:email))

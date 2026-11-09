@@ -357,6 +357,18 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-layout-minimal .s-trade { box-shadow: none; }
 .s-layout-minimal .s-field-out { background: transparent; }
 
+/* Order receipt summary */
+.s-receipt-box { margin: 14px 0 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: #fafaf8; }
+.s-receipt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px dashed var(--line); }
+.s-receipt-item small { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 2px; }
+.s-receipt-item b { display: block; font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.s-receipt-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; padding: 5px 0; font-size: 12.5px; }
+.s-receipt-row small { color: var(--muted); }
+.s-receipt-val { display: flex; align-items: center; gap: 6px; }
+.s-receipt-val code { font-family: monospace; font-size: 12px; }
+.s-copy-sm, .s-exp-sm { padding: 2px 7px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 11.5px; font-weight: 600; cursor: pointer; color: var(--ink); text-decoration: none; }
+.s-copy-sm:hover, .s-exp-sm:hover { background: #f3f4f6; }
+
 /* Phones and small tablets: the ticket comes first. */
 @media (max-width: 959px) {
   .s-main { display: flex; flex-direction: column; gap: 0; padding-top: 16px; padding-bottom: 36px; }
