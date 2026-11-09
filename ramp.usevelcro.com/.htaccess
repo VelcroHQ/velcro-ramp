@@ -60,6 +60,18 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     # Ensure /goat redirects to /goat/ cleanly
     RewriteRule ^goat$ /goat/ [R=301,L]
 
+    # Subdomain routing: goat.usevelcro.com -> serves goat/
+    RewriteCond %{HTTP_HOST} ^goat\.usevelcro\.com$ [NC]
+    RewriteCond %{DOCUMENT_ROOT}/goat/$1 -f
+    RewriteRule ^(.*)$ goat/$1 [L]
+
+    RewriteCond %{HTTP_HOST} ^goat\.usevelcro\.com$ [NC]
+    RewriteRule ^$ goat/index.html [L]
+
+    # Subdomain routing: merchant.usevelcro.com -> serves merchant/
+    RewriteCond %{HTTP_HOST} ^merchant\.usevelcro\.com$ [NC]
+    RewriteRule ^$ merchant/index.html [L]
+
     # Serve existing files/directories directly
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
