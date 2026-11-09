@@ -1037,6 +1037,8 @@ function paintBrand() {
   paintLogo($('b-logo-preview'), brand, 'Y');
   $('b-logo-remove').classList.toggle('hidden', !brand.logo);
   document.querySelectorAll('[data-layout]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.layout === d.layout)));
+  const cardThumb = document.querySelector('[data-layout="card"] .d-lay');
+  if (cardThumb) cardThumb.style.setProperty('--brand', d.color);
   paintReadability('rd-theme', 'Theme colour on white', contrast(d.color, '#ffffff'));
   paintReadability('rd-btn', 'Button text', contrast(btnText, d.color));
   renderPhone(brand, btnText);
