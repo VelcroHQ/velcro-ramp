@@ -990,9 +990,9 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 .d-lay.is-classic b::after { content: ''; position: absolute; left: 0; right: 0; bottom: 32%; border-top: 1px dashed #deddd4; }
 
 /* Card thumb */
-.d-lay.is-card { background: var(--navy); background-image: radial-gradient(130% 100% at 50% 0%, color-mix(in srgb, var(--brand, var(--navy)) 85%, #fff 15%), var(--brand, var(--navy))); }
+.d-lay.is-card { background: #080c18; background-image: radial-gradient(130% 100% at 50% 0%, color-mix(in srgb, var(--brand, #38bdf8) 40%, transparent), transparent 80%); }
 .d-lay.is-card i { background: rgba(255, 255, 255, .6); }
-.d-lay.is-card b { background: #fff; border-radius: 7px; box-shadow: 0 4px 12px rgba(0, 0, 0, .32); }
+.d-lay.is-card b { background: #fff; border-radius: 7px; box-shadow: 0 4px 12px rgba(0, 0, 0, .45); }
 
 /* Minimal thumb */
 .d-lay.is-minimal { background: #fff; box-shadow: inset 0 0 0 1px #e6e6ea; }
@@ -1005,7 +1005,7 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 .d-phone-cap { margin-top: 10px; display: flex; justify-content: center; gap: 10px; font-size: 13px; color: var(--muted); }
 .d-phone-cap a { font-weight: 600; color: var(--ink-2); }
 .d-phone-screen { height: 540px; overflow: hidden; display: flex; flex-direction: column; border-radius: 27px; background: #f6f5f0; background-image: radial-gradient(120% 90% at 50% 0%, #faf9f5 0%, #f4f3ec 100%); color: var(--ink); font-size: 11px; line-height: 1.4; --p-page: #f6f5f0; --p-on: var(--ink); --p-on-2: var(--muted); --p-line: var(--line); transition: background .2s ease; }
-.d-phone-screen.is-card { background-color: var(--brand); background-image: radial-gradient(130% 90% at 50% -10%, color-mix(in srgb, var(--brand) 88%, #fff 12%) 0%, var(--brand) 65%, color-mix(in srgb, var(--brand) 72%, #050510 28%) 100%); --p-page: var(--brand); --p-on: var(--on-brand-auto); --p-on-2: color-mix(in srgb, var(--on-brand-auto) 80%, transparent); --p-line: rgba(255, 255, 255, .18); }
+.d-phone-screen.is-card { background-color: #070a14; background-image: radial-gradient(130% 90% at 50% -10%, color-mix(in srgb, var(--brand) 32%, transparent) 0%, transparent 80%); --p-page: #070a14; --p-on: #ffffff; --p-on-2: #cbd5e1; --p-line: rgba(255, 255, 255, .12); }
 .d-phone-screen.is-minimal { background: #fff; background-image: none; --p-page: #fff; --p-line: #f0f0f2; }
 .bp-status { display: flex; justify-content: space-between; align-items: center; padding: 9px 18px 2px; font-size: 10.5px; font-weight: 700; color: var(--p-on); }
 .bp-status span { display: inline-flex; gap: 2px; }
