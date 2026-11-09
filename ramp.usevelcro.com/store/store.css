@@ -178,9 +178,75 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-note:empty { display: none; }
 .s-trust { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 12px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 .s-trust svg { width: 14px; height: 14px; margin-top: 2px; }
-.s-support { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--on-page-2); text-decoration: none; }
-.s-support:hover { color: var(--on-page); text-decoration: underline; }
-.s-support svg { width: 16px; height: 16px; }
+.s-support {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .03);
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--on-page-2);
+  text-decoration: none;
+  transition: all .15s ease;
+}
+.s-support:hover {
+  background: rgba(0, 0, 0, .06);
+  color: var(--on-page);
+  text-decoration: none;
+}
+.s-support svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.s-support.is-wa {
+  background: rgba(37, 211, 102, .08);
+  border-color: rgba(37, 211, 102, .25);
+  color: #128c7e;
+}
+.s-support.is-wa:hover {
+  background: rgba(37, 211, 102, .15);
+  border-color: rgba(37, 211, 102, .4);
+  color: #075e54;
+}
+.s-support.is-wa svg {
+  color: #25d366;
+  fill: currentColor;
+}
+.s-layout-card .s-support {
+  background: rgba(255, 255, 255, .1);
+  border-color: rgba(255, 255, 255, .18);
+  color: var(--on-page);
+}
+.s-layout-card .s-support:hover {
+  background: rgba(255, 255, 255, .18);
+}
+.s-layout-card .s-support.is-wa {
+  background: rgba(37, 211, 102, .18);
+  border-color: rgba(37, 211, 102, .35);
+  color: #ffffff;
+}
+.s-layout-minimal .s-support {
+  background: #fafafb;
+  border-color: #ededf1;
+}
+.s-layout-minimal .s-support.is-wa {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.s-help-link {
+  color: var(--brand);
+  text-decoration: underline;
+  font-weight: 600;
+}
 
 /* Footer */
 .s-foot { border-top: 1px solid var(--line-page); font-size: 13px; color: var(--on-page-3); }

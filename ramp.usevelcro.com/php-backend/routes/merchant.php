@@ -793,19 +793,36 @@ function registerMerchantRoutes(Router $router): void
         jsonResponse(successResponse(merchantView(merchantByEmail($email)), 'Store updated'));
     });
 
-    // Where the store's customers get help: a WhatsApp, Telegram or website link. Empty removes it.
+    // Where the store's customers get help: a WhatsApp phone number, WhatsApp link, Telegram or website link. Empty removes it.
     $router->post('/api/merchant/support', function () {
         $email = requireMerchantAuth();
-        $url = trim((string) body(getJsonBody(), 'support_url', ''));
-        if ($url !== '' && !preg_match('#^https://[^\s<>"]{4,250}$#i', $url)) {
-            jsonResponse(errorResponse('Use a full link starting with https://, like https://wa.me/2348012345678'), 400);
+        $raw = trim((string) body(getJsonBody(), 'support_url', ''));
+        $url = $raw;
+        if ($raw !== '') {
+            $digits = preg_replace('/\D/', '', $raw);
+            if (!str_starts_with($raw, 'http://') && !str_starts_with($raw, 'https://')) {
+                if (str_starts_with($raw, 'wa.me/') || str_starts_with($raw, 't.me/')) {
+                    $url = 'https://' . $raw;
+                } elseif (strlen($digits) >= 7) {
+                    if (strlen($digits) === 11 && str_starts_with($digits, '0')) {
+                        $url = 'https://wa.me/234' . substr($digits, 1);
+                    } elseif (str_starts_with($digits, '234') && strlen($digits) === 13) {
+                        $url = 'https://wa.me/' . $digits;
+                    } else {
+                        $url = 'https://wa.me/' . $digits;
+                    }
+                }
+            }
+            if (!preg_match('#^https://[^\s<>"]{4,250}$#i', $url)) {
+                jsonResponse(errorResponse('Enter a valid phone number (e.g. 07035428475) or a support link starting with https://, like https://wa.me/2347035428475'), 400);
+            }
         }
         ensureMerchantSchema();
         $m = merchantFor($email);
         $brand = merchantBrand($m);
         $brand['support_url'] = $url !== '' ? $url : null;
         Database::execute('UPDATE `merchants` SET `brand` = :b WHERE `id` = :id', ['b' => json_encode($brand), 'id' => $m['id']]);
-        jsonResponse(successResponse(merchantView(merchantByEmail($email)), $url !== '' ? 'Support link saved' : 'Support link removed'));
+        jsonResponse(successResponse(merchantView(merchantByEmail($email)), $url !== '' ? 'Support saved' : 'Support removed'));
     });
 
     // Markup % per coin and side (0–MERCHANT_MAX_MARKUP), and which ones are switched on.

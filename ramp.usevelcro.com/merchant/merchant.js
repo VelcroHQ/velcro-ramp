@@ -1057,7 +1057,7 @@ const BANNERS = {
   DRAFT: ['Verify your business to put your exchange live.', 'It takes about three minutes. You can set up your exchange while we review it.', 'Start verification', () => goToKyb()],
   PENDING: ["We're reviewing your business.", "Usually within a working day. We'll email you as soon as you're approved.", 'View details', () => goToKyb()],
   REJECTED: ['We need a few changes before your exchange can go live.', '', 'Fix details', () => goToKyb()],
-  SUSPENDED: ['Your exchange is suspended and offline.', '', 'Contact support', () => window.open('https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab', '_blank')],
+  SUSPENDED: ['Your exchange is suspended and offline.', '', 'Contact support', () => window.open('https://wa.me/2347035428475', '_blank')],
 };
 
 function renderOverview() {
@@ -1192,9 +1192,12 @@ async function submitSupport(e) {
   const err = $('sup-error');
   err.classList.add('hidden');
   btn.disabled = true;
+  btn.textContent = 'Saving…';
+  const val = $('sup-url').value.trim();
   try {
-    merchant = await api('/api/merchant/support', { method: 'POST', body: { support_url: $('sup-url').value.trim() } });
-    toast($('sup-url').value.trim() ? 'Support link saved' : 'Support link removed');
+    merchant = await api('/api/merchant/support', { method: 'POST', body: { support_url: val } });
+    $('sup-url').value = merchant.brand.support_url || '';
+    toast(val ? 'Support saved' : 'Support removed');
     renderAll();
     openSettings(null);
   } catch (ex) {
@@ -1202,6 +1205,7 @@ async function submitSupport(e) {
     err.classList.remove('hidden');
   } finally {
     btn.disabled = false;
+    btn.textContent = 'Save support';
   }
 }
 

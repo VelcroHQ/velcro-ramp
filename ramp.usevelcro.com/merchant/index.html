@@ -241,7 +241,7 @@
         </nav>
         <div class="d-top-actions">
           <a id="hdr-view" href="#" target="_blank" rel="noopener" class="d-toplink hidden">View exchange</a>
-          <a href="https://chat.whatsapp.com/FNiWMH0bnwgHT7lHhF32ab" target="_blank" rel="noopener" class="d-toplink">Support</a>
+          <a href="https://wa.me/2347035428475" target="_blank" rel="noopener" class="d-toplink">Support</a>
           <div class="d-menu-wrap">
             <button type="button" id="avatar-btn" class="d-avatar" aria-label="Your account" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()"><span id="avatar-initial">V</span></button>
             <div id="avatar-menu" class="d-menu hidden" role="menu">
@@ -563,10 +563,14 @@
           </form>
 
           <form id="panel-support" class="d-panel d-form d-form-sm" novalidate>
-            <div class="d-head"><h1>Customer support</h1><p>Shown on your exchange as "Need help? Chat with us". Use a WhatsApp, Telegram or website link.</p></div>
-            <div class="d-field"><label class="m-label" for="sup-url">Support link</label><input id="sup-url" type="url" maxlength="255" placeholder="https://wa.me/2348012345678" class="m-input"></div>
+            <div class="d-head"><h1>Customer support</h1><p>Shown on your exchange as "Need help? Chat with us". Enter your WhatsApp phone number or support link.</p></div>
+            <div class="d-field">
+              <label class="m-label" for="sup-url">WhatsApp number or link</label>
+              <input id="sup-url" type="text" maxlength="255" placeholder="e.g. 07035428475 or https://wa.me/2347035428475" class="m-input" autocomplete="tel">
+              <p class="m-hint">Enter your WhatsApp phone number (e.g. 07035428475) or a custom link (WhatsApp, Telegram, or website). Your customers will chat directly with you.</p>
+            </div>
             <p id="sup-error" class="hidden m-error"></p>
-            <button type="submit" id="sup-btn" class="d-btn">Save support link</button>
+            <button type="submit" id="sup-btn" class="d-btn">Save support</button>
           </form>
         </div>
       </section>
