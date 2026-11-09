@@ -1592,61 +1592,343 @@ function customerRate(sym, side, markup) {
 const nairaRate = v => '₦' + Number(v).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const rateText = v => '$1 = ' + nairaRate(v);
 
+function isPricesDirty() {
+  if (!pricingDraft || !merchant || !merchant.pricing) return false;
+  if (pricingDraft._display !== (merchant.rate_display || 'final')) return true;
+  for (const sym of Object.keys(me.coins || {})) {
+    const draft = pricingDraft[sym] || {};
+    const orig = merchant.pricing[sym] || {};
+    if (Number(draft.buy || 0) !== Number(orig.buy || 0) ||
+        Number(draft.sell || 0) !== Number(orig.sell || 0) ||
+        Boolean(draft.buy_on) !== Boolean(orig.buy_on) ||
+        Boolean(draft.sell_on) !== Boolean(orig.sell_on)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function renderPrices() {
   pricingDraft = JSON.parse(JSON.stringify(merchant.pricing));
   pricingDraft._display = merchant.rate_display || 'final';
   document.querySelectorAll('input[name="rate-display"]').forEach(r => {
     r.checked = r.value === pricingDraft._display;
-    r.onchange = () => { pricingDraft._display = r.value; paintPriceRows(true); };
+    r.onchange = () => { pricingDraft._display = r.value; paintPriceRows(isPricesDirty()); };
   });
-  $('max-markup').textContent = me.max_markup;
-  $('price-rows').innerHTML = Object.entries(me.coins).map(([sym, name]) => {
-    const side = (key, label) => `<div class="d-side-cell" data-cell="${sym}-${key}">
-        <span class="d-side-label">${label}</span>
-        <button type="button" class="d-toggle" role="switch" aria-label="${sym} ${key} on/off" data-sym="${sym}" data-side="${key}"></button>
-        <label class="d-markup"><input type="number" inputmode="decimal" min="0" max="${me.max_markup}" step="0.05" data-sym="${sym}" data-side="${key}" aria-label="${sym} ${key} markup %"><span>%</span></label>
-        <div class="d-result" data-out="${sym}-${key}"></div>
-      </div>`;
-    return `<div class="d-price-row" data-row="${sym}"><span class="d-coin">${logoImg(sym)}<span><b>${sym}</b><small>${esc(name)}</small></span></span>${side('buy', 'Customers buy')}${side('sell', 'Customers sell')}</div>`;
-  }).join('');
-  document.querySelectorAll('#price-rows input').forEach(inp => {
-    inp.value = pricingDraft[inp.dataset.sym][inp.dataset.side];
-    inp.addEventListener('input', () => {
-      pricingDraft[inp.dataset.sym][inp.dataset.side] = Math.max(0, Math.min(me.max_markup, Number(inp.value) || 0));
-      paintPriceRows(true);
+  if ($('max-markup')) $('max-markup').textContent = me.max_markup;
+
+  const coins = Object.entries(me.coins || {});
+  if ($('prices-live-summary')) $('prices-live-summary').textContent = `${coins.length} Supported Cryptocurrencies`;
+
+  const rows = $('price-rows');
+  if (rows) {
+    rows.innerHTML = coins.map(([sym, name]) => {
+      const sideBlock = (sideKey, sideLabel, subText) => `
+        <div class="d-asset-side is-${sideKey}" data-cell="${sym}-${sideKey}">
+          <div class="d-side-head">
+            <div class="d-side-title-wrap">
+              <span class="d-side-pill is-${sideKey}">${sideLabel}</span>
+              <small class="d-side-sub">${subText}</small>
+            </div>
+            <button type="button" class="d-toggle" role="switch" aria-label="${sym} ${sideKey} on/off" data-sym="${sym}" data-side="${sideKey}"></button>
+          </div>
+
+          <div class="d-side-controls">
+            <div class="d-control-label-row">
+              <span class="d-control-label">Your Markup %</span>
+              <span class="d-control-hint">0%–${me.max_markup}%</span>
+            </div>
+            <div class="d-markup-stepper">
+              <button type="button" class="d-step-btn" onclick="stepMarkup('${sym}', '${sideKey}', -0.1)" title="Decrease markup">−</button>
+              <label class="d-markup">
+                <input type="number" inputmode="decimal" min="0" max="${me.max_markup}" step="0.05" data-sym="${sym}" data-side="${sideKey}" aria-label="${sym} ${sideKey} markup %">
+                <span>%</span>
+              </label>
+              <button type="button" class="d-step-btn" onclick="stepMarkup('${sym}', '${sideKey}', 0.1)" title="Increase markup">+</button>
+            </div>
+            <div class="d-quick-chips">
+              <button type="button" class="d-quick-chip" onclick="setCoinMarkup('${sym}', '${sideKey}', 0.5)">0.5%</button>
+              <button type="button" class="d-quick-chip" onclick="setCoinMarkup('${sym}', '${sideKey}', 1.0)">1.0%</button>
+              <button type="button" class="d-quick-chip" onclick="setCoinMarkup('${sym}', '${sideKey}', 1.5)">1.5%</button>
+              <button type="button" class="d-quick-chip" onclick="setCoinMarkup('${sym}', '${sideKey}', 2.0)">2.0%</button>
+            </div>
+          </div>
+
+          <div class="d-side-result" data-out="${sym}-${sideKey}"></div>
+        </div>
+      `;
+
+      return `
+        <div class="d-asset-card" data-card="${sym}">
+          <div class="d-asset-head">
+            <div class="d-asset-info">
+              ${logoImg(sym)}
+              <div>
+                <div class="d-asset-name-row">
+                  <b class="d-asset-sym">${sym}</b>
+                  <span class="d-asset-name">${esc(name)}</span>
+                </div>
+                <div class="d-asset-spread-tag" data-spread="${sym}">Spread: calculating…</div>
+              </div>
+            </div>
+            <div class="d-asset-status" data-card-status="${sym}">
+              <span class="d-st is-live">Active</span>
+            </div>
+          </div>
+
+          <div class="d-asset-grid">
+            ${sideBlock('buy', 'Customers Buy', `They pay NGN → receive ${sym}`)}
+            ${sideBlock('sell', 'Customers Sell', `They send ${sym} → receive NGN`)}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    rows.querySelectorAll('input').forEach(inp => {
+      inp.value = (pricingDraft[inp.dataset.sym] || {})[inp.dataset.side] ?? 0;
+      inp.addEventListener('input', () => {
+        pricingDraft[inp.dataset.sym][inp.dataset.side] = Math.max(0, Math.min(me.max_markup, Number(inp.value) || 0));
+        paintPriceRows(isPricesDirty());
+      });
     });
-  });
-  document.querySelectorAll('#price-rows .d-toggle').forEach(t => t.addEventListener('click', () => {
-    const p = pricingDraft[t.dataset.sym];
-    p[t.dataset.side + '_on'] = !p[t.dataset.side + '_on'];
-    paintPriceRows(true);
-  }));
+
+    rows.querySelectorAll('.d-toggle').forEach(t => t.addEventListener('click', () => {
+      const p = pricingDraft[t.dataset.sym];
+      p[t.dataset.side + '_on'] = !p[t.dataset.side + '_on'];
+      paintPriceRows(isPricesDirty());
+    }));
+  }
+
   paintPriceRows(false);
+  updateSimEarnings();
 }
 
 function paintPriceRows(dirty) {
-  Object.keys(me.coins).forEach(sym => {
-    const p = pricingDraft[sym];
+  Object.keys(me.coins || {}).forEach(sym => {
+    const p = pricingDraft[sym] || {};
+    let activeBuyRate = null;
+    let activeSellRate = null;
+    let baseBuy = null;
+    let baseSell = null;
+
     ['buy', 'sell'].forEach(side => {
-      const on = p[side + '_on'];
+      const on = Boolean(p[side + '_on']);
+      const markup = Number(p[side] || 0);
       const base = (velcroRates[sym] || {})[side];
-      const rate = customerRate(sym, side, p[side]);
-      document.querySelector(`.d-toggle[data-sym="${sym}"][data-side="${side}"]`).setAttribute('aria-checked', String(on));
-      document.querySelector(`input[data-sym="${sym}"][data-side="${side}"]`).disabled = !on;
+      const rate = customerRate(sym, side, markup);
+      if (side === 'buy') { activeBuyRate = on ? rate : null; baseBuy = base; }
+      else { activeSellRate = on ? rate : null; baseSell = base; }
+
+      const toggleBtn = document.querySelector(`.d-toggle[data-sym="${sym}"][data-side="${side}"]`);
+      if (toggleBtn) toggleBtn.setAttribute('aria-checked', String(on));
+
+      const inp = document.querySelector(`input[data-sym="${sym}"][data-side="${side}"]`);
+      if (inp) {
+        inp.disabled = !on;
+        if (document.activeElement !== inp) inp.value = markup;
+      }
+
+      const cell = document.querySelector(`[data-cell="${sym}-${side}"]`);
+      if (cell) cell.classList.toggle('is-off', !on);
+
+      // Active chips highlight
+      if (cell) {
+        cell.querySelectorAll('.d-quick-chip').forEach(ch => {
+          const chVal = parseFloat(ch.textContent);
+          ch.classList.toggle('is-active', on && Math.abs(chVal - markup) < 0.01);
+        });
+      }
+
       const out = document.querySelector(`[data-out="${sym}-${side}"]`);
-      document.querySelector(`[data-cell="${sym}-${side}"]`).classList.toggle('is-off', !on);
-      out.innerHTML = !on ? '<span class="is-none">Hidden</span>'
-        : rate ? `<b>${rateText(rate)}</b><small>Velcro ${nairaRate(base)}</small>` : '<span class="is-none">Rate unavailable</span>';
+      if (out) {
+        if (!on) {
+          out.innerHTML = `
+            <div class="d-rate-off-box">
+              <span class="d-off-icon">✕</span>
+              <div class="d-off-text">
+                <b>Hidden from exchange</b>
+                <small>Customers cannot ${side} ${sym}</small>
+              </div>
+              <button type="button" class="d-btn-turn-on" onclick="toggleSide('${sym}', '${side}', true)">Enable</button>
+            </div>
+          `;
+        } else if (rate && base) {
+          const profitPerDollar = Math.abs(rate - base);
+          out.innerHTML = `
+            <div class="d-rate-box">
+              <div class="d-rate-main">
+                <small class="d-rate-lbl">${side === 'buy' ? 'Customer Pays' : 'Customer Gets'}</small>
+                <b class="d-rate-val">${rateText(rate)}</b>
+              </div>
+              <div class="d-rate-sub">
+                <span class="d-base-tag">Velcro Base: ${nairaRate(base)}</span>
+                <span class="d-profit-tag">+${nairaRate(profitPerDollar)} / $1 profit (${markup.toFixed(2)}%)</span>
+              </div>
+            </div>
+          `;
+        } else {
+          out.innerHTML = `<div class="d-rate-off-box"><span class="is-none">Rate temporarily unavailable</span></div>`;
+        }
+      }
     });
+
+    // Spread calculation & status badge for the coin card
+    const cardSpread = document.querySelector(`[data-spread="${sym}"]`);
+    const cardStatus = document.querySelector(`[data-card-status="${sym}"]`);
+    const buyOn = Boolean(p.buy_on);
+    const sellOn = Boolean(p.sell_on);
+
+    if (cardStatus) {
+      if (buyOn && sellOn) {
+        cardStatus.innerHTML = '<span class="d-st is-live">Both Sides Live</span>';
+      } else if (buyOn) {
+        cardStatus.innerHTML = '<span class="d-st is-wait">Buy Only</span>';
+      } else if (sellOn) {
+        cardStatus.innerHTML = '<span class="d-st is-wait">Sell Only</span>';
+      } else {
+        cardStatus.innerHTML = '<span class="d-st is-off">Hidden</span>';
+      }
+    }
+
+    if (cardSpread) {
+      if (activeBuyRate && activeSellRate && activeBuyRate > activeSellRate) {
+        const diff = activeBuyRate - activeSellRate;
+        const avgBase = ((baseBuy || activeBuyRate) + (baseSell || activeSellRate)) / 2;
+        const spreadPct = (diff / avgBase) * 100;
+        cardSpread.innerHTML = `<span>Spread: <b>${nairaRate(diff)}</b> / $1 (${spreadPct.toFixed(2)}%)</span>`;
+        cardSpread.className = 'd-asset-spread-tag is-positive';
+      } else if (buyOn || sellOn) {
+        cardSpread.innerHTML = `<span>Single side active</span>`;
+        cardSpread.className = 'd-asset-spread-tag is-neutral';
+      } else {
+        cardSpread.innerHTML = `<span>Pair disabled</span>`;
+        cardSpread.className = 'd-asset-spread-tag is-muted';
+      }
+    }
   });
+
   // Example for the display choice, from the first coin with a buy rate.
-  const ex = Object.keys(me.coins).find(sym => customerRate(sym, 'buy', pricingDraft[sym].buy));
-  if (ex) {
-    $('disp-final').textContent = rateText(customerRate(ex, 'buy', pricingDraft[ex].buy)) + ` · ${ex}`;
-    $('disp-breakdown').textContent = `${rateText(velcroRates[ex].buy)} + ${pricingDraft[ex].buy}% fee · ${ex}`;
+  const ex = Object.keys(me.coins || {}).find(sym => customerRate(sym, 'buy', (pricingDraft[sym] || {}).buy));
+  if (ex && $('disp-final') && $('disp-breakdown')) {
+    const buyMarkup = (pricingDraft[ex] || {}).buy || 0;
+    $('disp-final').textContent = rateText(customerRate(ex, 'buy', buyMarkup)) + ` · ${ex}`;
+    $('disp-breakdown').textContent = `${rateText((velcroRates[ex] || {}).buy)} + ${buyMarkup}% fee · ${ex}`;
   }
-  $('prices-bar').classList.toggle('is-on', dirty);
+
+  const isDirty = typeof dirty === 'boolean' ? dirty : isPricesDirty();
+  const bar = $('prices-bar');
+  if (bar) bar.classList.toggle('is-on', isDirty);
+
+  updateSimEarnings();
 }
+
+function stepMarkup(sym, side, delta) {
+  if (!pricingDraft || !pricingDraft[sym]) return;
+  const current = Number(pricingDraft[sym][side]) || 0;
+  const next = Math.max(0, Math.min(me.max_markup, Math.round((current + delta) * 100) / 100));
+  pricingDraft[sym][side] = next;
+  paintPriceRows(isPricesDirty());
+}
+
+function setCoinMarkup(sym, side, val) {
+  if (!pricingDraft || !pricingDraft[sym]) return;
+  pricingDraft[sym][side] = Math.max(0, Math.min(me.max_markup, Number(val) || 0));
+  paintPriceRows(isPricesDirty());
+}
+
+function applyMarkupPreset(pct) {
+  if (!pricingDraft) return;
+  const val = Math.max(0, Math.min(me.max_markup, Number(pct) || 0));
+  Object.keys(me.coins || {}).forEach(sym => {
+    if (pricingDraft[sym]) {
+      pricingDraft[sym].buy = val;
+      pricingDraft[sym].sell = val;
+    }
+  });
+  paintPriceRows(isPricesDirty());
+  toast(`Applied ${val.toFixed(1)}% markup across all coins`);
+}
+
+function toggleAllSides(side, enable) {
+  if (!pricingDraft) return;
+  Object.keys(me.coins || {}).forEach(sym => {
+    if (pricingDraft[sym]) {
+      if (side === 'buy' || side === 'all') pricingDraft[sym].buy_on = enable;
+      if (side === 'sell' || side === 'all') pricingDraft[sym].sell_on = enable;
+    }
+  });
+  paintPriceRows(isPricesDirty());
+  const label = side === 'buy' ? 'Buy rates' : side === 'sell' ? 'Sell rates' : 'All rates';
+  toast(`${label} ${enable ? 'enabled' : 'disabled'}`);
+}
+
+function toggleSide(sym, side, enable) {
+  if (!pricingDraft || !pricingDraft[sym]) return;
+  pricingDraft[sym][side + '_on'] = enable;
+  paintPriceRows(isPricesDirty());
+}
+
+async function refreshRates() {
+  const btn = $('btn-refresh-rates');
+  const txt = $('rates-status-text');
+  if (btn) btn.classList.add('is-spinning');
+  if (txt) txt.textContent = 'Refreshing rates…';
+  try {
+    const data = await api('/api/merchant/prices');
+    velcroRates = data.rates || {};
+    paintPriceRows(isPricesDirty());
+    paintOverviewPrices();
+    if (txt) txt.textContent = 'Live Base Rates';
+    toast('Base rates updated');
+  } catch (e) {
+    if (txt) txt.textContent = 'Rate refresh failed';
+    toast('Failed to refresh rates: ' + e.message);
+  } finally {
+    if (btn) btn.classList.remove('is-spinning');
+  }
+}
+
+let simVolume = 100000;
+function setSimVolume(amt) {
+  simVolume = amt;
+  const inp = $('sim-vol-input');
+  if (inp) inp.value = amt;
+  document.querySelectorAll('.d-sim-chip').forEach(c => {
+    const chipAmt = parseInt(c.textContent.replace(/\D/g, '')) * (c.textContent.includes('M') ? 1000000 : 1000);
+    c.classList.toggle('is-active', chipAmt === amt);
+  });
+  updateSimEarnings();
+}
+
+function updateSimEarnings() {
+  const inp = $('sim-vol-input');
+  const vol = inp ? Math.max(1000, Number(inp.value) || 0) : simVolume;
+
+  let totalMarkup = 0;
+  let activeSides = 0;
+  Object.keys(me.coins || {}).forEach(sym => {
+    const p = (pricingDraft || merchant.pricing || {})[sym] || {};
+    if (p.buy_on) { totalMarkup += Number(p.buy || 0); activeSides++; }
+    if (p.sell_on) { totalMarkup += Number(p.sell || 0); activeSides++; }
+  });
+
+  const avgMarkup = activeSides > 0 ? (totalMarkup / activeSides) : 1.0;
+  const netProfit = vol * (avgMarkup / 100);
+
+  if ($('sim-avg-markup')) $('sim-avg-markup').textContent = `${avgMarkup.toFixed(2)}%`;
+  if ($('sim-profit')) $('sim-profit').textContent = nairaRate(netProfit);
+}
+
+// Keyboard shortcut (Ctrl+S / Cmd+S) to save prices
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    const activeTab = document.querySelector('.d-tab:not(.hidden)');
+    if (activeTab && activeTab.id === 'tab-prices' && isPricesDirty()) {
+      e.preventDefault();
+      savePrices();
+    }
+  }
+});
 
 async function savePrices() {
   const btn = $('prices-save');

@@ -14,7 +14,7 @@
   <meta property="og:title" content="Velcro Merchant — Your own crypto exchange, live in minutes">
   <meta property="og:description" content="Sell crypto to your customers under your own brand. Velcro handles the naira accounts, the swaps and the payouts.">
   <meta property="og:image" content="https://ramp.usevelcro.com/og-image.png">
-  <link href="/merchant/merchant.css?v=25" rel="stylesheet">
+  <link href="/merchant/merchant.css?v=26" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- The fonts never hold up the page: system text shows until they arrive. -->
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -298,9 +298,80 @@
 
       <!-- Prices -->
       <section id="tab-prices" class="d-tab hidden">
-        <div class="d-head">
-          <h1>Prices</h1>
-          <p>Velcro's rates already include our fee. Add your markup on top; the difference is yours.</p>
+        <div class="d-head d-prices-head-bar">
+          <div>
+            <h1>Prices & Markup</h1>
+            <p>Velcro provides live base rates with zero liquidity fees. Set your markup on top—every naira above or below the base is 100% your earnings.</p>
+          </div>
+          <div class="d-rates-status-pill">
+            <span class="d-pulse-dot"></span>
+            <span id="rates-status-text">Live Base Rates</span>
+            <button type="button" class="d-btn-icon-subtle" id="btn-refresh-rates" onclick="refreshRates()" title="Refresh live rates" aria-label="Refresh live rates">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Margin Simulator & Calculator -->
+        <div class="d-sim-card">
+          <div class="d-sim-head">
+            <div class="d-sim-title">
+              <span class="d-sim-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+              <div>
+                <h3>Earnings Simulator</h3>
+                <p>Simulate customer trade volume to see your projected pure profit.</p>
+              </div>
+            </div>
+            <div class="d-sim-quick-chips">
+              <button type="button" class="d-sim-chip" onclick="setSimVolume(50000)">₦50k</button>
+              <button type="button" class="d-sim-chip is-active" onclick="setSimVolume(100000)">₦100k</button>
+              <button type="button" class="d-sim-chip" onclick="setSimVolume(500000)">₦500k</button>
+              <button type="button" class="d-sim-chip" onclick="setSimVolume(1000000)">₦1M</button>
+            </div>
+          </div>
+          <div class="d-sim-body">
+            <div class="d-sim-stat">
+              <small>Simulated Trade Volume</small>
+              <div class="d-sim-input-wrap">
+                <span class="d-sim-prefix">₦</span>
+                <input type="number" id="sim-vol-input" value="100000" min="5000" step="10000" oninput="updateSimEarnings()">
+              </div>
+            </div>
+            <div class="d-sim-stat">
+              <small>Average Margin</small>
+              <b id="sim-avg-markup">1.00%</b>
+            </div>
+            <div class="d-sim-stat is-highlight">
+              <small>Your Net Profit per Trade</small>
+              <b id="sim-profit">₦1,000.00</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Presets & Bulk Actions -->
+        <div class="d-preset-card">
+          <div class="d-preset-header">
+            <span class="d-preset-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+            <div class="d-preset-info">
+              <b>Quick Markup Presets</b>
+              <small>Apply a uniform margin across all active coins in one tap</small>
+            </div>
+          </div>
+          <div class="d-preset-actions">
+            <div class="d-preset-chips">
+              <button type="button" class="d-chip" onclick="applyMarkupPreset(0.5)"><b>0.5%</b> <small>Competitive</small></button>
+              <button type="button" class="d-chip" onclick="applyMarkupPreset(1.0)"><b>1.0%</b> <small>Standard</small></button>
+              <button type="button" class="d-chip" onclick="applyMarkupPreset(1.5)"><b>1.5%</b> <small>Recommended</small></button>
+              <button type="button" class="d-chip" onclick="applyMarkupPreset(2.0)"><b>2.0%</b> <small>High Margin</small></button>
+            </div>
+            <div class="d-preset-bulk">
+              <button type="button" class="d-bulk-btn" onclick="toggleAllSides('buy', true)">Enable all Buys</button>
+              <span class="d-bulk-sep">·</span>
+              <button type="button" class="d-bulk-btn" onclick="toggleAllSides('sell', true)">Enable all Sells</button>
+              <span class="d-bulk-sep">·</span>
+              <button type="button" class="d-bulk-btn is-warn" onclick="toggleAllSides('all', false)">Disable all</button>
+            </div>
+          </div>
         </div>
 
         <fieldset class="d-display">
@@ -311,11 +382,13 @@
           </div>
         </fieldset>
 
-        <div class="d-block d-prices">
-          <div class="d-prices-head" aria-hidden="true"><span>Coin</span><span>Customers buy</span><span>Customers sell</span></div>
-          <div id="price-rows"></div>
+        <div class="d-prices-container">
+          <div class="d-prices-toolbar">
+            <span class="d-prices-count" id="prices-live-summary">Supported Cryptocurrencies</span>
+            <span class="d-prices-hint">Rates are per $1 and update every minute. Markups can be 0%–<span id="max-markup">5</span>%. A side that's switched off is hidden from your exchange.</span>
+          </div>
+          <div id="price-rows" class="d-price-cards"></div>
         </div>
-        <p class="d-note">Rates are per $1 and update every minute. Markups can be 0%–<span id="max-markup">5</span>%. A side that's switched off is hidden from your exchange.</p>
 
         <div class="d-savebar d-savebar-pop" id="prices-bar">
           <span class="d-savebar-note is-dirty">Unsaved changes</span>
@@ -699,7 +772,7 @@
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="/merchant/merchant.js?v=25"></script>
+  <script src="/merchant/merchant.js?v=26"></script>
 </body>
 
 </html>
