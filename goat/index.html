@@ -485,17 +485,83 @@
             <header>
                 <div class="header-title">
                     <h1>Merchants <span id="merchants-pending" class="status-pill pending" style="display: none; margin-left: 6px;"></span></h1>
-                    <p>Velcro Merchant stores. Review business verification here; a store goes live once it's approved. Merchants verify their own customers.</p>
+                    <p>Velcro Merchant network. Review business KYB verifications, inspect live storefronts, process withdrawals, and approve custom domain upgrades.</p>
                 </div>
                 <div class="header-actions">
-                    <a class="btn-secondary" href="/merchant/" target="_blank" style="width: auto; padding: 8px 14px; font-size: 12px;">Open merchant site ↗</a>
+                    <a class="btn-secondary" href="/merchant/" target="_blank" style="width: auto; padding: 8px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                        <span>🏢</span> Open merchant portal ↗
+                    </a>
                     <button class="refresh-btn" onclick="fetchMerchants()"><i data-lucide="rotate-cw"></i></button>
                 </div>
             </header>
+
+            <!-- Summary KPI Cards -->
+            <div class="stats-grid" style="margin-bottom: 24px;">
+                <div class="stat-card-sm" style="cursor: pointer;" onclick="setMerchantFilter('ALL')">
+                    <div class="stat-icon-sm blue"><i data-lucide="store"></i></div>
+                    <div class="stat-info-sm">
+                        <h4>Total Merchants</h4>
+                        <span id="m-stat-total">0</span>
+                        <div id="m-stat-breakdown" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">0 live · 0 drafts</div>
+                    </div>
+                </div>
+                <div class="stat-card-sm" style="cursor: pointer;" onclick="setMerchantFilter('PENDING')">
+                    <div class="stat-icon-sm amber"><i data-lucide="shield-alert"></i></div>
+                    <div class="stat-info-sm">
+                        <h4>Pending KYB</h4>
+                        <span id="m-stat-pending" style="color: var(--amber);">0</span>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Review to activate</div>
+                    </div>
+                </div>
+                <div class="stat-card-sm" style="cursor: pointer;" onclick="setMerchantFilter('DOMAINS')">
+                    <div class="stat-icon-sm purple"><i data-lucide="globe"></i></div>
+                    <div class="stat-info-sm">
+                        <h4>Dedicated Subdomains</h4>
+                        <span id="m-stat-domains">0</span>
+                        <div id="m-stat-domains-sub" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">0 upgrade requests</div>
+                    </div>
+                </div>
+                <div class="stat-card-sm">
+                    <div class="stat-icon-sm green"><i data-lucide="activity"></i></div>
+                    <div class="stat-info-sm">
+                        <h4>Network Shoppers</h4>
+                        <span id="m-stat-customers">0</span>
+                        <div id="m-stat-orders-sub" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">0 total completed trades</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search & Filter Tabs Toolbar -->
+            <div class="table-card" style="margin-bottom: 16px; padding: 14px 18px;">
+                <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; padding: 4px 12px;">
+                        <i data-lucide="search" style="width: 16px; height: 16px; color: var(--text-secondary);"></i>
+                        <input type="search" id="merchants-search" placeholder="Search by store name, business, slug, or email..." oninput="filterMerchantsList()" style="border: none; background: transparent; padding: 6px 0; font-size: 13px; color: var(--text-main); width: 100%; outline: none; margin-bottom: 0;">
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="merchant-filter-pills">
+                        <button type="button" class="btn-secondary active" onclick="setMerchantFilter('ALL')" id="mf-btn-ALL" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">All (<span id="mf-count-ALL">0</span>)</button>
+                        <button type="button" class="btn-secondary" onclick="setMerchantFilter('PENDING')" id="mf-btn-PENDING" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">Pending Review (<span id="mf-count-PENDING">0</span>)</button>
+                        <button type="button" class="btn-secondary" onclick="setMerchantFilter('APPROVED')" id="mf-btn-APPROVED" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">Live (<span id="mf-count-APPROVED">0</span>)</button>
+                        <button type="button" class="btn-secondary" onclick="setMerchantFilter('DOMAINS')" id="mf-btn-DOMAINS" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">Dedicated Subdomain (<span id="mf-count-DOMAINS">0</span>)</button>
+                        <button type="button" class="btn-secondary" onclick="setMerchantFilter('DRAFT')" id="mf-btn-DRAFT" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">Drafts (<span id="mf-count-DRAFT">0</span>)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Merchants Table -->
             <div class="table-card">
                 <table>
-                    <thead><tr><th>Store</th><th>Business</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead>
-                    <tbody id="merchants-body"><tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading…</td></tr></tbody>
+                    <thead>
+                        <tr>
+                            <th>Store &amp; Branding</th>
+                            <th>Business &amp; KYB</th>
+                            <th>Domain Address</th>
+                            <th>Shoppers &amp; Trades</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="merchants-body"><tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading merchants…</td></tr></tbody>
                 </table>
             </div>
             <h2 style="margin: 28px 0 10px; font-size: 16px;">Earnings withdrawals <span id="mwd-pending" class="status-pill pending" style="display: none; margin-left: 6px;"></span></h2>
@@ -1808,6 +1874,118 @@
         </div>
     </div>
 
-    <script src="admin.js?v=7"></script>
+    <!-- Merchant Detail / KYB Inspection Modal -->
+    <div id="modal-merchant-detail" onclick="if(event.target === this) closeMerchantDetailModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px;">
+        <div class="tx-modal-content" style="max-width: 680px; width: 100%; max-height: 90vh;">
+            <button onclick="closeMerchantDetailModal()" aria-label="Close" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--text-main); font-size: 18px; font-weight: bold;">✕</button>
+            
+            <!-- Merchant Header -->
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+                <div id="md-avatar" style="width: 48px; height: 48px; border-radius: 12px; background: var(--velcro-navy); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; flex-shrink: 0; overflow: hidden;">
+                    M
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <h2 id="md-store-name" style="margin: 0; font-size: 19px;">Store Name</h2>
+                        <span id="md-status-pill" class="status-pill completed">Active</span>
+                        <span id="md-domain-pill" class="status-pill" style="display: none;">Dedicated</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                        <span id="md-email">email@example.com</span>
+                        <span>•</span>
+                        <a id="md-live-link" href="#" target="_blank" rel="noopener" style="color: var(--primary-link); text-decoration: none; font-weight: 600;">Visit Live Store ↗</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Tabs -->
+            <div style="display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn-secondary active" id="md-tab-btn-kyb" onclick="switchMerchantDetailTab('kyb')" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">KYB &amp; Business</button>
+                <button type="button" class="btn-secondary" id="md-tab-btn-brand" onclick="switchMerchantDetailTab('brand')" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">Branding &amp; Look</button>
+                <button type="button" class="btn-secondary" id="md-tab-btn-pricing" onclick="switchMerchantDetailTab('pricing')" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">Pricing &amp; Markups</button>
+                <button type="button" class="btn-secondary" id="md-tab-btn-domain" onclick="switchMerchantDetailTab('domain')" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">Domain Upgrade</button>
+            </div>
+
+            <!-- Tab 1: KYB & Business -->
+            <div id="md-tab-kyb" class="md-tab-content">
+                <div class="tx-modal-info" style="margin: 0 0 16px;">
+                    <div><span style="color: var(--text-secondary);">Business Name</span><b id="md-biz-name">—</b></div>
+                    <div><span style="color: var(--text-secondary);">Business Type</span><span id="md-biz-type">—</span></div>
+                    <div><span style="color: var(--text-secondary);">CAC Registration #</span><code id="md-biz-reg" style="font-weight: 600; color: var(--text-main);">—</code></div>
+                    <div><span style="color: var(--text-secondary);">Contact Person</span><span id="md-biz-contact">—</span></div>
+                    <div><span style="color: var(--text-secondary);">Phone</span><span id="md-biz-phone">—</span></div>
+                    <div><span style="color: var(--text-secondary);">Website</span><a id="md-biz-web" href="#" target="_blank" rel="noopener" style="color: var(--primary-link);">—</a></div>
+                    <div><span style="color: var(--text-secondary);">Estimated Monthly Volume</span><span id="md-biz-volume">—</span></div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Business Description</label>
+                    <div id="md-biz-desc" style="font-size: 13px; line-height: 1.5; background: var(--input-bg); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">—</div>
+                </div>
+                <div id="md-review-note-box" style="display: none; margin-bottom: 16px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; padding: 10px 12px;">
+                    <b style="font-size: 12px; color: #ef4444; display: block; margin-bottom: 2px;">Review / Rejection Note:</b>
+                    <span id="md-review-note-text" style="font-size: 13px; color: var(--text-main);">—</span>
+                </div>
+            </div>
+
+            <!-- Tab 2: Branding & Look -->
+            <div id="md-tab-brand" class="md-tab-content" style="display: none;">
+                <div class="tx-modal-info" style="margin: 0 0 16px;">
+                    <div>
+                        <span style="color: var(--text-secondary);">Brand Primary Color</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span id="md-brand-swatch" style="width: 16px; height: 16px; border-radius: 4px; display: inline-block; border: 1px solid rgba(0,0,0,0.2);"></span>
+                            <code id="md-brand-color">#0ea5e9</code>
+                        </div>
+                    </div>
+                    <div><span style="color: var(--text-secondary);">Store Layout</span><b id="md-brand-layout">Card</b></div>
+                    <div><span style="color: var(--text-secondary);">Button Text Color</span><span id="md-brand-btn-color">Automatic</span></div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Storefront Welcome Message</label>
+                    <div id="md-brand-welcome" style="font-size: 13px; line-height: 1.5; background: var(--input-bg); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-style: italic;">—</div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Pricing & Markups -->
+            <div id="md-tab-pricing" class="md-tab-content" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Rate Display Mode: <b id="md-pricing-display" style="color: var(--text-main);">Final price only</b></span>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border); text-align: left; color: var(--text-secondary);">
+                                <th style="padding: 6px 8px;">Coin</th>
+                                <th style="padding: 6px 8px;">Buy Active</th>
+                                <th style="padding: 6px 8px;">Buy Markup</th>
+                                <th style="padding: 6px 8px;">Sell Active</th>
+                                <th style="padding: 6px 8px;">Sell Markup</th>
+                            </tr>
+                        </thead>
+                        <tbody id="md-pricing-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 4: Domain Upgrade -->
+            <div id="md-tab-domain" class="md-tab-content" style="display: none;">
+                <div class="tx-modal-info" style="margin: 0 0 16px;">
+                    <div><span style="color: var(--text-secondary);">Domain Status</span><span id="md-dom-status-badge" class="status-pill">NONE</span></div>
+                    <div><span style="color: var(--text-secondary);">Subdomain Address</span><code id="md-dom-subdomain" style="font-weight: 600; color: var(--primary-link);">—</code></div>
+                    <div><span style="color: var(--text-secondary);">Upgrade Plan</span><span id="md-dom-plan">—</span></div>
+                    <div><span style="color: var(--text-secondary);">Payment Reference</span><span id="md-dom-ref">—</span></div>
+                    <div><span style="color: var(--text-secondary);">Amount Paid</span><b id="md-dom-amt">—</b></div>
+                    <div><span style="color: var(--text-secondary);">Expires / Renewal</span><span id="md-dom-expires">—</span></div>
+                </div>
+            </div>
+
+            <!-- Modal Action Footer -->
+            <div id="md-actions-bar" style="display: flex; gap: 8px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--border); flex-wrap: wrap;">
+                <!-- Filled dynamically based on merchant status -->
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js?v=8"></script>
 </body>
 </html>

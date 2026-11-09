@@ -2192,17 +2192,156 @@ async function processMerchantWithdrawal(id, action, amount) {
     } catch (e) { showToast(e.message, 'error'); }
 }
 
-function renderMerchants(rows) {
-    const pending = rows.filter(m => m.status === 'PENDING').length;
+let currentMerchantFilter = 'ALL';
+let selectedMerchantForDetail = null;
+
+function setMerchantFilter(filter) {
+    currentMerchantFilter = filter;
+    ['ALL', 'PENDING', 'APPROVED', 'DOMAINS', 'DRAFT'].forEach(f => {
+        const btn = document.getElementById('mf-btn-' + f);
+        if (btn) {
+            if (f === filter) {
+                btn.classList.add('active');
+                btn.style.background = 'var(--velcro-navy)';
+                btn.style.color = '#fff';
+            } else {
+                btn.classList.remove('active');
+                btn.style.background = '';
+                btn.style.color = '';
+            }
+        }
+    });
+    filterMerchantsList();
+}
+
+function filterMerchantsList() {
+    const q = (document.getElementById('merchants-search')?.value || '').toLowerCase().trim();
+    let filtered = allMerchants.slice();
+
+    // Filter by tab
+    if (currentMerchantFilter === 'PENDING') {
+        filtered = filtered.filter(m => m.status === 'PENDING');
+    } else if (currentMerchantFilter === 'APPROVED') {
+        filtered = filtered.filter(m => m.status === 'APPROVED');
+    } else if (currentMerchantFilter === 'DOMAINS') {
+        filtered = filtered.filter(m => (m.domain_status && m.domain_status !== 'NONE') || m.domain_subdomain);
+    } else if (currentMerchantFilter === 'DRAFT') {
+        filtered = filtered.filter(m => m.status === 'DRAFT');
+    }
+
+    // Filter by search query
+    if (q) {
+        filtered = filtered.filter(m => {
+            let brand = {};
+            try { brand = JSON.parse(m.brand || '{}') || {}; } catch (e) { brand = {}; }
+            const storeName = (brand.name || m.business_name || '').toLowerCase();
+            const biz = (m.business_name || '').toLowerCase();
+            const email = (m.email || '').toLowerCase();
+            const slug = (m.slug || '').toLowerCase();
+            const sub = (m.domain_subdomain || '').toLowerCase();
+            const contact = (m.contact_name || '').toLowerCase();
+            return storeName.includes(q) || biz.includes(q) || email.includes(q) || slug.includes(q) || sub.includes(q) || contact.includes(q);
+        });
+    }
+
+    renderMerchantsTable(filtered);
+}
+
+function updateMerchantStats() {
+    const total = allMerchants.length;
+    const approved = allMerchants.filter(m => m.status === 'APPROVED').length;
+    const drafts = allMerchants.filter(m => m.status === 'DRAFT').length;
+    const pending = allMerchants.filter(m => m.status === 'PENDING').length;
+    const domains = allMerchants.filter(m => m.domain_status === 'ACTIVE').length;
+    const domainPending = allMerchants.filter(m => m.domain_status === 'PENDING').length;
+    const totalShoppers = allMerchants.reduce((sum, m) => sum + (Number(m.customers) || 0), 0);
+    const totalOrders = allMerchants.reduce((sum, m) => sum + (Number(m.orders_count) || 0), 0);
+    const totalVolume = allMerchants.reduce((sum, m) => sum + (Number(m.completed_volume) || 0), 0);
+
+    const ngn = v => '₦' + Number(v || 0).toLocaleString('en-NG');
+
+    const totalEl = document.getElementById('m-stat-total');
+    if (totalEl) totalEl.textContent = total;
+    const bkEl = document.getElementById('m-stat-breakdown');
+    if (bkEl) bkEl.textContent = `${approved} live · ${drafts} drafts`;
+
+    const pendingEl = document.getElementById('m-stat-pending');
+    if (pendingEl) pendingEl.textContent = pending;
+
+    const domainsEl = document.getElementById('m-stat-domains');
+    if (domainsEl) domainsEl.textContent = domains;
+    const domSubEl = document.getElementById('m-stat-domains-sub');
+    if (domSubEl) domSubEl.textContent = domainPending > 0 ? `${domainPending} pending setup` : `${domains} active subdomains`;
+
+    const custEl = document.getElementById('m-stat-customers');
+    if (custEl) custEl.textContent = totalShoppers;
+    const ordSubEl = document.getElementById('m-stat-orders-sub');
+    if (ordSubEl) ordSubEl.textContent = `${totalOrders} orders (${ngn(totalVolume)})`;
+
+    // Filter pill counts
+    const cAll = document.getElementById('mf-count-ALL');
+    if (cAll) cAll.textContent = total;
+    const cPend = document.getElementById('mf-count-PENDING');
+    if (cPend) cPend.textContent = pending;
+    const cApp = document.getElementById('mf-count-APPROVED');
+    if (cApp) cApp.textContent = approved;
+    const cDom = document.getElementById('mf-count-DOMAINS');
+    if (cDom) cDom.textContent = allMerchants.filter(m => (m.domain_status && m.domain_status !== 'NONE') || m.domain_subdomain).length;
+    const cDraft = document.getElementById('mf-count-DRAFT');
+    if (cDraft) cDraft.textContent = drafts;
+
     const badge = document.getElementById('merchants-pending');
-    badge.style.display = pending ? 'inline-block' : 'none';
-    badge.innerText = `${pending} to review`;
+    if (badge) {
+        badge.style.display = pending ? 'inline-block' : 'none';
+        badge.innerText = `${pending} to review`;
+    }
+}
+
+function renderMerchants(rows) {
+    updateMerchantStats();
+    filterMerchantsList();
+}
+
+function renderMerchantsTable(rows) {
     const muted = s => `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${s}</div>`;
     const dash = '<span style="color: var(--text-secondary);">—</span>';
-    document.getElementById('merchants-body').innerHTML = rows.length ? rows.map(m => {
+    const ngn = v => '₦' + Number(v || 0).toLocaleString('en-NG');
+
+    const tbody = document.getElementById('merchants-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = rows.length ? rows.map(m => {
         let brand = {};
         try { brand = JSON.parse(m.brand || '{}') || {}; } catch (e) { brand = {}; }
-        const store = escapeHtml(brand.name || m.business_name || '(no name yet)');
+        const storeName = escapeHtml(brand.name || m.business_name || '(Unnamed Store)');
+        const brandColor = brand.color || '#0d0d59';
+        const initial = (storeName.charAt(0) || 'M').toUpperCase();
+
+        const hasDedicated = m.domain_status === 'ACTIVE' && (m.domain_subdomain || m.slug);
+        const sub = m.domain_subdomain || (m.slug ? m.slug + '.usevelcro.com' : '');
+        const liveStoreUrl = hasDedicated ? `https://${sub}` : (m.slug ? `https://ramp.usevelcro.com/m/${m.slug}` : null);
+
+        // Store avatar + name + link
+        const avatarHtml = `<div style="width: 34px; height: 34px; border-radius: 8px; background: ${brandColor}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">${initial}</div>`;
+        const linkHtml = liveStoreUrl
+            ? `<a href="${liveStoreUrl}" target="_blank" rel="noopener" style="color: var(--primary-link); text-decoration: none; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; margin-top: 2px;">${hasDedicated ? escapeHtml(sub) : '/m/' + escapeHtml(m.slug)} ↗</a>`
+            : muted('No address set');
+
+        // Domain pill
+        let domHtml = '<span style="color: var(--text-secondary); font-size: 11px;">Standard (/m/)</span>';
+        if (m.domain_status === 'ACTIVE') {
+            domHtml = `<span class="status-pill completed" style="font-size: 10px; padding: 2px 6px;">Active</span><div style="font-size: 11px; font-family: monospace; color: var(--primary-link); margin-top: 2px;">${escapeHtml(sub)}</div>`;
+        } else if (m.domain_status === 'PENDING') {
+            domHtml = `<span class="status-pill pending" style="font-size: 10px; padding: 2px 6px;">Pending Setup</span><div style="font-size: 11px; color: var(--amber); margin-top: 2px;">${m.domain_plan === 'LIFETIME' ? '₦200,000' : '₦10,000'}</div>`;
+        }
+
+        // Activity
+        const activityHtml = `
+            <div><b>👥 ${m.customers || 0}</b> <span style="color: var(--text-secondary); font-size: 11px;">shoppers</span></div>
+            ${Number(m.orders_count) > 0 ? `<div style="font-size: 11px; color: var(--success); margin-top: 2px;">⚡ ${m.orders_count} orders (${ngn(m.completed_volume)})</div>` : muted('No trades yet')}
+        `;
+
+        // Action buttons
         const actions = {
             PENDING: [['APPROVED', 'Approve', 'btn-primary'], ['REJECTED', 'Reject', 'btn-secondary']],
             APPROVED: [['SUSPENDED', 'Suspend', 'btn-secondary']],
@@ -2210,23 +2349,207 @@ function renderMerchants(rows) {
             REJECTED: [], DRAFT: [],
         }[m.status] || [];
 
-        const domBadge = m.domain_status === 'ACTIVE'
-            ? `<div style="margin-top: 4px;"><span class="status-pill completed" style="font-size: 10px; padding: 2px 6px;">Dedicated: ${escapeHtml(m.domain_subdomain || m.slug + '.usevelcro.com')}</span></div>`
-            : (m.domain_status === 'PENDING'
-                ? `<div style="margin-top: 4px;"><span class="status-pill pending" style="font-size: 10px; padding: 2px 6px;">Domain Upgrade: ${m.domain_plan === 'LIFETIME' ? '₦200k' : '₦10k'} Pending</span></div>`
-                : '');
-
-        const passDomainBtn = `<button class="btn-secondary" style="font-size: 11px; padding: 5px 8px; margin-top: 4px;" onclick="passMerchantDomain(${Number(m.id)})" title="Pass / Waive Dedicated Domain">${m.domain_status === 'ACTIVE' ? 'Edit Domain' : 'Pass Domain'}</button>`;
+        const statusPill = `<span class="status-pill ${String(m.status).toLowerCase()}">${statusLabel(m.status === 'DRAFT' ? 'Not submitted' : m.status)}</span>${m.review_note ? `<div class="hostfi-note" style="margin-top: 4px;">${escapeHtml(m.review_note)}</div>` : ''}`;
 
         return `
         <tr>
-            <td data-label="Store"><b>${store}</b>${muted(m.slug ? '/m/' + escapeHtml(m.slug) : 'no address yet')}${muted(escapeHtml(m.email))}${domBadge}</td>
-            <td data-label="Business">${m.business_name ? `${escapeHtml(m.business_name)}${muted(escapeHtml(merchantLookups.business_types[m.business_type] || m.business_type || ''))}${m.registration_number ? muted('Reg: ' + escapeHtml(m.registration_number)) : ''}${m.monthly_volume ? muted(escapeHtml(merchantLookups.volumes[m.monthly_volume] || m.monthly_volume)) : ''}${m.website ? muted(escapeHtml(m.website)) : ''}` : dash}</td>
-            <td data-label="Contact">${m.contact_name ? `${escapeHtml(m.contact_name)}${muted(escapeHtml(m.phone || ''))}` : dash}${m.description ? muted(escapeHtml(m.description)) : ''}</td>
-            <td data-label="Status" class="hostfi-status-cell"><span class="status-pill ${String(m.status).toLowerCase()}">${statusLabel(m.status === 'DRAFT' ? 'Not submitted' : m.status)}</span>${m.review_note ? `<div class="hostfi-note">${escapeHtml(m.review_note)}</div>` : ''}</td>
-            <td data-label="Action" class="hostfi-action-cell"><div class="hostfi-actions">${actions.map(([s, l, c]) => `<button class="${c}" onclick="setMerchantStatus(${Number(m.id)}, '${s}', '${l}')">${l}</button>`).join('')}${passDomainBtn}</div></td>
+            <td data-label="Store & Branding">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    ${avatarHtml}
+                    <div style="min-width: 0;">
+                        <b style="font-size: 13px; display: block; word-break: break-word;">${storeName}</b>
+                        ${linkHtml}
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${escapeHtml(m.email)}</div>
+                    </div>
+                </div>
+            </td>
+            <td data-label="Business & KYB">
+                <div><b>${escapeHtml(m.business_name || storeName)}</b></div>
+                ${m.business_type ? `<span style="font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,0.05); color: var(--text-secondary);">${escapeHtml(merchantLookups.business_types[m.business_type] || m.business_type)}</span>` : ''}
+                ${m.registration_number ? muted('Reg: ' + escapeHtml(m.registration_number)) : ''}
+                ${m.website ? `<div style="margin-top: 2px;"><a href="${escapeHtml(m.website)}" target="_blank" rel="noopener" style="font-size: 11px; color: var(--primary-link);">${escapeHtml(m.website)}</a></div>` : ''}
+            </td>
+            <td data-label="Domain Address">${domHtml}</td>
+            <td data-label="Shoppers & Trades">${activityHtml}</td>
+            <td data-label="Status">${statusPill}</td>
+            <td data-label="Actions" style="white-space: nowrap;">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                    <button class="btn-secondary" style="font-size: 11px; padding: 5px 8px;" onclick="openMerchantDetailModal(${m.id})">Inspect 🔍</button>
+                    ${actions.map(([s, l, c]) => `<button class="${c}" style="font-size: 11px; padding: 5px 8px;" onclick="setMerchantStatus(${Number(m.id)}, '${s}', '${l}')">${l}</button>`).join('')}
+                    ${liveStoreUrl ? `<a href="${liveStoreUrl}" target="_blank" rel="noopener" class="btn-secondary" style="font-size: 11px; padding: 5px 8px; text-decoration: none;" title="Open live storefront">Visit ↗</a>` : ''}
+                    <button class="btn-secondary" style="font-size: 11px; padding: 5px 8px;" onclick="openDomainModal(${m.id})" title="Configure or activate dedicated subdomain">Domain</button>
+                </div>
+            </td>
         </tr>`;
-    }).join('') : '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">No merchants yet.</td></tr>';
+    }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 32px; color: var(--text-secondary);">No merchants match your filter or search.</td></tr>';
+}
+
+function openMerchantDetailModal(id) {
+    const m = (allMerchants || []).find(x => Number(x.id) === Number(id));
+    if (!m) {
+        showToast('Merchant not found', 'error');
+        return;
+    }
+    selectedMerchantForDetail = m;
+
+    let brand = {};
+    try { brand = JSON.parse(m.brand || '{}') || {}; } catch (e) { brand = {}; }
+    let pricing = {};
+    try { pricing = JSON.parse(m.pricing || '{}') || {}; } catch (e) { pricing = {}; }
+
+    const storeName = brand.name || m.business_name || '(Unnamed Store)';
+    const brandColor = brand.color || '#0d0d59';
+    const initial = (storeName.charAt(0) || 'M').toUpperCase();
+
+    const hasDedicated = m.domain_status === 'ACTIVE' && (m.domain_subdomain || m.slug);
+    const sub = m.domain_subdomain || (m.slug ? m.slug + '.usevelcro.com' : '');
+    const liveStoreUrl = hasDedicated ? `https://${sub}` : (m.slug ? `https://ramp.usevelcro.com/m/${m.slug}` : '#');
+
+    // Header elements
+    const avatar = document.getElementById('md-avatar');
+    if (avatar) {
+        avatar.style.background = brandColor;
+        avatar.textContent = initial;
+    }
+    document.getElementById('md-store-name').textContent = storeName;
+    document.getElementById('md-email').textContent = m.email || '—';
+    const statusPill = document.getElementById('md-status-pill');
+    if (statusPill) {
+        statusPill.className = `status-pill ${String(m.status).toLowerCase()}`;
+        statusPill.textContent = statusLabel(m.status === 'DRAFT' ? 'Not submitted' : m.status);
+    }
+    const domPill = document.getElementById('md-domain-pill');
+    if (domPill) {
+        domPill.style.display = hasDedicated ? 'inline-block' : 'none';
+        domPill.className = 'status-pill completed';
+        domPill.textContent = 'Dedicated Subdomain';
+    }
+    const liveLink = document.getElementById('md-live-link');
+    if (liveLink) {
+        liveLink.href = liveStoreUrl;
+        liveLink.style.display = liveStoreUrl !== '#' ? 'inline' : 'none';
+    }
+
+    // Tab 1: KYB
+    document.getElementById('md-biz-name').textContent = m.business_name || storeName;
+    document.getElementById('md-biz-type').textContent = merchantLookups.business_types[m.business_type] || m.business_type || '—';
+    document.getElementById('md-biz-reg').textContent = m.registration_number || 'Not provided';
+    document.getElementById('md-biz-contact').textContent = m.contact_name || '—';
+    document.getElementById('md-biz-phone').textContent = m.phone || '—';
+    const webEl = document.getElementById('md-biz-web');
+    if (webEl) {
+        webEl.textContent = m.website || '—';
+        webEl.href = m.website || '#';
+        webEl.style.pointerEvents = m.website ? 'auto' : 'none';
+    }
+    document.getElementById('md-biz-volume').textContent = merchantLookups.volumes[m.monthly_volume] || m.monthly_volume || '—';
+    document.getElementById('md-biz-desc').textContent = m.description || 'No description provided by merchant.';
+
+    const noteBox = document.getElementById('md-review-note-box');
+    if (noteBox) {
+        if (m.review_note) {
+            noteBox.style.display = 'block';
+            document.getElementById('md-review-note-text').textContent = m.review_note;
+        } else {
+            noteBox.style.display = 'none';
+        }
+    }
+
+    // Tab 2: Brand
+    const swatch = document.getElementById('md-brand-swatch');
+    if (swatch) swatch.style.background = brandColor;
+    document.getElementById('md-brand-color').textContent = brandColor;
+    document.getElementById('md-brand-layout').textContent = brand.layout || 'Card';
+    document.getElementById('md-brand-btn-color').textContent = brand.button_text_color || 'Automatic';
+    document.getElementById('md-brand-welcome').textContent = brand.welcome ? `"${brand.welcome}"` : 'Default welcome copy';
+
+    // Tab 3: Pricing
+    document.getElementById('md-pricing-display').textContent = m.rate_display === 'breakdown' ? 'Velcro rate + markup' : 'Final price only';
+    const coins = ['BTC', 'ETH', 'SOL', 'USDT', 'USDC'];
+    const pBody = document.getElementById('md-pricing-body');
+    if (pBody) {
+        pBody.innerHTML = coins.map(sym => {
+            const c = pricing[sym] || {};
+            const buyActive = c.buy_on !== false ? '<span style="color: var(--success);">● Active</span>' : '<span style="color: var(--text-secondary);">○ Off</span>';
+            const sellActive = c.sell_on !== false ? '<span style="color: var(--success);">● Active</span>' : '<span style="color: var(--text-secondary);">○ Off</span>';
+            const buyMarkup = c.buy_markup !== undefined ? `${c.buy_markup}%` : '0%';
+            const sellMarkup = c.sell_markup !== undefined ? `${c.sell_markup}%` : '0%';
+            return `
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 6px 8px;"><b>${sym}</b></td>
+                <td style="padding: 6px 8px;">${buyActive}</td>
+                <td style="padding: 6px 8px; font-weight: 600;">+${buyMarkup}</td>
+                <td style="padding: 6px 8px;">${sellActive}</td>
+                <td style="padding: 6px 8px; font-weight: 600;">+${sellMarkup}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // Tab 4: Domain
+    const domStatusBadge = document.getElementById('md-dom-status-badge');
+    if (domStatusBadge) {
+        domStatusBadge.className = `status-pill ${m.domain_status === 'ACTIVE' ? 'completed' : (m.domain_status === 'PENDING' ? 'pending' : 'draft')}`;
+        domStatusBadge.textContent = m.domain_status || 'NONE';
+    }
+    document.getElementById('md-dom-subdomain').textContent = m.domain_subdomain || (m.slug ? `${m.slug}.usevelcro.com` : 'Not configured');
+    document.getElementById('md-dom-plan').textContent = m.domain_plan === 'LIFETIME' ? 'Lifetime VIP' : (m.domain_plan === 'PASSED' ? 'VIP Pass (Waived)' : (m.domain_plan === 'MONTHLY' ? 'Monthly (₦10,000)' : 'None'));
+    document.getElementById('md-dom-ref').textContent = m.domain_payment_ref || '—';
+    document.getElementById('md-dom-amt').textContent = m.domain_paid_amount ? '₦' + Number(m.domain_paid_amount).toLocaleString('en-NG') : '—';
+    document.getElementById('md-dom-expires').textContent = m.domain_expires_at ? m.domain_expires_at.slice(0, 10) : (m.domain_plan === 'LIFETIME' || m.domain_plan === 'PASSED' ? 'Permanent' : '—');
+
+    // Actions Footer
+    const actionsBar = document.getElementById('md-actions-bar');
+    if (actionsBar) {
+        let actBtns = '';
+        if (m.status === 'PENDING') {
+            actBtns += `
+                <button type="button" class="btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Approve')">Approve Business</button>
+                <button type="button" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'REJECTED', 'Reject')">Reject</button>
+            `;
+        } else if (m.status === 'APPROVED') {
+            actBtns += `
+                <button type="button" class="btn-secondary" style="padding: 8px 16px; font-size: 13px; color: #ff8a8a;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'SUSPENDED', 'Suspend')">Suspend Merchant</button>
+            `;
+        } else if (m.status === 'SUSPENDED') {
+            actBtns += `
+                <button type="button" class="btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); setMerchantStatus(${m.id}, 'APPROVED', 'Reinstate')">Reinstate Merchant</button>
+            `;
+        }
+        actBtns += `
+            <button type="button" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); openDomainModal(${m.id})">Configure Subdomain</button>
+            <button type="button" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal()">Close</button>
+        `;
+        actionsBar.innerHTML = actBtns;
+    }
+
+    switchMerchantDetailTab('kyb');
+    const modal = document.getElementById('modal-merchant-detail');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeMerchantDetailModal() {
+    const modal = document.getElementById('modal-merchant-detail');
+    if (modal) modal.style.display = 'none';
+    selectedMerchantForDetail = null;
+}
+
+function switchMerchantDetailTab(tab) {
+    ['kyb', 'brand', 'pricing', 'domain'].forEach(t => {
+        const btn = document.getElementById('md-tab-btn-' + t);
+        const pane = document.getElementById('md-tab-' + t);
+        if (btn) {
+            if (t === tab) {
+                btn.classList.add('active');
+                btn.style.background = 'var(--velcro-navy)';
+                btn.style.color = '#fff';
+            } else {
+                btn.classList.remove('active');
+                btn.style.background = '';
+                btn.style.color = '';
+            }
+        }
+        if (pane) pane.style.display = t === tab ? 'block' : 'none';
+    });
 }
 
 function renderDomainUpgrades(merchants, requests) {

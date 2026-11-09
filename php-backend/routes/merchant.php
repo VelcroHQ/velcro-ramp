@@ -1350,9 +1350,17 @@ function registerMerchantRoutes(Router $router): void
             $domainPendingExpr = "(SELECT COUNT(*) FROM `merchant_domain_requests` r WHERE r.`merchant_id` = m.`id` AND r.`status` = 'PENDING') AS `domain_pending_count`";
         } catch (\Throwable $e) {}
 
+        $ordersExpr = "0 AS `orders_count`, 0 AS `completed_volume`";
+        try {
+            Database::pdo()->query("SELECT 1 FROM `transactions` LIMIT 1");
+            $ordersExpr = "(SELECT COUNT(*) FROM `transactions` t WHERE t.`merchant_id` = m.`id` AND t.`status` = 'COMPLETED') AS `orders_count`,
+                           (SELECT COALESCE(SUM(t.`amount`), 0) FROM `transactions` t WHERE t.`merchant_id` = m.`id` AND t.`status` = 'COMPLETED') AS `completed_volume`";
+        } catch (\Throwable $e) {}
+
         $rows = Database::select(
             "SELECT m.*, 
                     (SELECT COUNT(*) FROM `store_customers` c WHERE c.`merchant_id` = m.`id`) AS `customers`,
+                    {$ordersExpr},
                     {$domainPendingExpr}
              FROM `merchants` m ORDER BY CASE m.`status` WHEN 'PENDING' THEN 0 WHEN 'DRAFT' THEN 2 ELSE 1 END, m.`id` DESC LIMIT 500"
         );
