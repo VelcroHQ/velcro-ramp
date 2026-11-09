@@ -1641,6 +1641,10 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
   justify-content: center;
 }
 
+@media (max-width: 540px) {
+  .dom-plan-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+}
+
 @media (max-width: 480px) {
   .m-modal { align-items: flex-end; padding: 0; }
   .m-card { max-width: none; margin: auto 0 0; padding: 24px 20px calc(22px + env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; }

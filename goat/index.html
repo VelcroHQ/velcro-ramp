@@ -19,7 +19,7 @@
     <link rel="icon" type="image/png" href="velcro_favicon.png">
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="admin.css?v=10">
+    <link rel="stylesheet" href="admin.css?v=12">
 </head>
 
 <body>
@@ -541,7 +541,7 @@
                         <i data-lucide="search" style="width: 16px; height: 16px; color: var(--text-secondary); flex-shrink: 0;"></i>
                         <input type="search" id="merchants-search" placeholder="Search by store name, business, slug, or email..." oninput="filterMerchantsList()">
                     </div>
-                    <div class="m-filter-pills" id="merchant-filter-pills" style="display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: center !important; gap: 6px !important;">
+                    <div class="m-filter-pills" id="merchant-filter-pills">
                         <button type="button" class="m-pill-btn active" onclick="setMerchantFilter('ALL')" id="mf-btn-ALL" style="width: auto !important; flex: 0 0 auto !important;">All <span class="m-pill-count" id="mf-count-ALL">0</span></button>
                         <button type="button" class="m-pill-btn" onclick="setMerchantFilter('PENDING')" id="mf-btn-PENDING" style="width: auto !important; flex: 0 0 auto !important;">Pending Review <span class="m-pill-count" id="mf-count-PENDING">0</span></button>
                         <button type="button" class="m-pill-btn" onclick="setMerchantFilter('APPROVED')" id="mf-btn-APPROVED" style="width: auto !important; flex: 0 0 auto !important;">Live <span class="m-pill-count" id="mf-count-APPROVED">0</span></button>
@@ -1989,6 +1989,6 @@
         </div>
     </div>
 
-    <script src="admin.js?v=16"></script>
+    <script src="admin.js?v=18"></script>
 </body>
 </html>

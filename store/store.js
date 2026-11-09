@@ -699,11 +699,13 @@ function stopTimers() {
 function showForm() {
   stopTimers();
   checkout = null;
+  document.body.classList.remove('s-in-checkout');
   $('s-checkout').hidden = true;
   $('s-form').hidden = false;
 }
 
 function renderCheckout() {
+  document.body.classList.add('s-in-checkout');
   $('s-form').hidden = true;
   const box = $('s-checkout');
   box.hidden = false;
@@ -716,10 +718,11 @@ function renderCheckout() {
       if (qrEl && typeof QRCode !== 'undefined') {
         qrEl.innerHTML = '';
         try {
+          const qrSize = Math.max(220, Math.min(280, (window.innerWidth || 360) - 80));
           new QRCode(qrEl, {
             text: checkout.order.address,
-            width: 304,
-            height: 304,
+            width: qrSize,
+            height: qrSize,
             colorDark: '#15151f',
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.M
