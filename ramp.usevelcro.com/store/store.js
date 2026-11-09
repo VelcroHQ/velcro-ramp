@@ -1310,7 +1310,7 @@ async function createBuy() {
       const d = await api('/api/paj/initiate', { method: 'POST', body: { store: SLUG, fiatAmount: checkout.amount, recipient: wallet, mint: PAJ_MINTS[checkout.coin] } });
       checkout.order = {
         reference: d.id, coin: checkout.coin, amount: Number(d.fiatAmount) > 0 ? Number(d.fiatAmount) : checkout.amount, status: 'AWAITING_DEPOSIT',
-        bank: d.bank || 'PAJ Partner Bank', account: d.accountNumber || '', accountName: d.accountName || '', expiresAt: Date.now() + 3600 * 1000, progress: {},
+        bank: d.bank || 'Partner Bank', account: d.accountNumber || '', accountName: d.accountName || '', expiresAt: Date.now() + 3600 * 1000, progress: {},
       };
     } else {
       const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });

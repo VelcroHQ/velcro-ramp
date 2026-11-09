@@ -537,7 +537,7 @@ function orderTimelineHtml(o) {
   } else if (step === 3) {
     step3State = 'is-active';
     if (isBuy) {
-      step3Desc = `${PROVIDER_NAMES[prov] || 'Provider'} broadcasting ${coinText(o)} to customer wallet`;
+      step3Desc = `Broadcasting ${coinText(o)} to customer wallet on blockchain`;
     } else {
       step3Desc = `Converting and dispatching ${naira(o.naira)} via NIP bank transfer`;
     }
@@ -607,18 +607,17 @@ function orderTimelineHtml(o) {
 
 function orderDepositBoxHtml(o) {
   if (!o.deposit_address) return '';
-  const prov = getOrderProvider(o);
   const net = getOrderNetworkLabel(o);
 
   let techNotice = '';
-  if (prov === 'hostfi' && o.coin === 'BTC') {
-    techNotice = `<div class="ord-tech-notice is-hostfi"><strong>HostFi Bitcoin Rails:</strong> Dynamic deposit address. Accepts any amount. Bitcoin confirmations typically take 10–60 minutes. Payout to customer bank triggers automatically upon 1 block confirmation.</div>`;
-  } else if (prov === 'hostfi') {
-    techNotice = `<div class="ord-tech-notice is-hostfi"><strong>HostFi Dynamic Address:</strong> Accepts any incoming deposit amount. Converted and paid out to customer bank upon network confirmation.</div>`;
-  } else if (prov === 'switch') {
-    techNotice = `<div class="ord-tech-notice is-switch"><strong>Switch Rails:</strong> Customer sends crypto on ${esc(net || 'network')}. Payout to customer bank executes automatically upon transaction confirmation.</div>`;
-  } else if (prov === 'paj') {
-    techNotice = `<div class="ord-tech-notice is-paj"><strong>PAJ Solana Rails:</strong> High-speed Solana network settlement. Confirms within seconds.</div>`;
+  if (o.coin === 'BTC') {
+    techNotice = `<div class="ord-tech-notice"><strong>Bitcoin Network Settlement:</strong> Dynamic deposit address. Accepts any amount. Bitcoin confirmations typically take 10–60 minutes. Payout to customer bank triggers automatically upon network confirmation.</div>`;
+  } else if (o.coin === 'ETH') {
+    techNotice = `<div class="ord-tech-notice"><strong>Ethereum Network:</strong> Dynamic deposit address. Converted and paid out to customer bank upon network confirmation.</div>`;
+  } else if (o.coin === 'SOL' || net === 'Solana') {
+    techNotice = `<div class="ord-tech-notice"><strong>Solana Network:</strong> High-speed Solana network settlement. Confirms within seconds.</div>`;
+  } else {
+    techNotice = `<div class="ord-tech-notice"><strong>${esc(net || 'Blockchain')} Network:</strong> Customer transfers crypto on ${esc(net || 'network')}. Payout to customer bank executes automatically upon transaction confirmation.</div>`;
   }
 
   const memoClean = o.deposit_note ? String(o.deposit_note).replace(/^Memo:\s*/i, '').trim() : '';
@@ -668,12 +667,11 @@ function orderDepositBoxHtml(o) {
 
 function orderBankPayHtml(o) {
   if (o.side !== 'buy' || !o.deposit_bank_name || !o.deposit_account_number) return '';
-  const prov = getOrderProvider(o);
   return `
     <div class="ord-bank-pay-card">
       <div class="ord-bank-pay-head">
         <span class="ord-bank-pay-pill">Naira Bank Transfer Details</span>
-        <small>${PROVIDER_NAMES[prov] || 'Velcro'} dynamic account</small>
+        <small>Velcro dynamic account</small>
       </div>
       <div class="ord-bank-rows">
         <div class="ord-bank-row">
@@ -701,7 +699,7 @@ function orderBankPayHtml(o) {
           </div>
         </div>
       </div>
-      <p class="ord-bank-tech-note">Customer transfers directly from any Nigerian banking app. Monitored in real-time via ${PROVIDER_NAMES[prov] || 'Velcro'} rails.</p>
+      <p class="ord-bank-tech-note">Customer transfers directly from any Nigerian banking app. Monitored in real-time via Velcro rails.</p>
     </div>
   `;
 }
@@ -750,7 +748,7 @@ function openOrderDetail(ref, isSilentUpdate = false) {
         <div class="ord-head-titles">
           <div class="ord-head-title-row">
             <h2 id="ord-modal-title">${isBuy ? 'Buy' : 'Sell'} ${esc(o.coin)}</h2>
-            <span class="ord-tag ord-tag-prov is-${prov}">Rail: ${PROVIDER_NAMES[prov] || prov}</span>
+            <span class="ord-tag ord-tag-prov">Velcro Rail</span>
             ${net ? `<span class="ord-tag ord-tag-net">${esc(net)}</span>` : ''}
           </div>
           <p>${when(o.created_at)} · Ref: <code>${esc(shortRef(o.reference))}</code></p>
@@ -798,8 +796,8 @@ function openOrderDetail(ref, isSilentUpdate = false) {
           <dd><b class="${done ? 'is-earned' : 'is-pending'}">${o.earned ? naira(o.earned) : '₦0'}</b>${done ? '' : ' <small style="font-weight:400;color:var(--muted)">(pending completion)</small>'}</dd>
         </div>
         <div class="ord-row">
-          <dt>Processing rail</dt>
-          <dd><b>${PROVIDER_NAMES[prov] || prov}</b> <span style="font-weight:400;color:var(--muted)">(${prov === 'hostfi' ? 'HostFi API' : (prov === 'paj' ? 'PAJ Solana' : 'Switch EVM/TRON')})</span></dd>
+          <dt>Settlement rail</dt>
+          <dd><b>Velcro Instant Settlement</b> <span style="font-weight:400;color:var(--muted)">(${net ? esc(net) : esc(o.coin)})</span></dd>
         </div>
       </div>
     </div>
@@ -883,7 +881,6 @@ function renderOrders() {
   const rows = shownOrders();
   list.innerHTML = rows.length ? `<table class="d-table d-orders"><thead><tr><th>Order</th><th>Customer</th><th class="is-num">Amount</th><th class="is-num">Your markup</th><th>Status</th><th class="is-end">Date</th></tr></thead><tbody>${rows.map(o => {
     const done = o.status === 'COMPLETED';
-    const prov = getOrderProvider(o);
     const net = getOrderNetworkLabel(o);
     return `<tr class="is-clickable" onclick="openOrderDetail('${esc(o.reference)}')">
       <td class="c-order">
@@ -891,7 +888,7 @@ function renderOrders() {
           <span class="d-cell">
             <span class="d-cell-row">
               <b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b>
-              <span class="d-badge-mini is-${prov}">${PROVIDER_NAMES[prov] || prov}</span>
+              ${net ? `<span class="d-badge-mini is-net">${esc(net)}</span>` : ''}
             </span>
             <small title="${esc(o.reference)}">${esc(shortRef(o.reference))}${net ? ' · ' + esc(net) : ''}</small>
           </span>
@@ -910,12 +907,12 @@ function renderOrders() {
 function renderRecentOrders() {
   const rows = (orders || []).slice(0, 5);
   $('ov-recent').innerHTML = rows.length ? rows.map(o => {
-    const prov = getOrderProvider(o);
+    const net = getOrderNetworkLabel(o);
     return `<div class="d-mini is-clickable" onclick="openOrderDetail('${esc(o.reference)}')">${logoImg(o.coin)}
       <span class="d-mini-l">
         <span class="d-cell-row">
           <b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b>
-          <span class="d-badge-mini is-${prov}">${PROVIDER_NAMES[prov] || prov}</span>
+          ${net ? `<span class="d-badge-mini is-net">${esc(net)}</span>` : ''}
         </span>
         <small>${esc(o.customer_name || o.customer_email || '')}</small>
       </span>

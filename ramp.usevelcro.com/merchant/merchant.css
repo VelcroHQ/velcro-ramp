@@ -681,14 +681,10 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 .ord-head-main h2 { margin: 0; font-size: 20px; font-weight: 800; line-height: 1.25; }
 .ord-head-main p { margin-top: 1px; font-size: 12.5px; color: var(--muted); }
 .ord-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
-.ord-tag-prov.is-hostfi { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
-.ord-tag-prov.is-switch { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
-.ord-tag-prov.is-paj { background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; }
+.ord-tag-prov { background: var(--brand-soft, #f1f1f8); color: var(--navy, #0D0D59); border: 1px solid var(--line, #e2e8f0); }
 .ord-tag-net { background: #f4f4f5; color: #3f3f46; border: 1px solid #e4e4e7; }
 .d-badge-mini { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-.d-badge-mini.is-hostfi { background: #fff7ed; color: #c2410c; }
-.d-badge-mini.is-switch { background: #f5f3ff; color: #6d28d9; }
-.d-badge-mini.is-paj { background: #fdf2f8; color: #be185d; }
+.d-badge-mini.is-net { background: #f4f4f5; color: #3f3f46; border: 1px solid #e4e4e7; }
 .d-cell-row { display: flex; align-items: center; gap: 6px; }
 
 /* Timeline progression steps */
@@ -732,10 +728,7 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 .ord-memo-val { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #fef3c7; padding: 6px 10px; border-radius: 8px; }
 .ord-memo-val code { font-family: monospace; font-size: 13px; font-weight: 800; color: #78350f; word-break: break-all; }
 .ord-memo-sub { font-size: 11px; color: #b45309; }
-.ord-tech-notice { width: 100%; border-radius: 10px; padding: 10px 12px; font-size: 12px; line-height: 1.45; text-align: left; border-left: 3px solid; }
-.ord-tech-notice.is-hostfi { background: #fffdf5; border-color: #f59e0b; color: #78350f; }
-.ord-tech-notice.is-switch { background: #faf5ff; border-color: #6366f1; color: #4338ca; }
-.ord-tech-notice.is-paj { background: #fdf2f8; border-color: #ec4899; color: #831843; }
+.ord-tech-notice { width: 100%; border-radius: 10px; padding: 10px 12px; font-size: 12px; line-height: 1.45; text-align: left; border-left: 3px solid #6366f1; background: #faf5ff; color: #312e81; }
 .ord-link-subtle { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--navy, #0D0D59); text-decoration: underline; cursor: pointer; }
 
 /* Buy order bank pay card */
