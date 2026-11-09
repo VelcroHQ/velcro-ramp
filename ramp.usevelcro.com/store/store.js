@@ -699,12 +699,14 @@ function renderCheckout() {
         try {
           new QRCode(qrEl, {
             text: checkout.order.address,
-            width: 132,
-            height: 132,
+            width: 304,
+            height: 304,
             colorDark: '#15151f',
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.M
           });
+          const canvas = qrEl.querySelector('canvas');
+          if (canvas) canvas.style.display = 'none';
         } catch (e) { /* ignore */ }
       }
     }
@@ -962,8 +964,9 @@ function sellPayHtml() {
     </div>
     ${o.address ? `
     <div class="s-qr-wrap">
+      <div class="s-qr-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg><span>Scan to pay</span></div>
       <div id="co-sell-qr" class="s-qr-code"></div>
-      <span class="s-qr-caption">Scan to pay with your ${esc(o.coin)} wallet</span>
+      <span class="s-qr-caption">Scan with any <b>${esc(o.coin)}</b> wallet</span>
     </div>` : ''}
     <div class="s-bank">
       ${bankRow('Address', esc(o.address), o.address, 's-mono')}

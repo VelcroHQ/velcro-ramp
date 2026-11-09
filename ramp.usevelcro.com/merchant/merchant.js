@@ -714,12 +714,14 @@ function renderModalQr(address) {
     try {
       new QRCode(qrEl, {
         text: address,
-        width: 140,
-        height: 140,
+        width: 280,
+        height: 280,
         colorDark: '#15151f',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });
+      const canvas = qrEl.querySelector('canvas');
+      if (canvas) canvas.style.display = 'none';
     } catch (e) {
       qrEl.innerHTML = '<span style="font-size:12px;color:var(--muted)">QR Code ready</span>';
     }
