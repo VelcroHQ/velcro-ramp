@@ -104,8 +104,15 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
     RewriteCond %{HTTP_HOST} ^([a-z0-9-]+)\.usevelcro\.com$ [NC]
     RewriteCond %1 !^(www|ramp|goat|merchant|api|admin|mail|cpanel|webmail)$ [NC]
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^$ store/index.html [L]
+
+    RewriteCond %{HTTP_HOST} ^([a-z0-9-]+)\.usevelcro\.com$ [NC]
+    RewriteCond %1 !^(www|ramp|goat|merchant|api|admin|mail|cpanel|webmail)$ [NC]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    RewriteCond %{HTTP_HOST} ^([a-z0-9-]+)\.usevelcro\.com$ [NC]
+    RewriteCond %1 !^(www|ramp|goat|merchant|api|admin|mail|cpanel|webmail)$ [NC]
     RewriteRule ^(.*)$ store/index.html [L]
 
     # ── Standard Main Site: ramp.usevelcro.com ──
