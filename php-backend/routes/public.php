@@ -861,35 +861,6 @@ function registerPublicRoutes(Router $router): void
             'sell_timer_minutes' => (object) ($settings['sell_timer_minutes'] ?? ['default' => 60]),
         ]));
     });
-
-    // Cron endpoint: allows polling via URL or external scheduler
-    $router->get('/api/cron/poll', function () {
-        $key = (string) ($_GET['key'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
-        if (!verifyAdminPassword($key) && !verifyAdminToken($key)) {
-            jsonResponse(['error' => 'Unauthorized'], 401);
-        }
-        $lockFile = BASE_PATH . '/data/poll.lock';
-        $fp = fopen($lockFile, 'c');
-        if (!$fp || !flock($fp, LOCK_EX | LOCK_NB)) {
-            jsonResponse(['success' => true, 'message' => 'Another poll is already running']);
-        }
-        try {
-            runBackgroundPoller();
-            $receipts = sendPendingReceipts(50);
-            $campaigns = sendCampaignBatch(100);
-            $reminders = sendAbandonedOrderReminders(20);
-            jsonResponse([
-                'success' => true,
-                'message' => 'Poll complete',
-                'receipts_sent' => $receipts,
-                'reminders_sent' => $reminders,
-                'campaign_sent' => $campaigns
-            ]);
-        } finally {
-            flock($fp, LOCK_UN);
-            fclose($fp);
-        }
-    });
 }
 
 // Simple UUID v4 generator
