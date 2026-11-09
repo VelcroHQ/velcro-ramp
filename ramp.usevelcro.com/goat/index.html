@@ -13,6 +13,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Velcro Private Admin | Insights</title>
+    <link rel="icon" type="image/png" href="velcro_favicon.png">
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="admin.css?v=2">
@@ -23,7 +24,7 @@
     <!-- Auth Overlay -->
     <div id="auth-overlay">
         <div class="auth-card">
-            <img src="/velcro_logo.png" alt="Velcro">
+            <img src="velcro_logo.png" onerror="if(this.src.indexOf('Velcro_logo.png')===-1)this.src='Velcro_logo.png';" alt="Velcro">
             <h2>Admin Login</h2>
             <p>Enter your secure credentials to manage the platform.</p>
             <input type="password" id="admin-pass" placeholder="Password">
@@ -35,7 +36,7 @@
     <!-- Mobile Header -->
     <div class="mobile-header">
         <div class="logo-box" style="margin-bottom: 0; padding-left: 0;">
-            <img src="/velcro_logo.png" alt="Velcro" style="height: 28px; width: auto;">
+            <img src="velcro_logo.png" onerror="if(this.src.indexOf('Velcro_logo.png')===-1)this.src='Velcro_logo.png';" alt="Velcro" style="height: 28px; width: auto;">
         </div>
         <button class="hamburger" onclick="toggleSidebar()">
             <i data-lucide="menu"></i>
@@ -57,7 +58,7 @@
     <!-- Sidebar -->
     <aside id="main-sidebar">
         <div class="logo-box">
-            <img src="/velcro_logo.png" alt="Velcro">
+            <img src="velcro_logo.png" onerror="if(this.src.indexOf('Velcro_logo.png')===-1)this.src='Velcro_logo.png';" alt="Velcro">
         </div>
         <nav>
             <ul>
