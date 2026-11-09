@@ -26,11 +26,19 @@ if (!function_exists('getPajRateMargin')) {
 function registerPublicRoutes(Router $router): void
 {
     $router->get('/api/health', function () {
+        $cronFile = BASE_PATH . '/data/.last_cron_run';
+        $cronData = is_file($cronFile) ? json_decode((string) @file_get_contents($cronFile), true) : null;
+        $cronTime = is_array($cronData) ? ($cronData['time'] ?? null) : null;
         jsonResponse(successResponse([
             'service' => APP_NAME,
             'version' => APP_VERSION,
             'db' => Database::isConnected() ? 'mysql' : 'offline',
             'dbConnected' => Database::isConnected(),
+            'cron' => [
+                'active' => $cronTime ? ((time() - $cronTime) < 300) : false,
+                'last_run' => $cronTime ? gmdate('Y-m-d H:i:s', $cronTime) . ' UTC' : 'waiting for next tick',
+                'seconds_ago' => $cronTime ? (time() - $cronTime) : null,
+            ],
         ]));
     });
 

@@ -29,6 +29,7 @@ if (!$fp || !flock($fp, LOCK_EX | LOCK_NB)) {
 
 try {
     echo "[" . gmdate('c') . "] Starting poll...\n";
+    @file_put_contents(__DIR__ . '/../data/.last_cron_run', json_encode(['time' => time(), 'source' => 'cli_cron']));
     runBackgroundPoller();
     $receipts = sendPendingReceipts(50);
     $campaigns = sendCampaignBatch(100);
