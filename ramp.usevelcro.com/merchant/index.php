@@ -22,3 +22,4 @@ if (file_exists(__DIR__ . '/index.html')) {
 }
 
 echo '<!DOCTYPE html><html><body><h1>Merchant Dashboard</h1><p>index.html not found.</p></body></html>';
+
