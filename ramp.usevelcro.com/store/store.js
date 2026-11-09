@@ -762,8 +762,14 @@ function orderReceiptHtml(o) {
   const isBuy = o.side === 'buy';
   const cryptoAmt = isBuy
     ? (o.destAmount ? `${fmtCoin(o.destAmount, o.coin)} ${esc(o.coin)}` : (o.amount ? `${fmtCoin(estimateFor(o.coin, o.amount), o.coin)} ${esc(o.coin)}` : esc(o.coin)))
-    : (o.sendAmount ? `${fmtCoin(o.sendAmount, o.coin)} ${esc(o.coin)}` : esc(o.coin));
-  const fiatAmt = fmtNgn(o.amount);
+    : (o.sendAmount ? `${fmtCoin(o.sendAmount, o.coin)} ${esc(o.coin)}` : (o.amount ? `${fmtCoin(o.amount, o.coin)} ${esc(o.coin)}` : esc(o.coin)));
+  let fiatAmt;
+  if (isBuy) {
+    fiatAmt = fmtNgn(o.amount);
+  } else {
+    const rawFiat = o.payoutAmount || o.destAmount || (o.progress && o.progress.payout_amount) || payoutFor(o.coin, o.sendAmount || o.amount);
+    fiatAmt = rawFiat > 0 ? fmtNgn(rawFiat) : 'Worked out on arrival';
+  }
   const explorerUrl = (o.progress && o.progress.explorer_url) ? o.progress.explorer_url : (o.hash ? getExplorerUrl(o.hash, o.network || o.coin) : '');
   const shortW = shortAddr(o.wallet);
   const shortH = shortAddr(o.hash);
@@ -1101,14 +1107,24 @@ async function createSell() {
   const btn = $('s-checkout').querySelector('[data-act="create"]');
   btn.disabled = true;
   btn.textContent = 'Creating your order…';
-  const base = { side: 'sell', coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT', network: netLabel(), payTo: `${checkout.accountName} · ${bank.name}`, progress: {} };
+  const base = {
+    side: 'sell',
+    coin: checkout.coin,
+    amount: checkout.amount,
+    sendAmount: checkout.amount > 0 ? checkout.amount : null,
+    payoutAmount: checkout.amount > 0 ? payoutFor(checkout.coin, checkout.amount) : null,
+    status: 'AWAITING_DEPOSIT',
+    network: netLabel(),
+    payTo: `${checkout.accountName} · ${bank.name}`,
+    progress: {}
+  };
   try {
     if (checkout.provider === 'hostfi') {
       const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount || 0 } });
-      checkout.order = { ...base, reference: d.reference, address: d.address, memo: d.memo, sendAmount: checkout.amount > 0 ? checkout.amount : null, exact: false, expiresAt: Date.now() + (d.expires_in || 3600) * 1000 };
+      checkout.order = { ...base, reference: d.reference, address: d.address, memo: d.memo, sendAmount: checkout.amount > 0 ? checkout.amount : null, payoutAmount: Number(d.estimate_ngn) || base.payoutAmount, exact: false, expiresAt: Date.now() + (d.expires_in || 3600) * 1000 };
     } else if (checkout.provider === 'paj') {
       const d = await api('/api/paj/sell', { method: 'POST', body: { store: SLUG, fiatAmount: Math.floor(payoutFor(checkout.coin, checkout.amount)), mint: PAJ_MINTS[checkout.coin], bank: bank.id, accountNumber: checkout.account } });
-      checkout.order = { ...base, reference: d.id, address: d.address, sendAmount: Number(d.amount) || checkout.amount, exact: true, expiresAt: Date.now() + 3600 * 1000 };
+      checkout.order = { ...base, reference: d.id, address: d.address, sendAmount: Number(d.amount) || checkout.amount, payoutAmount: Number(d.fiatAmount) || base.payoutAmount, exact: true, expiresAt: Date.now() + 3600 * 1000 };
     } else {
       const d = await api('/api/initiate', {
         method: 'POST',
@@ -1118,9 +1134,10 @@ async function createSell() {
         },
       });
       const dep = d.deposit;
+      const dest = d.destination || {};
       checkout.order = {
         ...base, reference: d.velcro_reference || d.reference, address: (typeof dep === 'string' ? dep : (dep && dep.address)) || d.address || '',
-        sendAmount: Number((d.source || {}).amount) || checkout.amount, exact: true, expiresAt: Date.now() + 3600 * 1000,
+        sendAmount: Number((d.source || {}).amount) || checkout.amount, payoutAmount: Number(dest.amount) || base.payoutAmount, exact: true, expiresAt: Date.now() + 3600 * 1000,
       };
     }
     checkout.step = 'pay';
@@ -1342,10 +1359,17 @@ function startPolling(every = 5000) {
       const t = await api('/api/transactions/' + encodeURIComponent(o.reference));
       const was = o.status;
       o.status = String(t.status || '').toUpperCase();
+      if (t.destination_amount) {
+        o.destAmount = Number(t.destination_amount);
+        o.payoutAmount = Number(t.destination_amount);
+      }
+      if (t.source_amount) {
+        o.sendAmount = Number(t.source_amount);
+      }
       o.progress = (t.hostfi_progress || [])[0] || {
         payout: o.status === 'COMPLETED' ? 'done' : (t.hash ? 'sent' : 'waiting'),
         explorer_url: t.explorer_url || null,
-        payout_amount: Number(t.destination_amount) || null,
+        payout_amount: Number(t.destination_amount) || o.payoutAmount || null,
       };
       if (!WAITING_STATUSES.includes(o.status)) {
         clearInterval(expiryTimer);
@@ -1435,6 +1459,7 @@ function openOrder(ref) {
       network: o.network || CHAIN_LABELS[chain] || (channel === 'PAJ' ? 'Solana' : ''),
       wallet: o.wallet_address || null,
       destAmount: o.destination_amount ? Number(o.destination_amount) : null,
+      payoutAmount: sell && o.destination_amount ? Number(o.destination_amount) : (sell && o.amount ? payoutFor(orderCoin(o), Number(o.send_amount || o.amount)) : null),
       sendAmount: Number(o.send_amount) > 0 ? Number(o.send_amount) : null,
       payoutBank: o.payout_bank_name || null,
       payoutAccount: o.payout_account_number || null,
