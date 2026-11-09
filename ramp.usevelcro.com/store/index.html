@@ -45,12 +45,14 @@
   </div>
 
   <div id="s-app" hidden>
+    <div id="s-net-status" class="s-net-banner" hidden></div>
     <div id="s-preview" class="s-preview" hidden>Preview · only you can see this exchange until it's approved</div>
 
     <header class="s-top">
       <div class="s-wrap s-top-in">
         <a id="s-home" class="s-brand" href="#"><span id="s-logo" class="s-logo"></span><span id="s-name"></span></a>
         <div class="s-account">
+          <button type="button" id="s-pwa-install" class="s-pwa-btn" onclick="installPwa()" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Install</span></button>
           <button type="button" id="s-signin" class="s-toplink" onclick="openAuth('signin')">Sign in</button>
           <button type="button" id="s-join" class="s-btn s-btn-sm" onclick="openAuth('signup')">Create account</button>
           <div id="s-me" class="s-me" hidden>

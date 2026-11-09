@@ -321,6 +321,65 @@ const shortRef = r => { const v = String(r || ''); return v.length > 16 ? `${v.s
 const logoImg = sym => (COIN_LOGOS[sym] ? `<img src="${COIN_LOGOS[sym]}" alt="">` : '');
 const when = v => { const d = new Date(String(v).replace(' ', 'T') + (String(v).includes('Z') ? '' : 'Z')); return isNaN(d) ? '' : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
 
+let soundAlertsEnabled = localStorage.getItem('velcro_sound_alerts') !== 'false';
+let prevOrdersMap = null;
+
+function toggleSoundAlerts() {
+  soundAlertsEnabled = !soundAlertsEnabled;
+  localStorage.setItem('velcro_sound_alerts', soundAlertsEnabled ? 'true' : 'false');
+  updateSoundButton();
+  if (soundAlertsEnabled) {
+    playChime();
+    toast('Sound alerts turned on');
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  } else {
+    toast('Sound alerts turned off');
+  }
+}
+
+function updateSoundButton() {
+  const btn = $('btn-sound-toggle');
+  if (btn) {
+    btn.innerHTML = soundAlertsEnabled ? '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Sound on' : '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Sound off';
+    btn.classList.toggle('is-off', !soundAlertsEnabled);
+  }
+}
+
+function playChime() {
+  if (!soundAlertsEnabled) return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, now);
+    osc1.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(880, now + 0.12);
+    osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.32);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.start(now);
+    osc1.stop(now + 0.12);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.45);
+  } catch (e) { /* ignore */ }
+}
+
 async function loadOrders() {
   try {
     const data = await api('/api/merchant/orders');
@@ -334,6 +393,31 @@ async function loadOrders() {
     renderRecentOrders();
     if (activeModalRef && $('ord-modal').classList.contains('is-open')) {
       openOrderDetail(activeModalRef, true);
+    }
+
+    const prev = prevOrdersMap;
+    const currentMap = {};
+    (orders || []).forEach(o => { currentMap[o.reference] = o.status; });
+    prevOrdersMap = currentMap;
+
+    if (prev) {
+      const hasNewOrder = (orders || []).some(o => !prev[o.reference]);
+      const hasNewlyCompleted = (orders || []).some(o => prev[o.reference] && prev[o.reference] !== 'COMPLETED' && o.status === 'COMPLETED');
+      if (hasNewOrder || hasNewlyCompleted) {
+        playChime();
+        if (hasNewlyCompleted) {
+          toast('🎉 An order was just completed!');
+        } else if (hasNewOrder) {
+          toast('🔔 New trade on your exchange!');
+        }
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const title = hasNewlyCompleted ? 'Order Completed!' : 'New Trade Received';
+          new Notification(title, {
+            body: `Check your exchange dashboard for live details.`,
+            icon: (merchant && merchant.brand && merchant.brand.logo_url) || '/apple-touch-icon.png'
+          });
+        }
+      }
     }
   } catch (e) {
     $('ord-list').innerHTML = `<p class="d-sheet-msg">${esc(e.message)}</p>`;
@@ -842,14 +926,30 @@ function exportOrders() {
   const rows = shownOrders();
   if (!rows.length) return toast('No orders to export');
   const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const csv = [['Date', 'Reference', 'Customer', 'Email', 'Side', 'Coin', 'Coin amount', 'Naira', 'Markup %', 'Earned (NGN)', 'Status']]
-    .concat(rows.map(o => [o.created_at, o.reference, o.customer_name || '', o.customer_email || '', o.side, o.coin, o.coin_amount ?? '', o.naira, o.markup_percent, o.earned, o.status]))
+  const headers = ['Date', 'Reference', 'Customer Name', 'Customer Email', 'Side', 'Coin', 'Coin Amount', 'Naira Amount', 'Markup %', 'Markup Earned (NGN)', 'Status', 'Provider', 'Network'];
+  const csv = [headers]
+    .concat(rows.map(o => [
+      o.created_at,
+      o.reference,
+      o.customer_name || '',
+      o.customer_email || '',
+      o.side ? o.side.toUpperCase() : '',
+      o.coin || '',
+      o.coin_amount ?? '',
+      o.naira ?? '',
+      o.markup_percent ?? '',
+      o.earned ?? 0,
+      o.status || '',
+      getOrderProvider(o) || '',
+      getOrderNetworkLabel(o) || ''
+    ]))
     .map(r => r.map(cell).join(',')).join('\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  a.download = `${(merchant.slug || 'exchange')}-orders.csv`;
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = `${(merchant.slug || 'exchange')}-orders-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Orders exported to CSV');
 }
 
 // ── Customers ──
@@ -908,7 +1008,7 @@ async function loadEarnings() {
   $('earn-reason').classList.toggle('hidden', !e.reason);
   $('earn-withdraw').disabled = !e.can_withdraw;
   $('wd-chain').innerHTML = Object.entries(e.chains || {}).map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join('');
-  $('wd-list').innerHTML = e.withdrawals.length ? `<table class="d-table d-wds"><thead><tr><th>Amount</th><th>To</th><th>Status</th><th class="is-end">Requested</th></tr></thead><tbody>${e.withdrawals.map(w => `<tr>
+  $('wd-list').innerHTML = e.withdrawals.length ? `<table class="d-table d-wds"><thead><tr><th>Amount</th><th>To</th><th>Status</th><th class="is-end">Requested</th></tr></thead><tbody>${e.withdrawals.map((w, idx) => `<tr class="is-clickable" onclick="openWdReceipt(${idx})" title="Click to view receipt">
       <td class="c-amt"><span class="d-cell"><b>${w.currency === 'NGN' ? naira(w.amount_ngn) : '$' + Number(w.amount_usd).toFixed(2) + ' USDC'}</b><small>${w.currency === 'NGN' ? 'Naira' : naira(w.amount_ngn) + ' of earnings'}</small></span></td>
       <td class="c-to"><span class="d-cell">${esc(w.to)}${w.payout_ref ? `<small>Ref ${esc(w.payout_ref)}</small>` : ''}${w.status === 'REJECTED' && w.note ? `<small class="is-bad-note">${esc(w.note)}</small>` : ''}</span></td>
       <td class="c-st">${statusHtml(WD_STATUS[w.status] || [w.status, 'off'])}</td>
@@ -1049,6 +1149,8 @@ function renderHeader() {
     $(id).classList.toggle('hidden', !url);
     if (url) $(id).href = url;
   });
+  $('hdr-share')?.classList.toggle('hidden', !url);
+  $('ov-share-btn')?.classList.toggle('hidden', !url);
 }
 
 const HDR_STATUS = { DRAFT: ['off', 'Not live'], PENDING: ['wait', 'In review'], REJECTED: ['bad', 'Needs changes'], APPROVED: ['live', 'Live'], SUSPENDED: ['bad', 'Suspended'] };
@@ -1210,18 +1312,273 @@ async function submitSupport(e) {
 }
 
 async function shareStore() {
-  if (!merchant.slug) {
-    toast('Choose your exchange address first');
+  openShareModal();
+}
+
+function openShareModal() {
+  if (!merchant || !merchant.slug) {
+    toast('Choose your exchange address first in Settings');
     openPanel('store');
-    setTimeout(() => $('b-slug').focus(), 150);
+    setTimeout(() => $('b-slug')?.focus(), 150);
     return;
   }
+  const modal = $('share-modal');
+  if (!modal) return;
+  const url = merchant.storefront_url || `https://ramp.usevelcro.com/m/${merchant.slug}`;
+  const name = (merchant.brand && merchant.brand.name) || merchant.name || 'My Exchange';
+  $('share-url-input').value = url;
+
+  // Social share links
+  const shareText = `Trade BTC, USDT, SOL, and ETH instantly with naira on ${name}! Safe, fast bank transfers & payouts: ${url}`;
+  $('share-btn-wa').href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+  $('share-btn-x').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+  $('share-btn-tg').href = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(`Trade crypto instantly with naira on ${name}`)}`;
+
+  modal.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+
+  // Render the branded marketing flyer on the canvas
+  setTimeout(() => renderFlyerCanvas(name, url), 60);
+}
+
+function closeShareModal() {
+  $('share-modal')?.classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+
+async function copyShareUrl() {
+  const url = $('share-url-input').value;
   try {
-    await navigator.clipboard.writeText(merchant.storefront_url);
-    toast(merchant.status === 'APPROVED' ? 'Exchange link copied' : 'Link copied. It goes live once you’re verified');
+    await navigator.clipboard.writeText(url);
+    toast('Exchange link copied to clipboard!');
   } catch (e) {
-    toast(merchant.storefront_url);
+    toast(url);
   }
+}
+
+function renderFlyerCanvas(name, url) {
+  const canvas = $('flyer-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width; // 600
+  const h = canvas.height; // 750
+
+  const brandColor = (merchant && merchant.brand && merchant.brand.color) || '#16a34a';
+
+  // Draw rich gradient background
+  const grad = ctx.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, '#0c1022');
+  grad.addColorStop(0.5, '#131c36');
+  grad.addColorStop(1, '#070a14');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Decorative ambient glow at top
+  const glow = ctx.createRadialGradient(w / 2, 80, 20, w / 2, 80, 260);
+  glow.addColorStop(0, brandColor + '55');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, w, 320);
+
+  // Top badge: Verified Velcro Exchange
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+  roundRect(ctx, w / 2 - 120, 36, 240, 32, 16, true, false);
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '600 13px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('⚡ POWERED BY VELCRO RAMP', w / 2, 57);
+
+  // Store Logo circle or Initial
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(w / 2, 130, 40, 0, Math.PI * 2);
+  ctx.fillStyle = brandColor;
+  ctx.fill();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.restore();
+
+  // Draw Initial
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(name.slice(0, 1).toUpperCase(), w / 2, 143);
+
+  // Store Name
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 28px system-ui, -apple-system, sans-serif';
+  ctx.fillText(name, w / 2, 202);
+
+  // Tagline
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = '500 16px system-ui, -apple-system, sans-serif';
+  ctx.fillText('Buy & Sell Crypto with Naira Instantly', w / 2, 230);
+
+  // Supported Coins Pills
+  const coins = ['BTC', 'USDT', 'SOL', 'ETH', 'USDC'];
+  const pillW = 68;
+  const pillGap = 10;
+  const totalPillsW = coins.length * pillW + (coins.length - 1) * pillGap;
+  let startX = (w - totalPillsW) / 2;
+  coins.forEach(c => {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    roundRect(ctx, startX, 250, pillW, 26, 13, true, false);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '700 11px system-ui, -apple-system, sans-serif';
+    ctx.fillText(c, startX + pillW / 2, 267);
+    startX += pillW + pillGap;
+  });
+
+  // Center QR Card Container
+  const cardSize = 270;
+  const cardX = (w - cardSize) / 2;
+  const cardY = 300;
+  ctx.fillStyle = '#ffffff';
+  roundRect(ctx, cardX, cardY, cardSize, cardSize, 20, true, false);
+
+  // Draw QR code inside card
+  if (typeof QRCode !== 'undefined') {
+    const tempDiv = document.createElement('div');
+    new QRCode(tempDiv, {
+      text: url,
+      width: 220,
+      height: 220,
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    setTimeout(() => {
+      const qrCanvas = tempDiv.querySelector('canvas');
+      const qrImg = tempDiv.querySelector('img');
+      const imgSource = qrCanvas || qrImg;
+      if (imgSource) {
+        ctx.drawImage(imgSource, cardX + 25, cardY + 25, 220, 220);
+      }
+
+      // Bottom Scan text
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '600 15px system-ui, -apple-system, sans-serif';
+      ctx.fillText('Scan with camera to trade', w / 2, 605);
+
+      // Short link pill
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      roundRect(ctx, 40, 630, w - 80, 48, 14, true, false);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '700 16px monospace';
+      const displayUrl = url.replace(/^https?:\/\//, '');
+      ctx.fillText(displayUrl, w / 2, 660);
+
+      // Footer
+      ctx.fillStyle = '#64748b';
+      ctx.font = '500 12px system-ui, -apple-system, sans-serif';
+      ctx.fillText('Automatic Nigerian Bank Transfers · Instant Delivery', w / 2, 715);
+    }, 120);
+  }
+}
+
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+  ctx.restore();
+}
+
+function downloadFlyer() {
+  const canvas = $('flyer-canvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = `${merchant.slug || 'exchange'}-flyer.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  toast('Flyer downloaded! Share it on WhatsApp Status or Instagram.');
+}
+
+function openWdReceipt(idx) {
+  if (!earnings || !earnings.withdrawals || !earnings.withdrawals[idx]) return;
+  const w = earnings.withdrawals[idx];
+  const modal = $('wd-receipt-modal');
+  const body = $('wd-receipt-body');
+  if (!modal || !body) return;
+
+  const stInfo = WD_STATUS[w.status] || [w.status, 'off'];
+  const isNgn = w.currency === 'NGN';
+  const amountStr = isNgn ? naira(w.amount_ngn) : `$${Number(w.amount_usd).toFixed(2)} USDC`;
+
+  body.innerHTML = `
+    <div class="ord-modal-head">
+      <div class="ord-modal-title-row">
+        <h2 id="wd-receipt-title" class="ord-modal-title">Withdrawal Receipt</h2>
+        ${statusHtml(stInfo)}
+      </div>
+      <p class="ord-modal-ref">Reference: <code>${esc(w.payout_ref || w.id || 'Pending')}</code></p>
+    </div>
+
+    <div class="ord-detail-group">
+      <div class="ord-row">
+        <span>Amount Withdrawn</span>
+        <b>${amountStr}</b>
+      </div>
+      <div class="ord-row">
+        <span>Deducted from Earnings</span>
+        <b>${naira(w.amount_ngn)}</b>
+      </div>
+      <div class="ord-row">
+        <span>Destination</span>
+        <b>${esc(w.to)}</b>
+      </div>
+      <div class="ord-row">
+        <span>Date Requested</span>
+        <b>${when(w.created_at)}</b>
+      </div>
+      ${w.note ? `
+      <div class="ord-row">
+        <span>Note</span>
+        <span class="is-bad-note">${esc(w.note)}</span>
+      </div>` : ''}
+    </div>
+
+    <div style="margin-top:20px;">
+      <button type="button" class="d-btn d-btn-block" onclick="window.print()">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / Save Receipt
+      </button>
+    </div>
+  `;
+
+  modal.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeWdReceipt() {
+  $('wd-receipt-modal')?.classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+
+function setupMerchantNetworkStatus() {
+  const netEl = $('d-net-status');
+  if (!netEl) return;
+  window.addEventListener('offline', () => {
+    netEl.textContent = '⚠️ Network connection lost. Reconnecting to exchange…';
+    netEl.className = 'd-net-banner is-offline';
+    netEl.hidden = false;
+  });
+  window.addEventListener('online', () => {
+    netEl.textContent = '✅ Connection restored';
+    netEl.className = 'd-net-banner is-online';
+    loadOverview();
+    setTimeout(() => { netEl.hidden = true; }, 3200);
+  });
 }
 
 // ── Prices ──
@@ -1676,7 +2033,17 @@ document.addEventListener('DOMContentLoaded', () => {
   $('b-logo').addEventListener('change', () => pickLogo($('b-logo').files[0]));
   $('b-logo-remove').addEventListener('click', () => { brandDraft.logoData = null; brandDraft.removeLogo = true; $('b-logo').value = ''; paintBrand(); });
   $('f-type').addEventListener('change', () => $('f-reg-row').classList.toggle('hidden', $('f-type').value !== 'registered'));
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeAuth(); endTour(); } });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeAuth();
+      endTour();
+      closeOrderModal();
+      closeShareModal();
+      closeWdReceipt();
+    }
+  });
   document.addEventListener('click', e => { if (!e.target.closest('#avatar-btn') && !e.target.closest('#avatar-menu')) $('avatar-menu').classList.add('hidden'); });
+  setupMerchantNetworkStatus();
+  updateSoundButton();
   if (token) showApp();
 });

@@ -128,6 +128,8 @@ async function loadStore() {
   $('s-preview').hidden = !s.is_owner_preview;
   $('s-loading').hidden = true;
   $('s-app').hidden = false;
+  setupPwa(s);
+  setupNetworkStatus();
   // Older visits may have kept orders and an email in this browser; the account is the only record now.
   try { localStorage.removeItem('velcro_recent_orders_' + SLUG); localStorage.removeItem('velcro_email'); } catch (e) { /* ignore */ }
   const coins = Object.values(store.coins);
@@ -711,10 +713,21 @@ function orderReceiptHtml(o) {
 
 const bankRow = (label, value, copy, cls = '') => `<div><div class="s-bank-k"><span>${label}</span><b class="${cls}">${value}</b></div>${copy ? `<button type="button" class="s-copy" data-copy="${esc(copy)}" aria-label="Copy ${label}">${ICON_COPY}Copy</button>` : ''}</div>`;
 
+function waSupportLink(s, o, msgPrefix = 'I need help with my Order') {
+  if (!s || !s.support_url) return '';
+  const isWa = /wa\.me|whatsapp/i.test(s.support_url);
+  if (!isWa || !o || !o.reference) return s.support_url;
+  const side = (o.side || 'trade').toUpperCase();
+  const coin = o.coin || '';
+  const text = `Hello ${s.name}, ${msgPrefix} ${o.reference} (${side} ${coin})`;
+  return `${s.support_url}${s.support_url.includes('?') ? '&' : '?'}text=${encodeURIComponent(text)}`;
+}
+
 const orderFootHtml = o => {
   const s = store && store.info;
   const isWa = s && s.support_url && /wa\.me|whatsapp/i.test(s.support_url);
-  const helpLink = s && s.support_url ? ` · <a href="${esc(s.support_url)}" target="_blank" rel="noopener" class="s-help-link">Need help? Chat with ${esc(s.name)}${isWa ? ' on WhatsApp' : ''}</a>` : '';
+  const helpUrl = waSupportLink(s, o, 'I need help with my Order');
+  const helpLink = s && s.support_url ? ` · <a href="${esc(helpUrl)}" target="_blank" rel="noopener" class="s-help-link">Need help? Chat with ${esc(s.name)}${isWa ? ' on WhatsApp' : ''}</a>` : '';
   return `<p class="s-order-ref">Order <button type="button" data-copy="${esc(o.reference)}" title="Copy order number"><code>${esc(shortRef(o.reference))}</code></button> · your receipt goes to ${esc(me ? me.email : 'your email')}${helpLink}</p>`;
 };
 
@@ -729,7 +742,8 @@ function endedHtml(o) {
   const sell = o.side === 'sell';
   const s = store && store.info;
   const isWa = s && s.support_url && /wa\.me|whatsapp/i.test(s.support_url);
-  const help = s && s.support_url ? `<a href="${esc(s.support_url)}" target="_blank" rel="noopener">Chat with ${esc(s.name)}${isWa ? ' on WhatsApp' : ''}</a>` : `Contact ${esc(s ? s.name : 'us')}`;
+  const helpUrl = waSupportLink(s, o, 'I have an issue with Order');
+  const help = s && s.support_url ? `<a href="${esc(helpUrl)}" target="_blank" rel="noopener">Chat with ${esc(s.name)}${isWa ? ' on WhatsApp' : ''}</a>` : `Contact ${esc(s ? s.name : 'us')}`;
   if (o.status === 'FAILED') return `<div class="s-ended"><b>This order didn't go through</b>${help} if you've already ${sell ? 'sent your crypto' : 'paid'}.</div>`;
   return `<div class="s-ended"><b>This order has expired</b>Don't ${sell ? 'send anything to this address' : 'pay into this account'}. Start a new order instead. Already ${sell ? 'sent it' : 'paid'}? ${help}.</div>`;
 }
@@ -855,6 +869,13 @@ function sellPayHtml() {
     <h2 class="s-co-title">${title}</h2>
     ${ended ? endedHtml(o) : !waiting ? '' : o.claimed && !o.showDetails ? checkingHtml(o, `your ${amount}`) : `
     <p class="s-co-lede">Send ${o.exact ? 'exactly this amount' : (o.sendAmount ? 'your ' + esc(o.coin) : 'any amount of ' + esc(o.coin))} to the address below${o.network ? `, on the <b>${esc(o.network)}</b> network` : ''}. We'll detect it automatically.</p>
+    <div class="s-net-alert">
+      <div class="s-net-badge">
+        <span class="s-net-dot"></span>
+        <span>Network: <b>${esc(o.network || o.coin)}</b></span>
+      </div>
+      <p class="s-net-desc">⚠️ Send only <b>${esc(o.coin)}</b> on the <b>${esc(o.network || o.coin)}</b> network. Sending via other networks will result in permanent loss.</p>
+    </div>
     ${o.address ? `
     <div class="s-qr-wrap">
       <div id="co-sell-qr" class="s-qr-code"></div>
@@ -1485,6 +1506,67 @@ function initGoogle() {
     if (!$('auth').hidden) setAuthMode(authMode);
   };
   document.head.appendChild(s);
+}
+
+let deferredPwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPwaPrompt = e;
+  const pwaPill = $('s-pwa-install');
+  if (pwaPill) pwaPill.hidden = false;
+});
+
+async function installPwa() {
+  if (!deferredPwaPrompt) return;
+  deferredPwaPrompt.prompt();
+  const choice = await deferredPwaPrompt.userChoice;
+  deferredPwaPrompt = null;
+  const pwaPill = $('s-pwa-install');
+  if (pwaPill) pwaPill.hidden = true;
+}
+
+function setupPwa(s) {
+  if (!s) return;
+  try {
+    const manifest = {
+      name: `${s.name} Exchange`,
+      short_name: s.name,
+      start_url: window.location.href,
+      scope: '/m/' + SLUG + '/',
+      display: 'standalone',
+      background_color: '#ffffff',
+      theme_color: s.color || '#16a34a',
+      description: s.welcome || `Buy & sell crypto with naira on ${s.name}`,
+      icons: [
+        { src: s.logo_url || '/apple-touch-icon.png', sizes: '192x192', type: 'image/png' },
+        { src: s.logo_url || '/apple-touch-icon.png', sizes: '512x512', type: 'image/png' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    let link = document.querySelector('link[rel="manifest"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'manifest';
+      document.head.appendChild(link);
+    }
+    link.href = URL.createObjectURL(blob);
+  } catch (e) { /* ignore */ }
+}
+
+function setupNetworkStatus() {
+  const netEl = $('s-net-status');
+  if (!netEl) return;
+  window.addEventListener('offline', () => {
+    netEl.textContent = '⚠️ Network connection lost. Reconnecting…';
+    netEl.className = 's-net-banner is-offline';
+    netEl.hidden = false;
+  });
+  window.addEventListener('online', () => {
+    netEl.textContent = '✅ Connection restored';
+    netEl.className = 's-net-banner is-online';
+    refreshRates();
+    setTimeout(() => { netEl.hidden = true; }, 3200);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

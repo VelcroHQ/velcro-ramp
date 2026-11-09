@@ -685,6 +685,12 @@ function startOrderHelp(type, delayMs = SUPPORT_HINT_DELAY_MS) {
     safeSetText('sell-warn-asset', document.getElementById('sell-asset-name')?.textContent || '');
     safeSetText('sell-warn-network', document.getElementById('sell-network-name')?.textContent || '');
   }
+  const ref = document.getElementById(type + '-reference')?.textContent?.trim() || '';
+  const a = document.getElementById(type + '-support-hint')?.querySelector('a');
+  if (a && ref && ref !== '-') {
+    const text = `Hello Velcro, I need help with my Order ${ref} (${type.toUpperCase()})`;
+    a.href = `https://wa.me/2347035428475?text=${encodeURIComponent(text)}`;
+  }
   stopOrderHelp(type);
   supportHintTimers[type] = setTimeout(() => {
     document.getElementById(type + '-support-hint')?.classList.remove('hidden');

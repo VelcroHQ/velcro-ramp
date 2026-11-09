@@ -949,6 +949,193 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
   .d-wds .c-to { grid-area: to; padding: 2px 0; }
   .d-wds .c-date { grid-area: date; text-align: left !important; font-size: 12.5px; color: var(--muted); }
 }
+
+/* Top header share button */
+.d-toplink-btn {
+  background: none;
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.d-toplink-btn:hover {
+  background: #f1f1f4;
+  border-color: #d1d1d8;
+}
+
+/* Overview greeting row with share button */
+.d-hello-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.d-hello-row .d-hello {
+  margin-bottom: 0;
+}
+.d-btn-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 9px 16px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all .15s ease;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .15);
+}
+.d-btn-share:hover {
+  background: #1e293b;
+  transform: translateY(-1px);
+}
+.d-btn-share .ico {
+  width: 16px;
+  height: 16px;
+}
+
+/* Orders toolbar actions */
+.d-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.d-sound-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.d-sound-btn.is-off {
+  color: var(--muted);
+}
+
+/* Offline / online network banner */
+.d-net-banner {
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  width: 100%;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all .25s ease;
+}
+.d-net-banner.is-offline {
+  background: #fef2f2;
+  color: #991b1b;
+  border-bottom: 1px solid #fecaca;
+}
+.d-net-banner.is-online {
+  background: #f0fdf4;
+  color: #166534;
+  border-bottom: 1px solid #bbf7d0;
+}
+
+/* Share exchange modal */
+.share-modal-card {
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.share-link-box {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+.share-link-box input {
+  flex: 1;
+  font-family: monospace;
+  font-size: 13.5px;
+  background: #f8fafc;
+}
+.d-btn-copy {
+  white-space: nowrap;
+  padding: 0 16px;
+  border-radius: 12px;
+}
+.share-channels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all .15s ease;
+}
+.share-btn .ico {
+  width: 16px;
+  height: 16px;
+}
+.share-btn.is-wa {
+  background: #25d366;
+  color: #ffffff;
+}
+.share-btn.is-wa:hover {
+  background: #20ba59;
+}
+.share-btn.is-x {
+  background: #000000;
+  color: #ffffff;
+}
+.share-btn.is-x:hover {
+  background: #1a1a1a;
+}
+.share-btn.is-tg {
+  background: #229ed9;
+  color: #ffffff;
+}
+.share-btn.is-tg:hover {
+  background: #1b89be;
+}
+.share-flyer-wrap {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  margin-top: 10px;
+  text-align: center;
+}
+.share-flyer-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.share-flyer-preview {
+  margin: 0 auto 16px;
+  max-width: 320px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .15);
+  background: #000;
+}
+.share-flyer-preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.d-btn-block {
+  width: 100%;
+  justify-content: center;
+}
+
 @media (max-width: 480px) {
   .m-modal { align-items: flex-end; padding: 0; }
   .m-card { max-width: none; margin: auto 0 0; padding: 24px 20px calc(22px + env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; }
