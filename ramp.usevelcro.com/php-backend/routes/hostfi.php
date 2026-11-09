@@ -186,18 +186,44 @@ function hostfiRate(string $from, string $to): float
 function hostfiQuote(string $symbol): array
 {
     $symbol = strtoupper($symbol);
-    $ngn = hostfiRate($symbol, 'NGN');
-    // Stablecoins count as exactly $1 (what users expect when typing a $ amount). Other coins use
-    // HostFi's own dollar price; ETH has no USD pair there, so it goes via USDT.
+    $ngn = 0.0;
     try {
-        $usd = in_array($symbol, HOSTFI_STABLES, true) ? 1.0 : hostfiRate($symbol, 'USD');
+        $ngn = hostfiRate($symbol, 'NGN');
     } catch (Throwable $e) {
-        $usdtNgn = hostfiRate('USDT', 'NGN');
-        $usd = $usdtNgn > 0 ? $ngn / $usdtNgn : 0.0;
+        error_log("[HostFi] {$symbol}/NGN quote error: " . $e->getMessage());
     }
+
+    // Stablecoins count as exactly $1 (what users expect when typing a $ amount). Other coins use
+    // HostFi's own dollar price; ETH has no USD pair there, so it goes via USDT or public market.
+    $usd = 0.0;
+    if (in_array($symbol, HOSTFI_STABLES, true)) {
+        $usd = 1.0;
+    } else {
+        try {
+            $usd = hostfiRate($symbol, 'USD');
+        } catch (Throwable $e) {
+            try {
+                $usdtNgn = hostfiRate('USDT', 'NGN');
+                $usd = ($usdtNgn > 0 && $ngn > 0) ? $ngn / $usdtNgn : 0.0;
+            } catch (Throwable $e2) {
+                $usd = 0.0;
+            }
+        }
+    }
+
+    // Fallback if HostFi couldn't supply a USD price (e.g. ETH/USD missing on HostFi)
+    if ($usd <= 0 && function_exists('getCryptoUsdPrice')) {
+        $usd = getCryptoUsdPrice($symbol);
+    }
+    // Fallback if HostFi couldn't quote NGN: derive from USD price × live USD/NGN rate
+    if ($ngn <= 0 && $usd > 0 && function_exists('getLiveUsdNgnRates')) {
+        $market = getLiveUsdNgnRates();
+        $ngn = $usd * $market['sell'];
+    }
+
     return [
-        'ngn_per_unit' => $ngn * (1 - hostfiFee() / 100), // what the user is paid per coin
-        'ngn_per_unit_gross' => $ngn,                      // HostFi's own rate, shown to users
+        'ngn_per_unit' => $ngn > 0 ? $ngn * (1 - hostfiFee() / 100) : 0.0, // what the user is paid per coin
+        'ngn_per_unit_gross' => $ngn,                                       // HostFi's own rate, shown to users
         'usd_per_unit' => $usd,
     ];
 }

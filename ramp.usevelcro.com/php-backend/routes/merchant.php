@@ -166,16 +166,31 @@ function merchantRateDisplay(array $m): string
 /**
  * Velcro's own customer rate per coin as naira per $1, Velcro's fee included, from the provider
  * that fills that coin on merchant stores. 'buy' is what a customer pays per $1, 'sell' what they
- * get per $1. Null where the provider can't quote right now. Cached for a minute.
+ * get per $1. Cached for a minute; never serves stale empty/null rates.
  *
- * @return array<string,array{provider:string,buy:?float,sell:?float}>
+ * @return array<string,array{provider:string,buy:?float,sell:?float,usd:?float}>
  */
 function merchantVelcroRates(): array
 {
     $file = BASE_PATH . '/data/.merchant_rates.json';
     $cached = is_file($file) ? json_decode((string) @file_get_contents($file), true) : null;
     $age = time() - (int) ($cached['at'] ?? 0);
-    if (is_array($cached) && !empty($cached['rates']) && $age < 21600) {
+
+    // If the cache contains nulls for buy or sell on any coin, treat cache as invalid
+    $hasNulls = false;
+    if (is_array($cached) && !empty($cached['rates'])) {
+        foreach (array_keys(MERCHANT_COINS) as $sym) {
+            $r = $cached['rates'][$sym] ?? null;
+            if (!$r || empty($r['buy']) || empty($r['sell'])) {
+                $hasNulls = true;
+                break;
+            }
+        }
+    } else {
+        $hasNulls = true;
+    }
+
+    if (!$hasNulls && $age < 21600) {
         // Return cached rates immediately without blocking the visitor on remote API roundtrips.
         // If older than 60s, refresh in the background. Past 6 hours, wait for today's prices instead.
         $lock = $file . '.refreshing';
@@ -205,8 +220,11 @@ function merchantFetchVelcroRates(): array
 {
     $file = BASE_PATH . '/data/.merchant_rates.json';
     $out = [];
-    $usdMarketBuy = null;
-    $usdMarketSell = null;
+
+    // Get live baseline USD/NGN buy/sell rates from market (Switch / PAJ)
+    $marketRates = function_exists('getLiveUsdNgnRates') ? getLiveUsdNgnRates() : ['buy' => 1400.0, 'sell' => 1370.0];
+    $usdMarketBuy = $marketRates['buy'];
+    $usdMarketSell = $marketRates['sell'];
     $switchStableBuy = null;
     $switchStableSell = null;
 
@@ -220,23 +238,30 @@ function merchantFetchVelcroRates(): array
                 if ($q['ngn_per_unit'] > 0 && $q['usd_per_unit'] > 0) {
                     $perUsd = $q['ngn_per_unit'] / $q['usd_per_unit'];
                     [$buy, $sell] = [$perUsd / (1 - $fee), $perUsd * (1 - $fee)];
-                    if ($usdMarketBuy === null && $buy > 0) {
-                        $usdMarketBuy = $buy;
-                        $usdMarketSell = $sell;
-                    }
+                }
+                // Fallback to market USD/NGN rates if HostFi quote is unavailable or zero
+                if (!$buy && $usdMarketBuy > 0) {
+                    $buy = $usdMarketBuy;
+                }
+                if (!$sell && $usdMarketSell > 0) {
+                    $sell = $usdMarketSell;
                 }
             } elseif ($provider === 'paj') {
                 // PAJ's $ rates with Velcro's margin, then Velcro's fee (taken from what the customer receives).
-                $r = pajApi()->getPajRate();
-                $margin = getPajRateMargin();
-                $fee = getPajFee() / 100;
-                $on = (float) ($r['onramp']['rate'] ?? 0);
-                $off = (float) ($r['offramp']['rate'] ?? 0);
-                $buy = $on > 0 ? ($on + $margin) / (1 - $fee) : null;
-                $sell = $off > 0 ? ($off - $margin) * (1 - $fee) : null;
-                if ($usdMarketBuy === null && $buy > 0) {
-                    $usdMarketBuy = $buy;
-                    $usdMarketSell = $sell;
+                if (class_exists('PajApiClient') && function_exists('pajApi')) {
+                    $r = pajApi()->getPajRate();
+                    $margin = getPajRateMargin();
+                    $fee = getPajFee() / 100;
+                    $on = (float) ($r['onramp']['rate'] ?? 0);
+                    $off = (float) ($r['offramp']['rate'] ?? 0);
+                    $buy = $on > 0 ? ($on + $margin) / (1 - $fee) : null;
+                    $sell = $off > 0 ? ($off - $margin) * (1 - $fee) : null;
+                }
+                if (!$buy && $usdMarketBuy > 0) {
+                    $buy = $usdMarketBuy;
+                }
+                if (!$sell && $usdMarketSell > 0) {
+                    $sell = $usdMarketSell;
                 }
             } else {
                 // Switch: USDT and USDC share identical USD stablecoin rates.
@@ -263,31 +288,53 @@ function merchantFetchVelcroRates(): array
                         $switchStableSell = $sell;
                     }
                 }
+                if (!$buy && $usdMarketBuy > 0) {
+                    $buy = $usdMarketBuy;
+                }
+                if (!$sell && $usdMarketSell > 0) {
+                    $sell = $usdMarketSell;
+                }
             }
         } catch (Throwable $e) {
             error_log("[Merchant] {$sym} rate via {$provider} unavailable: " . $e->getMessage());
         }
+
+        // Crypto token USD price
         $usd = null;
-        try {
-            $usd = in_array($sym, ['USDT', 'USDC'], true) ? 1.0 : (hostfiQuote($sym)['usd_per_unit'] ?: null);
-        } catch (Throwable $e) {
-            // the store page then just doesn't estimate this coin
-        }
-
-        // For USD stablecoins (USDT, USDC): if Switch didn't return a rate, fall back to live USD market rate
         if (in_array($sym, ['USDT', 'USDC'], true)) {
-            if ($buy === null && $usdMarketBuy) {
-                $buy = $usdMarketBuy;
+            $usd = 1.0;
+        } else {
+            try {
+                $q = hostfiQuote($sym);
+                $usd = $q['usd_per_unit'] > 0 ? $q['usd_per_unit'] : null;
+            } catch (Throwable $e) {
+                // fallback below
             }
-            if ($sell === null && $usdMarketSell) {
-                $sell = $usdMarketSell;
+            if (!$usd && function_exists('getCryptoUsdPrice')) {
+                $usd = getCryptoUsdPrice($sym) ?: null;
             }
         }
 
-        $out[$sym] = ['provider' => $provider, 'buy' => $buy ? round($buy, 2) : null, 'sell' => $sell ? round($sell, 2) : null, 'usd' => $usd];
+        // Final safety fallbacks so no coin is ever null
+        if ($buy === null && $usdMarketBuy) {
+            $buy = $usdMarketBuy;
+        }
+        if ($sell === null && $usdMarketSell) {
+            $sell = $usdMarketSell;
+        }
+        if ($usd === null) {
+            $usd = in_array($sym, ['USDT', 'USDC'], true) ? 1.0 : (function_exists('getCryptoUsdPrice') ? (getCryptoUsdPrice($sym) ?: null) : null);
+        }
+
+        $out[$sym] = [
+            'provider' => $provider,
+            'buy' => $buy ? round((float) $buy, 2) : null,
+            'sell' => $sell ? round((float) $sell, 2) : null,
+            'usd' => $usd ? (float) $usd : null,
+        ];
     }
-    // A provider that didn't answer this time keeps its last good rates for up to an hour, so one
-    // slow provider never blanks a coin. After that the coin shows as unavailable, not an old price.
+
+    // A provider that didn't answer this time keeps its last good rates for up to an hour
     $old = json_decode((string) @file_get_contents($file), true);
     foreach ($out as $sym => $r) {
         $out[$sym]['at'] = time();
@@ -299,17 +346,11 @@ function merchantFetchVelcroRates(): array
         foreach (['buy', 'sell', 'usd'] as $k) {
             if ($r[$k] === null && isset($prev[$k])) {
                 $out[$sym][$k] = $prev[$k];
-                $out[$sym]['at'] = $prevAt; // the clock keeps running on a kept rate
+                $out[$sym]['at'] = $prevAt;
             }
         }
     }
-    // Fallback safeguard for stablecoins if cache had nulls
-    foreach (['USDT', 'USDC'] as $stable) {
-        if (isset($out[$stable])) {
-            if ($out[$stable]['buy'] === null && $usdMarketBuy) $out[$stable]['buy'] = round($usdMarketBuy, 2);
-            if ($out[$stable]['sell'] === null && $usdMarketSell) $out[$stable]['sell'] = round($usdMarketSell, 2);
-        }
-    }
+
     if (array_filter(array_column($out, 'buy')) || array_filter(array_column($out, 'sell'))) {
         @file_put_contents($file, json_encode(['at' => time(), 'rates' => $out]), LOCK_EX);
     }
@@ -902,7 +943,7 @@ function registerMerchantRoutes(Router $router): void
                 continue;
             }
             $velcro = $rates[$sym] ?? ['buy' => null, 'sell' => null];
-            $usd = $velcro['usd'] ?? (in_array($sym, ['USDT', 'USDC'], true) ? 1.0 : null); // for the coin estimate on the store page
+            $usd = $velcro['usd'] ?? (in_array($sym, ['USDT', 'USDC'], true) ? 1.0 : (function_exists('getCryptoUsdPrice') ? (getCryptoUsdPrice($sym) ?: null) : null)); // for the coin estimate on the store page
             $coins[$sym] = [
                 'symbol' => $sym,
                 'name' => $name,

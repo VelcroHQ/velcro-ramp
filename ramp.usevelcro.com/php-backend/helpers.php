@@ -396,6 +396,93 @@ function getPajRateMargin(): float
     return is_nan($margin) ? 0.0 : $margin;
 }
 
+/**
+ * Live USD/NGN onramp (buy) and offramp (sell) rates from Switch or PAJ, or defaults.
+ *
+ * @return array{buy: float, sell: float}
+ */
+function getLiveUsdNgnRates(): array
+{
+    static $rates = null;
+    if ($rates !== null) {
+        return $rates;
+    }
+    $buy = null;
+    $sell = null;
+
+    // 1. Try Switch stablecoin rates (cached or live)
+    try {
+        $assets = json_decode((string) @file_get_contents(BASE_PATH . '/data/switch_assets_cache.json'), true) ?: [];
+        if (class_exists('SwitchApiClient') && function_exists('switchApi')) {
+            foreach (['ONRAMP' => 'onramp', 'OFFRAMP' => 'offramp'] as $dir => $key) {
+                $chains = (array) ($assets[$key]['USDT']['chains'] ?? []);
+                $chain = array_values(array_intersect(['solana', 'base', 'tron', 'bsc', 'polygon', 'ethereum'], $chains))[0] ?? ($chains[0] ?? 'solana');
+                try {
+                    $res = switchApi()->getRate(['direction' => $dir, 'country' => 'NG', 'currency' => 'NGN', 'channel' => 'BANK', 'asset' => $chain . ':usdt']);
+                    $rate = (float) ($res['data']['rate'] ?? 0);
+                    if ($rate > 0) {
+                        $dir === 'ONRAMP' ? $buy = $rate : $sell = $rate;
+                    }
+                } catch (Throwable $e) {
+                }
+            }
+        }
+    } catch (Throwable $e) {
+    }
+
+    // 2. Try PAJ if Switch didn't provide both
+    if (($buy === null || $sell === null) && class_exists('PajApiClient') && function_exists('pajApi')) {
+        try {
+            $r = pajApi()->getPajRate();
+            $on = (float) ($r['onramp']['rate'] ?? 0);
+            $off = (float) ($r['offramp']['rate'] ?? 0);
+            if ($buy === null && $on > 0) {
+                $buy = $on;
+            }
+            if ($sell === null && $off > 0) {
+                $sell = $off;
+            }
+        } catch (Throwable $e) {
+        }
+    }
+
+    // 3. Fallbacks
+    $buy = $buy ?: ($sell ? $sell * 1.02 : 1400.0);
+    $sell = $sell ?: ($buy ? $buy * 0.98 : 1370.0);
+
+    return $rates = ['buy' => round($buy, 2), 'sell' => round($sell, 2)];
+}
+
+/**
+ * Live USD price of a crypto token (USDT/USDC = 1.0, BTC/ETH/SOL via CoinGecko).
+ */
+function getCryptoUsdPrice(string $symbol): float
+{
+    $symbol = strtoupper($symbol);
+    if (in_array($symbol, ['USDT', 'USDC'], true)) {
+        return 1.0;
+    }
+    static $prices = null;
+    if ($prices === null) {
+        $prices = [];
+        try {
+            $ids = 'bitcoin,ethereum,solana';
+            $res = httpRequest('GET', "https://api.coingecko.com/api/v3/simple/price?ids={$ids}&vs_currencies=usd", [
+                'headers' => ['Accept: application/json', 'User-Agent: VelcroRamp/1.0'],
+                'timeout' => 5,
+            ]);
+            if (is_array($res)) {
+                $prices['BTC'] = (float) ($res['bitcoin']['usd'] ?? 0);
+                $prices['ETH'] = (float) ($res['ethereum']['usd'] ?? 0);
+                $prices['SOL'] = (float) ($res['solana']['usd'] ?? 0);
+            }
+        } catch (Throwable $e) {
+            error_log('Crypto USD price fetch failed: ' . $e->getMessage());
+        }
+    }
+    return (float) ($prices[$symbol] ?? 0.0);
+}
+
 function getDeveloperRecipientForAsset(?string $asset): string
 {
     if ($asset === null || $asset === '') {
