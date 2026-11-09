@@ -302,6 +302,8 @@ function registerPajRoutes(Router $router): void
                     break;
                 }
             }
+            $bankName = (string) (body($body, 'bankName') ?: body($body, 'bank_name') ?: '');
+            $holderName = (string) ($d['accountName'] ?? (body($body, 'accountName') ?: 'Customer'));
             $txRef = $d['id'] ?? ('paj_' . bin2hex(random_bytes(8)));
             $txRecord = [
                 'reference' => $txRef,
@@ -314,7 +316,14 @@ function registerPajRoutes(Router $router): void
                 'amount' => $fiatAmount,
                 'fee_developer' => $businessUSDCFee,
                 'deposit_address' => $d['address'] ?? null,
-                'beneficiary' => jsonEncodeNullable(['bank' => $bank, 'accountNumber' => $accountNumber, 'holder_name' => $d['accountName'] ?? 'Customer']),
+                'beneficiary' => jsonEncodeNullable([
+                    'bank' => $bank,
+                    'bank_code' => $bank,
+                    'bank_name' => $bankName,
+                    'accountNumber' => $accountNumber,
+                    'account_number' => $accountNumber,
+                    'holder_name' => $holderName,
+                ]),
                 'email' => $email ? strtolower(trim($email)) : null,
                 'meta' => jsonEncodeNullable($d),
             ] + ($store ? storeOrderFields($store, getPajFee()) : referralFieldsFor(body($body, 'ref'), $email));

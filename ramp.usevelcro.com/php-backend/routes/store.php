@@ -235,6 +235,112 @@ function storeSignedIn(array $customer, string $message): never
     jsonResponse(successResponse(['token' => issueStoreToken($customer), 'email' => $customer['email'], 'name' => $customer['name']], $message));
 }
 
+function resolvePayoutBankInfo(array $ben, array $meta): array
+{
+    static $banks = [
+        '100004' => 'OPay',
+        '000014' => 'Access Bank',
+        '044'    => 'Access Bank',
+        '000013' => 'Guaranty Trust Bank (GTBank)',
+        '058'    => 'Guaranty Trust Bank (GTBank)',
+        '000015' => 'Zenith Bank',
+        '057'    => 'Zenith Bank',
+        '000016' => 'First Bank of Nigeria',
+        '011'    => 'First Bank of Nigeria',
+        '000004' => 'United Bank for Africa (UBA)',
+        '033'    => 'United Bank for Africa (UBA)',
+        '000007' => 'Fidelity Bank',
+        '070'    => 'Fidelity Bank',
+        '000018' => 'Union Bank',
+        '032'    => 'Union Bank',
+        '000017' => 'Wema Bank (ALAT)',
+        '035'    => 'Wema Bank (ALAT)',
+        '000001' => 'Sterling Bank',
+        '232'    => 'Sterling Bank',
+        '000010' => 'Ecobank Nigeria',
+        '050'    => 'Ecobank Nigeria',
+        '090267' => 'Kuda Bank',
+        '100026' => 'Kuda Bank',
+        '000008' => 'Kuda Bank',
+        '000012' => 'Stanbic IBTC Bank',
+        '221'    => 'Stanbic IBTC Bank',
+        '000003' => 'First City Monument Bank (FCMB)',
+        '214'    => 'First City Monument Bank (FCMB)',
+        '100033' => 'PalmPay',
+        '090405' => 'Moniepoint MFB',
+        '090393' => 'Moniepoint MFB',
+        '000011' => 'Unity Bank',
+        '215'    => 'Unity Bank',
+        '076'    => 'Polaris Bank',
+        '000023' => 'Providus Bank',
+        '101'    => 'Providus Bank',
+        '000026' => 'TAJ Bank',
+        '302'    => 'TAJ Bank',
+        '000027' => 'Globus Bank',
+        '000029' => 'Lotus Bank',
+        '303'    => 'Lotus Bank',
+        '000031' => 'PremiumTrust Bank',
+        '105'    => 'PremiumTrust Bank',
+        '000006' => 'Jaiz Bank',
+        '301'    => 'Jaiz Bank',
+        '000021' => 'Standard Chartered Bank',
+        '068'    => 'Standard Chartered Bank',
+        '090110' => 'VFD Microfinance Bank',
+        '090701' => 'Carbon',
+        '090551' => 'FairMoney MFB',
+        '023'    => 'Citibank Nigeria',
+        '102'    => 'Titan Trust Bank',
+        '090286' => 'Safehaven MFB',
+    ];
+
+    $bankName = $ben['bank_name']
+        ?? $ben['bankName']
+        ?? $ben['institution']
+        ?? ($meta['hostfi']['bank']['bankName'] ?? null)
+        ?? ($meta['bank']['bankName'] ?? null)
+        ?? null;
+
+    $bankCode = (string) ($ben['bank_code']
+        ?? $ben['bankCode']
+        ?? $ben['bank']
+        ?? $ben['bankId']
+        ?? ($meta['hostfi']['bank']['bankId'] ?? '')
+        ?? '');
+    if (str_contains($bankCode, '::')) {
+        $bankCode = explode('::', $bankCode)[1] ?? $bankCode;
+    }
+
+    if (empty($bankName) || strtolower(trim((string)$bankName)) === 'bank') {
+        if ($bankCode !== '' && isset($banks[$bankCode])) {
+            $bankName = $banks[$bankCode];
+        } elseif ($bankCode !== '' && isset($banks[ltrim($bankCode, '0')])) {
+            $bankName = $banks[ltrim($bankCode, '0')];
+        } elseif ($bankCode !== '' && isset($banks[str_pad($bankCode, 6, '0', STR_PAD_LEFT)])) {
+            $bankName = $banks[str_pad($bankCode, 6, '0', STR_PAD_LEFT)];
+        }
+    }
+
+    $accountNumber = $ben['account_number']
+        ?? $ben['accountNumber']
+        ?? ($meta['hostfi']['bank']['accountNumber'] ?? null)
+        ?? ($meta['bank']['accountNumber'] ?? null)
+        ?? null;
+
+    $holderName = $ben['holder_name']
+        ?? $ben['holderName']
+        ?? $ben['account_name']
+        ?? $ben['accountName']
+        ?? ($meta['hostfi']['bank']['accountName'] ?? null)
+        ?? ($meta['bank']['accountName'] ?? null)
+        ?? null;
+
+    return [
+        'bank_name' => $bankName ?: null,
+        'account_number' => $accountNumber ?: null,
+        'holder_name' => $holderName ?: null,
+    ];
+}
+
 /**
  * A store's orders (newest 500, or all with $limit null) for its dashboard: coin, naira value, and the markup earned.
  * Naira value is what the customer paid on a buy, and the payout before fees on a sell. Only
@@ -287,6 +393,7 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
         if ($provider === 'hostfi' && function_exists('hostfiProgress')) {
             try { $hostfiProgress = hostfiProgress((string) $t['reference']); } catch (\Throwable) {}
         }
+        $payout = resolvePayoutBankInfo($ben, $meta);
         return [
             'reference' => $t['reference'],
             'side' => $buy ? 'buy' : 'sell',
@@ -310,9 +417,9 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
             'deposit_account_name' => $t['deposit_account_name'] ?: null,
             'deposit_address' => $t['deposit_address'] ?: null,
             'deposit_note' => $t['deposit_note'] ?: ($meta['memo'] ?? null),
-            'payout_bank_name' => $ben['bank_name'] ?? $ben['bankName'] ?? null,
-            'payout_account_number' => $ben['account_number'] ?? null,
-            'payout_account_name' => $ben['holder_name'] ?? null,
+            'payout_bank_name' => $payout['bank_name'],
+            'payout_account_number' => $payout['account_number'],
+            'payout_account_name' => $payout['holder_name'],
             'hostfi_progress' => $hostfiProgress,
             'created_at' => $t['created_at'],
         ];
@@ -336,9 +443,10 @@ function storeCustomerOrderView(array $o): array
     if (strtoupper((string) $o['type']) === 'OFFRAMP') {
         // PAJ sells are ordered in naira, so their coin amount is in PAJ's own order.
         $o['send_amount'] = (float) (strtoupper((string) $o['channel']) === 'PAJ' ? ($meta['amount'] ?? 0) : $o['amount']);
-        $o['payout_bank_name'] = $ben['bank_name'] ?? $ben['bankName'] ?? null;
-        $o['payout_account_number'] = $ben['account_number'] ?? null;
-        $o['payout_account_name'] = $ben['holder_name'] ?? null;
+        $payout = resolvePayoutBankInfo($ben, $meta);
+        $o['payout_bank_name'] = $payout['bank_name'];
+        $o['payout_account_number'] = $payout['account_number'];
+        $o['payout_account_name'] = $payout['holder_name'];
     }
     return $o;
 }

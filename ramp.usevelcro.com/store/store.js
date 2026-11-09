@@ -758,6 +758,13 @@ function getExplorerUrl(hash, network) {
   return '';
 }
 
+function resolveStoreBankName(o) {
+  if (o.payoutBank && String(o.payoutBank).toLowerCase() !== 'bank') return o.payoutBank;
+  const acct = String(o.payoutAccount || '');
+  if (/^[789][01]\d{8}$/.test(acct)) return 'OPay';
+  return 'Bank Account';
+}
+
 function orderReceiptHtml(o) {
   const isBuy = o.side === 'buy';
   const cryptoAmt = isBuy
@@ -788,7 +795,7 @@ function orderReceiptHtml(o) {
       ${!isBuy && (o.payoutBank || o.payoutAccount) ? `
         <div class="s-receipt-row">
           <small>Payout destination</small>
-          <div class="s-receipt-val"><b>${esc(o.payoutBank || 'Bank')}</b> · <code>${esc(o.payoutAccount || '')}</code>${o.payoutName ? ` <small>(${esc(o.payoutName)})</small>` : ''}</div>
+          <div class="s-receipt-val"><b>${esc(resolveStoreBankName(o))}</b> · <code>${esc(o.payoutAccount || '')}</code>${o.payoutName ? ` <small>(${esc(o.payoutName)})</small>` : ''}</div>
         </div>` : ''}
       ${o.hash ? `
         <div class="s-receipt-row">
@@ -1115,6 +1122,9 @@ async function createSell() {
     payoutAmount: checkout.amount > 0 ? payoutFor(checkout.coin, checkout.amount) : null,
     status: 'AWAITING_DEPOSIT',
     network: netLabel(),
+    payoutBank: bank.name,
+    payoutAccount: checkout.account,
+    payoutName: checkout.accountName,
     payTo: `${checkout.accountName} · ${bank.name}`,
     progress: {}
   };
@@ -1123,14 +1133,14 @@ async function createSell() {
       const d = await api('/api/hostfi/sell', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, bankCode: bank.code, bankName: bank.name, accountNumber: checkout.account, amount: checkout.amount || 0 } });
       checkout.order = { ...base, reference: d.reference, address: d.address, memo: d.memo, sendAmount: checkout.amount > 0 ? checkout.amount : null, payoutAmount: Number(d.estimate_ngn) || base.payoutAmount, exact: false, expiresAt: Date.now() + (d.expires_in || 3600) * 1000 };
     } else if (checkout.provider === 'paj') {
-      const d = await api('/api/paj/sell', { method: 'POST', body: { store: SLUG, fiatAmount: Math.floor(payoutFor(checkout.coin, checkout.amount)), mint: PAJ_MINTS[checkout.coin], bank: bank.id, accountNumber: checkout.account } });
+      const d = await api('/api/paj/sell', { method: 'POST', body: { store: SLUG, fiatAmount: Math.floor(payoutFor(checkout.coin, checkout.amount)), mint: PAJ_MINTS[checkout.coin], bank: bank.id, bankName: bank.name, accountNumber: checkout.account, accountName: checkout.accountName } });
       checkout.order = { ...base, reference: d.id, address: d.address, sendAmount: Number(d.amount) || checkout.amount, payoutAmount: Number(d.fiatAmount) || base.payoutAmount, exact: true, expiresAt: Date.now() + 3600 * 1000 };
     } else {
       const d = await api('/api/initiate', {
         method: 'POST',
         body: {
           store: SLUG, direction: 'OFFRAMP', amount: checkout.amount, country: 'NG', currency: 'NGN', channel: 'BANK', asset: checkout.network,
-          beneficiary: { holder_type: 'INDIVIDUAL', holder_name: checkout.accountName, account_number: checkout.account, bank_code: bank.code },
+          beneficiary: { holder_type: 'INDIVIDUAL', holder_name: checkout.accountName, account_number: checkout.account, bank_code: bank.code, bank_name: bank.name },
         },
       });
       const dep = d.deposit;

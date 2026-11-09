@@ -315,6 +315,17 @@ function getOrderNetworkLabel(o) {
   return '';
 }
 
+function resolveOrderBankName(o) {
+  if (o.payout_bank_name && String(o.payout_bank_name).trim().toLowerCase() !== 'bank') {
+    return o.payout_bank_name;
+  }
+  const acct = String(o.payout_account_number || '');
+  if (/^[789][01]\d{8}$/.test(acct)) {
+    return 'OPay';
+  }
+  return 'Bank Account';
+}
+
 const statusHtml = ([label, cls]) => `<span class="d-st is-${cls}">${esc(label)}</span>`;
 const coinText = o => (o.coin_amount ? `${Number(o.coin_amount).toLocaleString('en-US', { maximumFractionDigits: 8 })} ${esc(o.coin)}` : esc(o.coin));
 const shortRef = r => { const v = String(r || ''); return v.length > 16 ? `${v.slice(0, 8)}…${v.slice(-5)}` : v; };
@@ -544,7 +555,7 @@ function orderTimelineHtml(o) {
   } else if (step > 3 && done) {
     step3State = 'is-done';
     step3Title = isBuy ? `${esc(o.coin)} sent` : 'Naira paid';
-    step3Desc = isBuy ? `Broadcasted to customer wallet on ${esc(net)}` : `Sent to ${esc(o.payout_bank_name || 'bank')} account`;
+    step3Desc = isBuy ? `Broadcasted to customer wallet on ${esc(net)}` : `Sent to customer ${esc(resolveOrderBankName(o))} account`;
   } else if (step > 3 && isFailed) {
     step3State = 'is-bad';
     step3Title = 'Swap stopped';
@@ -816,7 +827,7 @@ function openOrderDetail(ref, isSilentUpdate = false) {
         <div class="ord-row">
           <dt>Payout destination</dt>
           <dd class="ord-val-copy">
-            <span>${esc(o.payout_bank_name || 'Bank')} · <code>${esc(o.payout_account_number || '')}</code></span>
+            <span><b>${esc(resolveOrderBankName(o))}</b> · <code>${esc(o.payout_account_number || '')}</code></span>
             ${o.payout_account_number ? `<button type="button" class="ord-copy" onclick="copyOrdText('${esc(o.payout_account_number)}', 'Account number copied')">Copy</button>` : ''}
           </dd>
         </div>
