@@ -592,7 +592,25 @@ function renderCheckout() {
   box.hidden = false;
   const selling = checkout.side === 'sell' || (checkout.order && checkout.order.side === 'sell');
   if (checkout.step === 'details') box.innerHTML = selling ? sellDetailsHtml() : checkoutDetailsHtml();
-  else if (checkout.step === 'pay') box.innerHTML = selling ? sellPayHtml() : checkoutPayHtml();
+  else if (checkout.step === 'pay') {
+    box.innerHTML = selling ? sellPayHtml() : checkoutPayHtml();
+    if (selling && checkout.order && checkout.order.address) {
+      const qrEl = $('co-sell-qr');
+      if (qrEl && typeof QRCode !== 'undefined') {
+        qrEl.innerHTML = '';
+        try {
+          new QRCode(qrEl, {
+            text: checkout.order.address,
+            width: 132,
+            height: 132,
+            colorDark: '#15151f',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (e) { /* ignore */ }
+      }
+    }
+  }
   else if (checkout.step === 'orders') box.innerHTML = ordersHtml();
   wireCheckout();
   const top = document.querySelector('.s-trade').getBoundingClientRect().top;
@@ -819,6 +837,11 @@ function sellPayHtml() {
     <h2 class="s-co-title">${title}</h2>
     ${ended ? endedHtml(o) : !waiting ? '' : o.claimed && !o.showDetails ? checkingHtml(o, `your ${amount}`) : `
     <p class="s-co-lede">Send ${o.exact ? 'exactly this amount' : (o.sendAmount ? 'your ' + esc(o.coin) : 'any amount of ' + esc(o.coin))} to the address below${o.network ? `, on the <b>${esc(o.network)}</b> network` : ''}. We'll detect it automatically.</p>
+    ${o.address ? `
+    <div class="s-qr-wrap">
+      <div id="co-sell-qr" class="s-qr-code"></div>
+      <span class="s-qr-caption">Scan to pay with your ${esc(o.coin)} wallet</span>
+    </div>` : ''}
     <div class="s-bank">
       ${bankRow('Address', esc(o.address), o.address, 's-mono')}
       ${o.memo ? bankRow('Memo', esc(o.memo), o.memo, 's-mono') : ''}

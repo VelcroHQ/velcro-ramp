@@ -612,6 +612,56 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
   .s-receipt-box { padding: 12px 14px; }
 }
 
+/* Scan to pay QR barcode */
+.s-qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 14px 0;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
+}
+.s-layout-card .s-qr-wrap {
+  background: rgba(255, 255, 255, .1);
+  border-color: rgba(255, 255, 255, .18);
+}
+.s-layout-minimal .s-qr-wrap {
+  background: #fafafb;
+  border-color: #ededf1;
+}
+.s-qr-code {
+  width: 148px;
+  height: 148px;
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.s-qr-code img, .s-qr-code canvas {
+  display: block !important;
+  width: 132px !important;
+  height: 132px !important;
+  border-radius: 6px;
+}
+.s-qr-caption {
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.s-layout-card .s-qr-caption {
+  color: var(--on-page);
+}
+
 @media (max-width: 480px) {
   :root { --pad: 14px; }
   .s-wrap { padding-left: 12px; padding-right: 12px; }

@@ -281,6 +281,12 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
         $meta = json_decode((string) ($t['meta'] ?? ''), true) ?: [];
         $chain = str_contains((string) $t['asset'], ':') ? explode(':', (string) $t['asset'])[0] : '';
         $network = (string) ($meta['network'] ?? $meta['chain'] ?? $chain);
+        $rawChannel = strtoupper((string) ($t['channel'] ?? ''));
+        $provider = $rawChannel === 'HOSTFI' ? 'hostfi' : ($rawChannel === 'PAJ' || str_starts_with((string)$t['reference'], 'paj_') ? 'paj' : 'switch');
+        $hostfiProgress = [];
+        if ($provider === 'hostfi' && function_exists('hostfiProgress')) {
+            try { $hostfiProgress = hostfiProgress((string) $t['reference']); } catch (\Throwable) {}
+        }
         return [
             'reference' => $t['reference'],
             'side' => $buy ? 'buy' : 'sell',
@@ -296,15 +302,18 @@ function merchantOrders(int $merchantId, ?int $limit = 500): array
             'customer_id' => (int) $t['store_customer_id'],
             'wallet_address' => $t['wallet_address'] ?: ($ben['wallet_address'] ?? null),
             'network' => $network ?: null,
+            'channel' => $rawChannel ?: null,
+            'provider' => $provider,
             'hash' => $t['hash'] ?: null,
             'deposit_bank_name' => $t['deposit_bank_name'] ?: null,
             'deposit_account_number' => $t['deposit_account_number'] ?: null,
             'deposit_account_name' => $t['deposit_account_name'] ?: null,
             'deposit_address' => $t['deposit_address'] ?: null,
-            'deposit_note' => $t['deposit_note'] ?: null,
+            'deposit_note' => $t['deposit_note'] ?: ($meta['memo'] ?? null),
             'payout_bank_name' => $ben['bank_name'] ?? $ben['bankName'] ?? null,
             'payout_account_number' => $ben['account_number'] ?? null,
             'payout_account_name' => $ben['holder_name'] ?? null,
+            'hostfi_progress' => $hostfiProgress,
             'created_at' => $t['created_at'],
         ];
     }, $rows);

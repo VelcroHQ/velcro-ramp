@@ -265,11 +265,56 @@ async function showApp() {
 let orders = null;
 let orderFilter = 'all';
 let ordersTimer = null;
-const OPEN_STATUSES = ['AWAITING_DEPOSIT', 'PENDING', 'DETECTED', 'RECEIVED', 'VERIFIED', 'CONFIRMED', 'PROCESSING', 'INITIATED'];
+let activeModalRef = null;
+const OPEN_STATUSES = ['AWAITING_DEPOSIT', 'PENDING', 'DETECTED', 'RECEIVED', 'VERIFIED', 'CONFIRMED', 'PROCESSING', 'INITIATED', 'REVIEW'];
 const ORDER_STATUS = {
-  AWAITING_DEPOSIT: ['Awaiting payment', 'wait'], CONFIRMED: ['Payment received', 'busy'], PROCESSING: ['Processing', 'busy'], DETECTED: ['Payment seen', 'busy'],
-  COMPLETED: ['Completed', 'live'], REVIEW: ['Needs review', 'warn'], FAILED: ['Failed', 'bad'], CANCELLED: ['Cancelled', 'off'], EXPIRED: ['Expired', 'off'],
+  INITIATED: ['Initiated', 'wait'],
+  AWAITING_DEPOSIT: ['Awaiting deposit', 'wait'],
+  PENDING: ['Pending', 'wait'],
+  DETECTED: ['Deposit detected', 'busy'],
+  CONFIRMED: ['Deposit confirmed', 'busy'],
+  RECEIVED: ['Payment received', 'busy'],
+  VERIFIED: ['Payment verified', 'busy'],
+  PROCESSING: ['Processing swap', 'busy'],
+  REVIEW: ['Under review', 'warn'],
+  COMPLETED: ['Completed', 'live'],
+  FAILED: ['Failed', 'bad'],
+  CANCELLED: ['Cancelled', 'off'],
+  EXPIRED: ['Expired', 'off'],
 };
+const PROVIDER_NAMES = {
+  hostfi: 'HostFi',
+  switch: 'Switch',
+  paj: 'PAJ',
+};
+
+function getOrderProvider(o) {
+  if (o.provider) return o.provider.toLowerCase();
+  const rawCh = String(o.channel || '').toUpperCase();
+  if (rawCh === 'HOSTFI') return 'hostfi';
+  if (rawCh === 'PAJ' || String(o.reference || '').startsWith('paj_')) return 'paj';
+  if (o.coin === 'BTC' || o.coin === 'ETH') return 'hostfi';
+  return 'switch';
+}
+
+function getOrderStepNumber(status) {
+  const s = String(status || '').toUpperCase();
+  if (['COMPLETED', 'FAILED', 'EXPIRED', 'CANCELLED'].includes(s)) return 4;
+  if (['PROCESSING', 'REVIEW'].includes(s)) return 3;
+  if (['DETECTED', 'CONFIRMED', 'RECEIVED', 'VERIFIED'].includes(s)) return 2;
+  return 1;
+}
+
+function getOrderNetworkLabel(o) {
+  if (o.network) return o.network;
+  const c = String(o.coin || '').toUpperCase();
+  if (c === 'BTC') return 'Bitcoin';
+  if (c === 'SOL') return 'Solana';
+  if (c === 'ETH') return 'Ethereum';
+  if (c === 'USDT' || c === 'USDC') return 'TRON / Arbitrum';
+  return '';
+}
+
 const statusHtml = ([label, cls]) => `<span class="d-st is-${cls}">${esc(label)}</span>`;
 const coinText = o => (o.coin_amount ? `${Number(o.coin_amount).toLocaleString('en-US', { maximumFractionDigits: 8 })} ${esc(o.coin)}` : esc(o.coin));
 const shortRef = r => { const v = String(r || ''); return v.length > 16 ? `${v.slice(0, 8)}…${v.slice(-5)}` : v; };
@@ -287,13 +332,19 @@ async function loadOrders() {
     $('ord-sum').innerHTML = `<span><b>${orders.length}</b> orders</span><span><b>${naira(sm.earned_total_ngn || 0)}</b> earned in total</span>`;
     renderOrders();
     renderRecentOrders();
+    if (activeModalRef && $('ord-modal').classList.contains('is-open')) {
+      openOrderDetail(activeModalRef, true);
+    }
   } catch (e) {
     $('ord-list').innerHTML = `<p class="d-sheet-msg">${esc(e.message)}</p>`;
     $('ov-recent').innerHTML = `<p class="d-quiet">${esc(e.message)}</p>`;
   }
-  // Orders still moving refresh themselves while the tab is open.
+  // Orders still moving refresh themselves while the tab is open or modal is displayed.
   clearTimeout(ordersTimer);
-  if (orders && orders.some(o => OPEN_STATUSES.includes(o.status)) && !$('tab-orders').classList.contains('hidden')) ordersTimer = setTimeout(loadOrders, 15000);
+  const hasActive = orders && orders.some(o => OPEN_STATUSES.includes(o.status));
+  if ((hasActive || activeModalRef) && (!$('tab-orders').classList.contains('hidden') || $('ord-modal').classList.contains('is-open'))) {
+    ordersTimer = setTimeout(loadOrders, 15000);
+  }
 }
 
 function shownOrders() {
@@ -320,6 +371,20 @@ function getExplorerUrl(hash, network) {
   return '';
 }
 
+function getWalletExplorerUrl(address, network) {
+  if (!address) return '';
+  const net = String(network || '').toLowerCase();
+  if (net.includes('sol')) return `https://solscan.io/account/${address}`;
+  if (net.includes('btc') || net.includes('bitcoin')) return `https://mempool.space/address/${address}`;
+  if (net.includes('tron') || net.includes('trc')) return `https://tronscan.org/#/address/${address}`;
+  if (net.includes('base')) return `https://basescan.org/address/${address}`;
+  if (net.includes('poly') || net.includes('matic')) return `https://polygonscan.com/address/${address}`;
+  if (net.includes('arb')) return `https://arbiscan.io/address/${address}`;
+  if (net.includes('bsc') || net.includes('binance')) return `https://bscscan.com/address/${address}`;
+  if (net.includes('opt')) return `https://optimistic.etherscan.io/address/${address}`;
+  return `https://etherscan.io/address/${address}`;
+}
+
 function copyOrdText(text, msg = 'Copied to clipboard') {
   if (!text) return;
   navigator.clipboard.writeText(text).then(() => toast(msg)).catch(() => {
@@ -334,15 +399,259 @@ function copyOrdText(text, msg = 'Copied to clipboard') {
 }
 
 function closeOrderModal() {
+  activeModalRef = null;
   const m = $('ord-modal');
   if (m) m.classList.remove('is-open');
 }
 
-function openOrderDetail(ref) {
+function orderTimelineHtml(o) {
+  const isBuy = o.side === 'buy';
+  const status = String(o.status || '').toUpperCase();
+  const step = getOrderStepNumber(status);
+  const prov = getOrderProvider(o);
+  const done = status === 'COMPLETED';
+  const isFailed = ['FAILED', 'EXPIRED', 'CANCELLED'].includes(status);
+  const net = getOrderNetworkLabel(o);
+
+  const step1State = step >= 1 ? 'is-done' : 'is-pending';
+  const step1Desc = isBuy ? 'Naira bank transfer account generated' : `Deposit address & QR generated for ${esc(o.coin)}`;
+
+  let step2State = 'is-pending';
+  let step2Title = 'Deposit detected';
+  let step2Desc = '';
+  if (step === 2) {
+    step2State = 'is-active';
+    if (isBuy) {
+      step2Title = 'Payment detected';
+      step2Desc = 'Naira bank transfer seen on interbank network';
+    } else if (prov === 'hostfi' && o.coin === 'BTC') {
+      step2Desc = 'Seen on Bitcoin mempool; awaiting 1 network confirmation (10–60m)';
+    } else if (prov === 'hostfi' && o.coin === 'ETH') {
+      step2Desc = 'Seen on Ethereum network; awaiting block confirmations';
+    } else if (prov === 'paj') {
+      step2Desc = 'Deposit detected on Solana network';
+    } else {
+      step2Desc = `Deposit detected on ${esc(net || 'network')}; confirming blocks`;
+    }
+  } else if (step > 2) {
+    step2State = 'is-done';
+    step2Title = isBuy ? 'Payment received' : 'Deposit confirmed';
+    step2Desc = isBuy ? 'Naira transfer verified via banking rails' : `Deposit confirmed on ${esc(net || 'blockchain')}`;
+  } else {
+    step2State = 'is-pending';
+    step2Title = isBuy ? 'Awaiting transfer' : 'Awaiting crypto deposit';
+    step2Desc = isBuy ? 'Checking Nigerian interbank network' : `Waiting for transfer on ${esc(net || 'network')}`;
+  }
+
+  let step3State = 'is-pending';
+  let step3Title = isBuy ? `Sending ${esc(o.coin)}` : 'Paying Naira to bank';
+  let step3Desc = '';
+  if (status === 'REVIEW') {
+    step3State = 'is-warn';
+    step3Title = 'Compliance review';
+    step3Desc = 'Order held under safety review. Funds are protected and will settle shortly.';
+  } else if (step === 3) {
+    step3State = 'is-active';
+    if (isBuy) {
+      step3Desc = `${PROVIDER_NAMES[prov] || 'Provider'} broadcasting ${coinText(o)} to customer wallet`;
+    } else {
+      step3Desc = `Converting and dispatching ${naira(o.naira)} via NIP bank transfer`;
+    }
+  } else if (step > 3 && done) {
+    step3State = 'is-done';
+    step3Title = isBuy ? `${esc(o.coin)} sent` : 'Naira paid';
+    step3Desc = isBuy ? `Broadcasted to customer wallet on ${esc(net)}` : `Sent to ${esc(o.payout_bank_name || 'bank')} account`;
+  } else if (step > 3 && isFailed) {
+    step3State = 'is-bad';
+    step3Title = 'Swap stopped';
+    step3Desc = 'Order did not complete.';
+  } else {
+    step3State = 'is-pending';
+    step3Desc = isBuy ? `Dispatches ${esc(o.coin)} upon payment verification` : `Dispatches Naira upon ${esc(o.coin)} confirmation`;
+  }
+
+  let step4State = 'is-pending';
+  let step4Title = 'Settled';
+  let step4Desc = 'Final ledger settlement';
+  if (done) {
+    step4State = 'is-done';
+    step4Title = 'Completed & settled';
+    step4Desc = isBuy ? (o.hash ? `Confirmed on-chain (Tx: ${esc(shortRef(o.hash))})` : 'Confirmed in customer wallet') : `Naira settled to ${esc(o.payout_account_number ? o.payout_account_number.slice(0, 4) + '•••' + o.payout_account_number.slice(-3) : 'customer bank')}`;
+  } else if (isFailed) {
+    step4State = 'is-bad';
+    step4Title = `Order ${status.toLowerCase()}`;
+    step4Desc = status === 'EXPIRED' ? 'Payment window expired before deposit arrived' : 'Order was cancelled or failed.';
+  }
+
+  const checkIco = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const crossIco = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+  const warnIco = `!`;
+
+  return `
+    <div class="ord-timeline">
+      <div class="ord-step ${step1State}">
+        <span class="ord-step-dot">${step1State === 'is-done' ? checkIco : '1'}</span>
+        <div class="ord-step-body">
+          <div class="ord-step-title">Order Created</div>
+          <div class="ord-step-desc">${step1Desc}</div>
+        </div>
+      </div>
+      <div class="ord-step ${step2State}">
+        <span class="ord-step-dot">${step2State === 'is-done' ? checkIco : (step2State === 'is-bad' ? crossIco : '2')}</span>
+        <div class="ord-step-body">
+          <div class="ord-step-title">${step2Title}</div>
+          <div class="ord-step-desc">${step2Desc}</div>
+        </div>
+      </div>
+      <div class="ord-step ${step3State}">
+        <span class="ord-step-dot">${step3State === 'is-done' ? checkIco : (step3State === 'is-warn' ? warnIco : (step3State === 'is-bad' ? crossIco : '3'))}</span>
+        <div class="ord-step-body">
+          <div class="ord-step-title">${step3Title}</div>
+          <div class="ord-step-desc">${step3Desc}</div>
+        </div>
+      </div>
+      <div class="ord-step ${step4State}">
+        <span class="ord-step-dot">${step4State === 'is-done' ? checkIco : (step4State === 'is-bad' ? crossIco : '4')}</span>
+        <div class="ord-step-body">
+          <div class="ord-step-title">${step4Title}</div>
+          <div class="ord-step-desc">${step4Desc}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function orderDepositBoxHtml(o) {
+  if (!o.deposit_address) return '';
+  const prov = getOrderProvider(o);
+  const net = getOrderNetworkLabel(o);
+
+  let techNotice = '';
+  if (prov === 'hostfi' && o.coin === 'BTC') {
+    techNotice = `<div class="ord-tech-notice is-hostfi"><strong>HostFi Bitcoin Rails:</strong> Dynamic deposit address. Accepts any amount. Bitcoin confirmations typically take 10–60 minutes. Payout to customer bank triggers automatically upon 1 block confirmation.</div>`;
+  } else if (prov === 'hostfi') {
+    techNotice = `<div class="ord-tech-notice is-hostfi"><strong>HostFi Dynamic Address:</strong> Accepts any incoming deposit amount. Converted and paid out to customer bank upon network confirmation.</div>`;
+  } else if (prov === 'switch') {
+    techNotice = `<div class="ord-tech-notice is-switch"><strong>Switch Rails:</strong> Customer sends crypto on ${esc(net || 'network')}. Payout to customer bank executes automatically upon transaction confirmation.</div>`;
+  } else if (prov === 'paj') {
+    techNotice = `<div class="ord-tech-notice is-paj"><strong>PAJ Solana Rails:</strong> High-speed Solana network settlement. Confirms within seconds.</div>`;
+  }
+
+  const memoClean = o.deposit_note ? String(o.deposit_note).replace(/^Memo:\s*/i, '').trim() : '';
+  const explorerAddrUrl = getWalletExplorerUrl(o.deposit_address, o.network || o.coin);
+
+  return `
+    <div class="ord-qr-card">
+      <div class="ord-qr-header">
+        <span class="ord-qr-pill">Scan to Pay Deposit Address</span>
+        <p class="ord-qr-instruction">Scan with any <b>${esc(o.coin)}</b> wallet on <b>${esc(net || 'network')}</b></p>
+      </div>
+
+      <div class="ord-qr-wrap">
+        <div id="ord-qr-code"></div>
+      </div>
+
+      <div class="ord-addr-block">
+        <code title="${esc(o.deposit_address)}">${esc(o.deposit_address)}</code>
+        <button type="button" class="ord-copy-btn" onclick="copyOrdText('${esc(o.deposit_address)}', 'Deposit address copied')">
+          Copy
+        </button>
+      </div>
+
+      ${memoClean ? `
+        <div class="ord-memo-callout">
+          <div class="ord-memo-top">
+            <span class="ord-memo-label">⚠️ Required Memo / Tag</span>
+          </div>
+          <div class="ord-memo-val">
+            <code>${esc(memoClean)}</code>
+            <button type="button" class="ord-copy-btn" onclick="copyOrdText('${esc(memoClean)}', 'Memo copied')">Copy Memo</button>
+          </div>
+          <span class="ord-memo-sub">Customer must include this memo when transferring, otherwise the deposit cannot be credited.</span>
+        </div>
+      ` : ''}
+
+      ${techNotice}
+
+      ${explorerAddrUrl ? `
+        <a href="${esc(explorerAddrUrl)}" target="_blank" rel="noopener" class="ord-link-subtle">
+          View deposit address on blockchain explorer ↗
+        </a>
+      ` : ''}
+    </div>
+  `;
+}
+
+function orderBankPayHtml(o) {
+  if (o.side !== 'buy' || !o.deposit_bank_name || !o.deposit_account_number) return '';
+  const prov = getOrderProvider(o);
+  return `
+    <div class="ord-bank-pay-card">
+      <div class="ord-bank-pay-head">
+        <span class="ord-bank-pay-pill">Naira Bank Transfer Details</span>
+        <small>${PROVIDER_NAMES[prov] || 'Velcro'} dynamic account</small>
+      </div>
+      <div class="ord-bank-rows">
+        <div class="ord-bank-row">
+          <span>Bank</span>
+          <b>${esc(o.deposit_bank_name)}</b>
+        </div>
+        <div class="ord-bank-row is-highlight">
+          <span>Account number</span>
+          <div class="ord-val-copy">
+            <code>${esc(o.deposit_account_number)}</code>
+            <button type="button" class="ord-copy" onclick="copyOrdText('${esc(o.deposit_account_number)}', 'Account number copied')">Copy</button>
+          </div>
+        </div>
+        ${o.deposit_account_name ? `
+          <div class="ord-bank-row">
+            <span>Account name</span>
+            <b>${esc(o.deposit_account_name)}</b>
+          </div>
+        ` : ''}
+        <div class="ord-bank-row">
+          <span>Amount to send</span>
+          <div class="ord-val-copy">
+            <b>${naira(o.naira)}</b>
+            <button type="button" class="ord-copy" onclick="copyOrdText('${Math.round(o.naira)}', 'Amount copied')">Copy</button>
+          </div>
+        </div>
+      </div>
+      <p class="ord-bank-tech-note">Customer transfers directly from any Nigerian banking app. Monitored in real-time via ${PROVIDER_NAMES[prov] || 'Velcro'} rails.</p>
+    </div>
+  `;
+}
+
+function renderModalQr(address) {
+  const qrEl = $('ord-qr-code');
+  if (!qrEl || !address) return;
+  qrEl.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    try {
+      new QRCode(qrEl, {
+        text: address,
+        width: 140,
+        height: 140,
+        colorDark: '#15151f',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch (e) {
+      qrEl.innerHTML = '<span style="font-size:12px;color:var(--muted)">QR Code ready</span>';
+    }
+  } else {
+    qrEl.innerHTML = '<span style="font-size:12px;color:var(--muted)">QR Code ready</span>';
+  }
+}
+
+function openOrderDetail(ref, isSilentUpdate = false) {
   const o = (orders || []).find(x => x.reference === ref);
   if (!o) return;
+  activeModalRef = ref;
   const done = o.status === 'COMPLETED';
   const isBuy = o.side === 'buy';
+  const prov = getOrderProvider(o);
+  const net = getOrderNetworkLabel(o);
   const [statusName, statusCls] = ORDER_STATUS[o.status] || [o.status, 'off'];
   const explorerUrl = o.hash ? getExplorerUrl(o.hash, o.network || o.coin) : '';
   const shortH = o.hash && o.hash.length > 18 ? `${o.hash.slice(0, 10)}…${o.hash.slice(-8)}` : (o.hash || '');
@@ -352,13 +661,22 @@ function openOrderDetail(ref) {
     <div class="ord-head">
       <div class="ord-head-main">
         ${logoImg(o.coin)}
-        <div>
-          <h2 id="ord-modal-title">${isBuy ? 'Buy' : 'Sell'} ${esc(o.coin)}</h2>
-          <p>${when(o.created_at)}</p>
+        <div class="ord-head-titles">
+          <div class="ord-head-title-row">
+            <h2 id="ord-modal-title">${isBuy ? 'Buy' : 'Sell'} ${esc(o.coin)}</h2>
+            <span class="ord-tag ord-tag-prov is-${prov}">Rail: ${PROVIDER_NAMES[prov] || prov}</span>
+            ${net ? `<span class="ord-tag ord-tag-net">${esc(net)}</span>` : ''}
+          </div>
+          <p>${when(o.created_at)} · Ref: <code>${esc(shortRef(o.reference))}</code></p>
         </div>
       </div>
       <span class="d-st is-${statusCls}">${esc(statusName)}</span>
     </div>
+
+    ${orderTimelineHtml(o)}
+
+    ${o.deposit_address && !done ? orderDepositBoxHtml(o) : ''}
+    ${isBuy && o.deposit_bank_name && !done ? orderBankPayHtml(o) : ''}
 
     <div class="ord-receipt">
       <div class="ord-receipt-hero">
@@ -393,6 +711,10 @@ function openOrderDetail(ref) {
           <dt>Your earnings</dt>
           <dd><b class="${done ? 'is-earned' : 'is-pending'}">${o.earned ? naira(o.earned) : '₦0'}</b>${done ? '' : ' <small style="font-weight:400;color:var(--muted)">(pending completion)</small>'}</dd>
         </div>
+        <div class="ord-row">
+          <dt>Processing rail</dt>
+          <dd><b>${PROVIDER_NAMES[prov] || prov}</b> <span style="font-weight:400;color:var(--muted)">(${prov === 'hostfi' ? 'HostFi API' : (prov === 'paj' ? 'PAJ Solana' : 'Switch EVM/TRON')})</span></dd>
+        </div>
       </div>
     </div>
 
@@ -420,16 +742,15 @@ function openOrderDetail(ref) {
           <dd>${esc(o.payout_account_name)}</dd>
         </div>` : ''}` : ''}
 
-      ${o.deposit_bank_name && !done ? `
+      ${o.deposit_bank_name && done ? `
         <div class="ord-row">
-          <dt>Pay to</dt>
+          <dt>Paid via</dt>
           <dd class="ord-val-copy">
             <span>${esc(o.deposit_bank_name)} · <code>${esc(o.deposit_account_number || '')}</code></span>
-            ${o.deposit_account_number ? `<button type="button" class="ord-copy" onclick="copyOrdText('${esc(o.deposit_account_number)}', 'Account number copied')">Copy</button>` : ''}
           </dd>
         </div>` : ''}
 
-      ${o.deposit_address && !done ? `
+      ${o.deposit_address && done ? `
         <div class="ord-row">
           <dt>Deposit address</dt>
           <dd class="ord-val-copy">
@@ -451,10 +772,19 @@ function openOrderDetail(ref) {
     ${explorerUrl ? `
       <a href="${esc(explorerUrl)}" target="_blank" rel="noopener" class="ord-btn-link">
         View on Blockchain Explorer ↗
-      </a>` : ''}
+      </a>` : (isBuy && o.wallet_address ? `
+      <a href="${esc(getWalletExplorerUrl(o.wallet_address, o.network || o.coin))}" target="_blank" rel="noopener" class="ord-btn-link ord-btn-subtle">
+        Check Wallet on Explorer ↗
+      </a>` : '')}
   `;
 
-  $('ord-modal').classList.add('is-open');
+  if (o.deposit_address && !done) {
+    renderModalQr(o.deposit_address);
+  }
+
+  if (!isSilentUpdate) {
+    $('ord-modal').classList.add('is-open');
+  }
 }
 
 document.addEventListener('keydown', e => {
@@ -467,8 +797,20 @@ function renderOrders() {
   const rows = shownOrders();
   list.innerHTML = rows.length ? `<table class="d-table d-orders"><thead><tr><th>Order</th><th>Customer</th><th class="is-num">Amount</th><th class="is-num">Your markup</th><th>Status</th><th class="is-end">Date</th></tr></thead><tbody>${rows.map(o => {
     const done = o.status === 'COMPLETED';
+    const prov = getOrderProvider(o);
+    const net = getOrderNetworkLabel(o);
     return `<tr class="is-clickable" onclick="openOrderDetail('${esc(o.reference)}')">
-      <td class="c-order"><span class="d-who">${logoImg(o.coin)}<span class="d-cell"><b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b><small title="${esc(o.reference)}">${esc(shortRef(o.reference))}</small></span></span></td>
+      <td class="c-order">
+        <span class="d-who">${logoImg(o.coin)}
+          <span class="d-cell">
+            <span class="d-cell-row">
+              <b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b>
+              <span class="d-badge-mini is-${prov}">${PROVIDER_NAMES[prov] || prov}</span>
+            </span>
+            <small title="${esc(o.reference)}">${esc(shortRef(o.reference))}${net ? ' · ' + esc(net) : ''}</small>
+          </span>
+        </span>
+      </td>
       <td class="c-who"><span class="d-cell"><b>${esc(o.customer_name || (o.customer_email || '').split('@')[0])}</b><small>${esc(o.customer_email || '')}</small></span></td>
       <td class="c-amt is-num"><span class="d-cell"><b>${o.naira ? naira(o.naira) : '—'}</b><small>${coinText(o)}</small></span></td>
       <td class="c-earn is-num"><span class="d-cell"><b class="${done ? 'is-earned' : 'is-pending'}">${o.earned ? naira(o.earned) : '—'}</b><small>${o.markup_percent}%${done ? '' : ' · if completed'}</small></span></td>
@@ -481,10 +823,19 @@ function renderOrders() {
 // The five newest, on the overview.
 function renderRecentOrders() {
   const rows = (orders || []).slice(0, 5);
-  $('ov-recent').innerHTML = rows.length ? rows.map(o => `<div class="d-mini is-clickable" onclick="openOrderDetail('${esc(o.reference)}')">${logoImg(o.coin)}
-      <span class="d-mini-l"><b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b><small>${esc(o.customer_name || o.customer_email || '')}</small></span>
+  $('ov-recent').innerHTML = rows.length ? rows.map(o => {
+    const prov = getOrderProvider(o);
+    return `<div class="d-mini is-clickable" onclick="openOrderDetail('${esc(o.reference)}')">${logoImg(o.coin)}
+      <span class="d-mini-l">
+        <span class="d-cell-row">
+          <b>${o.side === 'buy' ? 'Buy' : 'Sell'} ${esc(o.coin)}</b>
+          <span class="d-badge-mini is-${prov}">${PROVIDER_NAMES[prov] || prov}</span>
+        </span>
+        <small>${esc(o.customer_name || o.customer_email || '')}</small>
+      </span>
       <span class="d-mini-r"><b>${o.naira ? naira(o.naira) : coinText(o)}</b>${statusHtml(ORDER_STATUS[o.status] || [o.status, 'off'])}</span>
-    </div>`).join('') : `<div class="d-mini-empty"><p>Every buy and sell on your exchange shows up here.</p><button type="button" class="d-btn-quiet" onclick="shareStore()">Share your exchange</button></div>`;
+    </div>`;
+  }).join('') : `<div class="d-mini-empty"><p>Every buy and sell on your exchange shows up here.</p><button type="button" class="d-btn-quiet" onclick="shareStore()">Share your exchange</button></div>`;
 }
 
 function exportOrders() {
