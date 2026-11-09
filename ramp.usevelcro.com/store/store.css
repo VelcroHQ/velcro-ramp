@@ -151,10 +151,11 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-select-list small { display: block; font-size: 12px; color: var(--muted); }
 .s-select-list em { font-style: normal; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-.s-field { padding: 11px 14px 13px; border-top: 1px solid #efeee7; transition: box-shadow .15s; }
-.s-field:focus-within { box-shadow: inset 0 0 0 2px var(--brand-line); }
+.s-field { padding: 11px 14px 13px; border-top: 1px solid #efeee7; transition: box-shadow .15s, background .15s; }
+.s-field:focus-within { box-shadow: inset 0 0 0 2px var(--brand-line); background: #ffffff !important; }
 .s-field:last-child { border-radius: 0 0 15px 15px; }
 .s-field-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.s-field-top label { cursor: pointer; }
 .s-field-row { display: flex; align-items: baseline; gap: 10px; margin-top: 2px; }
 .s-field-row input, .s-field-row output { flex: 1; display: block; min-width: 0; width: 100%; padding: 0; border: 0; outline: 0; background: transparent; font-size: 30px; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; }
 .s-field-row input::placeholder { color: var(--faint); opacity: 1; }

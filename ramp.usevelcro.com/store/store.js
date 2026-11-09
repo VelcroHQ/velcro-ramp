@@ -211,8 +211,11 @@ function isAnyAmountCoin(sym, side) {
   return side === 'sell' && (sym === 'BTC' || sym === 'ETH' || (store.coins && store.coins[sym] && store.coins[sym].provider === 'hostfi'));
 }
 
+let lastEditedField = 'in';
+
 function setSide(side) {
   store.side = side;
+  lastEditedField = 'in';
   $('t-buy').setAttribute('aria-selected', String(side === 'buy'));
   $('t-sell').setAttribute('aria-selected', String(side === 'sell'));
   const available = Object.values(store.coins).filter(c => c[side + '_on']);
@@ -228,8 +231,24 @@ function setSide(side) {
   $('how-3-text').textContent = buying ? "It's sent to your wallet automatically. Follow every step and get a receipt by email." : 'Naira goes to your bank account automatically. Follow every step and get a receipt by email.';
   $('s-dest').textContent = buying ? 'Delivered to your wallet' : 'Paid to your bank account';
   $('s-chips').innerHTML = buying ? BUY_CHIPS.map(v => `<button type="button" data-v="${v}" aria-label="Pay ${fmtNgn(v)}">₦${v / 1000}k</button>`).join('') : '';
-  document.querySelectorAll('#s-chips button').forEach(b => b.addEventListener('click', () => { $('f-in').value = Number(b.dataset.v).toLocaleString('en-US'); render(); }));
+  document.querySelectorAll('#s-chips button').forEach(b => b.addEventListener('click', () => {
+    $('f-in').value = Number(b.dataset.v).toLocaleString('en-US');
+    lastEditedField = 'in';
+    render();
+  }));
+
+  const chipsOut = $('s-chips-out');
+  if (chipsOut) {
+    chipsOut.innerHTML = !buying ? BUY_CHIPS.map(v => `<button type="button" data-v="${v}" aria-label="Receive ${fmtNgn(v)}">₦${v / 1000}k</button>`).join('') : '';
+    chipsOut.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      $('f-out').value = Number(b.dataset.v).toLocaleString('en-US');
+      lastEditedField = 'out';
+      render();
+    }));
+  }
+
   $('f-in').value = '';
+  $('f-out').value = '';
   paintBoard();
   paintCoin(available);
   render();
@@ -264,15 +283,20 @@ function toggleCoins(open) {
 }
 
 const amountEntered = () => Number(String($('f-in').value).replace(/,/g, '')) || 0;
+const amountOutEntered = () => Number(String($('f-out').value).replace(/,/g, '')) || 0;
 
 // Commas as they type, keeping the cursor where it was among the digits.
-function onAmountInput() {
-  const el = $('f-in');
+function formatInput(el, maxDecimals = 2) {
   const caret = el.selectionStart ?? el.value.length;
+  const raw = el.value.replace(/[^0-9.]/g, '');
+  if (!raw) {
+    el.value = '';
+    return;
+  }
   const digitsBefore = el.value.slice(0, caret).replace(/[^0-9.]/g, '').length;
-  const [whole, ...rest] = el.value.replace(/[^0-9.]/g, '').split('.');
+  const [whole, ...rest] = raw.split('.');
   const int = whole.replace(/^0+(?=\d)/, '').slice(0, 12);
-  const dec = rest.length ? '.' + rest.join('').slice(0, store.side === 'buy' ? 2 : 8) : '';
+  const dec = rest.length ? '.' + rest.join('').slice(0, maxDecimals) : '';
   el.value = (int ? Number(int).toLocaleString('en-US') : (dec ? '0' : '')) + dec;
   let seen = 0;
   let pos = 0;
@@ -281,7 +305,62 @@ function onAmountInput() {
     pos += 1;
   }
   try { el.setSelectionRange(pos, pos); } catch (e) { /* not focused */ }
+}
+
+function onAmountInput() {
+  lastEditedField = 'in';
+  const buying = store.side === 'buy';
+  formatInput($('f-in'), buying ? 2 : 8);
   render();
+}
+
+function onAmountOutInput() {
+  lastEditedField = 'out';
+  const buying = store.side === 'buy';
+  formatInput($('f-out'), buying ? 8 : 2);
+  render();
+}
+
+function calculateFromIn() {
+  const c = store.coins[store.coin];
+  const buying = store.side === 'buy';
+  const amount = amountEntered();
+  const rate = buying ? (c ? c.buy_rate : 0) : (c ? c.sell_rate : 0);
+
+  if (!c || !rate || !c.usd_price || !(amount > 0)) {
+    $('f-out').value = '';
+    return;
+  }
+
+  if (buying) {
+    const maxDec = ['USDT', 'USDC'].includes(c.symbol) ? 2 : 8;
+    const coinAmt = Number((amount / rate / c.usd_price).toFixed(maxDec));
+    $('f-out').value = coinAmt > 0 ? fmtCoin(coinAmt, c.symbol) : '';
+  } else {
+    const ngnAmt = Number((amount * c.usd_price * rate).toFixed(2));
+    $('f-out').value = ngnAmt > 0 ? Number(ngnAmt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+  }
+}
+
+function calculateFromOut() {
+  const c = store.coins[store.coin];
+  const buying = store.side === 'buy';
+  const outAmt = amountOutEntered();
+  const rate = buying ? (c ? c.buy_rate : 0) : (c ? c.sell_rate : 0);
+
+  if (!c || !rate || !c.usd_price || !(outAmt > 0)) {
+    $('f-in').value = '';
+    return;
+  }
+
+  if (buying) {
+    const ngnAmt = Number((outAmt * rate * c.usd_price).toFixed(2));
+    $('f-in').value = ngnAmt > 0 ? Number(ngnAmt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+  } else {
+    const maxDec = ['USDT', 'USDC'].includes(c.symbol) ? 2 : 8;
+    const coinAmt = Number((outAmt / (c.usd_price * rate)).toFixed(maxDec));
+    $('f-in').value = coinAmt > 0 ? fmtCoin(coinAmt, c.symbol) : '';
+  }
 }
 
 function render() {
@@ -293,10 +372,12 @@ function render() {
   $('f-in-wrap').hidden = anyAmount;
   $('f-out-wrap').hidden = anyAmount;
   $('s-chips').hidden = !buying;
+  const chipsOut = $('s-chips-out');
+  if (chipsOut) chipsOut.hidden = buying || anyAmount;
   $('s-any-amount').hidden = !anyAmount;
   if (anyAmount && c) $('s-any-coin').textContent = c.symbol;
 
-  $('f-out').classList.toggle('is-empty', !(amountEntered() > 0));
+  $('f-out').classList.toggle('is-empty', !(amountEntered() > 0 || amountOutEntered() > 0));
   $('f-in-label').textContent = buying ? 'You pay' : 'You send';
   $('f-out-label').textContent = buying ? 'You get' : 'You receive';
   $('f-in-cur').textContent = buying ? 'NGN' : (c ? c.symbol : '');
@@ -312,7 +393,7 @@ function render() {
   const rate = buying ? c.buy_rate : c.sell_rate;
   if (!rate || !c.usd_price) {
     $('s-coin-name').textContent = 'Rate unavailable right now';
-    $('f-out').textContent = '0';
+    $('f-out').value = '';
     $('s-go').disabled = true;
     return;
   }
@@ -324,12 +405,11 @@ function render() {
   $('s-coin-name').textContent = store.info.rate_display === 'breakdown' && base
     ? `$1 = ${fmtNgn(base)} + ${pct}% fee`
     : `$1 = ${fmtNgn(rate)}`;
-  const amount = amountEntered();
-  if (buying) {
-    // naira → $ at the store's rate → coin at its $ price
-    $('f-out').textContent = amount > 0 ? fmtCoin(amount / rate / c.usd_price, c.symbol) : '0';
+
+  if (lastEditedField === 'out') {
+    calculateFromOut();
   } else {
-    $('f-out').textContent = amount > 0 ? fmtNgn(amount * c.usd_price * rate).replace('₦', '') : '0';
+    calculateFromIn();
   }
 }
 
@@ -343,7 +423,11 @@ async function goTrade() {
     amount = 0;
   } else if (!(amount > 0)) {
     $('s-note').textContent = store.side === 'buy' ? 'Enter how much naira you want to spend.' : 'Enter how much you want to sell.';
-    $('f-in').focus();
+    if (selling && lastEditedField === 'out') {
+      $('f-out').focus();
+    } else {
+      $('f-in').focus();
+    }
     return;
   }
   if (!me && token) await loadMe();
@@ -1571,6 +1655,7 @@ function setupNetworkStatus() {
 
 document.addEventListener('DOMContentLoaded', () => {
   $('f-in').addEventListener('input', onAmountInput);
+  $('f-out').addEventListener('input', onAmountOutInput);
   $('auth-form').addEventListener('submit', submitAuth);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAuth(); });
   document.addEventListener('click', e => {
