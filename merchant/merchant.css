@@ -1548,9 +1548,7 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 
 /* Share exchange modal */
 .share-modal-card {
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-width: 480px;
 }
 .share-link-box {
   display: flex;
@@ -1611,41 +1609,13 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 .share-btn.is-tg:hover {
   background: #1b89be;
 }
-.share-flyer-wrap {
-  border-top: 1px solid var(--line);
-  padding-top: 18px;
-  margin-top: 10px;
-  text-align: center;
-}
-.share-flyer-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-  margin-bottom: 12px;
-}
-.share-flyer-preview {
-  margin: 0 auto 16px;
-  max-width: 320px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, .15);
-  background: #000;
-}
-.share-flyer-preview canvas {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.d-btn-block {
-  width: 100%;
-  justify-content: center;
-}
 
 @media (max-width: 540px) {
   .dom-plan-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
 }
 
 @media (max-width: 480px) {
+  .share-channels { grid-template-columns: 1fr; }
   .m-modal { align-items: flex-end; padding: 0; }
   .m-card { max-width: none; margin: auto 0 0; padding: 24px 20px calc(22px + env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; }
   .m-card::before { content: ''; display: block; width: 36px; height: 4px; border-radius: 2px; background: #dcdce2; margin: -8px auto 16px; }
