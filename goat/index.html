@@ -16,7 +16,7 @@
     <link rel="icon" type="image/png" href="velcro_favicon.png">
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="admin.css?v=2">
+    <link rel="stylesheet" href="admin.css?v=3">
 </head>
 
 <body>
@@ -533,17 +533,17 @@
 
             <!-- Search & Filter Tabs Toolbar -->
             <div class="table-card" style="margin-bottom: 16px; padding: 14px 18px;">
-                <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; padding: 4px 12px;">
-                        <i data-lucide="search" style="width: 16px; height: 16px; color: var(--text-secondary);"></i>
-                        <input type="search" id="merchants-search" placeholder="Search by store name, business, slug, or email..." oninput="filterMerchantsList()" style="border: none; background: transparent; padding: 6px 0; font-size: 13px; color: var(--text-main); width: 100%; outline: none; margin-bottom: 0;">
+                <div class="m-filter-bar">
+                    <div class="m-search-wrap">
+                        <i data-lucide="search" style="width: 16px; height: 16px; color: var(--text-secondary); flex-shrink: 0;"></i>
+                        <input type="search" id="merchants-search" placeholder="Search by store name, business, slug, or email..." oninput="filterMerchantsList()">
                     </div>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="merchant-filter-pills">
-                        <button type="button" class="btn-secondary active" onclick="setMerchantFilter('ALL')" id="mf-btn-ALL" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">All (<span id="mf-count-ALL">0</span>)</button>
-                        <button type="button" class="btn-secondary" onclick="setMerchantFilter('PENDING')" id="mf-btn-PENDING" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">Pending Review (<span id="mf-count-PENDING">0</span>)</button>
-                        <button type="button" class="btn-secondary" onclick="setMerchantFilter('APPROVED')" id="mf-btn-APPROVED" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">Live (<span id="mf-count-APPROVED">0</span>)</button>
-                        <button type="button" class="btn-secondary" onclick="setMerchantFilter('DOMAINS')" id="mf-btn-DOMAINS" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">Dedicated Subdomain (<span id="mf-count-DOMAINS">0</span>)</button>
-                        <button type="button" class="btn-secondary" onclick="setMerchantFilter('DRAFT')" id="mf-btn-DRAFT" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">Drafts (<span id="mf-count-DRAFT">0</span>)</button>
+                    <div class="m-filter-pills" id="merchant-filter-pills">
+                        <button type="button" class="m-pill-btn active" onclick="setMerchantFilter('ALL')" id="mf-btn-ALL">All <span class="m-pill-count" id="mf-count-ALL">0</span></button>
+                        <button type="button" class="m-pill-btn" onclick="setMerchantFilter('PENDING')" id="mf-btn-PENDING">Pending Review <span class="m-pill-count" id="mf-count-PENDING">0</span></button>
+                        <button type="button" class="m-pill-btn" onclick="setMerchantFilter('APPROVED')" id="mf-btn-APPROVED">Live <span class="m-pill-count" id="mf-count-APPROVED">0</span></button>
+                        <button type="button" class="m-pill-btn" onclick="setMerchantFilter('DOMAINS')" id="mf-btn-DOMAINS">Dedicated Subdomain <span class="m-pill-count" id="mf-count-DOMAINS">0</span></button>
+                        <button type="button" class="m-pill-btn" onclick="setMerchantFilter('DRAFT')" id="mf-btn-DRAFT">Drafts <span class="m-pill-count" id="mf-count-DRAFT">0</span></button>
                     </div>
                 </div>
             </div>
@@ -1986,6 +1986,6 @@
         </div>
     </div>
 
-    <script src="admin.js?v=8"></script>
+    <script src="admin.js?v=9"></script>
 </body>
 </html>

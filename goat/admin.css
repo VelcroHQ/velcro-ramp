@@ -1311,3 +1311,213 @@ code, pre {
     #modal-email-input { min-width: 0; flex: 1 1 0 !important; }
     #modal-send-receipt-btn { width: auto !important; flex: 0 0 auto !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Merchant Management Portal & Table Styles
+   ═══════════════════════════════════════════════════════════════ */
+.m-filter-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.m-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 260px;
+    max-width: 380px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 12px;
+}
+
+.m-search-wrap input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    font-size: 13px;
+    color: var(--text-main);
+    width: 100%;
+    outline: none;
+    margin-bottom: 0 !important;
+}
+
+.m-filter-pills {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.m-pill-btn {
+    width: auto !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px !important;
+    font-size: 12px !important;
+    font-weight: 600;
+    border-radius: 20px !important;
+    background: #fff;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border) !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.m-pill-btn:hover {
+    border-color: var(--sidebar-bg) !important;
+    color: var(--text-main) !important;
+    background: var(--bg-light) !important;
+}
+
+.m-pill-btn.active {
+    background: var(--sidebar-bg) !important;
+    color: #fff !important;
+    border-color: var(--sidebar-bg) !important;
+    box-shadow: 0 2px 8px rgba(13, 13, 89, 0.2);
+}
+
+.m-pill-btn .m-pill-count {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: rgba(0, 0, 0, 0.06);
+    color: inherit;
+}
+
+.m-pill-btn.active .m-pill-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+/* Dark mode for filter pills */
+.dark .m-pill-btn {
+    background: var(--card-bg);
+    border-color: var(--border) !important;
+    color: var(--text-secondary) !important;
+}
+.dark .m-pill-btn:hover {
+    background: #1e293b !important;
+    color: var(--text-main) !important;
+}
+.dark .m-pill-btn.active {
+    background: var(--velcro-navy) !important;
+    color: #fff !important;
+    border-color: var(--velcro-navy) !important;
+}
+.dark .m-pill-btn .m-pill-count {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Compact Table Action Buttons */
+.m-action-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+}
+
+.m-btn-action {
+    width: auto !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 5px 10px !important;
+    font-size: 11.5px !important;
+    font-weight: 600;
+    border-radius: 7px !important;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none !important;
+    transition: all 0.15s ease;
+    line-height: 1.2;
+}
+
+.m-btn-inspect {
+    background: rgba(13, 13, 89, 0.06);
+    color: var(--sidebar-bg);
+    border: 1px solid rgba(13, 13, 89, 0.15);
+}
+.m-btn-inspect:hover {
+    background: var(--sidebar-bg);
+    color: #fff;
+    border-color: var(--sidebar-bg);
+}
+
+.m-btn-visit {
+    background: #fff;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+.m-btn-visit:hover {
+    border-color: var(--primary-link);
+    color: var(--primary-link);
+}
+
+.m-btn-domain {
+    background: rgba(124, 58, 237, 0.08);
+    color: #7c3aed;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+}
+.m-btn-domain:hover {
+    background: #7c3aed;
+    color: #fff;
+    border-color: #7c3aed;
+}
+
+.m-btn-suspend {
+    background: rgba(239, 68, 68, 0.08);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.m-btn-suspend:hover {
+    background: #dc2626;
+    color: #fff;
+    border-color: #dc2626;
+}
+
+.m-btn-approve {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.m-btn-approve:hover {
+    background: #059669;
+    color: #fff;
+    border-color: #059669;
+}
+
+.m-btn-reject {
+    background: rgba(100, 116, 139, 0.1);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+.m-btn-reject:hover {
+    background: var(--border);
+    color: var(--text-main);
+}
+
+/* Dark mode for table actions */
+.dark .m-btn-inspect {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.16);
+}
+.dark .m-btn-visit {
+    background: #1e293b;
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+.dark .m-btn-domain {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+    border-color: rgba(139, 92, 246, 0.3);
+}

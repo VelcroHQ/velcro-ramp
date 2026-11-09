@@ -2200,15 +2200,7 @@ function setMerchantFilter(filter) {
     ['ALL', 'PENDING', 'APPROVED', 'DOMAINS', 'DRAFT'].forEach(f => {
         const btn = document.getElementById('mf-btn-' + f);
         if (btn) {
-            if (f === filter) {
-                btn.classList.add('active');
-                btn.style.background = 'var(--velcro-navy)';
-                btn.style.color = '#fff';
-            } else {
-                btn.classList.remove('active');
-                btn.style.background = '';
-                btn.style.color = '';
-            }
+            btn.classList.toggle('active', f === filter);
         }
     });
     filterMerchantsList();
@@ -2336,16 +2328,17 @@ function renderMerchantsTable(rows) {
         }
 
         // Activity
+        const shopperCount = Number(m.customers || 0);
         const activityHtml = `
-            <div><b>👥 ${m.customers || 0}</b> <span style="color: var(--text-secondary); font-size: 11px;">shoppers</span></div>
+            <div><b>👥 ${shopperCount}</b> <span style="color: var(--text-secondary); font-size: 11px;">${shopperCount === 1 ? 'shopper' : 'shoppers'}</span></div>
             ${Number(m.orders_count) > 0 ? `<div style="font-size: 11px; color: var(--success); margin-top: 2px;">⚡ ${m.orders_count} orders (${ngn(m.completed_volume)})</div>` : muted('No trades yet')}
         `;
 
         // Action buttons
         const actions = {
-            PENDING: [['APPROVED', 'Approve', 'btn-primary'], ['REJECTED', 'Reject', 'btn-secondary']],
-            APPROVED: [['SUSPENDED', 'Suspend', 'btn-secondary']],
-            SUSPENDED: [['APPROVED', 'Reinstate', 'btn-primary']],
+            PENDING: [['APPROVED', 'Approve', 'm-btn-approve'], ['REJECTED', 'Reject', 'm-btn-reject']],
+            APPROVED: [['SUSPENDED', 'Suspend', 'm-btn-suspend']],
+            SUSPENDED: [['APPROVED', 'Reinstate', 'm-btn-approve']],
             REJECTED: [], DRAFT: [],
         }[m.status] || [];
 
@@ -2372,12 +2365,12 @@ function renderMerchantsTable(rows) {
             <td data-label="Domain Address">${domHtml}</td>
             <td data-label="Shoppers & Trades">${activityHtml}</td>
             <td data-label="Status">${statusPill}</td>
-            <td data-label="Actions" style="white-space: nowrap;">
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-                    <button class="btn-secondary" style="font-size: 11px; padding: 5px 8px;" onclick="openMerchantDetailModal(${m.id})">Inspect 🔍</button>
-                    ${actions.map(([s, l, c]) => `<button class="${c}" style="font-size: 11px; padding: 5px 8px;" onclick="setMerchantStatus(${Number(m.id)}, '${s}', '${l}')">${l}</button>`).join('')}
-                    ${liveStoreUrl ? `<a href="${liveStoreUrl}" target="_blank" rel="noopener" class="btn-secondary" style="font-size: 11px; padding: 5px 8px; text-decoration: none;" title="Open live storefront">Visit ↗</a>` : ''}
-                    <button class="btn-secondary" style="font-size: 11px; padding: 5px 8px;" onclick="openDomainModal(${m.id})" title="Configure or activate dedicated subdomain">Domain</button>
+            <td data-label="Actions" style="white-space: nowrap; text-align: right;">
+                <div class="m-action-group">
+                    <button class="m-btn-action m-btn-inspect" onclick="openMerchantDetailModal(${m.id})">Inspect 🔍</button>
+                    ${actions.map(([s, l, c]) => `<button class="m-btn-action ${c}" onclick="setMerchantStatus(${Number(m.id)}, '${s}', '${l}')">${l}</button>`).join('')}
+                    ${liveStoreUrl ? `<a href="${liveStoreUrl}" target="_blank" rel="noopener" class="m-btn-action m-btn-visit" title="Open live storefront">Visit ↗</a>` : ''}
+                    <button class="m-btn-action m-btn-domain" onclick="openDomainModal(${m.id})" title="Configure or activate dedicated subdomain">Domain</button>
                 </div>
             </td>
         </tr>`;
