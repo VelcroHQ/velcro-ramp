@@ -1347,14 +1347,18 @@ code, pre {
 }
 
 .m-filter-pills {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
 }
 
+.m-filter-pills > *,
 .m-pill-btn {
     width: auto !important;
+    max-width: none !important;
+    flex: 0 0 auto !important;
     display: inline-flex !important;
     align-items: center;
     gap: 6px;
@@ -1367,7 +1371,7 @@ code, pre {
     border: 1px solid var(--border) !important;
     cursor: pointer;
     transition: all 0.15s ease;
-    white-space: nowrap;
+    white-space: nowrap !important;
 }
 
 .m-pill-btn:hover {
@@ -1417,15 +1421,19 @@ code, pre {
 
 /* Compact Table Action Buttons */
 .m-action-group {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: nowrap;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-wrap: nowrap !important;
 }
 
+.m-action-group > *,
 .m-btn-action {
     width: auto !important;
+    max-width: none !important;
+    flex: 0 0 auto !important;
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
@@ -1435,7 +1443,7 @@ code, pre {
     font-weight: 600;
     border-radius: 7px !important;
     cursor: pointer;
-    white-space: nowrap;
+    white-space: nowrap !important;
     text-decoration: none !important;
     transition: all 0.15s ease;
     line-height: 1.2;

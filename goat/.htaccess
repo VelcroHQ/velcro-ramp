@@ -5,12 +5,19 @@ DirectoryIndex index.html index.php
 CGIPassAuth On
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
-# Security headers
+# Security headers & cache control
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "DENY"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set X-XSS-Protection "0"
+    
+    # Always revalidate dashboard HTML, JS and CSS so admin never runs stale code
+    <FilesMatch "\.(html|htm|js|css)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
 </IfModule>
 
 # Block hidden files
