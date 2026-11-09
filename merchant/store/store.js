@@ -785,7 +785,7 @@ function resolveStoreBankName(o) {
 }
 
 function orderReceiptHtml(o) {
-  const isBuy = o.side === 'buy';
+  const isBuy = o.side === 'buy' || (checkout && checkout.side === 'buy') || (o.type && String(o.type).toUpperCase() === 'ONRAMP') || (o.direction && String(o.direction).toUpperCase() === 'ONRAMP') || (!o.side && !o.address && !!o.account);
   const cryptoAmt = isBuy
     ? (o.destAmount ? `${fmtCoin(o.destAmount, o.coin)} ${esc(o.coin)}` : (o.amount ? `${fmtCoin(estimateFor(o.coin, o.amount), o.coin)} ${esc(o.coin)}` : esc(o.coin)))
     : (o.sendAmount ? `${fmtCoin(o.sendAmount, o.coin)} ${esc(o.coin)}` : (o.amount ? `${fmtCoin(o.amount, o.coin)} ${esc(o.coin)}` : esc(o.coin)));
@@ -793,7 +793,7 @@ function orderReceiptHtml(o) {
   if (isBuy) {
     fiatAmt = fmtNgn(o.amount);
   } else {
-    const rawFiat = o.payoutAmount || o.destAmount || (o.progress && o.progress.payout_amount) || payoutFor(o.coin, o.sendAmount || o.amount);
+    const rawFiat = o.payoutAmount || (o.side === 'sell' ? o.destAmount : null) || (o.progress && o.progress.payout_amount) || payoutFor(o.coin, o.sendAmount || o.amount);
     fiatAmt = rawFiat > 0 ? fmtNgn(rawFiat) : 'Worked out on arrival';
   }
   const explorerUrl = (o.progress && o.progress.explorer_url) ? o.progress.explorer_url : (o.hash ? getExplorerUrl(o.hash, o.network || o.coin) : '');
@@ -804,7 +804,7 @@ function orderReceiptHtml(o) {
     <div class="s-receipt-box">
       <div class="s-receipt-grid">
         <div class="s-receipt-item"><small>${isBuy ? 'You pay' : 'You send'}</small><b>${isBuy ? fiatAmt : cryptoAmt}</b></div>
-        <div class="s-receipt-item"><small>${isBuy ? 'You receive' : 'You receive'}</small><b>${isBuy ? cryptoAmt : fiatAmt}</b></div>
+        <div class="s-receipt-item"><small>You receive</small><b>${isBuy ? cryptoAmt : fiatAmt}</b></div>
       </div>
       ${isBuy && o.wallet ? `
         <div class="s-receipt-row">
@@ -1324,6 +1324,18 @@ async function createBuy() {
   const btn = $('s-checkout').querySelector('[data-act="create"]');
   btn.disabled = true;
   btn.textContent = 'Creating your order…';
+
+  const base = {
+    side: 'buy',
+    coin: checkout.coin,
+    amount: checkout.amount,
+    destAmount: estimateFor(checkout.coin, checkout.amount),
+    network: netLabel(),
+    wallet,
+    status: 'AWAITING_DEPOSIT',
+    progress: {}
+  };
+
   try {
     if (checkout.provider === 'switch') {
       const d = await api('/api/initiate', {
@@ -1332,20 +1344,36 @@ async function createBuy() {
       });
       const dep = d.deposit || {};
       checkout.order = {
-        reference: d.velcro_reference || d.reference, coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT',
-        bank: dep.bank_name || '', account: dep.account_number || '', accountName: dep.account_name || 'Velcro checkout', expiresAt: Date.now() + 3600 * 1000, progress: {},
+        ...base,
+        reference: d.velcro_reference || d.reference,
+        destAmount: Number(d.destination && d.destination.amount) || base.destAmount,
+        bank: dep.bank_name || '',
+        account: dep.account_number || '',
+        accountName: dep.account_name || 'Velcro checkout',
+        expiresAt: Date.now() + 3600 * 1000,
       };
     } else if (checkout.provider === 'paj') {
       const d = await api('/api/paj/initiate', { method: 'POST', body: { store: SLUG, fiatAmount: checkout.amount, recipient: wallet, mint: PAJ_MINTS[checkout.coin] } });
       checkout.order = {
-        reference: d.id, coin: checkout.coin, amount: Number(d.fiatAmount) > 0 ? Number(d.fiatAmount) : checkout.amount, status: 'AWAITING_DEPOSIT',
-        bank: d.bank || 'Partner Bank', account: d.accountNumber || '', accountName: d.accountName || '', expiresAt: Date.now() + 3600 * 1000, progress: {},
+        ...base,
+        reference: d.id,
+        amount: Number(d.fiatAmount) > 0 ? Number(d.fiatAmount) : checkout.amount,
+        destAmount: Number(d.cryptoAmount) || base.destAmount,
+        bank: d.bank || 'Partner Bank',
+        account: d.accountNumber || '',
+        accountName: d.accountName || '',
+        expiresAt: Date.now() + 3600 * 1000,
       };
     } else {
       const d = await api('/api/hostfi/buy', { method: 'POST', body: { store: SLUG, asset: checkout.coin, network: checkout.network, wallet, amount: checkout.amount } });
       checkout.order = {
-        reference: d.reference, coin: checkout.coin, amount: checkout.amount, status: 'AWAITING_DEPOSIT',
-        bank: d.bank_name, account: d.account_number, accountName: d.account_name, expiresAt: Date.now() + (d.expires_in || 3600) * 1000, progress: {},
+        ...base,
+        reference: d.reference,
+        destAmount: Number(d.crypto_amount) || base.destAmount,
+        bank: d.bank_name,
+        account: d.account_number,
+        accountName: d.account_name,
+        expiresAt: Date.now() + (d.expires_in || 3600) * 1000,
       };
     }
     checkout.step = 'pay';
@@ -1388,9 +1416,11 @@ function startPolling(every = 5000) {
       const t = await api('/api/transactions/' + encodeURIComponent(o.reference));
       const was = o.status;
       o.status = String(t.status || '').toUpperCase();
+      if (t.type) o.side = String(t.type).toUpperCase() === 'OFFRAMP' ? 'sell' : 'buy';
+      if (t.direction) o.side = String(t.direction).toUpperCase() === 'OFFRAMP' ? 'sell' : 'buy';
       if (t.destination_amount) {
         o.destAmount = Number(t.destination_amount);
-        o.payoutAmount = Number(t.destination_amount);
+        if (o.side === 'sell') o.payoutAmount = Number(t.destination_amount);
       }
       if (t.source_amount) {
         o.sendAmount = Number(t.source_amount);
@@ -1398,7 +1428,7 @@ function startPolling(every = 5000) {
       o.progress = (t.hostfi_progress || [])[0] || {
         payout: o.status === 'COMPLETED' ? 'done' : (t.hash ? 'sent' : 'waiting'),
         explorer_url: t.explorer_url || null,
-        payout_amount: Number(t.destination_amount) || o.payoutAmount || null,
+        payout_amount: Number(t.destination_amount) || o.payoutAmount || o.destAmount || null,
       };
       if (!WAITING_STATUSES.includes(o.status)) {
         clearInterval(expiryTimer);
