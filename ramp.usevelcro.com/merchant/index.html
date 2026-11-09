@@ -506,6 +506,7 @@
           </div>
           <div class="d-list">
             <button type="button" onclick="openSettings('store')"><span><b>Customize</b><small>Logo, colours, welcome message and layout.</small></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+            <button type="button" onclick="openSettings('domain')"><span><b>Dedicated domain <small id="set-domain-badge" class="d-st is-off" style="margin-left: 6px; font-size: 11px;">Optional upgrade</small></b><small id="set-domain-sub">Upgrade to your own {slug}.usevelcro.com without /m/</small></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
             <button type="button" onclick="openSettings('kyb')"><span><b>Business verification</b><small id="set-kyb-sub">Verify your business to put your exchange live.</small></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
             <button type="button" onclick="openSettings('security')"><span><b>Sign-in &amp; security</b><small>Change your password. Codes always go to your email.</small></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
             <button type="button" onclick="openSettings('support')"><span><b>Customer support</b><small>Where your customers reach you when they need help.</small></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
@@ -547,6 +548,13 @@
                 <label class="m-label" for="b-slug">Exchange link</label>
                 <div class="m-slug-wrap"><span>ramp.usevelcro.com/m/</span><input id="b-slug" maxlength="30" autocomplete="off" spellcheck="false" placeholder="your-exchange"></div>
                 <p id="b-slug-msg" class="m-hint">Lowercase letters, numbers and hyphens. It's fixed once you're verified.</p>
+                <div id="b-domain-callout" style="margin-top: 10px; padding: 12px 14px; background: rgba(168,207,69,0.08); border: 1px solid rgba(168,207,69,0.22); border-radius: 8px; font-size: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                  <div>
+                    <b style="color: var(--brand); display: block; margin-bottom: 2px;">Dedicated Subdomain Upgrade</b>
+                    <span style="color: var(--text-secondary);">Want a clean address without <span style="opacity:0.7">/m/</span>? Get <code id="b-domain-preview" style="color: var(--text-primary);">your-exchange.usevelcro.com</code></span>
+                  </div>
+                  <button type="button" class="d-btn-quiet" style="white-space: nowrap; font-size: 11px; padding: 6px 12px;" onclick="openSettings('domain')">Upgrade domain</button>
+                </div>
               </section>
 
               <section class="d-sec">
@@ -658,6 +666,106 @@
             <p id="sup-error" class="hidden m-error"></p>
             <button type="submit" id="sup-btn" class="d-btn">Save support</button>
           </form>
+
+          <!-- Dedicated Domain Panel -->
+          <div id="panel-domain" class="d-panel d-form" style="max-width: 580px;">
+            <div class="d-head">
+              <h1>Dedicated Domain</h1>
+              <p>Upgrade your exchange to a clean, standalone address like <code id="dom-head-preview">your-store.usevelcro.com</code> without <code>/m/</code>.</p>
+            </div>
+
+            <!-- Active State -->
+            <div id="dom-view-active" class="hidden" style="background: rgba(168,207,69,0.08); border: 1px solid rgba(168,207,69,0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span class="d-st is-live" style="font-size: 13px;">Dedicated Domain Active</span>
+                <span id="dom-active-plan" style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Lifetime</span>
+              </div>
+              <div style="font-size: 18px; font-weight: 700; margin-bottom: 6px; word-break: break-all;">
+                <a id="dom-active-link" href="#" target="_blank" rel="noopener" style="color: var(--brand); text-decoration: none;">https://...</a>
+              </div>
+              <p id="dom-active-expires" style="font-size: 12px; color: var(--text-secondary); margin: 0 0 16px;">Active permanent VIP pass.</p>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a id="dom-open-btn" href="#" target="_blank" rel="noopener" class="d-btn-lime" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 9px 18px; font-size: 13px;">Open dedicated exchange ↗</a>
+                <button type="button" id="dom-renew-btn" class="d-btn-quiet hidden" onclick="startDomainUpgrade()">Renew subscription</button>
+              </div>
+            </div>
+
+            <!-- Pending Verification State -->
+            <div id="dom-view-pending" class="hidden" style="background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <span class="d-st is-wait" style="font-size: 13px;">Payment Pending Verification</span>
+                <span id="dom-pending-amount" style="font-weight: 600; font-size: 13px;">₦10,000</span>
+              </div>
+              <p style="font-size: 13px; margin: 0 0 12px; color: var(--text-primary);">
+                We received your bank transfer confirmation for <code id="dom-pending-sub">...</code>. Our team verifies payments to Novastaq Technologies Limited and activates your dedicated domain within a few hours.
+              </p>
+              <div style="font-size: 12px; color: var(--text-secondary); background: rgba(0,0,0,0.15); padding: 10px 12px; border-radius: 8px;">
+                <b>Payment Reference:</b> <span id="dom-pending-ref">—</span><br>
+                <b>Bank:</b> Kuda Bank &middot; <code>3000911925</code> &middot; Novastaq Technologies Limited
+              </div>
+            </div>
+
+            <!-- Upgrade / Subscribe Form -->
+            <div id="dom-view-form">
+              <!-- Plan Selection Cards -->
+              <div style="margin-bottom: 20px;">
+                <span class="m-label" style="display: block; margin-bottom: 10px;">Select Your Upgrade Plan</span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="dom-plan-grid">
+                  <!-- Monthly Card -->
+                  <label id="plan-card-monthly" style="border: 2px solid var(--brand); background: rgba(168,207,69,0.06); border-radius: 10px; padding: 16px; cursor: pointer; display: block; position: relative;">
+                    <input type="radio" name="domain_plan_choice" value="MONTHLY" checked style="position: absolute; top: 14px; right: 14px; accent-color: var(--brand);" onchange="selectDomainPlan('MONTHLY')">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 4px;">Monthly</div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">₦10,000 <small style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">/ mo</small></div>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Billed every 30 days. Cancel or renew anytime.</p>
+                  </label>
+
+                  <!-- Lifetime Card -->
+                  <label id="plan-card-lifetime" style="border: 2px solid var(--border); background: var(--bg-card); border-radius: 10px; padding: 16px; cursor: pointer; display: block; position: relative;">
+                    <input type="radio" name="domain_plan_choice" value="LIFETIME" style="position: absolute; top: 14px; right: 14px; accent-color: var(--brand);" onchange="selectDomainPlan('LIFETIME')">
+                    <span style="display: inline-block; background: var(--brand); color: #000; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-bottom: 4px; text-transform: uppercase;">Best Value</span>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">₦200,000</div>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">One-time fee. Yours permanently with zero renewals.</p>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Payment Details Box -->
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border, #2a344d); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                <span class="m-label" style="margin-bottom: 10px; display: block;">Bank Transfer Payment</span>
+                <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 14px;">
+                  Transfer <b id="dom-amount-highlight" style="color: var(--brand); font-size: 14px;">₦10,000</b> to the Velcro parent account below:
+                </p>
+                <div style="display: grid; gap: 10px; font-size: 13px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                    <span style="color: var(--text-secondary);">Bank</span>
+                    <b style="color: var(--text-primary);">Kuda Bank</b>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                    <span style="color: var(--text-secondary);">Account Number</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <code style="font-size: 16px; font-weight: 700; letter-spacing: 1px; color: var(--brand);">3000911925</code>
+                      <button type="button" class="d-btn-quiet" style="padding: 3px 8px; font-size: 11px;" onclick="copyDomAccount()">Copy</button>
+                    </div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary);">Account Name</span>
+                    <b style="color: var(--text-primary); text-align: right;">Novastaq Technologies Limited</b>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Payment Form -->
+              <form id="dom-pay-form" onsubmit="submitDomainUpgrade(event)">
+                <div class="d-field" style="margin-bottom: 16px;">
+                  <label class="m-label" for="dom-sender-ref">Sender name or transfer reference</label>
+                  <input id="dom-sender-ref" type="text" maxlength="150" required placeholder="e.g. John Doe / Access Bank transfer" class="m-input">
+                  <p class="m-hint">Name on your bank account or reference so our team can instantly identify your transfer.</p>
+                </div>
+                <p id="dom-error" class="hidden m-error" style="margin-bottom: 12px;"></p>
+                <button type="submit" id="dom-submit-btn" class="d-btn-lime" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;">I have made this bank transfer</button>
+              </form>
+            </div>
+          </div>
         </div>
       </section>
     </main>

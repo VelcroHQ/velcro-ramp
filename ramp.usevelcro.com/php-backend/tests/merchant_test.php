@@ -16,7 +16,7 @@ if (PHP_SAPI !== 'cli') {
 
 $tmp = sys_get_temp_dir() . '/velcro_merchant_test_' . getmypid();
 @mkdir($tmp . '/data', 0777, true);
-foreach (['.referral_schema_v1', '.merchant_schema_v1', '.store_schema_v1', '.store_schema_v2'] as $flag) {
+foreach (['.referral_schema_v1', '.merchant_schema_v1', '.merchant_domain_schema_v1', '.store_schema_v1', '.store_schema_v2'] as $flag) {
     file_put_contents($tmp . '/data/' . $flag, 'test'); // MySQL DDL; tables built below instead
 }
 
@@ -36,7 +36,10 @@ $pdo->exec('CREATE TABLE audit_logs (id INTEGER PRIMARY KEY, action TEXT, ip TEX
 $pdo->exec("CREATE TABLE merchants (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, slug TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'DRAFT',
     business_name TEXT, business_type TEXT, registration_number TEXT, contact_name TEXT, phone TEXT, website TEXT,
     monthly_volume TEXT, description TEXT, brand TEXT, pricing TEXT, terms_accepted_at TEXT, terms_ip TEXT, review_note TEXT, reviewed_at TEXT,
+    domain_status TEXT DEFAULT 'NONE', domain_plan TEXT, domain_requested_at TEXT, domain_activated_at TEXT, domain_expires_at TEXT,
+    domain_payment_ref TEXT, domain_subdomain TEXT, domain_review_note TEXT, domain_paid_amount INTEGER,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+$pdo->exec('CREATE TABLE merchant_domain_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, merchant_id INTEGER NOT NULL, slug TEXT NOT NULL, plan TEXT NOT NULL, amount INTEGER NOT NULL, payment_method TEXT DEFAULT "BANK_TRANSFER", payment_reference TEXT, status TEXT NOT NULL DEFAULT "PENDING", admin_note TEXT, reviewed_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
 $pdo->exec('CREATE TABLE store_customers (id INTEGER PRIMARY KEY, merchant_id INTEGER NOT NULL, email TEXT NOT NULL, password_hash TEXT, google_sub TEXT, name TEXT,
     token_version INTEGER NOT NULL DEFAULT 1, last_login_at TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, UNIQUE (merchant_id, email), UNIQUE (merchant_id, google_sub))');
 $pdo->exec('CREATE TABLE merchant_accounts (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT, google_sub TEXT UNIQUE, name TEXT,
@@ -386,6 +389,40 @@ try {
     $app_('POST', "/api/admin/merchants/{$id}/status", ['status' => 'APPROVED'], $admin);
     [, $res] = $app_('GET', '/api/merchant/earnings', null, $auth($token));
     check(($res['data']['can_withdraw'] ?? null) === true, 'reinstated store: withdrawals work again, nothing earned is lost');
+
+    // ── Dedicated Domain Upgrade & Admin Confirmation / Pass ──
+    [$cUpgrade, $resUpgrade] = $app_('POST', '/api/merchant/domain/upgrade', [
+        'plan' => 'MONTHLY',
+        'payment_reference' => 'Test User Kuda Transfer ref 9912',
+    ], $auth($token));
+    check($cUpgrade === 200 && ($resUpgrade['data']['domain']['status'] ?? '') === 'PENDING'
+        && ($resUpgrade['data']['domain']['paid_amount'] ?? 0) === 10000,
+        'domain: merchant upgrade request saved as pending with ₦10,000 monthly');
+
+    [$cConfirm, $resConfirm] = $app_('POST', "/api/admin/merchants/{$id}/domain/confirm", [
+        'plan' => 'MONTHLY',
+        'note' => 'Payment received in Kuda Bank',
+    ], $admin);
+    [, $resMe] = $app_('GET', '/api/merchant/me', null, $auth($token));
+    check($cConfirm === 200 && ($resConfirm['merchant']['domain_status'] ?? '') === 'ACTIVE'
+        && ($resMe['data']['merchant']['domain']['is_active'] ?? false) === true
+        && ($resMe['data']['merchant']['storefront_url'] ?? '') === 'https://northline.usevelcro.com',
+        'admin: confirmed payment activates dedicated domain (https://northline.usevelcro.com)');
+
+    $otherId = (int) ($byEmail[$other]['id'] ?? 0);
+    [$cPass, $resPass] = $app_('POST', "/api/admin/merchants/{$otherId}/domain/pass", [
+        'plan' => 'LIFETIME',
+        'note' => 'VIP complimentary pass',
+    ], $admin);
+    check($cPass === 200 && ($resPass['merchant']['domain_status'] ?? '') === 'ACTIVE'
+        && ($resPass['merchant']['domain_plan'] ?? '') === 'LIFETIME',
+        'admin: can pass any merchant freely with permanent VIP dedicated domain');
+
+    [$cRevoke, $resRevoke] = $app_('POST', "/api/admin/merchants/{$id}/domain/revoke", [], $admin);
+    [, $resMeAfter] = $app_('GET', '/api/merchant/me', null, $auth($token));
+    check($cRevoke === 200 && ($resMeAfter['data']['merchant']['domain']['is_active'] ?? true) === false
+        && ($resMeAfter['data']['merchant']['storefront_url'] ?? '') === 'https://ramp.usevelcro.com/m/northline',
+        'admin: revoking domain returns merchant to standard /m/ URL');
 } finally {
     proc_terminate($app);
 }

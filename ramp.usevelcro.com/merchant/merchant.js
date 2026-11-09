@@ -1399,12 +1399,13 @@ function goToKyb() {
 }
 
 // Settings: a home of cards, each opening one panel.
-const SETTINGS_PANELS = { store: 'panel-store', kyb: 'kyb-form', security: 'panel-security', support: 'panel-support' };
+const SETTINGS_PANELS = { store: 'panel-store', kyb: 'kyb-form', security: 'panel-security', support: 'panel-support', domain: 'panel-domain' };
 
 function openSettings(panel) {
   $('set-home').classList.toggle('hidden', !!panel);
   $('set-panel').classList.toggle('hidden', !panel);
   Object.entries(SETTINGS_PANELS).forEach(([key, id]) => $(id).classList.toggle('hidden', key !== panel));
+  if (panel === 'domain') renderDomainPanel();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1429,6 +1430,30 @@ function renderSettingsHome() {
   }[merchant.status] || '';
   $('sec-email').textContent = me.email;
   $('sup-url').value = merchant.brand.support_url || '';
+
+  // Dedicated domain setting badge
+  const d = merchant.domain || {};
+  const domBadge = $('set-domain-badge');
+  const domSub = $('set-domain-sub');
+  const bPreview = $('b-domain-preview');
+  const subName = d.subdomain || (merchant.slug ? merchant.slug + '.usevelcro.com' : 'your-exchange.usevelcro.com');
+  if (bPreview) bPreview.textContent = subName;
+
+  if (domBadge && domSub) {
+    if (d.is_active) {
+      domBadge.className = 'd-st is-live';
+      domBadge.textContent = 'Active';
+      domSub.textContent = `Active: https://${subName}`;
+    } else if (d.status === 'PENDING') {
+      domBadge.className = 'd-st is-wait';
+      domBadge.textContent = 'Pending verification';
+      domSub.textContent = 'Payment transfer under review';
+    } else {
+      domBadge.className = 'd-st is-off';
+      domBadge.textContent = 'Optional upgrade';
+      domSub.textContent = `Upgrade to your own ${subName} without /m/`;
+    }
+  }
 }
 
 let secStep = 1;
@@ -1484,6 +1509,136 @@ async function submitSupport(e) {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Save support';
+  }
+}
+
+let selectedDomainPlan = 'MONTHLY';
+
+function selectDomainPlan(plan) {
+  selectedDomainPlan = plan;
+  const mCard = $('plan-card-monthly');
+  const lCard = $('plan-card-lifetime');
+  const amtHighlight = $('dom-amount-highlight');
+  if (plan === 'MONTHLY') {
+    if (mCard) { mCard.style.borderColor = 'var(--brand)'; mCard.style.background = 'rgba(168,207,69,0.06)'; }
+    if (lCard) { lCard.style.borderColor = 'var(--border)'; lCard.style.background = 'var(--bg-card)'; }
+    if (amtHighlight) amtHighlight.textContent = '₦10,000';
+  } else {
+    if (lCard) { lCard.style.borderColor = 'var(--brand)'; lCard.style.background = 'rgba(168,207,69,0.06)'; }
+    if (mCard) { mCard.style.borderColor = 'var(--border)'; mCard.style.background = 'var(--bg-card)'; }
+    if (amtHighlight) amtHighlight.textContent = '₦200,000';
+  }
+}
+
+function copyDomAccount() {
+  navigator.clipboard.writeText('3000911925').then(() => {
+    toast('Account number 3000911925 copied!');
+  }).catch(() => {
+    toast('3000911925');
+  });
+}
+
+function renderDomainPanel() {
+  const d = merchant.domain || {};
+  const slug = merchant.slug || '';
+  const sub = d.subdomain || (slug ? slug + '.usevelcro.com' : 'your-store.usevelcro.com');
+  const headPreview = $('dom-head-preview');
+  if (headPreview) headPreview.textContent = sub;
+
+  const bPreview = $('b-domain-preview');
+  if (bPreview) bPreview.textContent = sub;
+
+  const viewActive = $('dom-view-active');
+  const viewPending = $('dom-view-pending');
+  const viewForm = $('dom-view-form');
+
+  if (d.is_active) {
+    if (viewActive) viewActive.classList.remove('hidden');
+    if (viewPending) viewPending.classList.add('hidden');
+    if (viewForm) viewForm.classList.add('hidden');
+
+    const activeLink = $('dom-active-link');
+    const openBtn = $('dom-open-btn');
+    const fullUrl = 'https://' + sub;
+    if (activeLink) { activeLink.textContent = fullUrl; activeLink.href = fullUrl; }
+    if (openBtn) openBtn.href = fullUrl;
+
+    const planBadge = $('dom-active-plan');
+    if (planBadge) planBadge.textContent = d.plan === 'LIFETIME' ? 'Lifetime Access' : (d.plan === 'PASSED' ? 'VIP Pass' : 'Monthly Plan');
+
+    const expiresText = $('dom-active-expires');
+    const renewBtn = $('dom-renew-btn');
+    if (d.plan === 'LIFETIME' || d.plan === 'PASSED' || !d.expires_at) {
+      if (expiresText) expiresText.textContent = 'Active permanent access. No renewals needed.';
+      if (renewBtn) renewBtn.classList.add('hidden');
+    } else {
+      const expDate = new Date(d.expires_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      if (expiresText) expiresText.textContent = `Active until ${expDate}. Renews at ₦10,000/month.`;
+      if (renewBtn) renewBtn.classList.remove('hidden');
+    }
+  } else if (d.status === 'PENDING') {
+    if (viewActive) viewActive.classList.add('hidden');
+    if (viewPending) viewPending.classList.remove('hidden');
+    if (viewForm) viewForm.classList.add('hidden');
+
+    const subEl = $('dom-pending-sub');
+    if (subEl) subEl.textContent = sub;
+    const amtEl = $('dom-pending-amount');
+    if (amtEl) amtEl.textContent = d.paid_amount ? '₦' + Number(d.paid_amount).toLocaleString() : (d.plan === 'LIFETIME' ? '₦200,000' : '₦10,000');
+    const refEl = $('dom-pending-ref');
+    if (refEl) refEl.textContent = d.payment_ref || 'Reference submitted';
+  } else {
+    // NONE or EXPIRED
+    if (viewActive) viewActive.classList.add('hidden');
+    if (viewPending) viewPending.classList.add('hidden');
+    if (viewForm) viewForm.classList.remove('hidden');
+    selectDomainPlan('MONTHLY');
+  }
+}
+
+function startDomainUpgrade() {
+  $('dom-view-active')?.classList.add('hidden');
+  $('dom-view-form')?.classList.remove('hidden');
+  selectDomainPlan('MONTHLY');
+}
+
+async function submitDomainUpgrade(e) {
+  e.preventDefault();
+  if (!merchant || !merchant.slug) {
+    toast('Choose your exchange address first in Settings');
+    openSettings('store');
+    return;
+  }
+  const btn = $('dom-submit-btn');
+  const err = $('dom-error');
+  const ref = ($('dom-sender-ref').value || '').trim();
+  if (!ref) {
+    err.textContent = 'Please enter your sender name or bank transfer reference.';
+    err.classList.remove('hidden');
+    return;
+  }
+  err.classList.add('hidden');
+  btn.disabled = true;
+  btn.textContent = 'Submitting verification…';
+
+  try {
+    const res = await api('/api/merchant/domain/upgrade', {
+      method: 'POST',
+      body: {
+        plan: selectedDomainPlan,
+        payment_reference: ref,
+      },
+    });
+    merchant = res;
+    toast('Payment confirmation submitted! Our team will verify and activate your domain.');
+    renderAll();
+    renderDomainPanel();
+  } catch (ex) {
+    err.textContent = ex.message;
+    err.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'I have made this bank transfer';
   }
 }
 

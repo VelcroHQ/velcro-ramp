@@ -102,6 +102,13 @@ async function loadStore() {
     store.info = data.store;
     store.coins = data.coins || {};
     store.googleClientId = data.google_client_id;
+
+    // If accessed via dedicated subdomain but domain is not active, redirect to standard /m/ path
+    const host = (location.hostname || '').toLowerCase();
+    if (host.endsWith('.usevelcro.com') && !host.startsWith('ramp.') && data.store && data.store.dedicated_domain === false) {
+      location.replace('https://ramp.usevelcro.com/m/' + SLUG + location.search);
+      return;
+    }
   } catch (e) {
     return showMissing();
   }

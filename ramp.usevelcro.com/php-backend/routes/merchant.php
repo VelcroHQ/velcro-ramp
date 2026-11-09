@@ -80,6 +80,102 @@ function ensureMerchantSchema(): void
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     @file_put_contents($flag, gmdate('c'));
     $done = true;
+    ensureMerchantDomainSchema();
+}
+
+const MERCHANT_DOMAIN_PLANS = [
+    'MONTHLY' => [
+        'name' => 'Monthly Subscription',
+        'amount_ngn' => 10000,
+        'duration_days' => 30,
+        'description' => '₦10,000 / month, billed monthly',
+    ],
+    'LIFETIME' => [
+        'name' => 'Lifetime Access',
+        'amount_ngn' => 200000,
+        'duration_days' => null,
+        'description' => '₦200,000 one-time fee, yours forever',
+    ],
+];
+
+const MERCHANT_DOMAIN_BANK = [
+    'account_number' => '3000911925',
+    'account_name' => 'Novastaq Technologies Limited',
+    'bank_name' => 'Kuda Bank',
+];
+
+/** Ensures dedicated domain upgrade columns and requests table exist. */
+function ensureMerchantDomainSchema(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $flag = BASE_PATH . '/data/.merchant_domain_schema_v1';
+    if (file_exists($flag)) {
+        $done = true;
+        return;
+    }
+    $pdo = Database::pdo();
+    $isSqlite = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
+
+    $cols = [
+        'domain_status' => "VARCHAR(20) NOT NULL DEFAULT 'NONE'",
+        'domain_plan' => "VARCHAR(20) DEFAULT NULL",
+        'domain_requested_at' => "DATETIME DEFAULT NULL",
+        'domain_activated_at' => "DATETIME DEFAULT NULL",
+        'domain_expires_at' => "DATETIME DEFAULT NULL",
+        'domain_payment_ref' => "VARCHAR(255) DEFAULT NULL",
+        'domain_subdomain' => "VARCHAR(100) DEFAULT NULL",
+        'domain_review_note' => "VARCHAR(255) DEFAULT NULL",
+        'domain_paid_amount' => "INT UNSIGNED DEFAULT NULL",
+    ];
+
+    foreach ($cols as $name => $def) {
+        try {
+            $pdo->exec("ALTER TABLE `merchants` ADD COLUMN `{$name}` {$def}");
+        } catch (\Throwable $e) {
+            // Column already exists
+        }
+    }
+
+    try {
+        if ($isSqlite) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `merchant_domain_requests` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+                `merchant_id` INTEGER NOT NULL,
+                `slug` TEXT NOT NULL,
+                `plan` TEXT NOT NULL,
+                `amount` INTEGER NOT NULL,
+                `payment_method` TEXT DEFAULT 'BANK_TRANSFER',
+                `payment_reference` TEXT DEFAULT NULL,
+                `status` TEXT NOT NULL DEFAULT 'PENDING',
+                `admin_note` TEXT DEFAULT NULL,
+                `reviewed_at` TEXT DEFAULT NULL,
+                `created_at` TEXT DEFAULT CURRENT_TIMESTAMP
+            )");
+        } else {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `merchant_domain_requests` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `merchant_id` INT UNSIGNED NOT NULL,
+                `slug` VARCHAR(30) NOT NULL,
+                `plan` VARCHAR(20) NOT NULL,
+                `amount` INT UNSIGNED NOT NULL,
+                `payment_method` VARCHAR(30) DEFAULT 'BANK_TRANSFER',
+                `payment_reference` VARCHAR(255) DEFAULT NULL,
+                `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                `admin_note` VARCHAR(255) DEFAULT NULL,
+                `reviewed_at` DATETIME DEFAULT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                KEY `idx_merchant` (`merchant_id`),
+                KEY `idx_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        }
+    } catch (\Throwable $e) {
+        // Table exists
+    }
+    @file_put_contents($flag, gmdate('c'));
+    $done = true;
 }
 
 function merchantByEmail(string $email): ?array
@@ -369,7 +465,22 @@ function merchantCustomerRate(?float $velcro, float $markup, string $side): ?flo
 /** The merchant's own dashboard view: no internal review details beyond the note. */
 function merchantView(array $m): array
 {
+    ensureMerchantDomainSchema();
     $brand = merchantBrand($m);
+
+    $dStatus = $m['domain_status'] ?? 'NONE';
+    $dExpires = $m['domain_expires_at'] ?? null;
+    $dPlan = $m['domain_plan'] ?? null;
+    $isActive = $dStatus === 'ACTIVE' && ($dExpires === null || strtotime($dExpires) > time());
+    if ($dStatus === 'ACTIVE' && $dExpires !== null && strtotime($dExpires) <= time()) {
+        $dStatus = 'EXPIRED';
+        $isActive = false;
+    }
+    $subdomain = !empty($m['domain_subdomain']) ? (string) $m['domain_subdomain'] : ($m['slug'] ? $m['slug'] . '.usevelcro.com' : null);
+    $dedicatedUrl = $subdomain ? 'https://' . $subdomain : null;
+    $standardUrl = $m['slug'] ? EMAIL_SITE_URL . '/m/' . $m['slug'] : null;
+    $storefrontUrl = $isActive && $dedicatedUrl ? $dedicatedUrl : $standardUrl;
+
     return [
         'email' => $m['email'],
         'slug' => $m['slug'],
@@ -386,7 +497,26 @@ function merchantView(array $m): array
         'brand' => $brand,
         'pricing' => merchantPricing($m),
         'rate_display' => merchantRateDisplay($m),
-        'storefront_url' => $m['slug'] ? EMAIL_SITE_URL . '/m/' . $m['slug'] : null,
+        'storefront_url' => $storefrontUrl,
+        'domain' => [
+            'status' => $dStatus,
+            'plan' => $dPlan,
+            'is_active' => $isActive,
+            'subdomain' => $subdomain,
+            'dedicated_url' => $dedicatedUrl,
+            'standard_url' => $standardUrl,
+            'expires_at' => $dExpires,
+            'requested_at' => $m['domain_requested_at'] ?? null,
+            'activated_at' => $m['domain_activated_at'] ?? null,
+            'payment_ref' => $m['domain_payment_ref'] ?? null,
+            'paid_amount' => isset($m['domain_paid_amount']) ? (int) $m['domain_paid_amount'] : null,
+            'review_note' => $m['domain_review_note'] ?? null,
+            'pricing' => [
+                'monthly' => 10000,
+                'lifetime' => 200000,
+                'bank' => MERCHANT_DOMAIN_BANK,
+            ],
+        ],
         // What's left before the store can go live, for the dashboard checklist.
         'checklist' => [
             'branded' => $m['slug'] !== null && $brand['name'] !== '',
@@ -584,6 +714,47 @@ function notifyMerchantStatus(array $m): bool
         'rows' => [['Store', $name], ['Store address', $url, true]],
         'cta' => [$copy[2], 'https://merchant.usevelcro.com/'],
     ], 'status ' . $m['status']);
+}
+
+/** Dedicated domain status update (CONFIRMED, PASSED, REJECTED). */
+function notifyMerchantDomainStatus(array $m, string $action): bool
+{
+    $name = (string) (merchantBrand($m)['name'] ?: $m['business_name']);
+    $subdomain = (string) ($m['domain_subdomain'] ?: ($m['slug'] . '.usevelcro.com'));
+    $url = 'https://' . $subdomain;
+    if ($action === 'CONFIRMED' || $action === 'PASSED') {
+        $planText = ($m['domain_plan'] === 'LIFETIME'
+            ? 'Lifetime Access (Permanent VIP)'
+            : ($m['domain_plan'] === 'PASSED'
+                ? 'Complimentary VIP Pass'
+                : 'Monthly Subscription (Active until ' . substr((string)($m['domain_expires_at'] ?? ''), 0, 10) . ')'));
+        return merchantMail((string) $m['email'], "Your dedicated domain {$subdomain} is live!", [
+            'preheader' => "Your dedicated domain {$subdomain} is now active.",
+            'eyebrow' => 'Velcro Merchant Upgrade',
+            'title' => 'Your dedicated domain is live!',
+            'intro' => "Great news: your dedicated exchange address {$subdomain} is active. Your customers can now trade on your store directly without the /m/ path.",
+            'rows' => [
+                ['Store', $name],
+                ['Dedicated URL', $url, true],
+                ['Plan', $planText],
+            ],
+            'cta' => ['Open your store', $url],
+        ], 'domain ' . $action);
+    }
+    if ($action === 'REJECTED') {
+        return merchantMail((string) $m['email'], 'Update on your dedicated domain upgrade', [
+            'preheader' => 'We could not verify your domain payment transfer.',
+            'eyebrow' => 'Velcro Merchant Upgrade',
+            'title' => 'Domain payment verification update',
+            'intro' => "We could not verify your bank transfer for the dedicated domain upgrade." . ((string)($m['domain_review_note'] ?? '') !== '' ? " Reason: " . $m['domain_review_note'] : " Please verify that you transferred to Kuda Bank (3000911925 / Novastaq Technologies Limited) and resubmit with your transfer narration/sender name."),
+            'rows' => [
+                ['Store', $name],
+                ['Status', 'Payment Not Verified'],
+            ],
+            'cta' => ['Open dashboard', 'https://merchant.usevelcro.com/'],
+        ], 'domain rejected');
+    }
+    return false;
 }
 
 /** Welcome, once, when a merchant account is created. */
@@ -976,6 +1147,8 @@ function registerMerchantRoutes(Router $router): void
                 'is_owner_preview' => $isOwner && $m['status'] !== 'APPROVED',
                 'rate_display' => merchantRateDisplay($m),
                 'support_url' => $brand['support_url'],
+                'dedicated_domain' => ($m['domain_status'] ?? '') === 'ACTIVE' && (empty($m['domain_expires_at']) || strtotime($m['domain_expires_at']) > time()),
+                'subdomain' => !empty($m['domain_subdomain']) ? (string) $m['domain_subdomain'] : ($m['slug'] ? $m['slug'] . '.usevelcro.com' : null),
             ],
             'google_client_id' => GOOGLE_CLIENT_ID !== '' ? GOOGLE_CLIENT_ID : null,
             'coins' => $coins,
@@ -1067,17 +1240,358 @@ function registerMerchantRoutes(Router $router): void
         jsonResponse(successResponse(merchantView($m), 'Verification submitted'));
     });
 
+    // Dedicated domain upgrade request
+    $router->post('/api/merchant/domain/upgrade', function () {
+        $email = requireMerchantAuth();
+        ensureMerchantSchema();
+        ensureMerchantDomainSchema();
+        $m = merchantByEmail($email);
+        if (!$m) {
+            jsonResponse(errorResponse('Merchant not found', 404), 404);
+        }
+        if (empty($m['slug'])) {
+            jsonResponse(errorResponse('Choose your exchange address first in Settings'), 400);
+        }
+        $b = getJsonBody();
+        $plan = strtoupper(trim((string) body($b, 'plan', 'MONTHLY')));
+        if (!in_array($plan, ['MONTHLY', 'LIFETIME'], true)) {
+            jsonResponse(errorResponse('Invalid plan chosen'), 400);
+        }
+        $ref = mb_substr(trim((string) body($b, 'payment_reference', '')), 0, 255);
+        if ($ref === '') {
+            jsonResponse(errorResponse('Please enter your sender name or bank transfer reference'), 400);
+        }
+        $amount = $plan === 'MONTHLY' ? 10000 : 200000;
+        $subdomain = $m['slug'] . '.usevelcro.com';
+        $now = gmdate('Y-m-d H:i:s');
+
+        Database::execute(
+            'UPDATE `merchants` SET 
+                `domain_status` = :st,
+                `domain_plan` = :plan,
+                `domain_requested_at` = :req_at,
+                `domain_payment_ref` = :ref,
+                `domain_paid_amount` = :amt,
+                `domain_subdomain` = :sub,
+                `domain_review_note` = NULL
+             WHERE `id` = :id',
+            [
+                'st' => 'PENDING',
+                'plan' => $plan,
+                'req_at' => $now,
+                'ref' => $ref,
+                'amt' => $amount,
+                'sub' => $subdomain,
+                'id' => (int) $m['id'],
+            ]
+        );
+
+        try {
+            Database::execute(
+                'INSERT INTO `merchant_domain_requests` 
+                    (`merchant_id`, `slug`, `plan`, `amount`, `payment_method`, `payment_reference`, `status`, `created_at`)
+                 VALUES (:mid, :slug, :plan, :amt, :method, :ref, :st, :now)',
+                [
+                    'mid' => (int) $m['id'],
+                    'slug' => $m['slug'],
+                    'plan' => $plan,
+                    'amt' => $amount,
+                    'method' => 'BANK_TRANSFER',
+                    'ref' => $ref,
+                    'st' => 'PENDING',
+                    'now' => $now,
+                ]
+            );
+        } catch (\Throwable $e) {}
+
+        auditLog('MERCHANT_DOMAIN_UPGRADE_REQUEST', [
+            'id' => (int) $m['id'],
+            'slug' => $m['slug'],
+            'plan' => $plan,
+            'amount' => $amount,
+            'payment_reference' => $ref,
+        ]);
+
+        $updated = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $m['id']]);
+        jsonResponse(successResponse(merchantView($updated), 'Domain upgrade request submitted. Awaiting verification.'));
+    });
+
     // ─── Admin ───
 
     $router->get('/api/admin/merchants', function () {
         requireAdminAuth();
         ensureMerchantSchema();
+        ensureMerchantDomainSchema();
         ensureStoreSchema();
+
+        $domainPendingExpr = "0 AS `domain_pending_count`";
+        try {
+            Database::pdo()->query("SELECT 1 FROM `merchant_domain_requests` LIMIT 1");
+            $domainPendingExpr = "(SELECT COUNT(*) FROM `merchant_domain_requests` r WHERE r.`merchant_id` = m.`id` AND r.`status` = 'PENDING') AS `domain_pending_count`";
+        } catch (\Throwable $e) {}
+
         $rows = Database::select(
-            "SELECT m.*, (SELECT COUNT(*) FROM `store_customers` c WHERE c.`merchant_id` = m.`id`) AS `customers`
+            "SELECT m.*, 
+                    (SELECT COUNT(*) FROM `store_customers` c WHERE c.`merchant_id` = m.`id`) AS `customers`,
+                    {$domainPendingExpr}
              FROM `merchants` m ORDER BY CASE m.`status` WHEN 'PENDING' THEN 0 WHEN 'DRAFT' THEN 2 ELSE 1 END, m.`id` DESC LIMIT 500"
         );
-        jsonResponse(['merchants' => $rows, 'business_types' => MERCHANT_BUSINESS_TYPES, 'volumes' => MERCHANT_VOLUMES]);
+        $domainRequests = [];
+        try {
+            $domainRequests = Database::safeSelect(
+                "SELECT r.*, m.business_name, m.email AS merchant_email, m.domain_status, m.domain_expires_at
+                 FROM `merchant_domain_requests` r
+                 JOIN `merchants` m ON m.id = r.merchant_id
+                 ORDER BY CASE r.status WHEN 'PENDING' THEN 0 ELSE 1 END, r.id DESC LIMIT 100",
+                [],
+                []
+            );
+        } catch (\Throwable $e) {}
+
+        jsonResponse([
+            'merchants' => $rows,
+            'domain_requests' => $domainRequests,
+            'business_types' => MERCHANT_BUSINESS_TYPES,
+            'volumes' => MERCHANT_VOLUMES,
+            'domain_plans' => MERCHANT_DOMAIN_PLANS,
+            'domain_bank' => MERCHANT_DOMAIN_BANK,
+        ]);
+    });
+
+    $router->get('/api/admin/merchant-domains', function () {
+        requireAdminAuth();
+        ensureMerchantSchema();
+        ensureMerchantDomainSchema();
+        $requests = Database::safeSelect(
+            "SELECT r.*, m.business_name, m.email AS merchant_email, m.domain_status, m.domain_expires_at
+             FROM `merchant_domain_requests` r
+             JOIN `merchants` m ON m.id = r.merchant_id
+             ORDER BY CASE r.status WHEN 'PENDING' THEN 0 ELSE 1 END, r.id DESC LIMIT 200",
+            [],
+            []
+        );
+        $merchants = Database::safeSelect(
+            "SELECT m.* FROM `merchants` m WHERE m.`domain_status` != 'NONE' OR m.`domain_requested_at` IS NOT NULL ORDER BY m.id DESC LIMIT 200",
+            [],
+            []
+        );
+        jsonResponse(['requests' => $requests, 'merchants' => $merchants, 'plans' => MERCHANT_DOMAIN_PLANS, 'bank' => MERCHANT_DOMAIN_BANK]);
+    });
+
+    $router->post('/api/admin/merchants/(\d+)/domain/confirm', function (string $id) {
+        requireAdminAuth();
+        ensureMerchantSchema();
+        ensureMerchantDomainSchema();
+        $m = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        if (!$m) {
+            jsonResponse(['success' => false, 'error' => 'Merchant not found'], 404);
+        }
+        if (empty($m['slug'])) {
+            jsonResponse(['success' => false, 'error' => 'Merchant has no slug set'], 400);
+        }
+        $b = getJsonBody();
+        $plan = strtoupper(trim((string) body($b, 'plan', $m['domain_plan'] ?: 'MONTHLY')));
+        if (!in_array($plan, ['MONTHLY', 'LIFETIME'], true)) {
+            $plan = 'MONTHLY';
+        }
+        $note = mb_substr(trim((string) body($b, 'note', '')), 0, 255);
+        $now = gmdate('Y-m-d H:i:s');
+        $subdomain = trim((string) body($b, 'subdomain', $m['domain_subdomain'] ?: ($m['slug'] . '.usevelcro.com')));
+
+        $expiresAt = null;
+        if ($plan === 'MONTHLY') {
+            $base = time();
+            if (!empty($m['domain_expires_at']) && strtotime($m['domain_expires_at']) > time()) {
+                $base = strtotime($m['domain_expires_at']);
+            }
+            $expiresAt = gmdate('Y-m-d H:i:s', $base + (30 * 86400));
+        }
+
+        Database::execute(
+            'UPDATE `merchants` SET 
+                `domain_status` = :st,
+                `domain_plan` = :plan,
+                `domain_activated_at` = :act,
+                `domain_expires_at` = :exp,
+                `domain_subdomain` = :sub,
+                `domain_review_note` = :note
+             WHERE `id` = :id',
+            [
+                'st' => 'ACTIVE',
+                'plan' => $plan,
+                'act' => $now,
+                'exp' => $expiresAt,
+                'sub' => $subdomain,
+                'note' => $note !== '' ? $note : null,
+                'id' => (int) $id,
+            ]
+        );
+
+        try {
+            Database::execute(
+                "UPDATE `merchant_domain_requests` SET 
+                    `status` = 'APPROVED',
+                    `admin_note` = :note,
+                    `reviewed_at` = :now
+                 WHERE `merchant_id` = :mid AND `status` = 'PENDING'",
+                ['note' => $note !== '' ? $note : 'Payment confirmed', 'now' => $now, 'mid' => (int) $id]
+            );
+        } catch (\Throwable $e) {}
+
+        auditLog('MERCHANT_DOMAIN_CONFIRMED', [
+            'id' => (int) $id,
+            'slug' => $m['slug'],
+            'plan' => $plan,
+            'subdomain' => $subdomain,
+            'expires_at' => $expiresAt,
+            'note' => $note,
+        ]);
+
+        $updated = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        $emailSent = notifyMerchantDomainStatus($updated, 'CONFIRMED');
+        jsonResponse(['success' => true, 'merchant' => $updated, 'email_sent' => $emailSent]);
+    });
+
+    $router->post('/api/admin/merchants/(\d+)/domain/pass', function (string $id) {
+        requireAdminAuth();
+        ensureMerchantSchema();
+        ensureMerchantDomainSchema();
+        $m = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        if (!$m) {
+            jsonResponse(['success' => false, 'error' => 'Merchant not found'], 404);
+        }
+        if (empty($m['slug'])) {
+            jsonResponse(['success' => false, 'error' => 'Merchant has no slug set. Have merchant pick a slug first.'], 400);
+        }
+        $b = getJsonBody();
+        $plan = strtoupper(trim((string) body($b, 'plan', 'PASSED')));
+        $days = (int) body($b, 'days', 0); // 0 = permanent/lifetime
+        $expiresAt = $days > 0 ? gmdate('Y-m-d H:i:s', time() + ($days * 86400)) : null;
+        $note = mb_substr(trim((string) body($b, 'note', 'Complimentary VIP Pass')), 0, 255);
+        $subdomain = trim((string) body($b, 'subdomain', $m['domain_subdomain'] ?: ($m['slug'] . '.usevelcro.com')));
+        $now = gmdate('Y-m-d H:i:s');
+
+        Database::execute(
+            'UPDATE `merchants` SET 
+                `domain_status` = :st,
+                `domain_plan` = :plan,
+                `domain_activated_at` = :act,
+                `domain_expires_at` = :exp,
+                `domain_subdomain` = :sub,
+                `domain_review_note` = :note
+             WHERE `id` = :id',
+            [
+                'st' => 'ACTIVE',
+                'plan' => $plan,
+                'act' => $now,
+                'exp' => $expiresAt,
+                'sub' => $subdomain,
+                'note' => $note,
+                'id' => (int) $id,
+            ]
+        );
+
+        try {
+            Database::execute(
+                "UPDATE `merchant_domain_requests` SET 
+                    `status` = 'APPROVED',
+                    `admin_note` = :note,
+                    `reviewed_at` = :now
+                 WHERE `merchant_id` = :mid AND `status` = 'PENDING'",
+                ['note' => $note, 'now' => $now, 'mid' => (int) $id]
+            );
+        } catch (\Throwable $e) {}
+
+        auditLog('MERCHANT_DOMAIN_PASSED', [
+            'id' => (int) $id,
+            'slug' => $m['slug'],
+            'plan' => $plan,
+            'subdomain' => $subdomain,
+            'note' => $note,
+        ]);
+
+        $updated = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        $emailSent = notifyMerchantDomainStatus($updated, 'PASSED');
+        jsonResponse(['success' => true, 'merchant' => $updated, 'email_sent' => $emailSent]);
+    });
+
+    $router->post('/api/admin/merchants/(\d+)/domain/reject', function (string $id) {
+        requireAdminAuth();
+        ensureMerchantSchema();
+        ensureMerchantDomainSchema();
+        $m = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        if (!$m) {
+            jsonResponse(['success' => false, 'error' => 'Merchant not found'], 404);
+        }
+        $b = getJsonBody();
+        $note = mb_substr(trim((string) body($b, 'note', 'Payment transfer could not be verified')), 0, 255);
+        $now = gmdate('Y-m-d H:i:s');
+
+        Database::execute(
+            'UPDATE `merchants` SET 
+                `domain_status` = :st,
+                `domain_review_note` = :note
+             WHERE `id` = :id',
+            [
+                'st' => 'REJECTED',
+                'note' => $note,
+                'id' => (int) $id,
+            ]
+        );
+
+        try {
+            Database::execute(
+                "UPDATE `merchant_domain_requests` SET 
+                    `status` = 'REJECTED',
+                    `admin_note` = :note,
+                    `reviewed_at` = :now
+                 WHERE `merchant_id` = :mid AND `status` = 'PENDING'",
+                ['note' => $note, 'now' => $now, 'mid' => (int) $id]
+            );
+        } catch (\Throwable $e) {}
+
+        auditLog('MERCHANT_DOMAIN_REJECTED', [
+            'id' => (int) $id,
+            'slug' => $m['slug'],
+            'note' => $note,
+        ]);
+
+        $updated = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        $emailSent = notifyMerchantDomainStatus($updated, 'REJECTED');
+        jsonResponse(['success' => true, 'merchant' => $updated, 'email_sent' => $emailSent]);
+    });
+
+    $router->post('/api/admin/merchants/(\d+)/domain/revoke', function (string $id) {
+        requireAdminAuth();
+        ensureMerchantSchema();
+        ensureMerchantDomainSchema();
+        $m = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        if (!$m) {
+            jsonResponse(['success' => false, 'error' => 'Merchant not found'], 404);
+        }
+        $b = getJsonBody();
+        $note = mb_substr(trim((string) body($b, 'note', 'Domain revoked by admin')), 0, 255);
+
+        Database::execute(
+            'UPDATE `merchants` SET 
+                `domain_status` = :st,
+                `domain_review_note` = :note
+             WHERE `id` = :id',
+            [
+                'st' => 'NONE',
+                'note' => $note,
+                'id' => (int) $id,
+            ]
+        );
+
+        auditLog('MERCHANT_DOMAIN_REVOKED', [
+            'id' => (int) $id,
+            'slug' => $m['slug'],
+            'note' => $note,
+        ]);
+
+        $updated = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        jsonResponse(['success' => true, 'merchant' => $updated]);
     });
 
     $router->post('/api/admin/merchants/(\d+)/status', function (string $id) {
