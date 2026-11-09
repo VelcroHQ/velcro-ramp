@@ -14,7 +14,7 @@
   <meta property="og:title" content="Velcro Merchant — Your own crypto exchange, live in minutes">
   <meta property="og:description" content="Sell crypto to your customers under your own brand. Velcro handles the naira accounts, the swaps and the payouts.">
   <meta property="og:image" content="https://ramp.usevelcro.com/og-image.png">
-  <link href="/merchant/merchant.css?v=26" rel="stylesheet">
+  <link href="/merchant/merchant.css?v=27" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- The fonts never hold up the page: system text shows until they arrive. -->
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -702,6 +702,17 @@
     </div>
   </div>
 
+  <!-- Customer Details Modal -->
+  <div id="cus-modal" class="m-modal" role="dialog" aria-modal="true" aria-labelledby="cus-modal-title">
+    <div class="m-modal-bg" onclick="closeCustomerModal()"></div>
+    <div class="m-card cus-modal-card">
+      <button type="button" class="m-x" onclick="closeCustomerModal()" aria-label="Close">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div id="cus-modal-body"></div>
+    </div>
+  </div>
+
   <!-- Order Details Modal -->
   <div id="ord-modal" class="m-modal" role="dialog" aria-modal="true" aria-labelledby="ord-modal-title">
     <div class="m-modal-bg" onclick="closeOrderModal()"></div>
@@ -772,7 +783,7 @@
   <div id="m-toast" class="m-toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="/merchant/merchant.js?v=27"></script>
+  <script src="/merchant/merchant.js?v=28"></script>
 </body>
 
 </html>

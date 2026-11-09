@@ -453,7 +453,7 @@ function storeCustomerOrderView(array $o): array
 
 function storeCustomerView(array $c): array
 {
-    return ['email' => $c['email'], 'name' => $c['name'], 'since' => $c['created_at']];
+    return ['id' => (int) ($c['id'] ?? 0), 'email' => $c['email'], 'name' => $c['name'], 'since' => $c['created_at']];
 }
 
 function sendStoreWelcome(array $m, string $email): void

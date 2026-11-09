@@ -405,6 +405,9 @@ async function loadOrders() {
     if (activeModalRef && $('ord-modal').classList.contains('is-open')) {
       openOrderDetail(activeModalRef, true);
     }
+    if (activeCustomerEmail && $('cus-modal')?.classList.contains('is-open')) {
+      openCustomerDetail(activeCustomerEmail, true);
+    }
 
     const prev = prevOrdersMap;
     const currentMap = {};
@@ -437,7 +440,7 @@ async function loadOrders() {
   // Orders still moving refresh themselves while the tab is open or modal is displayed.
   clearTimeout(ordersTimer);
   const hasActive = orders && orders.some(o => OPEN_STATUSES.includes(o.status));
-  if ((hasActive || activeModalRef) && (!$('tab-orders').classList.contains('hidden') || $('ord-modal').classList.contains('is-open'))) {
+  if ((hasActive || activeModalRef || activeCustomerEmail) && (!$('tab-orders').classList.contains('hidden') || $('ord-modal').classList.contains('is-open') || $('cus-modal')?.classList.contains('is-open'))) {
     ordersTimer = setTimeout(loadOrders, 15000);
   }
 }
@@ -739,10 +742,15 @@ function renderModalQr(address) {
   }
 }
 
-function openOrderDetail(ref, isSilentUpdate = false) {
+function openOrderDetail(ref, isSilentUpdate = false, fromCustomerEmail = null) {
   const o = (orders || []).find(x => x.reference === ref);
   if (!o) return;
   activeModalRef = ref;
+  if (fromCustomerEmail) {
+    lastCustomerEmail = fromCustomerEmail;
+  } else if (!isSilentUpdate && !lastCustomerEmail) {
+    lastCustomerEmail = null;
+  }
   const done = o.status === 'COMPLETED';
   const isBuy = o.side === 'buy';
   const prov = getOrderProvider(o);
@@ -752,7 +760,15 @@ function openOrderDetail(ref, isSilentUpdate = false) {
   const shortH = o.hash && o.hash.length > 18 ? `${o.hash.slice(0, 10)}…${o.hash.slice(-8)}` : (o.hash || '');
   const shortW = o.wallet_address && o.wallet_address.length > 18 ? `${o.wallet_address.slice(0, 10)}…${o.wallet_address.slice(-8)}` : (o.wallet_address || '');
 
+  const backBtnHtml = lastCustomerEmail ? `
+    <button type="button" class="cus-back-link" onclick="closeOrderModal(); openCustomerDetail('${esc(lastCustomerEmail)}')">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="m15 18-6-6 6-6"/></svg>
+      <span>Back to customer (${esc(lastCustomerEmail)})</span>
+    </button>
+  ` : '';
+
   $('ord-modal-body').innerHTML = `
+    ${backBtnHtml}
     <div class="ord-head">
       <div class="ord-head-main">
         ${logoImg(o.coin)}
@@ -795,7 +811,7 @@ function openOrderDetail(ref, isSilentUpdate = false) {
         </div>
         <div class="ord-row">
           <dt>Customer</dt>
-          <dd><b>${esc(o.customer_name || 'Customer')}</b> <span style="font-weight:400;color:var(--muted)">(${esc(o.customer_email || '—')})</span></dd>
+          <dd>${o.customer_email ? `<button type="button" class="ord-link-subtle" onclick="closeOrderModal(); openCustomerDetail('${esc(o.customer_email)}')"><b>${esc(o.customer_name || 'Customer')}</b> <span style="font-weight:400;color:var(--muted)">(${esc(o.customer_email)}) →</span></button>` : `<b>${esc(o.customer_name || 'Customer')}</b>`}</dd>
         </div>
         ${o.rate ? `<div class="ord-row"><dt>Rate</dt><dd>${naira(o.rate)}</dd></div>` : ''}
         <div class="ord-row">
@@ -883,7 +899,10 @@ function openOrderDetail(ref, isSilentUpdate = false) {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeOrderModal();
+  if (e.key === 'Escape') {
+    closeOrderModal();
+    closeCustomerModal();
+  }
 });
 
 function renderOrders() {
@@ -965,6 +984,9 @@ function exportOrders() {
 // ── Customers ──
 
 let customers = null;
+let activeCustomerEmail = null;
+let lastCustomerEmail = null;
+
 async function loadCustomers() {
   try {
     const data = await api('/api/merchant/customers');
@@ -982,13 +1004,157 @@ function renderCustomers() {
   if (!customers || !customers.length) { list.innerHTML = $('cus-empty').innerHTML; return; }
   const q = ($('cus-q').value || '').trim().toLowerCase();
   const rows = customers.filter(c => !q || [c.email, c.name].some(v => String(v || '').toLowerCase().includes(q)));
-  list.innerHTML = rows.length ? `<table class="d-table d-customers"><thead><tr><th>Customer</th><th class="is-num">Orders</th><th class="is-num">Completed volume</th><th>Last order</th><th class="is-end">Joined</th></tr></thead><tbody>${rows.map(c => `<tr>
+  list.innerHTML = rows.length ? `<table class="d-table d-customers"><thead><tr><th>Customer</th><th class="is-num">Orders</th><th class="is-num">Completed volume</th><th>Last order</th><th class="is-end">Joined</th></tr></thead><tbody>${rows.map(c => `<tr class="is-clickable" onclick="openCustomerDetail('${esc(c.email)}')">
       <td class="c-who"><span class="d-who"><span class="d-av">${esc((c.name || c.email).trim().charAt(0).toUpperCase())}</span><span class="d-cell"><b>${esc(c.name || c.email.split('@')[0])}</b><small>${esc(c.email)}</small></span></span></td>
       <td class="c-orders is-num" data-label="Orders"><b>${c.orders}</b></td>
       <td class="c-vol is-num" data-label="Volume"><b>${c.volume_ngn ? naira(c.volume_ngn) : '—'}</b></td>
       <td class="c-last" data-label="Last order"><span class="d-date">${c.last_order_at ? when(c.last_order_at) : '—'}</span></td>
       <td class="c-joined is-end" data-label="Joined"><span class="d-date">${when(c.since)}</span></td>
     </tr>`).join('')}</tbody></table>` : '<p class="d-sheet-msg">No customers match.</p>';
+}
+
+async function openCustomerDetail(email, isSilentUpdate = false) {
+  if (!email) return;
+  activeCustomerEmail = email;
+
+  let c = (customers || []).find(x => String(x.email || '').toLowerCase() === String(email).toLowerCase());
+
+  if (!orders) {
+    try {
+      const ordData = await api('/api/merchant/orders');
+      orders = ordData.orders || [];
+    } catch (e) {
+      console.warn('Could not load orders for customer detail', e);
+    }
+  }
+
+  const customerOrders = (orders || []).filter(o =>
+    (o.customer_email && String(o.customer_email).toLowerCase() === String(email).toLowerCase()) ||
+    (c && c.id && o.customer_id === c.id)
+  );
+
+  renderCustomerModal(c, email, customerOrders);
+  if (!isSilentUpdate) {
+    $('cus-modal').classList.add('is-open');
+  }
+}
+
+function closeCustomerModal() {
+  activeCustomerEmail = null;
+  const m = $('cus-modal');
+  if (m) m.classList.remove('is-open');
+}
+
+function filterOrdersByCustomer(email) {
+  closeCustomerModal();
+  openTab('orders');
+  const q = $('ord-q');
+  if (q) {
+    q.value = email;
+    renderOrders();
+  }
+}
+
+function renderCustomerModal(c, email, customerOrders) {
+  const name = (c && c.name) ? c.name : email.split('@')[0];
+  const initial = (name || email).trim().charAt(0).toUpperCase() || 'C';
+  const completedOrders = (customerOrders || []).filter(o => o.status === 'COMPLETED');
+  const totalEarned = completedOrders.reduce((sum, o) => sum + (Number(o.earned) || 0), 0);
+  const totalVolume = completedOrders.reduce((sum, o) => sum + (Number(o.naira) || 0), 0) || (c ? Number(c.volume_ngn) || 0 : 0);
+  const orderCount = (customerOrders && customerOrders.length) || (c ? c.orders || 0 : 0);
+  const sinceDate = (c && c.since) ? when(c.since) : '—';
+  const lastActive = (c && c.last_order_at) ? when(c.last_order_at) : (customerOrders.length ? when(customerOrders[0].created_at) : null);
+
+  $('cus-modal-body').innerHTML = `
+    <div class="cus-modal-header">
+      <div class="cus-modal-avatar">${esc(initial)}</div>
+      <div class="cus-modal-titles">
+        <h2 id="cus-modal-title">${esc(name)}</h2>
+        <div class="cus-modal-email-row">
+          <span class="cus-modal-email">${esc(email)}</span>
+          <button type="button" class="cus-copy-btn" onclick="copyOrdText('${esc(email)}', 'Email copied')" title="Copy email">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span>Copy</span>
+          </button>
+        </div>
+        <p class="cus-modal-since">Customer since ${esc(sinceDate)}</p>
+      </div>
+    </div>
+
+    <!-- Stat Tiles -->
+    <div class="cus-stats-grid">
+      <div class="cus-stat-card">
+        <small>Total orders</small>
+        <b>${orderCount}</b>
+      </div>
+      <div class="cus-stat-card">
+        <small>Completed volume</small>
+        <b>${totalVolume ? naira(totalVolume) : '₦0'}</b>
+      </div>
+      <div class="cus-stat-card is-highlight">
+        <small>Your markup earned</small>
+        <b class="is-earned">${totalEarned ? naira(totalEarned) : '₦0'}</b>
+      </div>
+      <div class="cus-stat-card">
+        <small>Last active</small>
+        <span class="cus-stat-val">${lastActive ? esc(lastActive) : 'No trades yet'}</span>
+      </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="cus-actions-bar">
+      <a href="mailto:${esc(email)}" class="cus-action-btn">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        <span>Send email</span>
+      </a>
+      <button type="button" class="cus-action-btn" onclick="filterOrdersByCustomer('${esc(email)}')">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span>Filter in Orders tab</span>
+      </button>
+    </div>
+
+    <!-- Order History -->
+    <div class="cus-history-section">
+      <div class="cus-history-head">
+        <h3>Order History (${customerOrders.length})</h3>
+        ${customerOrders.length > 5 ? `<button type="button" class="d-link" onclick="filterOrdersByCustomer('${esc(email)}')">View all in orders →</button>` : ''}
+      </div>
+      ${customerOrders.length ? `
+        <div class="cus-order-list">
+          ${customerOrders.map(o => {
+            const done = o.status === 'COMPLETED';
+            const net = getOrderNetworkLabel(o);
+            const side = o.side === 'buy' ? 'Buy' : 'Sell';
+            return `
+              <div class="cus-order-item is-clickable" onclick="closeCustomerModal(); openOrderDetail('${esc(o.reference)}', false, '${esc(email)}')">
+                <div class="cus-order-left">
+                  ${logoImg(o.coin)}
+                  <div class="cus-order-info">
+                    <div class="cus-order-line1">
+                      <b>${side} ${esc(o.coin)}</b>
+                      ${net ? `<span class="d-badge-mini is-net">${esc(net)}</span>` : ''}
+                      ${statusHtml(ORDER_STATUS[o.status] || [o.status, 'off'])}
+                    </div>
+                    <div class="cus-order-line2">
+                      <small>${esc(shortRef(o.reference))} · ${when(o.created_at)}</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="cus-order-right">
+                  <div class="cus-order-amt"><b>${o.naira ? naira(o.naira) : '—'}</b></div>
+                  <div class="cus-order-sub"><small>${coinText(o)} · <span class="${done ? 'is-earned' : 'is-pending'}">+${o.earned ? naira(o.earned) : '₦0'}</span></small></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      ` : `
+        <div class="cus-history-empty">
+          <p>No orders placed yet by this customer.</p>
+        </div>
+      `}
+    </div>
+  `;
 }
 
 // ── Earnings and withdrawals ──
