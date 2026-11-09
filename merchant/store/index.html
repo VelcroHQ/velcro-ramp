@@ -37,8 +37,8 @@
       window.storefrontRequest.catch(function () { /* loadStore reports it */ });
     })();
   </script>
-  <link rel="preload" href="/store/store.js?v=42" as="script">
-  <link href="/store/store.css?v=42" rel="stylesheet">
+  <link rel="preload" href="/store/store.js?v=43" as="script">
+  <link href="/store/store.css?v=43" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- The fonts never hold up the page: system text shows until they arrive. -->
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -66,13 +66,7 @@
 
     <header class="s-top">
       <div class="s-wrap s-top-in">
-        <a id="s-home" class="s-brand" href="#">
-          <span id="s-logo" class="s-logo"></span>
-          <span class="s-brand-text">
-            <span id="s-name"></span>
-            <span class="s-verified-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 4.8 5.3.8-3.8 3.7.9 5.3-4.8-2.5-4.8 2.5.9-5.3-3.8-3.7 5.3-.8L12 2z"/></svg>Verified Exchange</span>
-          </span>
-        </a>
+        <a id="s-home" class="s-brand" href="#"><span id="s-logo" class="s-logo"></span><span id="s-name"></span></a>
         <div class="s-account">
           <button type="button" id="s-pwa-install" class="s-pwa-btn" onclick="installPwa()" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Install</span></button>
           <button type="button" id="s-signin" class="s-toplink" onclick="openAuth('signin')">Sign in</button>
@@ -92,15 +86,11 @@
 
     <main class="s-wrap s-main">
       <div class="s-intro">
-        <div class="s-hero-badge"><span class="s-badge-dot"></span><span>Non-Custodial Desk</span><span class="s-badge-sep">/</span><span>Direct Bank Transfers</span></div>
         <h1 id="s-title"></h1>
         <p class="s-lede" id="s-lede">Buy and sell crypto with naira. Pay by bank transfer, get paid to any Nigerian bank.</p>
 
         <section class="s-rates" id="rates" aria-label="Today's rates">
-          <div class="s-rates-head">
-            <h2>Today's rates <small id="s-rates-side">to buy, per $1</small></h2>
-            <span class="s-live-tag"><span class="s-live-dot"></span>Live market</span>
-          </div>
+          <h2>Today's rates <small id="s-rates-side">to buy, per $1</small></h2>
           <div class="s-rates-list" id="s-board-rows"></div>
         </section>
 
@@ -112,21 +102,6 @@
             <li><b id="how-3-title">Receive your crypto</b><span id="how-3-text">It's sent to your wallet automatically. Follow every step and get a receipt by email.</span></li>
           </ol>
         </section>
-
-        <div class="s-trust-row">
-          <div class="s-trust-pill">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            <div><b>2–5 Min Settlements</b><span>Automated bank payouts</span></div>
-          </div>
-          <div class="s-trust-pill">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <div><b>Non-Custodial Safety</b><span>Direct wallet & bank rails</span></div>
-          </div>
-          <div class="s-trust-pill">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <div><b>Escrow Protected</b><span>Powered by Velcro infrastructure</span></div>
-          </div>
-        </div>
 
         <div class="s-ngn" aria-label="Naira account, coming soon">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3 3 8h18z"/></svg>
@@ -179,78 +154,10 @@
       </div>
     </main>
 
-    <section class="s-banks-strip" aria-label="Supported banks">
-      <div class="s-wrap s-banks-in">
-        <span class="s-banks-label">Settlement Supported Across All Nigerian Banks</span>
-        <div class="s-banks-list">
-          <span>GTBank</span>
-          <span>Access Bank</span>
-          <span>Zenith Bank</span>
-          <span>First Bank</span>
-          <span>UBA</span>
-          <span>Kuda</span>
-          <span>Moniepoint</span>
-          <span>OPay</span>
-          <span>Stanbic IBTC</span>
-          <span>+ 25 others</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="s-faq-section" aria-label="Frequently asked questions">
-      <div class="s-wrap s-faq-in">
-        <div class="s-faq-header">
-          <span class="s-section-badge">Help &amp; Transparency</span>
-          <h2>Frequently Asked Questions</h2>
-          <p>Everything you need to know about trading through this exchange desk.</p>
-        </div>
-        <div class="s-faq-grid">
-          <details class="s-faq-item" open>
-            <summary>
-              <span>How fast will I receive my crypto or naira?</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-            </summary>
-            <div class="s-faq-body">Trades are fulfilled automatically through Velcro's institutional settlement engine. When buying crypto, coins are dispatched to your external wallet within 2 to 5 minutes after your naira bank transfer confirms. When selling crypto, naira is deposited directly into your Nigerian bank account once your blockchain transaction confirms.</div>
-          </details>
-
-          <details class="s-faq-item">
-            <summary>
-              <span>Do I need to deposit or leave funds on this platform?</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-            </summary>
-            <div class="s-faq-body">No. This platform is 100% non-custodial. You never store funds or risk your balance here. Every transaction executes directly between your verified Nigerian bank account and your personal external crypto wallet.</div>
-          </details>
-
-          <details class="s-faq-item">
-            <summary>
-              <span>How are exchange rates determined?</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-            </summary>
-            <div class="s-faq-body">Rates update in real-time based on live institutional OTC market liquidity. The price you see on your order ticket is guaranteed and locked during your checkout window, with zero hidden spreads or surprise charges.</div>
-          </details>
-
-          <details class="s-faq-item">
-            <summary>
-              <span>How are my funds protected during bank transfer?</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-            </summary>
-            <div class="s-faq-body">All bank transfers are secured by dedicated automated escrow accounts provided by regulated banking partners. You never transfer money to random personal accounts or P2P middlemen; your payment is tied to your specific order and verified automatically.</div>
-          </details>
-        </div>
-      </div>
-    </section>
-
     <footer class="s-foot">
       <div class="s-wrap s-foot-in">
-        <div class="s-foot-brand">
-          <span><span id="s-foot-name"></span> · Powered by <a href="/" target="_blank" rel="noopener">Velcro</a></span>
-          <span class="s-foot-escrow-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Secured Escrow</span>
-        </div>
-        <div class="s-foot-links">
-          <a id="s-foot-support" target="_blank" rel="noopener" hidden>Support</a>
-          <a href="/terms.html" target="_blank" rel="noopener">Terms</a>
-          <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>
-        </div>
+        <span><span id="s-foot-name"></span> · Powered by <a href="/" target="_blank" rel="noopener">Velcro</a></span>
+        <span class="s-foot-links"><a id="s-foot-support" target="_blank" rel="noopener" hidden>Support</a><a href="/terms.html" target="_blank" rel="noopener">Terms</a><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></span>
       </div>
     </footer>
   </div>
@@ -290,7 +197,7 @@
 
   <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="/store/store.js?v=42"></script>
+  <script src="/store/store.js?v=43"></script>
 </body>
 
 </html>

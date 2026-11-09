@@ -72,10 +72,6 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-top { border-bottom: 1px solid var(--line-page); }
 .s-top-in { height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .s-brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 700; font-size: 16px; text-decoration: none; color: var(--on-page); }
-.s-brand-text { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-.s-brand-text #s-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.s-verified-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, .12); border: 1px solid rgba(56, 189, 248, .25); border-radius: 99px; padding: 2px 8px; vertical-align: middle; white-space: nowrap; }
-.s-verified-tag svg { width: 11px; height: 11px; stroke-width: 2.5; }
 .s-brand > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .s-logo { width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; background: var(--brand) center / cover no-repeat; color: var(--on-brand-auto); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; }
 .s-logo.has-img { background-color: #fff; box-shadow: inset 0 0 0 1px var(--line); }
@@ -93,9 +89,6 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 /* Page */
 .s-main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 72px; align-items: start; padding-top: 56px; padding-bottom: 72px; }
 .s-intro { min-width: 0; }
-.s-hero-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; color: var(--on-page-3); background: rgba(255, 255, 255, .05); border: 1px solid var(--line-page); border-radius: 99px; padding: 5px 12px; margin-bottom: 18px; letter-spacing: .03em; text-transform: uppercase; }
-.s-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981; flex-shrink: 0; }
-.s-badge-sep { opacity: .4; }
 .s-intro h1 { font-family: var(--display); font-size: clamp(40px, 5.2vw, 68px); font-weight: 800; line-height: 1.02; letter-spacing: -.035em; color: var(--on-page); overflow-wrap: anywhere; }
 .s-lede { margin-top: 16px; max-width: 32em; font-size: 18px; line-height: 1.5; color: var(--on-page-2); }
 
@@ -104,11 +97,7 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 
 /* Today's rates: one thin board. Tap a coin to trade it. */
 .s-rates { margin-top: 44px; scroll-margin-top: 20px; }
-.s-rates-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-.s-live-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #10b981; }
-.s-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: s-pulse 2s ease-in-out infinite; }
-@keyframes s-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.8); } }
-.s-rates-list { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border-top: 1px solid var(--line-page); border-bottom: 1px solid var(--line-page); }
+.s-rates-list { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin-top: 12px; border-top: 1px solid var(--line-page); border-bottom: 1px solid var(--line-page); }
 .s-rate { position: relative; display: block; padding: 12px 12px 13px; text-align: left; color: var(--on-page-2); border-left: 1px solid var(--line-page); transition: color .15s; }
 .s-rate:first-child { border-left: 0; padding-left: 0; }
 .s-rate:hover { color: var(--on-page); }
@@ -126,13 +115,6 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-how li::before { content: counter(how); display: block; font-family: var(--display); font-size: 22px; font-weight: 700; line-height: 1; color: var(--accent-page); margin-bottom: 8px; }
 .s-how b { display: block; margin-bottom: 3px; font-size: 14px; font-weight: 700; color: var(--on-page); }
 .s-how span { display: block; }
-
-/* Trust row under how */
-.s-trust-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
-.s-trust-pill { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, .04); border: 1px solid var(--line-page); backdrop-filter: blur(10px); }
-.s-trust-pill svg { width: 18px; height: 18px; color: var(--accent-page); flex-shrink: 0; margin-top: 2px; }
-.s-trust-pill div b { display: block; font-size: 12.5px; font-weight: 700; color: var(--on-page); }
-.s-trust-pill div span { display: block; font-size: 11.5px; color: var(--on-page-3); margin-top: 2px; line-height: 1.35; }
 
 /* Naira account: a quiet line until it exists. */
 .s-ngn { display: flex; gap: 12px; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line-page); color: var(--on-page-3); }
@@ -566,54 +548,8 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-copy-sm, .s-exp-sm { padding: 2px 7px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 11.5px; font-weight: 600; cursor: pointer; color: var(--ink); text-decoration: none; }
 .s-copy-sm:hover, .s-exp-sm:hover { background: #f3f4f6; }
 
-/* Supported Banks Strip */
-.s-banks-strip { border-top: 1px solid var(--line-page); border-bottom: 1px solid var(--line-page); padding: 22px 0; background: rgba(0, 0, 0, .14); }
-.s-banks-in { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
-.s-banks-label { font-size: 12px; font-weight: 700; color: var(--on-page-3); text-transform: uppercase; letter-spacing: .04em; }
-.s-banks-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.s-banks-list span { font-size: 12px; font-weight: 600; color: var(--on-page-2); background: rgba(255, 255, 255, .05); border: 1px solid var(--line-page); padding: 4px 10px; border-radius: 99px; }
-
-/* FAQ Section */
-.s-faq-section { padding: 64px 0 72px; }
-.s-faq-header { text-align: center; max-width: 600px; margin: 0 auto 36px; }
-.s-section-badge { display: inline-block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent-page); margin-bottom: 8px; }
-.s-faq-header h2 { font-family: var(--display); font-size: clamp(26px, 3.2vw, 38px); font-weight: 800; color: var(--on-page); letter-spacing: -.02em; margin: 0; }
-.s-faq-header p { margin-top: 10px; font-size: 15px; color: var(--on-page-3); }
-.s-faq-grid { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-.s-faq-item { background: rgba(255, 255, 255, .04); border: 1px solid var(--line-page); border-radius: 16px; overflow: hidden; backdrop-filter: blur(10px); transition: border-color .15s, background .15s; }
-.s-faq-item:hover { border-color: rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .06); }
-.s-faq-item summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; cursor: pointer; font-size: 15.5px; font-weight: 700; color: var(--on-page); user-select: none; }
-.s-faq-item summary::-webkit-details-marker { display: none; }
-.s-faq-item summary svg { width: 18px; height: 18px; color: var(--on-page-3); transition: transform .2s ease; }
-.s-faq-item[open] summary svg { transform: rotate(180deg); color: var(--accent-page); }
-.s-faq-body { padding: 0 22px 20px; font-size: 14.5px; line-height: 1.6; color: var(--on-page-2); border-top: 1px solid rgba(255, 255, 255, .05); padding-top: 14px; }
-
-/* Foot brand with escrow badge */
-.s-foot-brand { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.s-foot-escrow-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: #10b981; background: rgba(16, 185, 129, .12); border: 1px solid rgba(16, 185, 129, .22); padding: 2px 7px; border-radius: 6px; }
-.s-foot-escrow-badge svg { width: 11px; height: 11px; }
-
-/* Layout adjustments for classic and minimal */
-.s-layout-classic .s-hero-badge { background: #fff; border-color: var(--line); color: var(--muted); }
-.s-layout-classic .s-trust-pill { background: #fff; border-color: var(--line); }
-.s-layout-classic .s-banks-strip { background: rgba(0, 0, 0, .02); }
-.s-layout-classic .s-banks-list span { background: #fff; }
-.s-layout-classic .s-faq-item { background: #fff; border-color: var(--line); }
-.s-layout-classic .s-faq-item:hover { background: #fafaf8; border-color: #d1d5db; }
-.s-layout-classic .s-faq-body { border-top-color: var(--line-soft); }
-
-.s-layout-minimal .s-hero-badge { background: #f8fafc; border-color: #e2e8f0; color: var(--ink-2); }
-.s-layout-minimal .s-trust-pill { background: #f8fafc; border-color: #e2e8f0; }
-.s-layout-minimal .s-banks-strip { background: #fafafb; border-color: #ededf1; }
-.s-layout-minimal .s-banks-list span { background: #fff; border-color: #e2e8f0; }
-.s-layout-minimal .s-faq-item { background: #fff; border-color: #ededf1; }
-.s-layout-minimal .s-faq-item:hover { background: #fafafb; border-color: #d1d5db; }
-.s-layout-minimal .s-faq-body { border-top-color: #ededf1; }
-
 /* Focused checkout mode: prioritize payment action on mobile & desktop */
-body.s-in-checkout .s-intro,
-body.s-in-checkout .s-banks-strip,
-body.s-in-checkout .s-faq-section {
+body.s-in-checkout .s-intro {
   display: none !important;
 }
 
@@ -655,15 +591,7 @@ body.s-in-checkout .s-main {
   .s-side { order: 2; width: 100%; max-width: 440px; margin: 0 auto; }
   .s-rates { order: 3; margin-top: 24px; width: 100%; }
   .s-how { order: 4; margin-top: 22px; width: 100%; }
-  .s-trust-row { order: 5; grid-template-columns: 1fr; gap: 8px; margin-top: 18px; width: 100%; }
-  .s-ngn { order: 6; margin-top: 18px; width: 100%; }
-
-  .s-banks-strip { padding: 16px 0; }
-  .s-banks-in { justify-content: center; text-align: center; gap: 10px; }
-  .s-banks-list { justify-content: center; }
-  .s-faq-section { padding: 36px 0 44px; }
-  .s-faq-item summary { padding: 14px 16px; font-size: 14.5px; }
-  .s-faq-body { padding: 0 16px 16px; font-size: 13.5px; }
+  .s-ngn { order: 5; margin-top: 18px; width: 100%; }
 
   /* Trade ticket: ergonomically tuned for thumbs */
   .s-trade { border-radius: 20px; padding: 6px 14px 16px; }
