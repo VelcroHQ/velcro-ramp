@@ -2904,7 +2904,7 @@ function renderHostfi(data, settings) {
         : `<p style="color: var(--text-secondary); font-size: 13px;">${data.error || (data.configured ? 'No wallets yet.' : 'Connect HostFi to see balances.')}</p>`;
 
     const deposits = data.deposits || [];
-    const needsAction = ['REVIEW', 'PAYOUT_FAILED', 'PAYOUT_UNCERTAIN', 'SWAP_PENDING'];
+    const needsAction = ['REVIEW', 'PAYOUT_FAILED', 'PAYOUT_UNCERTAIN', 'SWAP_PENDING', 'RECEIVED'];
     const attention = deposits.filter(d => needsAction.includes(d.status)).length;
     const badge = document.getElementById('hostfi-review-count');
     badge.style.display = attention ? 'inline-block' : 'none';

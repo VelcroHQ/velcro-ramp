@@ -777,14 +777,12 @@ function registerPublicRoutes(Router $router): void
             // Proactively sync if in any non-terminal state
             $currentStatus = strtoupper((string)($row['status'] ?? ''));
             if (($row['channel'] ?? '') === 'HOSTFI') {
-                // HostFi's webhooks move these orders along. The one exception: a buy whose coin HostFi
-                // was still holding is sent once it's free (same order, same wallet, same amount).
-                if (strtoupper((string) $row['type']) === 'ONRAMP' && in_array($currentStatus, ['PROCESSING', 'CONFIRMED'], true)) {
+                if (in_array($currentStatus, ['PROCESSING', 'CONFIRMED', 'AWAITING_DEPOSIT'], true)) {
                     try {
-                        hostfiBuyResumeOrder((string) $row['reference']);
+                        hostfiReconcileOrder((string) $row['reference']);
                         $row = Database::selectOne('SELECT * FROM `transactions` WHERE `id` = :id', ['id' => $row['id']]) ?: $row;
                     } catch (Throwable $e) {
-                        error_log('[HostFi] Resume send failed for ' . $row['reference'] . ': ' . $e->getMessage());
+                        error_log('[HostFi] Reconcile failed for ' . $row['reference'] . ': ' . $e->getMessage());
                     }
                 }
             } elseif (!in_array($currentStatus, ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'], true)) {
