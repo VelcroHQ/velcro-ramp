@@ -25,6 +25,36 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     RewriteCond %{HTTP:Authorization} ^(.*)
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
 
+    # ── Merchant Storefronts (e.g. megamind.usevelcro.com) ──
+    # When accessed via a merchant's custom subdomain (not merchant.usevelcro.com)
+    RewriteCond %{HTTP_HOST} !^merchant\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^ramp\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^goat\.usevelcro\.com$ [NC]
+    RewriteRule ^(api|webhook)/.*$ index.php [L]
+
+    RewriteCond %{HTTP_HOST} !^merchant\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^ramp\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^goat\.usevelcro\.com$ [NC]
+    RewriteCond %{DOCUMENT_ROOT}/store/$1 -f
+    RewriteRule ^(.*)$ store/$1 [L]
+
+    RewriteCond %{HTTP_HOST} !^merchant\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^ramp\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^goat\.usevelcro\.com$ [NC]
+    RewriteRule ^$ store/index.html [L]
+
+    RewriteCond %{HTTP_HOST} !^merchant\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^ramp\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^goat\.usevelcro\.com$ [NC]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    RewriteCond %{HTTP_HOST} !^merchant\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^ramp\.usevelcro\.com$ [NC]
+    RewriteCond %{HTTP_HOST} !^goat\.usevelcro\.com$ [NC]
+    RewriteRule ^(.*)$ store/index.html [L]
+
+    # ── Standard Merchant Portal (merchant.usevelcro.com) ──
     # If requested as /merchant/asset.ext, strip the /merchant/ prefix
     RewriteRule ^merchant/(.*)$ $1 [L]
 

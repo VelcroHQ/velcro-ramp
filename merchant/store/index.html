@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Buy &amp; sell crypto with naira</title>
+  <meta name="description" content="Buy and sell BTC, ETH, SOL, USDT and USDC with naira. Pay by bank transfer, get paid to any Nigerian bank.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="/velcro_favicon.png">
+
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Buy &amp; Sell Crypto with Naira — Live Exchange">
+  <meta property="og:description" content="Instant bank transfer payouts for BTC, ETH, SOL, USDT and USDC with zero hidden fees.">
+  <meta property="og:image" content="https://ramp.usevelcro.com/og-image.png?v=2">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://ramp.usevelcro.com/og-image.png?v=2">
+  <script>
+    // Ask for the store now, while the stylesheet and script are still downloading.
+    (function () {
+      var hostMatch = location.hostname.toLowerCase().match(/^([a-z0-9-]{3,30})\.usevelcro\.com$/);
+      var slug = (hostMatch && !['www','ramp','goat','merchant','api','admin','mail'].includes(hostMatch[1]))
+        ? hostMatch[1]
+        : (location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/) || [])[1];
+      if (!slug) return;
+      var h = {};
+      try { var t = localStorage.getItem('velcro_merchant_token'); if (t) h['X-Merchant-Token'] = t; } catch (e) { /* ignore */ }
+      window.storefrontRequest = fetch('/api/merchant/storefront/' + slug, { headers: h }).then(function (r) {
+        return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || 'Exchange not found'); return j.data || j; });
+      });
+      window.storefrontRequest.catch(function () { /* loadStore reports it */ });
+    })();
+  </script>
+  <link rel="preload" href="/store/store.js?v=34" as="script">
+  <link href="/store/store.css?v=34" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- The fonts never hold up the page: system text shows until they arrive. -->
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+</head>
+
+<body>
+  <div id="s-loading" class="s-center"><span class="s-spinner" aria-hidden="true"></span><span id="s-loading-text">Loading…</span></div>
+  <script>
+    // The name from the link ("ada-crypto" → "Ada Crypto") shows while the store loads.
+    (function () {
+      var m = location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/);
+      if (!m) return;
+      var name = m[1].split('-').filter(Boolean).map(function (w) { return w[0].toUpperCase() + w.slice(1); }).join(' ');
+      document.getElementById('s-loading-text').textContent = 'Loading ' + name + '…';
+      document.title = name;
+    })();
+  </script>
+  <div id="s-missing" class="s-center" hidden>
+    <div><h1>This exchange isn't available</h1><p>Check the link, or ask the business that shared it with you.</p><a href="/">Go to Velcro</a></div>
+  </div>
+
+  <div id="s-app" hidden>
+    <div id="s-net-status" class="s-net-banner" hidden></div>
+    <div id="s-preview" class="s-preview" hidden>Preview · only you can see this exchange until it's approved</div>
+
+    <header class="s-top">
+      <div class="s-wrap s-top-in">
+        <a id="s-home" class="s-brand" href="#"><span id="s-logo" class="s-logo"></span><span id="s-name"></span></a>
+        <div class="s-account">
+          <button type="button" id="s-pwa-install" class="s-pwa-btn" onclick="installPwa()" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Install</span></button>
+          <button type="button" id="s-signin" class="s-toplink" onclick="openAuth('signin')">Sign in</button>
+          <button type="button" id="s-join" class="s-btn s-btn-sm" onclick="openAuth('signup')">Create account</button>
+          <div id="s-me" class="s-me" hidden>
+            <button type="button" id="s-top-orders" class="s-toplink" onclick="showOrders()">My orders</button>
+            <button type="button" id="s-avatar" class="s-avatar" aria-label="Your account" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()"></button>
+            <div id="s-menu" class="s-menu" role="menu" hidden>
+              <p id="s-me-email"></p>
+              <button type="button" role="menuitem" class="s-menu-soon" onclick="toast('Naira accounts are coming soon. We’ll email you when yours is ready.')">Naira account <em>Soon</em></button>
+              <button type="button" role="menuitem" onclick="signOut()">Sign out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="s-wrap s-main">
+      <div class="s-intro">
+        <h1 id="s-title"></h1>
+        <p class="s-lede" id="s-lede">Buy and sell crypto with naira. Pay by bank transfer, get paid to any Nigerian bank.</p>
+
+        <section class="s-rates" id="rates" aria-label="Today's rates">
+          <h2>Today's rates <small id="s-rates-side">to buy, per $1</small></h2>
+          <div class="s-rates-list" id="s-board-rows"></div>
+        </section>
+
+        <section class="s-how" id="how" aria-label="How a trade works">
+          <h2>How a trade works</h2>
+          <ol>
+            <li><b>Choose an amount</b><span>Pick a coin and see exactly what you'll get before you start.</span></li>
+            <li><b id="how-2-title">Pay by bank transfer</b><span id="how-2-text">You get an account number for your order. Transfer from any Nigerian bank.</span></li>
+            <li><b id="how-3-title">Receive your crypto</b><span id="how-3-text">It's sent to your wallet automatically. Follow every step and get a receipt by email.</span></li>
+          </ol>
+        </section>
+
+        <div class="s-ngn" aria-label="Naira account, coming soon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3 3 8h18z"/></svg>
+          <p><b>Your own naira account</b> <em>Coming soon</em><small>A personal account number with <span class="s-ngn-store">this exchange</span>. Fund it once and buy instantly, and get paid straight into it when you sell.</small></p>
+        </div>
+      </div>
+
+      <div class="s-side">
+        <section class="s-trade" aria-label="Buy or sell crypto">
+          <div id="s-form">
+            <div class="s-tabs" role="tablist">
+              <button type="button" role="tab" id="t-buy" aria-selected="true" onclick="setSide('buy')">Buy</button>
+              <button type="button" role="tab" id="t-sell" aria-selected="false" onclick="setSide('sell')">Sell</button>
+            </div>
+
+            <div class="s-stack">
+              <div class="s-select">
+                <button type="button" id="s-coin-btn" class="s-select-btn" aria-label="Choose a coin" aria-haspopup="listbox" aria-expanded="false" onclick="toggleCoins()">
+                  <img id="s-coin-img" alt=""><span><b id="s-coin-sym"></b><small id="s-coin-name"></small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <ul id="s-coin-list" class="s-select-list" role="listbox" hidden></ul>
+              </div>
+
+              <div class="s-field" id="f-in-wrap">
+                <div class="s-field-top"><label for="f-in" id="f-in-label">You pay</label><div class="s-chips" id="s-chips"></div></div>
+                <div class="s-field-row"><input id="f-in" inputmode="decimal" autocomplete="off" placeholder="0"><b id="f-in-cur">NGN</b></div>
+              </div>
+
+              <div class="s-field s-field-out" id="f-out-wrap">
+                <div class="s-field-top"><label for="f-out" id="f-out-label">You get</label><div class="s-chips" id="s-chips-out"></div></div>
+                <div class="s-field-row"><input id="f-out" inputmode="decimal" autocomplete="off" placeholder="0"><b id="f-out-cur">USDT</b></div>
+              </div>
+
+              <div class="s-any" id="s-any-amount" hidden>
+                <b>Send any amount of <span id="s-any-coin">BTC</span></b>
+                <span>You'll get a deposit address next. We pay your bank at the live rate as soon as it arrives.</span>
+              </div>
+            </div>
+
+            <div class="s-tear" aria-hidden="true"></div>
+
+            <p class="s-summary"><span id="s-dest">Delivered to your wallet</span> · <span id="s-time">A few minutes</span></p>
+            <p class="s-note" id="s-note"></p>
+            <button type="button" id="s-go" class="s-btn s-go" onclick="goTrade()">Continue</button>
+            <p class="s-trust"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are handled by Velcro. You never send money to a person.</p>
+          </div>
+          <div id="s-checkout" class="s-checkout" hidden></div>
+        </section>
+        <a id="s-support" class="s-support" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg><span></span></a>
+      </div>
+    </main>
+
+    <footer class="s-foot">
+      <div class="s-wrap s-foot-in">
+        <span><span id="s-foot-name"></span> · Powered by <a href="/" target="_blank" rel="noopener">Velcro</a></span>
+        <span class="s-foot-links"><a id="s-foot-support" target="_blank" rel="noopener" hidden>Support</a><a href="/terms.html" target="_blank" rel="noopener">Terms</a><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Sign in / create account, in the store's name -->
+  <div id="auth" class="s-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" hidden>
+    <div class="s-modal-bg" onclick="closeAuth()"></div>
+    <div class="s-card">
+      <button type="button" class="s-x" onclick="closeAuth()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      <span id="auth-logo" class="s-logo s-logo-lg"></span>
+      <h2 id="auth-title">Sign in</h2>
+      <p id="auth-sub"></p>
+      <div id="google-wrap" hidden>
+        <div id="google-btn" class="s-google"></div>
+        <div class="s-or"><span>or</span></div>
+      </div>
+      <form id="auth-form" novalidate>
+        <label class="s-label" for="a-email">Email address</label>
+        <input id="a-email" type="email" autocomplete="email" inputmode="email" class="s-input" placeholder="you@example.com">
+        <div id="a-code-row" hidden>
+          <label class="s-label" for="a-code">6-digit code from your email</label>
+          <input id="a-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="s-input s-code" placeholder="••••••">
+          <p class="s-hint">Can't find the code? Check your spam or junk folder.</p>
+        </div>
+        <div id="a-pass-row">
+          <div class="s-label-row"><label class="s-label" for="a-pass" id="a-pass-label">Password</label><button type="button" id="a-forgot" class="s-mini" onclick="setAuthMode('reset')">Forgot password?</button></div>
+          <input id="a-pass" type="password" autocomplete="current-password" class="s-input">
+          <p id="a-pass-hint" class="s-hint" hidden>At least 8 characters, with letters and numbers.</p>
+        </div>
+        <p id="auth-error" class="s-error" hidden></p>
+        <button type="submit" id="auth-btn" class="s-btn s-go">Sign in</button>
+      </form>
+      <p id="auth-switch" class="s-switch"></p>
+      <p class="s-fine">By continuing you agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+    </div>
+  </div>
+
+  <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="/store/store.js?v=34"></script>
+</body>
+
+</html>
