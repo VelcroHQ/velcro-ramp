@@ -873,8 +873,14 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 @media (max-width: 480px) {
   .m-modal { align-items: flex-end; padding: 0; }
   .m-card { max-width: none; margin: auto 0 0; padding: 24px 20px calc(22px + env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; }
+  .m-card::before { content: ''; display: block; width: 36px; height: 4px; border-radius: 2px; background: #dcdce2; margin: -8px auto 16px; }
   .d-custom .m-slug-wrap span { font-size: 13px; }
   .d-hero-main b { font-size: 44px; }
+  .d-layouts { gap: 8px; }
+  .d-layouts button { padding: 8px 6px 9px; font-size: 12.5px; border-radius: 10px; }
+  .d-lay { height: 58px; margin-bottom: 5px; }
+  .d-phone { max-width: 100%; width: 285px; }
+  .d-phone-screen { height: 500px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

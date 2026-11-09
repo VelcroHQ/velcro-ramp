@@ -416,39 +416,230 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-copy-sm, .s-exp-sm { padding: 2px 7px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 11.5px; font-weight: 600; cursor: pointer; color: var(--ink); text-decoration: none; }
 .s-copy-sm:hover, .s-exp-sm:hover { background: #f3f4f6; }
 
-/* Phones and small tablets: the ticket comes first. */
+/* ═══════════ Mobile Priority Styles (Phones & Small Tablets) ═══════════ */
 @media (max-width: 959px) {
-  .s-main { display: flex; flex-direction: column; gap: 0; padding-top: 16px; padding-bottom: 36px; }
-  .s-intro { display: contents; }
-  .s-intro h1 { display: none; }
-  .s-lede { display: none; order: 1; margin: 0 0 14px; font-size: 15px; }
-  .s-lede.has-welcome { display: block; }
-  .s-side { order: 2; width: 100%; max-width: 480px; margin: 0 auto; }
-  .s-rates { order: 3; margin-top: 30px; width: 100%; }
-  .s-how { order: 4; margin-top: 28px; width: 100%; }
-  .s-ngn { order: 5; margin-top: 26px; width: 100%; }
-  .s-top-in { height: 60px; }
+  :root { --pad: 14px; }
+  -webkit-tap-highlight-color: transparent;
+
+  /* Top bar with safe-area support */
+  .s-top { padding-top: env(safe-area-inset-top); }
+  .s-top-in { height: 56px; }
+  .s-brand { font-size: 15px; gap: 8px; }
+  .s-logo { width: 32px; height: 32px; border-radius: 9px; font-size: 14px; }
+  .s-toplink { padding: 6px 10px; font-size: 13.5px; border-radius: 8px; }
   #s-join { display: none; }
 
-  /* Rates scroll sideways instead of taking the screen. */
-  .s-rates-list { grid-auto-columns: 112px; overflow-x: auto; scrollbar-width: none; margin-left: -20px; margin-right: -20px; padding: 0 20px; }
-  .s-rates-list::-webkit-scrollbar { display: none; }
+  /* Page layout: ticket hero first */
+  .s-main { display: flex; flex-direction: column; gap: 0; padding-top: 10px; padding-bottom: 36px; }
+  .s-intro { display: contents; }
+  .s-intro h1 { display: none; }
+  .s-lede { display: none; order: 1; margin: 0 0 10px; font-size: 14px; text-align: center; }
+  .s-lede.has-welcome { display: block; }
+  .s-side { order: 2; width: 100%; max-width: 440px; margin: 0 auto; }
+  .s-rates { order: 3; margin-top: 24px; width: 100%; }
+  .s-how { order: 4; margin-top: 22px; width: 100%; }
+  .s-ngn { order: 5; margin-top: 20px; width: 100%; }
 
-  .s-how ol { grid-template-columns: 1fr; gap: 12px; }
-  .s-how li { position: relative; padding-left: 28px; }
-  .s-how li::before { position: absolute; left: 0; top: 0; font-size: 19px; }
+  /* Trade ticket: ergonomically tuned for thumbs */
+  .s-trade { border-radius: 20px; padding: 6px 14px 16px; }
+  .s-tabs { margin: 2px 0 12px; padding: 3px; gap: 3px; }
+  .s-tabs button { min-height: 44px; font-size: 15.5px; font-weight: 700; border-radius: 10px; padding: 10px 0; }
+  .s-select-btn { padding: 10px 12px; }
+  .s-select-btn img { width: 32px; height: 32px; }
+  .s-select-btn b { font-size: 15.5px; }
+  .s-select-btn small { font-size: 12.5px; }
+  .s-select-list { max-height: 270px; overflow-y: auto; }
+  .s-select-list button { padding: 10px 11px; min-height: 44px; }
+  .s-field { padding: 10px 12px 12px; }
+  .s-field-row input, .s-field-row output { font-size: 28px; font-weight: 800; }
+  .s-chips button { padding: 4px 8px; font-size: 12px; min-height: 28px; }
+  .s-tear { margin: 16px -14px; }
+  .s-go { min-height: 50px; font-size: 16px; border-radius: 13px; padding: 14px 16px; }
+  .s-go:active { transform: scale(0.985); }
+  .s-trust { font-size: 12px; line-height: 1.4; margin-top: 10px; }
+
+  /* Card layout on mobile */
+  .s-layout-card .s-trade { padding: 8px 14px 16px; border-radius: 22px; box-shadow: 0 10px 24px -4px rgba(0, 0, 0, .28), 0 0 0 1px rgba(255, 255, 255, .15); }
+  .s-layout-card .s-tabs { margin: 2px 0 12px; padding: 3px; gap: 3px; }
+  .s-layout-card .s-tabs button { min-height: 44px; }
+  .s-layout-card .s-tear { margin: 16px -14px; }
+
+  /* Minimal layout on mobile */
+  .s-layout-minimal .s-trade { padding: 6px 14px 16px; border-radius: 18px; }
+  .s-layout-minimal .s-tabs { margin: 0 -14px 12px; padding: 0 14px; }
+  .s-layout-minimal .s-tabs button { min-height: 44px; padding: 11px 0; }
+  .s-layout-minimal .s-tear { margin: 14px 0; }
+
+  /* Rates: horizontal swipeable card carousel on mobile */
+  .s-rates-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding: 0 20px 4px;
+    border-top: 0;
+    border-bottom: 0;
+  }
+  .s-rates-list::-webkit-scrollbar { display: none; }
+  .s-rate {
+    flex: 0 0 auto;
+    width: 116px;
+    padding: 10px 12px 11px;
+    background: #ffffff;
+    border: 1px solid var(--line-page);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .03);
+    text-align: left;
+    transition: transform .1s ease, border-color .15s;
+  }
+  .s-rate:first-child { border-left: 1px solid var(--line-page); padding-left: 12px; }
+  .s-rate:active { transform: scale(0.97); }
+  .s-rate.is-on {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 1.5px var(--brand);
+  }
+  .s-rate.is-on::after { display: none; }
+
+  .s-layout-card .s-rates-list {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow-x: auto;
+    padding: 0 20px 4px;
+  }
+  .s-layout-card .s-rate {
+    background: rgba(255, 255, 255, .12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, .2);
+    box-shadow: none;
+  }
+  .s-layout-card .s-rate.is-on {
+    border-color: var(--on-brand-auto);
+    box-shadow: 0 0 0 1.5px var(--on-brand-auto);
+    background: rgba(255, 255, 255, .22);
+  }
+
+  .s-layout-minimal .s-rates-list {
+    background: transparent;
+    border: 0;
+    overflow-x: auto;
+    padding: 0 20px 4px;
+  }
+  .s-layout-minimal .s-rate {
+    background: #fafafb;
+    border: 1px solid #ededf1;
+    box-shadow: none;
+  }
+  .s-layout-minimal .s-rate.is-on {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 1.5px var(--brand);
+  }
+
+  /* How a trade works: clean mobile cards */
+  .s-how ol { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .s-how li {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: 1px solid var(--line-page);
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .s-how li::before {
+    position: static;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: 800;
+    background: var(--brand-soft);
+    color: var(--brand);
+    margin-bottom: 0;
+  }
+  .s-layout-card .s-how li {
+    background: rgba(255, 255, 255, .08);
+    border-color: rgba(255, 255, 255, .15);
+    color: var(--on-page-2);
+  }
+  .s-layout-card .s-how li::before {
+    background: rgba(255, 255, 255, .2);
+    color: var(--on-brand-auto);
+    text-shadow: none;
+  }
+  .s-layout-minimal .s-how li {
+    background: #fafafb;
+    border-color: #ededf1;
+  }
+
+  /* Naira account feature card on mobile */
+  .s-ngn {
+    border: 1px solid var(--line-page);
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 14px 16px;
+    margin-top: 20px;
+  }
+  .s-layout-card .s-ngn {
+    background: rgba(255, 255, 255, .08);
+    border-color: rgba(255, 255, 255, .16);
+    margin-top: 20px;
+    padding: 14px 16px;
+  }
+  .s-layout-minimal .s-ngn {
+    background: #fafafb;
+    border-color: #ededf1;
+    margin-top: 20px;
+    padding: 14px 16px;
+  }
+
+  /* Checkout on mobile */
+  .s-seg button { min-height: 44px; padding: 10px 6px; font-size: 13.5px; }
+  .s-bank > div { padding: 12px 14px; }
+  .s-copy { min-height: 36px; padding: 7px 11px; font-size: 13px; }
+  .s-bank-k b.is-big { font-size: 22px; }
+  .s-receipt-box { padding: 12px 14px; }
 }
+
 @media (max-width: 480px) {
-  :root { --pad: 16px; }
-  .s-wrap { padding-left: 14px; padding-right: 14px; }
-  .s-rates-list { margin-left: -14px; margin-right: -14px; padding: 0 14px; }
-  .s-field-row input, .s-field-row output { font-size: 27px; }
-  .s-layout-card .s-trade { padding: 10px 16px 20px; }
-  .s-layout-card .s-tear { margin: 18px -16px; }
-  .s-layout-minimal .s-trade { padding: 8px 16px 18px; }
-  .s-layout-minimal .s-tabs { margin: 0 -16px 16px; padding: 0 16px; }
+  :root { --pad: 14px; }
+  .s-wrap { padding-left: 12px; padding-right: 12px; }
+  .s-rates-list { margin-left: -12px; margin-right: -12px; padding: 0 12px 4px; }
+  .s-layout-card .s-rates-list, .s-layout-minimal .s-rates-list { padding: 0 12px 4px; }
+
+  /* Auth bottom sheet */
   .s-modal { align-items: flex-end; padding: 0; }
-  .s-card { max-width: none; margin: auto 0 0; border-radius: 22px 22px 0 0; padding: 24px 20px calc(22px + env(safe-area-inset-bottom)); }
+  .s-card {
+    max-width: none;
+    width: 100%;
+    margin: auto 0 0;
+    border-radius: 24px 24px 0 0;
+    padding: 16px 20px calc(24px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, .24);
+  }
+  .s-card::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: #dcdce2;
+    margin: 0 auto 16px;
+  }
+  .s-x { width: 36px; height: 36px; top: 12px; right: 12px; }
+  .s-card .s-go { min-height: 50px; }
+  .s-foot-in { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .s-spinner, .s-checking-ring { animation-duration: 3s; }
