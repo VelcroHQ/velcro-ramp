@@ -2,7 +2,19 @@
 // checkout, and customer sign-in (per store: password or Google). Talks to
 // /api/merchant/storefront/{slug} and /api/store/{slug}/*.
 
-const SLUG = (location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/) || [])[1] || '';
+function detectSlug() {
+  const host = (location.hostname || '').toLowerCase();
+  const hostMatch = host.match(/^([a-z0-9-]{3,30})\.usevelcro\.com$/);
+  if (hostMatch && !['www', 'ramp', 'goat', 'merchant', 'api', 'admin', 'mail'].includes(hostMatch[1])) {
+    return hostMatch[1];
+  }
+  const pathMatch = location.pathname.match(/^\/m\/([a-z0-9-]{3,30})\/?$/i);
+  if (pathMatch) return pathMatch[1].toLowerCase();
+  const urlParam = new URLSearchParams(location.search).get('store');
+  if (urlParam && /^[a-z0-9-]{3,30}$/i.test(urlParam)) return urlParam.toLowerCase();
+  return '';
+}
+const SLUG = detectSlug();
 const TOKEN_KEY = 'velcro_store_' + SLUG;
 const MERCHANT_TOKEN_KEY = 'velcro_merchant_token'; // lets a merchant preview their own store before approval
 const COIN_LOGOS = { BTC: '/logos/bitcoin.png', ETH: '/logos/ethereum.png', SOL: '/logos/solana.png', USDT: '/logos/usdt.png', USDC: '/logos/usdc.png' };
@@ -107,7 +119,7 @@ async function loadStore() {
   }
   document.querySelector('.s-ngn-store').textContent = s.name;
   $('s-foot-name').textContent = s.name;
-  $('s-home').href = '/m/' + SLUG;
+  $('s-home').href = location.pathname.startsWith('/m/') ? '/m/' + SLUG : '/';
   paintLogo($('s-logo'));
   paintLogo($('auth-logo'));
   if (s.support_url) {

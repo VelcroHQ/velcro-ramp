@@ -1500,7 +1500,7 @@ function openShareModal() {
   }
   const modal = $('share-modal');
   if (!modal) return;
-  const url = merchant.storefront_url || `https://ramp.usevelcro.com/m/${merchant.slug}`;
+  const url = merchant.storefront_url || ('https://' + (merchant.slug ? merchant.slug + '.usevelcro.com' : 'ramp.usevelcro.com'));
   const name = (merchant.brand && merchant.brand.name) || merchant.name || 'My Exchange';
   $('share-url-input').value = url;
 
@@ -2256,7 +2256,7 @@ function renderPhone(brand, btnText) {
     </div>
     <p class="bp-foot">${esc(name)} · Powered by Velcro</p>`;
   paintLogo($('bp-logo'), brand, 'Y');
-  $('bp-open').href = '/m/' + (merchant.slug || '');
+  $('bp-open').href = merchant.storefront_url || ('https://' + (merchant.slug ? merchant.slug + '.usevelcro.com' : 'ramp.usevelcro.com'));
   $('bp-open').classList.toggle('hidden', !merchant.slug);
 }
 
@@ -2277,7 +2277,7 @@ function checkSlug() {
       const r = await api('/api/merchant/slug-check?slug=' + encodeURIComponent(input.value));
       if (r.slug !== input.value) return;
       msg.className = 'm-hint ' + (r.available ? 'is-ok' : 'is-bad');
-      msg.textContent = r.available ? `✓ ramp.usevelcro.com/m/${r.slug} is available` : r.reason;
+      msg.textContent = r.available ? (`✓ ${r.slug}.usevelcro.com is available`) : r.reason;
     } catch (err) {
       msg.className = 'm-hint is-bad';
       msg.textContent = err.message;

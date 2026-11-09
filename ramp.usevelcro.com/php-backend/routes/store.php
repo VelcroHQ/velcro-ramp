@@ -464,7 +464,7 @@ function sendStoreWelcome(array $m, string $email): void
         'eyebrow' => $brand['name'],
         'title' => 'Welcome to ' . $brand['name'],
         'intro' => 'Your account is ready. Buy BTC, ETH, SOL, USDT or USDC by bank transfer, or sell and get paid straight to your bank. Every order is tracked live and you get a receipt by email.',
-        'cta' => ['Open ' . $brand['name'], EMAIL_SITE_URL . '/m/' . $m['slug']],
+        'cta' => ['Open ' . $brand['name'], 'https://' . $m['slug'] . '.usevelcro.com'],
         'outro' => "If you didn't create this account, reply to this email and we'll close it.",
     ], 'welcome'), 'Store welcome email');
 }

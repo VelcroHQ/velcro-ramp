@@ -65,11 +65,21 @@ function publicError(Throwable $e): string
 function handleCors(): void
 {
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowed = false;
     if (in_array('*', CORS_ORIGINS, true)) {
         header('Access-Control-Allow-Origin: *');
-    } elseif ($origin !== '' && in_array($origin, CORS_ORIGINS, true)) {
-        header("Access-Control-Allow-Origin: {$origin}");
-        header('Access-Control-Allow-Credentials: true');
+    } elseif ($origin !== '') {
+        if (in_array($origin, CORS_ORIGINS, true)) {
+            $allowed = true;
+        } elseif (preg_match('#^https?://([a-z0-9-]+\.)*usevelcro\.com(:\d+)?$#i', $origin)) {
+            $allowed = true;
+        } elseif (preg_match('#^https?://localhost(:\d+)?$#i', $origin)) {
+            $allowed = true;
+        }
+        if ($allowed) {
+            header("Access-Control-Allow-Origin: {$origin}");
+            header('Access-Control-Allow-Credentials: true');
+        }
     }
     header('Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');

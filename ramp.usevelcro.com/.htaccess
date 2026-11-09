@@ -57,10 +57,17 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     # Backend internals are never served directly (tests, schema, runtime data)
     RewriteRule ^php-backend/(tests|sql|data)(/|$) - [R=404,L]
 
-    # Ensure /goat redirects to /goat/ cleanly
-    RewriteRule ^goat$ /goat/ [R=301,L]
+    # ── Redirect old /goat and /merchant paths on ramp to their standalone subdomains ──
+    RewriteCond %{HTTP_HOST} ^ramp\.usevelcro\.com$ [NC]
+    RewriteRule ^goat(/.*)?$ https://goat.usevelcro.com$1 [R=301,L]
 
-    # Subdomain routing: goat.usevelcro.com -> serves goat/
+    RewriteCond %{HTTP_HOST} ^ramp\.usevelcro\.com$ [NC]
+    RewriteRule ^merchant(/.*)?$ https://merchant.usevelcro.com$1 [R=301,L]
+
+    # ── Subdomain: goat.usevelcro.com ──
+    RewriteCond %{HTTP_HOST} ^goat\.usevelcro\.com$ [NC]
+    RewriteRule ^(api|webhook)/.*$ index.php [L]
+
     RewriteCond %{HTTP_HOST} ^goat\.usevelcro\.com$ [NC]
     RewriteCond %{DOCUMENT_ROOT}/goat/$1 -f
     RewriteRule ^(.*)$ goat/$1 [L]
@@ -68,16 +75,46 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     RewriteCond %{HTTP_HOST} ^goat\.usevelcro\.com$ [NC]
     RewriteRule ^$ goat/index.html [L]
 
-    # Subdomain routing: merchant.usevelcro.com -> serves merchant/
+    RewriteCond %{HTTP_HOST} ^goat\.usevelcro\.com$ [NC]
+    RewriteRule ^(.*)$ goat/index.html [L]
+
+    # ── Subdomain: merchant.usevelcro.com ──
+    RewriteCond %{HTTP_HOST} ^merchant\.usevelcro\.com$ [NC]
+    RewriteRule ^(api|webhook)/.*$ index.php [L]
+
+    RewriteCond %{HTTP_HOST} ^merchant\.usevelcro\.com$ [NC]
+    RewriteCond %{DOCUMENT_ROOT}/merchant/$1 -f
+    RewriteRule ^(.*)$ merchant/$1 [L]
+
     RewriteCond %{HTTP_HOST} ^merchant\.usevelcro\.com$ [NC]
     RewriteRule ^$ merchant/index.html [L]
 
+    RewriteCond %{HTTP_HOST} ^merchant\.usevelcro\.com$ [NC]
+    RewriteRule ^(.*)$ merchant/index.html [L]
+
+    # ── Wildcard Merchant Exchanges: {slug}.usevelcro.com ──
+    RewriteCond %{HTTP_HOST} ^([a-z0-9-]+)\.usevelcro\.com$ [NC]
+    RewriteCond %1 !^(www|ramp|goat|merchant|api|admin|mail|cpanel|webmail)$ [NC]
+    RewriteRule ^(api|webhook)/.*$ index.php [L]
+
+    RewriteCond %{HTTP_HOST} ^([a-z0-9-]+)\.usevelcro\.com$ [NC]
+    RewriteCond %1 !^(www|ramp|goat|merchant|api|admin|mail|cpanel|webmail)$ [NC]
+    RewriteCond %{DOCUMENT_ROOT}/store/$1 -f
+    RewriteRule ^(.*)$ store/$1 [L]
+
+    RewriteCond %{HTTP_HOST} ^([a-z0-9-]+)\.usevelcro\.com$ [NC]
+    RewriteCond %1 !^(www|ramp|goat|merchant|api|admin|mail|cpanel|webmail)$ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ store/index.html [L]
+
+    # ── Standard Main Site: ramp.usevelcro.com ──
     # Serve existing files/directories directly
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Merchant stores: /m/{store} is one page that reads the store from the address
+    # Legacy /m/{store} backward-compatible route
     RewriteRule ^m/[a-z0-9-]{3,30}/?$ store/index.html [L]
 
     # Route API and webhook requests to the backend

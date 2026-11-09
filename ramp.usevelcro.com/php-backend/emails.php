@@ -8,6 +8,8 @@ declare(strict_types=1);
  */
 
 const EMAIL_SITE_URL = 'https://ramp.usevelcro.com';
+const MERCHANT_SITE_URL = 'https://merchant.usevelcro.com';
+const GOAT_SITE_URL = 'https://goat.usevelcro.com';
 
 /**
  * Renders the branded email. Every value is plain text (escaped here).
@@ -383,7 +385,7 @@ function orderStore(array $t): ?array
     }
     if (!array_key_exists($id, $cache)) {
         $m = Database::safeSelect('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => $id], [])[0] ?? null;
-        $cache[$id] = $m ? ['merchant' => $m, 'brand' => storeBranding($m), 'url' => EMAIL_SITE_URL . '/m/' . $m['slug']] : null;
+        $cache[$id] = $m ? ['merchant' => $m, 'brand' => storeBranding($m), 'url' => 'https://' . $m['slug'] . '.usevelcro.com'] : null;
     }
     return $cache[$id];
 }
@@ -440,7 +442,7 @@ function notifyMerchantOrderIssue(array $t, string $what): void
                 ['Amount', $buy ? '₦' . number_format((float) ($t['amount'] ?? 0), 2) : rtrim(rtrim(number_format((float) ($t['amount'] ?? 0), 8, '.', ''), '0'), '.') . ' ' . $coin],
                 ['Reference', (string) ($t['reference'] ?? ''), true],
             ],
-            'cta' => ['Open your orders', EMAIL_SITE_URL . '/merchant/#orders'],
+            'cta' => ['Open your orders', MERCHANT_SITE_URL . '/#orders'],
         ], 'order_issue');
     } catch (Throwable $e) {
         error_log('[Merchant] order issue email failed: ' . $e->getMessage());

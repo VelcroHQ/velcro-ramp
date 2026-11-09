@@ -345,7 +345,7 @@ function merchantView(array $m): array
         'brand' => $brand,
         'pricing' => merchantPricing($m),
         'rate_display' => merchantRateDisplay($m),
-        'storefront_url' => $m['slug'] ? EMAIL_SITE_URL . '/m/' . $m['slug'] : null,
+        'storefront_url' => $m['slug'] ? 'https://' . $m['slug'] . '.usevelcro.com' : null,
         // What's left before the store can go live, for the dashboard checklist.
         'checklist' => [
             'branded' => $m['slug'] !== null && $brand['name'] !== '',
@@ -526,7 +526,7 @@ function merchantMail(string $to, string $subject, array $email, string $kind): 
 function notifyMerchantStatus(array $m): bool
 {
     $name = (string) (merchantBrand($m)['name'] ?: $m['business_name']);
-    $url = EMAIL_SITE_URL . '/m/' . $m['slug'];
+    $url = 'https://' . $m['slug'] . '.usevelcro.com';
     $copy = [
         'APPROVED' => ['Your Velcro Merchant store is approved', "Good news: {$name} is verified. Your store link is ready to share, and your customers will be able to trade on it as soon as it opens.", 'Open your dashboard'],
         'REJECTED' => ['We need a few changes to your Velcro Merchant store', "We couldn't verify {$name} yet. Update your business details in Settings and resubmit, and we'll take another look.", 'Fix my details'],
@@ -541,7 +541,7 @@ function notifyMerchantStatus(array $m): bool
         'title' => $copy[0],
         'intro' => $copy[1] . ((string) $m['review_note'] !== '' && $m['status'] !== 'APPROVED' ? ' Reason: ' . $m['review_note'] : ''),
         'rows' => [['Store', $name], ['Store address', $url, true]],
-        'cta' => [$copy[2], EMAIL_SITE_URL . '/merchant/'],
+        'cta' => [$copy[2], 'https://merchant.usevelcro.com/'],
     ], 'status ' . $m['status']);
 }
 
@@ -553,7 +553,7 @@ function sendMerchantWelcome(string $email): void
         'eyebrow' => 'Velcro Merchant',
         'title' => 'Welcome to Velcro Merchant',
         'intro' => 'Your account is ready. Three steps to your first sale: personalize your store (name, address, logo and colours), set your markup on each coin, and verify your business so your store can go live.',
-        'cta' => ['Open your dashboard', EMAIL_SITE_URL . '/merchant/'],
+        'cta' => ['Open your dashboard', 'https://merchant.usevelcro.com/'],
         'outro' => "If you didn't create this account, reply to this email and we'll close it.",
     ], 'welcome'), 'Merchant welcome email');
 }
@@ -1019,8 +1019,8 @@ function registerMerchantRoutes(Router $router): void
                 'eyebrow' => 'Velcro Merchant',
                 'title' => $resubmit ? 'Thanks, we’ll take another look' : 'Thanks, we’re reviewing your business',
                 'intro' => 'We usually review new stores within one working day. We’ll email you as soon as you’re approved, or tell you exactly what we need.',
-                'rows' => [['Business', (string) $m['business_name']], ['Store address', EMAIL_SITE_URL . '/m/' . $m['slug'], true]],
-                'cta' => ['Open your dashboard', EMAIL_SITE_URL . '/merchant/'],
+                'rows' => [['Business', (string) $m['business_name']], ['Store address', 'https://' . $m['slug'] . '.usevelcro.com', true]],
+                'cta' => ['Open your dashboard', 'https://merchant.usevelcro.com/'],
             ], 'verification received'), 'Merchant verification email');
         }
         jsonResponse(successResponse(merchantView($m), 'Verification submitted'));

@@ -865,7 +865,7 @@ function hostfiBuyNotify(int $id, string $status): void
                 ['Send attempts', (string) (int) $buy['send_attempts']],
                 ['Customer', (string) ($order['email'] ?? '') ?: '-'],
             ],
-            'cta' => ['Open admin', EMAIL_SITE_URL . '/goat/'],
+            'cta' => ['Open admin', 'https://goat.usevelcro.com/'],
         ]));
 
         $email = strtolower(trim((string) ($order['email'] ?? '')));

@@ -279,7 +279,7 @@ function hostfiReportDepositHash(array $tx, string $hash): string
                     ['Order status', (string) $tx['status']],
                     ['Customer', (string) ($tx['email'] ?? '') ?: '-'],
                 ],
-                'cta' => $explorer ? ['View transaction', $explorer] : ['Open admin', EMAIL_SITE_URL . '/goat/'],
+                'cta' => $explorer ? ['View transaction', $explorer] : ['Open admin', 'https://goat.usevelcro.com/'],
             ])];
         // After the response: the customer doesn't wait on the mail server.
         register_shutdown_function(static function () use ($mail): void {
@@ -325,7 +325,7 @@ function hostfiNotify(int $id, string $status): void
                 ['Payout attempts', (string) (int) $dep['payout_attempts']],
                 ['Customer', (string) ($order['email'] ?? '') ?: '-'],
             ],
-            'cta' => ['Open admin', EMAIL_SITE_URL . '/goat/'],
+            'cta' => ['Open admin', 'https://goat.usevelcro.com/'],
         ]));
 
         $email = strtolower(trim((string) ($order['email'] ?? '')));
