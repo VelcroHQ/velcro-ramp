@@ -241,9 +241,10 @@ try {
     $app_('POST', "/api/admin/merchants/{$id}/status", ['status' => 'APPROVED'], $admin);
     [$c] = $app_('POST', '/api/merchant/verification', $kyb, $auth($token));
     [$cSlug] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline-2'], $auth($token));
-    [$cName, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline X', 'slug' => 'northline'], $auth($token));
-    check($c === 400 && $cSlug === 400 && $cName === 200 && ($res['data']['status'] ?? '') === 'APPROVED' && ($res['data']['checklist']['verified'] ?? false) === true,
-        'approved: verification locked, address fixed, name and look still editable');
+    [$cName] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline X', 'slug' => 'northline'], $auth($token));
+    [$cBrand, $res] = $app_('POST', '/api/merchant/brand', ['name' => 'Northline Exchange', 'slug' => 'northline', 'color' => '#14b8a6'], $auth($token));
+    check($c === 400 && $cSlug === 400 && $cName === 400 && $cBrand === 200 && ($res['data']['status'] ?? '') === 'APPROVED' && ($res['data']['checklist']['verified'] ?? false) === true,
+        'approved: verification locked, exchange name and link fixed, look still editable');
 
     // ── Store customers: separate accounts per store ──
     $storeCode = static function (int $merchantId, string $purpose, string $em) use ($pdo): string {
@@ -253,7 +254,7 @@ try {
     };
     $shopper = 'buyer@example.com';
     [$c, $res] = $app_('GET', '/api/merchant/storefront/northline');
-    check($c === 200 && ($res['data']['store']['name'] ?? '') === 'Northline X' && array_key_exists('google_client_id', $res['data'] ?? []), 'approved store is public');
+    check($c === 200 && ($res['data']['store']['name'] ?? '') === 'Northline Exchange' && array_key_exists('google_client_id', $res['data'] ?? []), 'approved store is public');
     [$c] = $app_('POST', '/api/store/northline/auth/signup', ['email' => $shopper, 'otp' => '000000', 'password' => 'Shopper123']);
     check($c === 403, 'store sign-up: wrong code refused');
     [$c, $res] = $app_('POST', '/api/store/northline/auth/signup', ['email' => $shopper, 'otp' => $storeCode($id, 'stsu', $shopper), 'password' => 'Shopper123']);

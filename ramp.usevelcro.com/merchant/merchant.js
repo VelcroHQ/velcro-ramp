@@ -980,9 +980,11 @@ function renderSettings() {
   $('b-slug').value = brandDraft.slug;
   $('b-welcome').value = brandDraft.welcome;
   const locked = ['APPROVED', 'SUSPENDED'].includes(merchant.status) && !!merchant.slug;
+  $('b-name').readOnly = locked;
   $('b-slug').readOnly = locked;
+  $('b-name-msg').classList.toggle('hidden', !locked);
   $('b-slug-msg').className = 'm-hint';
-  $('b-slug-msg').textContent = locked ? 'Your address is fixed now that you’re verified.' : "Lowercase letters, numbers and hyphens. It's fixed once you're verified.";
+  $('b-slug-msg').textContent = locked ? 'Your exchange link is fixed now that you’re verified.' : "Lowercase letters, numbers and hyphens. It's fixed once you're verified.";
   delete $('b-slug').dataset.edited;
   $('brand-error').classList.add('hidden');
   paintBrand();
@@ -1295,11 +1297,16 @@ document.addEventListener('DOMContentLoaded', () => {
   $('panel-support').addEventListener('submit', submitSupport);
   $('kyb-form').addEventListener('submit', submitKyb);
   $('b-name').addEventListener('input', () => {
+    if ($('b-name').readOnly) return;
     brandDraft.name = $('b-name').value;
     if (!merchant.slug && !$('b-slug').dataset.edited) { $('b-slug').value = slugify(brandDraft.name); checkSlug(); }
     paintBrand();
   });
-  $('b-slug').addEventListener('input', () => { $('b-slug').dataset.edited = '1'; checkSlug(); });
+  $('b-slug').addEventListener('input', () => {
+    if ($('b-slug').readOnly) return;
+    $('b-slug').dataset.edited = '1';
+    checkSlug();
+  });
   document.querySelectorAll('.d-swatch').forEach(s => s.addEventListener('click', () => { brandDraft.color = s.dataset.color; paintBrand(); }));
   $('b-color').addEventListener('input', () => { brandDraft.color = $('b-color').value.toLowerCase(); paintBrand(); });
   $('b-btn').addEventListener('input', () => { brandDraft.buttonText = $('b-btn').value.toLowerCase(); paintBrand(); });

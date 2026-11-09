@@ -746,11 +746,12 @@ function registerMerchantRoutes(Router $router): void
         $layout = (string) body($b, 'layout', $brand['layout']);
         $locked = in_array($m['status'], ['APPROVED', 'SUSPENDED'], true) && $m['slug'];
         $problem = match (true) {
-            mb_strlen($name) < 2 => 'Enter your store name',
+            mb_strlen($name) < 2 => 'Enter your exchange name',
             !preg_match('/^#[0-9a-f]{6}$/', $color) => 'Pick a valid colour',
             $buttonText !== '' && !preg_match('/^#[0-9a-f]{6}$/', $buttonText) => 'Pick a valid button text colour',
             !in_array($layout, MERCHANT_LAYOUTS, true) => 'Pick a layout',
-            $locked && $slug !== $m['slug'] => 'Your store address can’t change after approval',
+            $locked && $slug !== (string) $m['slug'] => 'Your exchange link cannot be changed after approval',
+            $locked && !empty($brand['name']) && $name !== (string) $brand['name'] => 'Your exchange name cannot be changed after approval',
             default => merchantSlugProblem($slug),
         };
         if ($problem !== null) {
@@ -768,9 +769,9 @@ function registerMerchantRoutes(Router $router): void
         }
         try {
             Database::execute('UPDATE `merchants` SET `slug` = :s, `brand` = :b WHERE `id` = :id', [
-                's' => $slug,
+                's' => $locked ? $m['slug'] : $slug,
                 'b' => json_encode([
-                    'name' => $name,
+                    'name' => $locked ? $brand['name'] : $name,
                     'color' => $color,
                     'button_text' => $buttonText !== '' ? $buttonText : null,
                     'welcome' => $welcome,
