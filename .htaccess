@@ -50,6 +50,10 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # ── Redirect apex domain usevelcro.com to www.usevelcro.com (Vercel landing page) ──
+    RewriteCond %{HTTP_HOST} ^usevelcro\.com$ [NC]
+    RewriteRule ^(.*)$ https://www.usevelcro.com/$1 [R=301,L]
+
     # Pass Authorization header to CGI/PHP environment
     RewriteCond %{HTTP:Authorization} ^(.*)
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
