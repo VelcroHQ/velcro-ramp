@@ -122,6 +122,8 @@ function openAuth(mode) {
 
 function closeAuth() { $('auth').classList.remove('is-open'); }
 
+let signupDraft = { name: '', business: '' };
+
 function setAuthMode(mode) {
   authMode = mode;
   const [title, sub, btn] = AUTH_COPY[mode];
@@ -130,6 +132,18 @@ function setAuthMode(mode) {
   $('auth-btn').textContent = btn;
   $('auth-error').classList.add('hidden');
   const codeStep = mode === 'signup-code' || mode === 'reset-code';
+  const isSignup = mode === 'signup';
+
+  if ($('a-signup-fields')) {
+    $('a-signup-fields').classList.toggle('hidden', !isSignup);
+    if (isSignup && !$('a-business').value) {
+      try {
+        const claimedName = localStorage.getItem(CLAIM_NAME_KEY);
+        if (claimedName) $('a-business').value = claimedName;
+      } catch (e) { /* ignore */ }
+    }
+  }
+
   $('a-code-row').classList.toggle('hidden', !codeStep);
   $('a-pass-row').classList.toggle('hidden', mode === 'signup' || mode === 'reset');
   $('a-forgot').classList.toggle('hidden', mode !== 'signin');
@@ -141,7 +155,16 @@ function setAuthMode(mode) {
   $('auth-switch').innerHTML = mode === 'signin'
     ? 'New to Velcro Merchant? <button type="button" onclick="setAuthMode(\'signup\')">Create an account</button>'
     : 'Already have an account? <button type="button" onclick="setAuthMode(\'signin\')">Sign in</button>';
-  if (codeStep) setTimeout(() => $('a-code').focus(), 50);
+
+  if (isSignup) {
+    setTimeout(() => {
+      if ($('a-name') && !$('a-name').value) $('a-name').focus();
+      else if ($('a-business') && !$('a-business').value) $('a-business').focus();
+      else $('a-email').focus();
+    }, 50);
+  } else if (codeStep) {
+    setTimeout(() => $('a-code').focus(), 50);
+  }
 }
 
 function authError(msg) {
@@ -155,8 +178,20 @@ async function submitAuth(e) {
   const email = $('a-email').value.trim();
   const password = $('a-pass').value;
   const otp = $('a-code').value.trim();
+  const name = $('a-name') ? $('a-name').value.trim() : '';
+  const business = $('a-business') ? $('a-business').value.trim() : '';
   $('auth-error').classList.add('hidden');
-  if (!/^\S+@\S+\.\S+$/.test(email)) return authError('Enter a valid email address');
+
+  if (authMode === 'signup') {
+    if (!name) return authError('Enter your full legal name (KYC name)');
+    if (!business) return authError('Enter your trading or business name');
+    if (!/^\S+@\S+\.\S+$/.test(email)) return authError('Enter a valid email address');
+    signupDraft.name = name;
+    signupDraft.business = business;
+  } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return authError('Enter a valid email address');
+  }
+
   const label = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Please wait…';
@@ -167,7 +202,9 @@ async function submitAuth(e) {
       await api('/api/merchant/auth/signup/code', { method: 'POST', body: { email } });
       setAuthMode('signup-code');
     } else if (authMode === 'signup-code') {
-      signedIn(await api('/api/merchant/auth/signup', { method: 'POST', body: { email, otp, password } }));
+      const finalName = name || signupDraft.name;
+      const finalBusiness = business || signupDraft.business;
+      signedIn(await api('/api/merchant/auth/signup', { method: 'POST', body: { email, otp, password, name: finalName, business_name: finalBusiness } }));
     } else if (authMode === 'reset') {
       await api('/api/merchant/auth/reset/code', { method: 'POST', body: { email } });
       setAuthMode('reset-code');
@@ -187,6 +224,9 @@ function signedIn(data) {
   closeAuth();
   $('a-pass').value = '';
   $('a-code').value = '';
+  if ($('a-name')) $('a-name').value = '';
+  if ($('a-business')) $('a-business').value = '';
+  signupDraft = { name: '', business: '' };
   showApp();
 }
 
@@ -2345,6 +2385,7 @@ function renderKyb() {
   fillSelect($('f-volume'), me.volumes, 'Choose a range', merchant.monthly_volume);
   ['business_name', 'registration_number', 'contact_name', 'phone', 'website', 'description'].forEach(k => { f.elements[k].value = merchant[k] || ''; });
   if (!f.elements.contact_name.value && me.name) f.elements.contact_name.value = me.name;
+  if (!f.elements.business_name.value && merchant.brand && merchant.brand.name) f.elements.business_name.value = merchant.brand.name;
   $('f-reg-row').classList.toggle('hidden', $('f-type').value !== 'registered');
   const [cls, label] = KYB_BADGES[merchant.status] || KYB_BADGES.DRAFT;
   $('kyb-badge').className = 'd-st is-' + cls;
@@ -2364,7 +2405,11 @@ async function submitKyb(e) {
   const f = $('kyb-form');
   const err = $('kyb-error');
   err.classList.add('hidden');
-  const slug = merchant.slug || $('b-slug').value.trim();
+  let slug = merchant.slug || $('b-slug').value.trim();
+  if (!slug && f.elements.business_name && f.elements.business_name.value.trim()) {
+    slug = slugify(f.elements.business_name.value.trim());
+    if ($('b-slug')) $('b-slug').value = slug;
+  }
   if (!slug) {
     toast('Choose your exchange link first, then come back to verify');
     openSettings('store');

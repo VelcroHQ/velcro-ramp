@@ -1913,7 +1913,13 @@
             <!-- Tab 1: KYB & Business -->
             <div id="md-tab-kyb" class="md-tab-content">
                 <div class="tx-modal-info" style="margin: 0 0 16px;">
-                    <div><span style="color: var(--text-secondary);">Business Name</span><b id="md-biz-name">—</b></div>
+                    <div>
+                        <span style="color: var(--text-secondary);">Business / Trading Name</span>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <b id="md-biz-name">—</b>
+                            <button type="button" class="btn-secondary" style="width: auto; font-size: 11px; padding: 3px 8px; cursor: pointer;" onclick="editMerchantTradingName(selectedMerchantForDetail ? selectedMerchantForDetail.id : null)">Edit Name ✏️</button>
+                        </div>
+                    </div>
                     <div><span style="color: var(--text-secondary);">Business Type</span><span id="md-biz-type">—</span></div>
                     <div><span style="color: var(--text-secondary);">CAC Registration #</span><code id="md-biz-reg" style="font-weight: 600; color: var(--text-main);">—</code></div>
                     <div><span style="color: var(--text-secondary);">Contact Person</span><span id="md-biz-contact">—</span></div>

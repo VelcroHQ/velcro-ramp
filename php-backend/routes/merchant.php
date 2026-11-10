@@ -814,12 +814,105 @@ function registerMerchantRoutes(Router $router): void
         }
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $name = mb_substr(trim((string) body($b, 'name', '')), 0, 120);
+        $businessName = mb_substr(trim((string) body($b, 'business_name', '')), 0, 120);
         if ($account) {
-            Database::execute('UPDATE `merchant_accounts` SET `password_hash` = :h WHERE `id` = :id', ['h' => $hash, 'id' => $account['id']]);
+            Database::execute('UPDATE `merchant_accounts` SET `password_hash` = :h, `name` = COALESCE(:n, `name`) WHERE `id` = :id', [
+                'h' => $hash,
+                'n' => $name !== '' ? $name : null,
+                'id' => $account['id'],
+            ]);
         } else {
-            Database::insert('merchant_accounts', ['email' => $email, 'password_hash' => $hash, 'name' => $name !== '' ? $name : null]);
+            Database::insert('merchant_accounts', [
+                'email' => $email,
+                'password_hash' => $hash,
+                'name' => $name !== '' ? $name : null,
+            ]);
         }
-        auditLog('MERCHANT_ACCOUNT_CREATED', ['email' => $email, 'method' => 'password']);
+
+        // Initialize or update the merchant's store profile with business name, contact name, and suggested slug
+        $m = merchantByEmail($email);
+        $slug = null;
+        if ($businessName !== '') {
+            $baseSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($businessName)));
+            $baseSlug = trim($baseSlug, '-');
+            if (strlen($baseSlug) > 28) {
+                $baseSlug = substr($baseSlug, 0, 28);
+            }
+            if (strlen($baseSlug) >= 3 && !in_array($baseSlug, MERCHANT_RESERVED_SLUGS, true)) {
+                $slugCandidate = $baseSlug;
+                $exists = Database::selectOne('SELECT `id` FROM `merchants` WHERE `slug` = :s AND `email` != :e', ['s' => $slugCandidate, 'e' => $email]);
+                if ($exists) {
+                    $slugCandidate = substr($baseSlug, 0, 22) . '-' . substr(bin2hex(random_bytes(3)), 0, 5);
+                }
+                $slug = $slugCandidate;
+            }
+        }
+
+        if (!$m) {
+            $brandJson = json_encode([
+                'name' => $businessName,
+                'color' => MERCHANT_DEFAULT_COLOR,
+                'button_text' => null,
+                'welcome' => '',
+                'layout' => 'classic',
+                'logo' => null,
+                'support_url' => null,
+            ]);
+            try {
+                Database::insert('merchants', [
+                    'email' => $email,
+                    'status' => 'DRAFT',
+                    'business_name' => $businessName !== '' ? $businessName : null,
+                    'contact_name' => $name !== '' ? $name : null,
+                    'slug' => $slug,
+                    'brand' => $brandJson,
+                ]);
+            } catch (Throwable $e) {
+                try {
+                    Database::insert('merchants', [
+                        'email' => $email,
+                        'status' => 'DRAFT',
+                        'business_name' => $businessName !== '' ? $businessName : null,
+                        'contact_name' => $name !== '' ? $name : null,
+                        'brand' => $brandJson,
+                    ]);
+                } catch (Throwable $e2) {
+                    // created by a parallel call
+                }
+            }
+        } else {
+            $updates = [];
+            $params = ['id' => $m['id']];
+            if ($businessName !== '' && empty($m['business_name'])) {
+                $updates[] = '`business_name` = :bn';
+                $params['bn'] = $businessName;
+            }
+            if ($name !== '' && empty($m['contact_name'])) {
+                $updates[] = '`contact_name` = :cn';
+                $params['cn'] = $name;
+            }
+            if ($slug !== null && empty($m['slug'])) {
+                $updates[] = '`slug` = :sl';
+                $params['sl'] = $slug;
+            }
+            if ($businessName !== '') {
+                $brand = json_decode((string) ($m['brand'] ?? ''), true) ?: [];
+                if (empty($brand['name'])) {
+                    $brand['name'] = $businessName;
+                    $updates[] = '`brand` = :b';
+                    $params['b'] = json_encode($brand);
+                }
+            }
+            if (!empty($updates)) {
+                try {
+                    Database::execute('UPDATE `merchants` SET ' . implode(', ', $updates) . ' WHERE `id` = :id', $params);
+                } catch (Throwable $e) {
+                    // ignore if slug collision
+                }
+            }
+        }
+
+        auditLog('MERCHANT_ACCOUNT_CREATED', ['email' => $email, 'method' => 'password', 'business_name' => $businessName, 'name' => $name]);
         if (!$account) {
             sendMerchantWelcome($email);
         }
@@ -1670,5 +1763,43 @@ function registerMerchantRoutes(Router $router): void
         auditLog('MERCHANT_' . $status, ['id' => (int) $id, 'slug' => $m['slug'], 'note' => $note]);
         $m = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
         jsonResponse(['success' => true, 'merchant' => $m, 'email_sent' => notifyMerchantStatus($m)]);
+    });
+
+    // Admin endpoint: edit merchant trading name / business name
+    $router->post('/api/admin/merchants/(\d+)/trading-name', function (string $id) {
+        requireAdminAuth();
+        ensureMerchantSchema();
+        $b = getJsonBody();
+        $businessName = mb_substr(trim((string) body($b, 'business_name', body($b, 'trading_name', ''))), 0, 120);
+        if ($businessName === '') {
+            jsonResponse(['success' => false, 'error' => 'Trading / business name cannot be empty'], 400);
+        }
+        $m = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        if (!$m) {
+            jsonResponse(['success' => false, 'error' => 'Merchant not found'], 404);
+        }
+
+        $brand = json_decode((string) ($m['brand'] ?? ''), true) ?: [];
+        $oldName = $m['business_name'] ?: ($brand['name'] ?? '');
+        $brand['name'] = $businessName;
+
+        Database::execute(
+            'UPDATE `merchants` SET `business_name` = :bn, `brand` = :b WHERE `id` = :id',
+            [
+                'bn' => $businessName,
+                'b' => json_encode($brand),
+                'id' => (int) $id,
+            ]
+        );
+
+        auditLog('MERCHANT_TRADING_NAME_UPDATED', [
+            'id' => (int) $id,
+            'email' => $m['email'],
+            'old_name' => $oldName,
+            'new_name' => $businessName,
+        ]);
+
+        $updated = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        jsonResponse(['success' => true, 'merchant' => $updated, 'business_name' => $businessName]);
     });
 }

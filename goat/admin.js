@@ -2363,7 +2363,10 @@ function renderMerchantsTable(rows) {
                 </div>
             </td>
             <td data-label="Business & KYB">
-                <div><b>${escapeHtml(m.business_name || storeName)}</b></div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <b>${escapeHtml(m.business_name || storeName)}</b>
+                    <button class="m-btn-action" style="padding: 1px 5px; font-size: 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer;" onclick="editMerchantTradingName(${m.id})" title="Edit trading name">✏️</button>
+                </div>
                 ${m.business_type ? `<span style="font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,0.05); color: var(--text-secondary);">${escapeHtml(merchantLookups.business_types[m.business_type] || m.business_type)}</span>` : ''}
                 ${m.registration_number ? muted('Reg: ' + escapeHtml(m.registration_number)) : ''}
                 ${m.website ? `<div style="margin-top: 2px;"><a href="${escapeHtml(m.website)}" target="_blank" rel="noopener" style="font-size: 11px; color: var(--primary-link);">${escapeHtml(m.website)}</a></div>` : ''}
@@ -2374,6 +2377,7 @@ function renderMerchantsTable(rows) {
             <td data-label="Actions" class="m-actions-cell">
                 <div class="m-action-group">
                     <button class="m-btn-action m-btn-inspect" onclick="openMerchantDetailModal(${m.id})">Inspect 🔍</button>
+                    <button class="m-btn-action" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border);" onclick="editMerchantTradingName(${m.id})" title="Edit Trading / Business Name">Name ✏️</button>
                     ${actions.map(([s, l, c]) => `<button class="m-btn-action ${c}" onclick="setMerchantStatus(${Number(m.id)}, '${s}', '${l}')">${l}</button>`).join('')}
                     ${liveStoreUrl ? `<a href="${liveStoreUrl}" target="_blank" rel="noopener" class="m-btn-action m-btn-visit" title="Open live storefront">Visit ↗</a>` : ''}
                     <button class="m-btn-action m-btn-domain" onclick="openDomainModal(${m.id})" title="Configure or activate dedicated subdomain">Domain</button>
@@ -2790,6 +2794,38 @@ async function setMerchantStatus(id, status, label) {
         showToast(e.message, 'error');
     }
     fetchMerchants();
+}
+
+async function editMerchantTradingName(id) {
+    if (!id) return;
+    const m = (allMerchants || []).find(x => Number(x.id) === Number(id));
+    if (!m) return showToast('Merchant not found', 'error');
+    let brand = {};
+    try { brand = JSON.parse(m.brand || '{}') || {}; } catch (e) {}
+    const currentName = m.business_name || brand.name || '';
+    const newName = prompt(`Edit Trading / Business Name for ${m.email}:`, currentName);
+    if (newName === null) return;
+    const trimmed = newName.trim();
+    if (!trimmed) return showToast('Trading name cannot be empty', 'error');
+    if (trimmed === currentName) return;
+
+    try {
+        const res = await adminPost(`/api/admin/merchants/${id}/trading-name`, { business_name: trimmed });
+        if (res && res.merchant) {
+            showToast('Trading name updated successfully', 'success');
+            const idx = allMerchants.findIndex(x => Number(x.id) === Number(id));
+            if (idx !== -1) {
+                allMerchants[idx] = { ...allMerchants[idx], ...res.merchant };
+            }
+            if (selectedMerchantForDetail && Number(selectedMerchantForDetail.id) === Number(id)) {
+                selectedMerchantForDetail = { ...selectedMerchantForDetail, ...res.merchant };
+                openMerchantDetailModal(id);
+            }
+            filterMerchantsList();
+        }
+    } catch (e) {
+        showToast(e.message || 'Failed to update trading name', 'error');
+    }
 }
 
 // ─── Coins & providers ───
