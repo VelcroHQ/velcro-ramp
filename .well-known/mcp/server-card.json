@@ -1,0 +1,81 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/server-card.json",
+  "name": "velcro-mcp-server",
+  "title": "Velcro Crypto Settlement & Ramp Protocol",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) server for querying real-time crypto-fiat exchange rates, estimating transaction fees, and tracking order fulfillment on Velcro.",
+  "endpoint": "https://ramp.usevelcro.com/api/mcp",
+  "transport": "http-post",
+  "homepage": "https://ramp.usevelcro.com",
+  "repository": "https://github.com/VelcroHQ/velcro-ramp",
+  "vendor": {
+    "name": "Velcro",
+    "url": "https://usevelcro.com",
+    "contact": "support@usevelcro.com",
+    "telephone": "+234 703 542 8475"
+  },
+  "capabilities": {
+    "tools": {
+      "listChanged": false
+    },
+    "resources": {
+      "subscribe": false,
+      "listChanged": false
+    },
+    "prompts": {
+      "listChanged": false
+    }
+  },
+  "tools": [
+    {
+      "name": "get_exchange_rates",
+      "description": "Fetch live buy and sell rates in NGN for USDT, USDC, BTC, ETH, and SOL",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "Optional coin symbol (USDT, USDC, BTC, ETH, SOL)"
+          }
+        }
+      }
+    },
+    {
+      "name": "calculate_quote",
+      "description": "Calculate exact fiat cost or crypto payout including fees",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["buy", "sell"],
+            "description": "Transaction type"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Crypto symbol"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount in fiat or crypto"
+          }
+        },
+        "required": ["type", "currency", "amount"]
+      }
+    },
+    {
+      "name": "track_order",
+      "description": "Query order status, blockchain transaction confirmation, and bank payout status",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "order_ref": {
+            "type": "string",
+            "description": "The unique Velcro order reference code"
+          }
+        },
+        "required": ["order_ref"]
+      }
+    }
+  ]
+}

@@ -18,41 +18,157 @@
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="EPBy3CyMZBGr0nYRYqH8G1YjTCr3rGUxMWOQIPrl68I">
   <link rel="canonical" href="https://ramp.usevelcro.com/">
+  <link rel="describedby" href="/llms.txt" type="text/plain">
+  <link rel="alternate" type="text/markdown" href="/?format=markdown">
   <link rel="icon" type="image/png" href="/velcro_favicon.png">
   <link rel="preload" as="image" href="/velcro_logo.png">
   <link rel="preload" as="image" href="/logos/usdt.png">
   <link rel="preload" as="image" href="/logos/usdc.png">
   <link rel="preload" as="image" href="/logos/solana.png">
 
-  <!-- Structured Data: Organization + WebSite -->
+  <!-- Structured Data: Organization + WebSite + FinancialProduct + WebApplication + FAQPage + Breadcrumbs -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "Organization",
+        "@type": ["Organization", "FinancialService"],
         "@id": "https://ramp.usevelcro.com/#organization",
-        "name": "Velcro Convert",
+        "name": "Velcro",
+        "alternateName": ["Velcro Convert", "Velcro Ramp", "VelcroHQ", "usevelcro.com"],
         "url": "https://ramp.usevelcro.com",
-        "logo": "https://ramp.usevelcro.com/velcro_logo.png",
-        "description": "Crypto on-ramp and off-ramp for Nigeria. Buy and sell USDT, USDC, SOL and other tokens with Naira.",
-        "sameAs": []
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://ramp.usevelcro.com/velcro_logo.png",
+          "width": 512,
+          "height": 512
+        },
+        "image": "https://ramp.usevelcro.com/og-image.png?v=2",
+        "description": "Instant crypto onramp and offramp platform for Nigeria. Buy and sell USDT, USDC, BTC, ETH, and SOL directly with Naira bank transfer.",
+        "telephone": "+234 703 542 8475",
+        "email": "support@usevelcro.com",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Plot 1088, Cadastral Zone A01, Central Business District",
+          "addressLocality": "Abuja",
+          "addressRegion": "FCT",
+          "postalCode": "900001",
+          "addressCountry": "NG"
+        },
+        "contactPoint": [
+          {
+            "@type": "ContactPoint",
+            "telephone": "+234 703 542 8475",
+            "email": "support@usevelcro.com",
+            "contactType": "customer service",
+            "availableLanguage": ["en"],
+            "contactOption": "TollFree",
+            "areaServed": "NG"
+          }
+        ],
+        "sameAs": [
+          "https://usevelcro.com",
+          "https://twitter.com/usevelcro",
+          "https://wa.me/2347035428475"
+        ],
+        "currenciesAccepted": "NGN, USD",
+        "paymentAccepted": "Bank Transfer, Cryptocurrency"
       },
       {
         "@type": "WebSite",
         "@id": "https://ramp.usevelcro.com/#website",
         "url": "https://ramp.usevelcro.com",
         "name": "Velcro Convert",
-        "publisher": { "@id": "https://ramp.usevelcro.com/#organization" }
+        "alternateName": ["Velcro Ramp", "usevelcro.com"],
+        "publisher": { "@id": "https://ramp.usevelcro.com/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://ramp.usevelcro.com/?search={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
       },
       {
         "@type": "WebPage",
         "@id": "https://ramp.usevelcro.com/#webpage",
         "url": "https://ramp.usevelcro.com/",
         "name": "Velcro Convert — Buy & Sell Crypto with Naira",
-        "description": "Buy and sell USDT, USDC, SOL and more with Naira. Pay by bank transfer, get paid to any Nigerian bank account, and receive an email receipt for every order.",
+        "description": "Buy and sell USDT, USDC, SOL, BTC, and ETH with Naira. Pay by bank transfer, get paid to any Nigerian bank account, and receive an instant receipt.",
         "isPartOf": { "@id": "https://ramp.usevelcro.com/#website" },
-        "about": { "@id": "https://ramp.usevelcro.com/#organization" }
+        "about": { "@id": "https://ramp.usevelcro.com/#organization" },
+        "breadcrumb": { "@id": "https://ramp.usevelcro.com/#breadcrumb" }
+      },
+      {
+        "@type": "FinancialProduct",
+        "@id": "https://ramp.usevelcro.com/#product",
+        "name": "Velcro Instant Crypto Swap & Ramp",
+        "description": "Direct bank-to-crypto onramp and crypto-to-bank offramp service with automated settlement.",
+        "provider": { "@id": "https://ramp.usevelcro.com/#organization" },
+        "category": "Cryptocurrency Exchange Service",
+        "feesAndCommissionsSpecification": "0.5% platform fee per conversion",
+        "areaServed": "NG"
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://ramp.usevelcro.com/#app",
+        "name": "Velcro Ramp Web App",
+        "url": "https://ramp.usevelcro.com",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "All",
+        "browserRequirements": "Requires JavaScript. Requires HTML5."
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://ramp.usevelcro.com/#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://ramp.usevelcro.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "About",
+            "item": "https://ramp.usevelcro.com/about.html"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Contact",
+            "item": "https://ramp.usevelcro.com/contact.html"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://ramp.usevelcro.com/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How quickly are crypto buys and sells settled on Velcro?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Transactions typically settle within 1 to 3 minutes. Bank payouts are dispatched immediately once blockchain confirmations or incoming deposits are received."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which assets and chains does Velcro support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Velcro supports USDT (TRC20, BEP20, Polygon, Solana, Base), USDC (Solana, Base, Polygon, Ethereum), BTC (native), ETH (native, Base, Arbitrum), and SOL (native)."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What are the contact details for Velcro support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Velcro support is available 24/7 via email at support@usevelcro.com, telephone at +234 703 542 8475, and WhatsApp at +234 703 542 8475."
+            }
+          }
+        ]
       }
     ]
   }
@@ -104,7 +220,7 @@
         <h2 id="login-title" class="mt-4 text-xl font-bold tracking-tight text-velcro-navy dark:text-white">Add your email</h2>
         <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">We'll send your receipts there and keep your order history in one place.</p>
 
-        <form id="login-form" onsubmit="handleLoginSubmit(event)" class="mt-6 text-left">
+        <form id="login-form" toolname="authenticate_user_email" tooldescription="Save user email address to attach receipts and view transaction history" onsubmit="handleLoginSubmit(event)" class="mt-6 text-left">
           <label for="login-email" class="block mb-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">Email address</label>
           <input type="email" id="login-email" required autocomplete="email" inputmode="email" placeholder="you@example.com" class="login-input placeholder-gray-400">
           <button type="submit" id="login-submit-btn"
@@ -219,7 +335,7 @@
         </div>
 
         <!-- Sell Crypto Form -->
-        <div id="form-sell" class="animate-fade-in space-y-5">
+        <div id="form-sell" toolname="sell_crypto" tooldescription="Sell cryptocurrency (USDT, USDC, BTC, ETH, SOL) for automated Nigerian Naira bank payout" class="animate-fade-in space-y-5">
 
           <!-- You'll Send Panel -->
           <div id="sell-send-panel" class="input-panel">
@@ -524,7 +640,7 @@
         </div>
 
         <!-- Buy Crypto Form -->
-        <div id="form-buy" class="hidden animate-fade-in space-y-5">
+        <div id="form-buy" toolname="buy_crypto" tooldescription="Buy cryptocurrency with Nigerian bank transfer (Naira) deposited to dedicated virtual account" class="hidden animate-fade-in space-y-5">
 
           <!-- You'll Receive Panel -->
           <div id="buy-receive-panel" class="input-panel">
@@ -1006,10 +1122,22 @@
       <p class="text-sm text-gray-500 mb-2">Powered by <a href="https://usevelcro.com" target="_blank" rel="noopener noreferrer" class="font-semibold text-velcro-navy hover:underline">Velcro</a> (usevelcro.com)</p>
       <p class="text-xs text-gray-400 mb-6">© 2026 Velcro Technologies. All rights reserved.</p>
       <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500">
+        <a href="/about.html" class="hover:text-velcro-navy transition-colors">About</a>
+        <a href="/contact.html" class="hover:text-velcro-navy transition-colors">Contact</a>
         <a href="/terms.html" class="hover:text-velcro-navy transition-colors">Terms</a>
         <a href="/privacy.html" class="hover:text-velcro-navy transition-colors">Privacy</a>
+        <a href="tel:+2347035428475" class="hover:text-velcro-navy transition-colors font-mono">+234 703 542 8475</a>
+        <a href="mailto:support@usevelcro.com" class="hover:text-velcro-navy transition-colors">support@usevelcro.com</a>
         <a href="https://wa.me/2347035428475" target="_blank" rel="noopener noreferrer" class="hover:text-velcro-navy transition-colors">WhatsApp Support</a>
-        <a href="mailto:support@usevelcro.com" class="hover:text-velcro-navy transition-colors">Email</a>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-gray-100 text-xs text-gray-400 max-w-xl mx-auto" itemscope itemtype="https://schema.org/FinancialService">
+        <span itemprop="name" class="font-semibold text-gray-600">Velcro HQ</span> •
+        <a href="mailto:support@usevelcro.com" itemprop="email" class="text-velcro-navy hover:underline">support@usevelcro.com</a> •
+        <a href="tel:+2347035428475" itemprop="telephone" class="text-velcro-navy hover:underline font-mono">+234 703 542 8475</a> •
+        <span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
+          <span itemprop="streetAddress">Plot 1088 CBD</span>, <span itemprop="addressLocality">Abuja</span>, <span itemprop="addressRegion">FCT</span>, <span itemprop="addressCountry">Nigeria</span>
+        </span>
       </div>
     </div>
   </footer>
@@ -1021,6 +1149,67 @@
   <script src="/js/account.js?v=1"></script>
   <script src="/js/history.js?v=1"></script>
   <script src="/js/main.js?v=1"></script>
+
+  <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
+  <script>
+    (function() {
+      function registerWebMCP() {
+        if (typeof window !== 'undefined' && window.navigator && window.navigator.modelContext && typeof window.navigator.modelContext.registerTool === 'function') {
+          try {
+            window.navigator.modelContext.registerTool({
+              name: 'get_exchange_quote',
+              description: 'Get real-time crypto exchange rates, fee calculations and estimated payout amounts for buy and sell orders on Velcro',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', enum: ['buy', 'sell'], description: 'Transaction type' },
+                  currency: { type: 'string', enum: ['USDT', 'USDC', 'BTC', 'ETH', 'SOL'], description: 'Target cryptocurrency' },
+                  amount: { type: 'number', description: 'Amount in fiat NGN or crypto' }
+                },
+                required: ['type', 'currency', 'amount']
+              },
+              execute: async function(params) {
+                try {
+                  const res = await fetch('/api/rates');
+                  const rates = await res.json();
+                  return { success: true, params: params, rates: rates };
+                } catch (e) {
+                  return { success: false, error: e.message };
+                }
+              }
+            });
+
+            window.navigator.modelContext.registerTool({
+              name: 'track_order_status',
+              description: 'Lookup the live status and blockchain/bank confirmation of a transaction by order reference',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  order_ref: { type: 'string', description: 'The order reference ID' }
+                },
+                required: ['order_ref']
+              },
+              execute: async function(params) {
+                try {
+                  const res = await fetch('/api/order/' + encodeURIComponent(params.order_ref));
+                  return await res.json();
+                } catch (e) {
+                  return { success: false, error: e.message };
+                }
+              }
+            });
+          } catch (err) {
+            console.warn('WebMCP registration error:', err);
+          }
+        }
+      }
+      if (document.readyState === 'complete') {
+        registerWebMCP();
+      } else {
+        window.addEventListener('load', registerWebMCP);
+      }
+    })();
+  </script>
 
   <!-- Sell Asset Picker Modal -->
   <div class="asset-picker-modal" id="sell-asset-options">

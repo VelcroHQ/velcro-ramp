@@ -1,0 +1,22 @@
+# Velcro
+
+> Instant crypto onramp and offramp platform in Nigeria and Africa, powering direct Naira-to-crypto swaps, merchant payment links, and dedicated digital asset storefronts.
+
+Velcro enables individuals and merchants to buy, sell, and settle cryptocurrency (USDT, USDC, BTC, ETH, SOL) using Nigerian bank transfers with sub-3-minute automated execution.
+
+## Core Products & Services
+- [Velcro Ramp](https://ramp.usevelcro.com/): Instant crypto onramp and offramp for USDT, USDC, BTC, ETH, and SOL with direct bank settlement.
+- [Merchant Portal](https://merchant.usevelcro.com/): Self-service merchant portal to launch custom exchange storefronts, manage margins, and accept payments.
+- [Merchant Storefronts](https://ramp.usevelcro.com/m/): White-label branded swap pages hosted on custom subdomains.
+- [API Health & Status](https://ramp.usevelcro.com/api/health): Real-time backend system status, database connectivity, and poller health.
+
+## Documentation & Legal
+- [About Us](https://ramp.usevelcro.com/about.html): Company background, mission, liquidity providers, and security architecture.
+- [Contact & Support](https://ramp.usevelcro.com/contact.html): Machine-readable contact information, support desk, email, and telephone.
+- [Terms of Service](https://ramp.usevelcro.com/terms.html): User agreement, acceptable use, service terms, and compliance requirements.
+- [Privacy Policy](https://ramp.usevelcro.com/privacy.html): Personal data protection, privacy practices, and retention policies.
+
+## Machine-Readable Resources
+- [Full LLM Specification](https://ramp.usevelcro.com/llms-full.txt): Comprehensive technical documentation and capabilities for AI agents.
+- [MCP Server Card](https://ramp.usevelcro.com/.well-known/mcp/server-card.json): Model Context Protocol (SEP-1649) server discovery and capability manifest.
+- [Markdown Homepage](https://ramp.usevelcro.com/?format=markdown): Plain markdown representation of the primary exchange interface.

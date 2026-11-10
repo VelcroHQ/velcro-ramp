@@ -1,0 +1,33 @@
+# Velcro — Full System Specification & Agent Reference
+
+> Velcro is an automated cryptocurrency onramp and offramp settlement protocol operating in Nigeria. It connects local fiat banking rails with blockchain networks including TRON, Solana, Ethereum, Polygon, and Base.
+
+## 1. System Overview
+Velcro provides two core workflows:
+- **Onramp (Buy Crypto):** The user specifies fiat (NGN) amount and receiving crypto wallet address. The platform provisions a dedicated virtual bank account. Upon receiving bank payment, crypto is purchased and dispatched instantly to the user's destination wallet.
+- **Offramp (Sell Crypto):** The user specifies the crypto amount and destination Nigerian bank account (verified via NUBAN). The platform provisions a unique deposit address. Upon receiving blockchain confirmation, fiat is automatically disbursed to the user's bank account.
+
+## 2. Supported Currencies & Networks
+- **USDT (Tether):** TRC20 (Tron), BEP20 (BNB Chain), Polygon, Solana, Base.
+- **USDC (USD Coin):** Solana, Base, Polygon, Ethereum (ERC20).
+- **BTC (Bitcoin):** Native Bitcoin network.
+- **ETH (Ethereum):** Ethereum mainnet, Base, Arbitrum.
+- **SOL (Solana):** Native Solana blockchain.
+
+## 3. Merchant Capabilities
+- **Portal:** https://merchant.usevelcro.com
+- **Subdomains:** Merchants can provision custom subdomains (e.g. `{merchant}.usevelcro.com`) with independent branding, contact links, and custom profit margins.
+- **Payment Links:** Generates instant checkout URLs for merchant invoices and digital commerce.
+
+## 4. Contact & Support
+- **Legal Entity:** Velcro HQ
+- **Support Email:** support@usevelcro.com
+- **Telephone:** +234 703 542 8475
+- **WhatsApp Support:** https://wa.me/2347035428475
+- **Headquarters Address:** Plot 1088, Cadastral Zone A01, Central Business District, Abuja, FCT, Nigeria
+
+## 5. Machine Interfaces
+- **MCP Server Card:** https://ramp.usevelcro.com/.well-known/mcp/server-card.json
+- **System Health:** https://ramp.usevelcro.com/api/health
+- **Terms:** https://ramp.usevelcro.com/terms.html
+- **Privacy:** https://ramp.usevelcro.com/privacy.html

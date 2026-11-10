@@ -8,7 +8,57 @@
   <meta name="description" content="Launch a branded crypto exchange on Velcro's rails. Your name, your logo, your prices. Naira bank transfers, BTC, ETH, SOL, USDT and USDC, and payouts to any Nigerian bank.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://ramp.usevelcro.com/merchant/">
+  <link rel="describedby" href="/llms.txt" type="text/plain">
+  <link rel="alternate" type="text/markdown" href="/?format=markdown">
   <link rel="icon" type="image/png" href="velcro_favicon.png">
+
+  <!-- Structured Data: Organization + Service + WebPage -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": ["Organization", "FinancialService"],
+        "@id": "https://ramp.usevelcro.com/#organization",
+        "name": "Velcro",
+        "alternateName": ["Velcro Merchant", "usevelcro.com"],
+        "url": "https://merchant.usevelcro.com",
+        "logo": "https://ramp.usevelcro.com/velcro_logo.png",
+        "telephone": "+234 703 542 8475",
+        "email": "support@usevelcro.com",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Plot 1088, Cadastral Zone A01, Central Business District",
+          "addressLocality": "Abuja",
+          "addressRegion": "FCT",
+          "postalCode": "900001",
+          "addressCountry": "NG"
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+234 703 542 8475",
+          "email": "support@usevelcro.com",
+          "contactType": "customer service"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://merchant.usevelcro.com/#website",
+        "url": "https://merchant.usevelcro.com",
+        "name": "Velcro Merchant Portal",
+        "publisher": { "@id": "https://ramp.usevelcro.com/#organization" }
+      },
+      {
+        "@type": "Service",
+        "@id": "https://merchant.usevelcro.com/#service",
+        "name": "Velcro Merchant Branded Exchange Infrastructure",
+        "description": "White-label cryptocurrency exchange storefronts for businesses in Nigeria.",
+        "provider": { "@id": "https://ramp.usevelcro.com/#organization" },
+        "areaServed": "NG"
+      }
+    ]
+  }
+  </script>
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://merchant.usevelcro.com/">
   <meta property="og:title" content="Velcro Merchant — Run Your Own Crypto Exchange">
@@ -222,8 +272,12 @@
         <span class="l-brand l-brand-sm"><img src="/velcro_logo.png" alt="Velcro"><span>Merchant</span></span>
         <span class="l-foot-links">
           <a href="/">Velcro Convert</a>
+          <a href="/about.html">About</a>
+          <a href="/contact.html">Contact</a>
           <a href="/terms.html">Terms</a>
           <a href="/privacy.html">Privacy</a>
+          <a href="tel:+2347035428475">+234 703 542 8475</a>
+          <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>
         </span>
       </footer>
     </section>

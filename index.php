@@ -22,4 +22,23 @@ if (isset($_GET['flush'])) {
     }
 }
 
+// ── Agent-Readiness: Content Negotiation for Markdown (Accept: text/markdown or ?format=markdown) ──
+$acceptHeader = $_SERVER['HTTP_ACCEPT'] ?? '';
+$isMarkdownRequest = (isset($_GET['format']) && $_GET['format'] === 'markdown')
+    || stripos($acceptHeader, 'text/markdown') !== false
+    || stripos($acceptHeader, 'text/x-markdown') !== false;
+
+if ($isMarkdownRequest && (!isset($_SERVER['REQUEST_URI']) || preg_match('#^/(index(\.(php|html))?)?(\?.*)?$#i', $_SERVER['REQUEST_URI']))) {
+    header('Content-Type: text/markdown; charset=utf-8');
+    header('Vary: Accept');
+    header('Content-Signal: search=yes, ai-train=no');
+    header('Link: <https://ramp.usevelcro.com/llms.txt>; rel="describedby"; type="text/plain", <https://ramp.usevelcro.com/?format=markdown>; rel="alternate"; type="text/markdown"');
+    if (file_exists(__DIR__ . '/index.md')) {
+        readfile(__DIR__ . '/index.md');
+    } else {
+        readfile(__DIR__ . '/llms.txt');
+    }
+    exit;
+}
+
 require __DIR__ . '/php-backend/index.php';

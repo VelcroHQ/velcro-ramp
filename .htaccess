@@ -1,33 +1,57 @@
 # Velcro Ramp — production document root rules (deployed 2026-10-24)
 DirectoryIndex index.html index.php
 ServerSignature Off
+ErrorDocument 404 /404.html
 
 # Pass Authorization header to CGI/PHP environment
 CGIPassAuth On
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
-# Block access to hidden files
-<FilesMatch "^\.">
+# Block access to hidden files except .well-known
+<FilesMatch "^\.(?!well-known)">
     Require all denied
 </FilesMatch>
 
-# Deny direct access to sensitive file extensions
-<FilesMatch "\.(env|git|gitignore|md|log|sql|sh|bat|ps1|zip|tar|gz)$">
+# Allow .well-known directory access (ACME, WebFinger, MCP, etc.)
+<If "%{REQUEST_URI} =~ m#^/\.well-known/#">
+    Require all granted
+</If>
+
+# Deny direct access to sensitive file extensions (allow index.md for markdown negotiation)
+<FilesMatch "(?<!index)\.(env|git|gitignore|md|log|sql|sh|bat|ps1|zip|tar|gz)$">
     Require all denied
 </FilesMatch>
 
-# Security headers
+# Serve MCP server-card.json as JSON
+<Files "server-card.json">
+    Require all granted
+    ForceType application/json
+    Header set Content-Type "application/json; charset=utf-8"
+    Header set Access-Control-Allow-Origin "*"
+</Files>
+
+# Serve llms.txt as plain text
+<FilesMatch "llms(-full)?\.txt$">
+    Require all granted
+    ForceType text/plain
+    Header set Content-Type "text/plain; charset=utf-8"
+    Header set Access-Control-Allow-Origin "*"
+</FilesMatch>
+
+# Security, Agent & Resource Link headers
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "DENY"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set X-XSS-Protection "0"
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header always set Content-Signal "search=yes, ai-train=no"
+    Header set Link '<https://ramp.usevelcro.com/llms.txt>; rel="describedby"; type="text/plain", <https://ramp.usevelcro.com/?format=markdown>; rel="alternate"; type="text/markdown"'
 </IfModule>
 
 # Gzip compression for text assets
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json text/plain text/markdown
 </IfModule>
 
 # Cache static assets
@@ -40,7 +64,6 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 </IfModule>
 
 # CSS/JS change on every deploy but their URLs don't: make browsers revalidate
-# (a cheap 304 when unchanged) instead of keeping a stale copy for a week.
 <IfModule mod_headers.c>
     <FilesMatch "\.(css|js)$">
         Header set Cache-Control "no-cache"
@@ -53,6 +76,14 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     # ── Redirect apex domain usevelcro.com to www.usevelcro.com (Vercel landing page) ──
     RewriteCond %{HTTP_HOST} ^usevelcro\.com$ [NC]
     RewriteRule ^(.*)$ https://www.usevelcro.com/$1 [R=301,L]
+
+    # ── Content Negotiation: Serve Markdown for Agents ──
+    RewriteCond %{HTTP:Accept} text/(x-)?markdown [NC]
+    RewriteCond %{REQUEST_URI} ^/?(index\.(html|php))?$
+    RewriteRule ^ index.php?format=markdown [L]
+
+    # Allow .well-known pass-through
+    RewriteRule ^\.well-known/ - [L]
 
     # Pass Authorization header to CGI/PHP environment
     RewriteCond %{HTTP:Authorization} ^(.*)
@@ -120,6 +151,9 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     RewriteRule ^(.*)$ store/index.html [L]
 
     # ── Standard Main Site: ramp.usevelcro.com ──
+    # Pretty URLs for core pages
+    RewriteRule ^(about|contact|terms|privacy)/?$ $1.html [L]
+
     # Serve existing files/directories directly
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
@@ -131,6 +165,11 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     # Route API and webhook requests to the backend
     RewriteRule ^(api|webhook)/.*$ index.php [L]
 
-    # Everything else -> index.html (SPA fallback)
-    RewriteRule ^ index.html [L]
+    # Serve index.html for root only
+    RewriteRule ^$ index.html [L]
+
+    # Return real 404 for missing non-API routes
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ - [R=404,L]
 </IfModule>
