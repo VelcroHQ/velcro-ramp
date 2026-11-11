@@ -185,6 +185,9 @@ class PajApiClient
         if ($session === null || empty($session['token'])) {
             return false;
         }
+        if (array_key_exists('isActive', $session) && !filter_var($session['isActive'], FILTER_VALIDATE_BOOLEAN)) {
+            return false;
+        }
         if (!empty($session['expiresAt'])) {
             return strtotime($session['expiresAt']) > time();
         }

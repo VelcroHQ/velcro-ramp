@@ -204,13 +204,13 @@ try {
     $hook('dep-4', $res['data']['address']);
     check($deposit('dep-4')['status'] === 'PAYOUT_PENDING' && $order($lateRef)['status'] === 'PROCESSING', 'late deposit to a cancelled order: still paid to that order\'s bank');
 
-    // HostFi still holding the naira from the swap: the payout is refused outright, so nothing went out.
+    // HostFi may temporarily hold naira from a swap; keep it retryable without losing the payout.
     $mock_('/__test/set', ['held' => ['NGN' => 1000]]);
     [, $res] = $sellBtc();
     $mock_('/__test/deposit', ['reference' => 'dep-held', 'address' => $res['data']['address'], 'currency' => 'BTC', 'amount' => 0.001]);
     $hook('dep-held', $res['data']['address']);
-    check($deposit('dep-held')['status'] === 'PAYOUT_FAILED' && str_contains((string) $deposit('dep-held')['note'], 'refused'),
-        'naira still held after the swap: payout refused → PAYOUT_FAILED (safe to retry), not left uncertain');
+    check($deposit('dep-held')['status'] === 'SWAPPED' && str_contains((string) $deposit('dep-held')['note'], 'briefly holding'),
+        'naira still held after the swap: payout remains SWAPPED for automatic retry, not marked failed');
     $mock_('/__test/set', ['held' => []]);
 
     // ── Payouts: never paid twice, re-payout only once HostFi confirms the last one failed ──

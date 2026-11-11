@@ -21,13 +21,15 @@ function renderBuyBankDisplay(bankName) {
 }
 
 function safeRenderQrCode(container, text, size = 160) {
-  if (!container || !text || text === '-') return;
+  if (!container) return false;
   container.innerHTML = '';
+  const value = String(text || '').trim();
+  if (!value || value === '-') return false;
   
   if (typeof QRCode !== 'undefined') {
     try {
       new QRCode(container, {
-        text: text,
+        text: value,
         width: size,
         height: size,
         colorDark: '#0D0D59',
@@ -40,7 +42,7 @@ function safeRenderQrCode(container, text, size = 160) {
         img.onload = () => { if (img.src && img.src.startsWith('data:')) canvas.style.display = 'none'; };
         if (img.src && img.src.startsWith('data:')) canvas.style.display = 'none';
       }
-      return;
+      return true;
     } catch (e) {
       console.warn('QRCode generation fallback:', e);
     }
@@ -48,12 +50,23 @@ function safeRenderQrCode(container, text, size = 160) {
 
   // Fallback: render directly via image if library fails or is blocked
   const img = document.createElement('img');
-  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&margin=0`;
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}&margin=0`;
   img.width = size;
   img.height = size;
   img.alt = 'Scan deposit address';
   img.className = 'rounded-lg mx-auto block shadow-sm';
   container.appendChild(img);
+  return true;
+}
+
+function renderSellDepositQr(address) {
+  const card = document.getElementById('sell-qr-card');
+  const container = document.getElementById('sell-qr-code');
+  const value = String(address || '').trim();
+  if (container) container.innerHTML = '';
+  const hasAddress = Boolean(value && value !== '-');
+  if (card) card.classList.toggle('hidden', !hasAddress);
+  if (hasAddress) safeRenderQrCode(container, value, 160);
 }
 
 function showManualConfirm(type) {
@@ -291,8 +304,7 @@ async function generateWalletAddress() {
       safeSetText('sell-memo-value', data.memo || '');
       const explorerLink = document.getElementById('sell-status-explorer-link');
       if (explorerLink) explorerLink.href = getWalletExplorerUrl(data.address, data.chain);
-      const qr = document.getElementById('sell-qr-code');
-      safeRenderQrCode(qr, data.address, 160);
+      renderSellDepositQr(data.address);
 
       // Bitcoin waits for confirmations, so it gets a longer window and different expectations.
       const seconds = Number(data.expires_in) || 3600;
@@ -366,7 +378,7 @@ async function generateWalletAddress() {
       }
       
       // Generate QR Code
-      safeRenderQrCode(document.getElementById('sell-qr-code'), data.address, 160);
+      renderSellDepositQr(data.address);
 
       document.getElementById('sell-generated-address').classList.remove('hidden');
       startExpiryCountdown('sell', 3600);
@@ -441,10 +453,7 @@ async function generateWalletAddress() {
       statusExplorerLink.href = '#';
     }
     // Generate QR code for wallet address (local)
-    const qrContainer = document.getElementById('sell-qr-code');
-    if (qrContainer && walletAddress !== '-') {
-      safeRenderQrCode(qrContainer, walletAddress, 160);
-    }
+    renderSellDepositQr(walletAddress);
     document.getElementById('sell-generated-address').classList.remove('hidden');
     startExpiryCountdown('sell', 3600);
     startOrderHelp('sell');
@@ -1368,7 +1377,7 @@ async function resetSellTransaction() {
     } catch (e) { console.error('Failed to cancel transaction:', e); }
   }
   document.getElementById('sell-generated-address').classList.add('hidden');
-  document.getElementById('sell-qr-code').innerHTML = '';
+  renderSellDepositQr('');
   const statusExplorerLink = document.getElementById('sell-status-explorer-link');
   if (statusExplorerLink) statusExplorerLink.href = '#';
   document.getElementById('sell-btn').disabled = false;
