@@ -25,6 +25,11 @@ class Router
         $this->add('PATCH', $pattern, $callback);
     }
 
+    public function delete(string $pattern, callable $callback): void
+    {
+        $this->add('DELETE', $pattern, $callback);
+    }
+
     public function add(string $method, string $pattern, callable $callback): void
     {
         $this->routes[] = [

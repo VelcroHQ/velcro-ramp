@@ -1760,7 +1760,7 @@ function registerMerchantRoutes(Router $router): void
         if (!$m) {
             jsonResponse(['success' => false, 'error' => 'Merchant not found'], 404);
         }
-        if ($m['status'] === 'DRAFT' && $status !== 'APPROVED') {
+        if ($m['status'] === 'DRAFT' && empty($b['force'])) {
             jsonResponse(['success' => false, 'error' => 'This merchant hasn’t submitted verification yet'], 400);
         }
         Database::execute(
@@ -1809,4 +1809,51 @@ function registerMerchantRoutes(Router $router): void
         $updated = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
         jsonResponse(['success' => true, 'merchant' => $updated, 'business_name' => $businessName]);
     });
+
+    // Admin endpoint: permanently delete a merchant account and all its store data
+    $handleDeleteMerchant = function (string $id) {
+        requireAdminAuth();
+        ensureMerchantSchema();
+        $m = Database::selectOne('SELECT * FROM `merchants` WHERE `id` = :id', ['id' => (int) $id]);
+        if (!$m) {
+            jsonResponse(['success' => false, 'error' => 'Merchant not found'], 404);
+        }
+
+        $mid = (int) $m['id'];
+        $email = (string) $m['email'];
+        $slug = (string) ($m['slug'] ?? '');
+
+        // 1. Delete associated store customers
+        Database::execute('DELETE FROM `store_customers` WHERE `merchant_id` = :id', ['id' => $mid]);
+
+        // 2. Delete domain upgrade requests
+        Database::execute('DELETE FROM `merchant_domain_requests` WHERE `merchant_id` = :id', ['id' => $mid]);
+
+        // 3. Delete merchant withdrawals
+        Database::execute('DELETE FROM `merchant_withdrawals` WHERE `merchant_id` = :id', ['id' => $mid]);
+
+        // 4. Clean up any test store orders
+        Database::execute('DELETE FROM `transactions` WHERE `merchant_id` = :id', ['id' => $mid]);
+
+        // 5. Delete merchant store record
+        Database::execute('DELETE FROM `merchants` WHERE `id` = :id', ['id' => $mid]);
+
+        // 6. Delete merchant login account
+        Database::execute('DELETE FROM `merchant_accounts` WHERE LOWER(`email`) = LOWER(:email)', ['email' => $email]);
+
+        auditLog('ADMIN_MERCHANT_DELETED', [
+            'id' => $mid,
+            'email' => $email,
+            'slug' => $slug,
+        ]);
+
+        jsonResponse([
+            'success' => true,
+            'message' => "Merchant '{$email}' and store data permanently deleted",
+            'deleted_id' => $mid,
+        ]);
+    };
+
+    $router->delete('/api/admin/merchants/(\d+)', $handleDeleteMerchant);
+    $router->post('/api/admin/merchants/(\d+)/delete', $handleDeleteMerchant);
 }

@@ -2381,6 +2381,7 @@ function renderMerchantsTable(rows) {
                     ${actions.map(([s, l, c]) => `<button class="m-btn-action ${c}" onclick="setMerchantStatus(${Number(m.id)}, '${s}', '${l}')">${l}</button>`).join('')}
                     ${liveStoreUrl ? `<a href="${liveStoreUrl}" target="_blank" rel="noopener" class="m-btn-action m-btn-visit" title="Open live storefront">Visit ↗</a>` : ''}
                     <button class="m-btn-action m-btn-domain" onclick="openDomainModal(${m.id})" title="Configure or activate dedicated subdomain">Domain</button>
+                    <button class="m-btn-action" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.08);" onclick="deleteMerchant(${Number(m.id)}, '${escapeAttr(m.email)}')" title="Permanently delete merchant account">Delete</button>
                 </div>
             </td>
         </tr>`;
@@ -2529,6 +2530,7 @@ function openMerchantDetailModal(id) {
             `;
         }
         actBtns += `
+            <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px; color: #dc2626; border-color: rgba(220, 38, 38, 0.4); background: rgba(220, 38, 38, 0.08); margin-right: auto;" onclick="closeMerchantDetailModal(); deleteMerchant(${m.id}, '${escapeAttr(m.email)}')">Delete Merchant</button>
             <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal(); openDomainModal(${m.id})">Configure Subdomain</button>
             <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px;" onclick="closeMerchantDetailModal()">Close</button>
         `;
@@ -2825,6 +2827,27 @@ async function editMerchantTradingName(id) {
         }
     } catch (e) {
         showToast(e.message || 'Failed to update trading name', 'error');
+    }
+}
+
+async function deleteMerchant(id, identifier) {
+    if (!confirm(`Are you sure you want to permanently delete merchant "${identifier}"?\n\nThis will permanently delete their exchange store, custom subdomain, shoppers, withdrawals, and merchant login account. This cannot be undone.`)) {
+        return;
+    }
+    try {
+        const res = await adminPost(`/api/admin/merchants/${id}/delete`, {});
+        if (res.success) {
+            showToast('Merchant deleted successfully', 'success');
+            allMerchants = allMerchants.filter(x => Number(x.id) !== Number(id));
+            if (selectedMerchantForDetail && Number(selectedMerchantForDetail.id) === Number(id)) {
+                closeMerchantDetailModal();
+            }
+            filterMerchantsList();
+        } else {
+            showToast(res.error || 'Failed to delete merchant', 'error');
+        }
+    } catch (e) {
+        showToast(e.message || 'Failed to delete merchant', 'error');
     }
 }
 

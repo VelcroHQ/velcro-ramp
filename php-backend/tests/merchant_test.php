@@ -423,6 +423,12 @@ try {
     check($cRevoke === 200 && ($resMeAfter['data']['merchant']['domain']['is_active'] ?? true) === false
         && ($resMeAfter['data']['merchant']['storefront_url'] ?? '') === 'https://ramp.usevelcro.com/m/northline',
         'admin: revoking domain returns merchant to standard /m/ URL');
+
+    // Admin: permanently delete a merchant account
+    [$cDel, $resDel] = $app_('DELETE', "/api/admin/merchants/{$otherId}", [], $admin);
+    check($cDel === 200 && ($resDel['success'] ?? false) === true, 'admin: permanently delete merchant account');
+    check($pdo->query("SELECT COUNT(*) FROM merchants WHERE id = {$otherId}")->fetchColumn() == 0,
+        'admin: deleted merchant is completely gone from database');
 } finally {
     proc_terminate($app);
 }
