@@ -838,230 +838,320 @@
 
         <!-- Settings Content -->
         <div id="section-settings" class="view-content">
-            <header>
+            <header class="settings-desk-header">
                 <div class="header-title">
-                    <h1>Settings</h1>
-                    <p>Manage platform configuration, integrations, and maintenance.</p>
+                    <div class="header-pre-badge">
+                        <span class="pulse-dot"></span>
+                        <span>SYSTEM CONTROL DESK</span>
+                    </div>
+                    <h1>Settings &amp; Parameters</h1>
+                    <p>Global exchange parameters, developer margins, communications, and liquidity rails.</p>
                 </div>
                 <div class="header-actions">
-                    <button class="refresh-btn" onclick="fetchData()"><i data-lucide="rotate-cw"></i></button>
+                    <button class="refresh-desk-btn" onclick="fetchData()">
+                        <i data-lucide="rotate-cw"></i>
+                        <span>Refresh Settings</span>
+                    </button>
                 </div>
             </header>
 
             <div class="settings-grid">
                 <!-- Platform Configuration -->
-                <div class="table-card">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
-                        <div class="stat-icon-sm blue"><i data-lucide="sliders-horizontal"></i></div>
-                        <div>
-                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Platform Configuration</h3>
-                            <p style="font-size: 12px; color: var(--text-secondary);">Fees, limits, and fallback assets</p>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Switch Platform Fee (%)</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" id="fee-input" placeholder="0.5" step="0.01" min="0" max="10" style="margin-bottom: 0; flex: 1;">
-                            <span style="display: flex; align-items: center; padding: 0 14px; background: var(--bg-light); border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--text-secondary);">%</span>
-                        </div>
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Developer fee charged on Switch network orders. Range: 0% – 10%.</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">PAJ Developer Fee (%)</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" id="paj-fee-input" placeholder="0.5" step="0.01" min="0" max="10" style="margin-bottom: 0; flex: 1;">
-                            <span style="display: flex; align-items: center; padding: 0 14px; background: var(--bg-light); border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--text-secondary);">%</span>
-                        </div>
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Developer fee collected on PAJ orders (in USDC) and credited to your PAJ business balance. Range: 0% – 10%.</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">PAJ Rate Margin (± NGN)</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" id="paj-margin-input" placeholder="0.0" step="0.5" style="margin-bottom: 0; flex: 1;">
-                            <span style="display: flex; align-items: center; padding: 0 14px; background: var(--bg-light); border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--text-secondary);">₦</span>
-                        </div>
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Spread added to buy rate / deducted from sell rate. Leave 0 to show exact PAJ rates.</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Buy Maximum Limit (USD)</label>
-                        <input type="number" id="buy-max-input" placeholder="e.g. 10000" min="1000" max="10000000" style="margin-bottom: 0;">
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Maximum onramp (buy) amount per transaction.</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Sell Limits (USD)</label>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="table-card settings-card">
+                    <div class="settings-card-header">
+                        <div class="settings-card-header-left">
+                            <div class="stat-icon-sm blue"><i data-lucide="sliders-horizontal"></i></div>
                             <div>
-                                <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Minimum</label>
-                                <input type="number" id="sell-min-input" placeholder="1" min="1" max="100000" style="margin-bottom: 0;">
-                            </div>
-                            <div>
-                                <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Maximum</label>
-                                <input type="number" id="sell-max-input" placeholder="10000" min="10" max="1000000" style="margin-bottom: 0;">
+                                <h3>Platform Configuration</h3>
+                                <p>Developer fees, rate margins, and order boundaries</p>
                             </div>
                         </div>
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Offramp (sell) limits per transaction.</p>
+                        <span class="settings-card-badge">Core Engine</span>
                     </div>
 
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Which coins each provider offers is set on the <a href="#" onclick="switchSection('coins'); return false;">Coins</a> page.</p>
+                    <!-- Developer Fee Schedule -->
+                    <div>
+                        <div class="settings-section-title">Developer Fee Schedule</div>
+
+                        <div class="settings-field-group">
+                            <div class="settings-label-row">
+                                <label for="fee-input" class="settings-field-label">Switch Platform Fee (%)</label>
+                                <span class="settings-range-badge">0.00% – 10.00%</span>
+                            </div>
+                            <div class="cfg-input-group">
+                                <input type="number" id="fee-input" placeholder="0.5" step="0.01" min="0" max="10">
+                                <span class="cfg-affix">%</span>
+                            </div>
+                            <p class="settings-field-hint">Developer fee charged on Switch network orders.</p>
+                        </div>
+
+                        <div class="settings-field-group">
+                            <div class="settings-label-row">
+                                <label for="paj-fee-input" class="settings-field-label">PAJ Developer Fee (%)</label>
+                                <span class="settings-range-badge">0.00% – 10.00%</span>
+                            </div>
+                            <div class="cfg-input-group">
+                                <input type="number" id="paj-fee-input" placeholder="0.5" step="0.01" min="0" max="10">
+                                <span class="cfg-affix">%</span>
+                            </div>
+                            <p class="settings-field-hint">Fee collected on PAJ orders (in USDC) and credited to your PAJ balance.</p>
+                        </div>
+
+                        <div class="settings-field-group">
+                            <div class="settings-label-row">
+                                <label for="paj-margin-input" class="settings-field-label">PAJ Rate Margin (± NGN)</label>
+                                <span class="settings-range-badge">Spread Buffer</span>
+                            </div>
+                            <div class="cfg-input-group">
+                                <input type="number" id="paj-margin-input" placeholder="0.0" step="0.5">
+                                <span class="cfg-affix">₦</span>
+                            </div>
+                            <p class="settings-field-hint">Spread added to buy rate / deducted from sell rate (0 = exact live rates).</p>
+                        </div>
+                    </div>
+
+                    <!-- Transaction Limits -->
+                    <div>
+                        <div class="settings-section-title">Trading Limits ($ USD)</div>
+
+                        <div class="settings-field-group">
+                            <div class="settings-label-row">
+                                <label for="buy-max-input" class="settings-field-label">Buy Maximum Limit (USD)</label>
+                                <span class="settings-range-badge">On-Ramp Cap</span>
+                            </div>
+                            <div class="cfg-input-group">
+                                <span class="cfg-affix is-prefix">$</span>
+                                <input type="number" id="buy-max-input" placeholder="e.g. 10000" min="1000" max="10000000">
+                                <span class="cfg-affix">USD</span>
+                            </div>
+                            <p class="settings-field-hint">Maximum buy amount permitted per single order.</p>
+                        </div>
+
+                        <div class="settings-field-group">
+                            <div class="settings-label-row">
+                                <span class="settings-field-label">Sell Limits (Off-Ramp USD)</span>
+                                <span class="settings-range-badge">Min / Max</span>
+                            </div>
+                            <div class="cfg-limits-row">
+                                <div>
+                                    <span class="settings-sub-label">Minimum</span>
+                                    <div class="cfg-input-group">
+                                        <span class="cfg-affix is-prefix">$</span>
+                                        <input type="number" id="sell-min-input" placeholder="1" min="1" max="100000">
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="settings-sub-label">Maximum</span>
+                                    <div class="cfg-input-group">
+                                        <span class="cfg-affix is-prefix">$</span>
+                                        <input type="number" id="sell-max-input" placeholder="10000" min="10" max="1000000">
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="settings-field-hint">Offramp sell boundaries per customer transaction.</p>
+                        </div>
+                    </div>
+
+                    <div class="cfg-note-box">
+                        <i data-lucide="info" class="ico-sm"></i>
+                        <span>Which coins each provider offers is configured on the <a href="#" onclick="switchSection('coins'); return false;">Coins</a> page.</span>
+                    </div>
 
                     <div id="settings-message" class="hidden" style="margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;"></div>
-                    <button class="btn-primary" onclick="saveSettings()" style="width: 100%;">Save Configuration</button>
+                    <button class="btn-primary settings-btn-save" id="btn-save-settings" onclick="saveSettings()">
+                        <i data-lucide="save"></i>
+                        <span>Save Configuration</span>
+                    </button>
                 </div>
 
                 <!-- Telegram Alerts -->
-                <div class="table-card">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
-                        <div class="stat-icon-sm blue" style="background: #e0f2fe; color: #0284c7;"><i data-lucide="send"></i></div>
-                        <div>
-                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Telegram Real-Time Alerts</h3>
-                            <p style="font-size: 12px; color: var(--text-secondary);">Instant push alerts on every completed order</p>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 16px;">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; border-radius: 10px; background: var(--bg-light); border: 1px solid var(--border);">
-                            <input type="checkbox" id="telegram-alerts-toggle" style="width: 18px; height: 18px; accent-color: var(--success); cursor: pointer;">
+                <div class="table-card settings-card">
+                    <div class="settings-card-header">
+                        <div class="settings-card-header-left">
+                            <div class="stat-icon-sm blue" style="background: #e0f2fe; color: #0284c7;"><i data-lucide="send"></i></div>
                             <div>
-                                <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Enable Telegram Alerts</div>
-                                <div style="font-size: 11px; color: var(--text-secondary);">Receive notification when an order is completed</div>
+                                <h3>Telegram Real-Time Alerts</h3>
+                                <p>Instant push alerts on every completed order</p>
                             </div>
-                        </label>
+                        </div>
+                        <span class="settings-card-badge">Notifications</span>
                     </div>
 
-                    <div style="margin-bottom: 16px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Bot Token</label>
-                        <input type="password" id="telegram-bot-token" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" style="margin-bottom: 0;">
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">From @BotFather on Telegram.</p>
+                    <label class="cfg-toggle-card">
+                        <div class="cfg-toggle-info">
+                            <span class="cfg-toggle-title">Enable Telegram Alerts</span>
+                            <span class="cfg-toggle-sub">Receive instant notifications when an order completes</span>
+                        </div>
+                        <div class="cfg-switch-wrap">
+                            <input type="checkbox" id="telegram-alerts-toggle" class="cfg-switch-input">
+                            <span class="cfg-switch-slider"></span>
+                        </div>
+                    </label>
+
+                    <div class="settings-field-group">
+                        <label for="telegram-bot-token" class="settings-field-label">Bot Token</label>
+                        <div class="cfg-input-group">
+                            <input type="password" id="telegram-bot-token" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
+                        </div>
+                        <p class="settings-field-hint">Provided by @BotFather on Telegram.</p>
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Chat ID or Group ID</label>
-                        <input type="text" id="telegram-chat-id" placeholder="e.g. 12345678 or -100123456789" style="margin-bottom: 0;">
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Your Telegram ID or group/channel ID.</p>
+                    <div class="settings-field-group">
+                        <label for="telegram-chat-id" class="settings-field-label">Chat ID or Group ID</label>
+                        <div class="cfg-input-group">
+                            <input type="text" id="telegram-chat-id" placeholder="e.g. 12345678 or -100123456789">
+                        </div>
+                        <p class="settings-field-hint">Your individual Telegram user ID or alert channel ID.</p>
                     </div>
 
-                    <div style="display: flex; gap: 10px;">
+                    <div class="cfg-btn-row">
                         <button class="btn-primary" onclick="saveTelegramSettings()" style="flex: 1;">Save Telegram</button>
-                        <button class="btn-outline" onclick="testTelegramAlert()" style="padding: 0 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff;">Test Alert</button>
+                        <button class="btn-outline cfg-test-btn" onclick="testTelegramAlert()">
+                            <i data-lucide="bell"></i>
+                            <span>Test Alert</span>
+                        </button>
                     </div>
                     <div id="telegram-message" class="hidden" style="margin-top: 14px; padding: 10px 12px; border-radius: 10px; font-size: 12px; font-weight: 500;"></div>
                 </div>
 
                 <!-- Email & SMTP Delivery Settings -->
-                <div class="table-card">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
-                        <div class="stat-icon-sm blue"><i data-lucide="mail"></i></div>
-                        <div>
-                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Email &amp; SMTP Settings</h3>
-                            <p style="font-size: 12px; color: var(--text-secondary);">Receipts, order updates, and customer communications</p>
+                <div class="table-card settings-card">
+                    <div class="settings-card-header">
+                        <div class="settings-card-header-left">
+                            <div class="stat-icon-sm blue"><i data-lucide="mail"></i></div>
+                            <div>
+                                <h3>Email &amp; SMTP Settings</h3>
+                                <p>Receipts, order updates, and customer communications</p>
+                            </div>
+                        </div>
+                        <span class="settings-card-badge">Transactional</span>
+                    </div>
+
+                    <div class="cfg-row-2">
+                        <div class="settings-field-group">
+                            <label for="smtp-host" class="settings-field-label">SMTP Host</label>
+                            <div class="cfg-input-group">
+                                <input type="text" id="smtp-host" placeholder="mail.usevelcro.com">
+                            </div>
+                        </div>
+                        <div class="settings-field-group">
+                            <label for="smtp-port" class="settings-field-label">SMTP Port</label>
+                            <div class="cfg-input-group">
+                                <input type="number" id="smtp-port" placeholder="587">
+                            </div>
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 14px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">SMTP Host</label>
-                        <input type="text" id="smtp-host" placeholder="e.g. mail.usevelcro.com or smtp.gmail.com" style="margin-bottom: 0;">
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                        <div>
-                            <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">SMTP Port</label>
-                            <input type="number" id="smtp-port" placeholder="587" style="margin-bottom: 0;">
+                    <div class="cfg-row-2">
+                        <div class="settings-field-group">
+                            <label for="smtp-from" class="settings-field-label">Sender Email (From)</label>
+                            <div class="cfg-input-group">
+                                <input type="text" id="smtp-from" placeholder="noreply@usevelcro.com">
+                            </div>
                         </div>
-                        <div>
-                            <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Sender Email (From)</label>
-                            <input type="text" id="smtp-from" placeholder="noreply@usevelcro.com" style="margin-bottom: 0;">
+                        <div class="settings-field-group">
+                            <label for="smtp-user" class="settings-field-label">SMTP Username</label>
+                            <div class="cfg-input-group">
+                                <input type="text" id="smtp-user" placeholder="user@usevelcro.com">
+                            </div>
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 14px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">SMTP Username</label>
-                        <input type="text" id="smtp-user" placeholder="e.g. user@usevelcro.com" style="margin-bottom: 0;">
+                    <div class="settings-field-group">
+                        <label for="smtp-pass" class="settings-field-label">SMTP Password</label>
+                        <div class="cfg-input-group">
+                            <input type="password" id="smtp-pass" placeholder="••••••••">
+                        </div>
                     </div>
 
-                    <div style="margin-bottom: 14px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">SMTP Password</label>
-                        <input type="password" id="smtp-pass" placeholder="••••••••" style="margin-bottom: 0;">
+                    <div class="settings-field-group">
+                        <div class="settings-label-row">
+                            <label for="mailhive-api-key" class="settings-field-label">Mailhive API Key</label>
+                            <span class="settings-range-badge">Optional</span>
+                        </div>
+                        <div class="cfg-input-group">
+                            <input type="password" id="mailhive-api-key" placeholder="Optional: Mailhive Africa API key">
+                        </div>
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Mailhive API Key (Optional)</label>
-                        <input type="password" id="mailhive-api-key" placeholder="Optional: Mailhive Africa API key" style="margin-bottom: 0;">
-                    </div>
+                    <button class="btn-primary" onclick="saveEmailSettings()" style="width: 100%;">Save Email Settings</button>
 
-                    <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-                        <button class="btn-primary" onclick="saveEmailSettings()" style="flex: 1;">Save Email Settings</button>
-                    </div>
-
-                    <div style="border-top: 1px solid var(--border); padding-top: 16px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Test Email Delivery</label>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="email" id="test-email-target" placeholder="shehukamal6@gmail.com" style="margin-bottom: 0; flex: 1;">
-                            <button class="btn-outline" onclick="sendTestEmail()" id="btn-test-email" style="padding: 0 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; white-space: nowrap;">Send Test</button>
+                    <div class="cfg-test-drawer">
+                        <label for="test-email-target" class="settings-field-label">Test Email Delivery</label>
+                        <div class="cfg-test-row">
+                            <div class="cfg-input-group" style="flex: 1;">
+                                <span class="cfg-affix is-prefix"><i data-lucide="mail" class="ico-sm"></i></span>
+                                <input type="email" id="test-email-target" placeholder="shehukamal6@gmail.com">
+                            </div>
+                            <button class="btn-outline cfg-test-btn" onclick="sendTestEmail()" id="btn-test-email">
+                                <i data-lucide="send"></i>
+                                <span>Send Test</span>
+                            </button>
                         </div>
                     </div>
                     <div id="email-settings-message" class="hidden" style="margin-top: 14px; padding: 10px 12px; border-radius: 10px; font-size: 12px; font-weight: 500;"></div>
                 </div>
 
                 <!-- PAJ Integration -->
-                <div class="table-card">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
-                        <div class="stat-icon-sm purple"><i data-lucide="shield-check"></i></div>
-                        <div>
-                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">PAJ Integration</h3>
-                            <p style="font-size: 12px; color: var(--text-secondary);">Solana on-ramp provider session</p>
+                <div class="table-card settings-card">
+                    <div class="settings-card-header">
+                        <div class="settings-card-header-left">
+                            <div class="stat-icon-sm purple"><i data-lucide="shield-check"></i></div>
+                            <div>
+                                <h3>PAJ Integration</h3>
+                                <p>Solana on-ramp provider session</p>
+                            </div>
                         </div>
+                        <span class="settings-card-badge">Solana Rails</span>
                     </div>
 
                     <!-- Status Indicator -->
-                    <div id="paj-session-status" style="margin-bottom: 20px; padding: 16px; border-radius: 14px; background: #f8f9fc; border: 1px solid var(--border); text-align: center; transition: all 0.3s ease;">
-                        <div id="paj-status-icon" style="width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                    <div id="paj-session-status" class="paj-status-card">
+                        <div id="paj-status-icon" class="paj-status-icon">
                             <i data-lucide="loader" style="width: 20px; height: 20px; color: #94a3b8;"></i>
                         </div>
-                        <p id="paj-status-title" style="font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">Checking session...</p>
-                        <p id="paj-status-sub" style="font-size: 12px; color: var(--text-secondary);">Please wait</p>
+                        <div class="paj-status-content">
+                            <p id="paj-status-title" class="paj-status-title">Checking session...</p>
+                            <p id="paj-status-sub" class="paj-status-sub">Please wait</p>
+                        </div>
                     </div>
 
                     <!-- Email -->
-                    <div style="margin-bottom: 16px;">
-                        <label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;">Registered Email</label>
-                        <div class="paj-email-row" style="display: flex; gap: 8px;">
-                            <div style="flex: 1; position: relative; min-width: 0;">
-                                <i data-lucide="mail" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-secondary);"></i>
-                                <input type="email" id="paj-email-input" placeholder="your@email.com" style="margin-bottom: 0; padding-left: 40px; font-size: 13px; width: 100%;">
+                    <div class="settings-field-group">
+                        <label for="paj-email-input" class="settings-field-label">Registered Email</label>
+                        <div class="paj-email-row">
+                            <div class="cfg-input-group" style="flex: 1;">
+                                <span class="cfg-affix is-prefix"><i data-lucide="mail" class="ico-sm"></i></span>
+                                <input type="email" id="paj-email-input" placeholder="your@email.com">
                             </div>
-                            <button class="btn-primary" id="paj-save-email-btn" onclick="savePajEmail()" style="height: 50px; padding: 0 18px; white-space: nowrap; font-size: 13px; width: auto;">Save</button>
+                            <button class="btn-primary paj-save-btn" id="paj-save-email-btn" onclick="savePajEmail()">Save</button>
                         </div>
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">OTP will be sent to this email address.</p>
+                        <p class="settings-field-hint">OTP will be sent to this email address.</p>
                     </div>
 
                     <!-- Inline Message -->
                     <div id="paj-message" class="hidden" style="margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; font-size: 13px; font-weight: 500; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;"></div>
 
                     <!-- OTP Section -->
-                    <div id="paj-otp-section" class="hidden" style="margin-bottom: 16px; padding: 16px; border-radius: 14px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde047;">
+                    <div id="paj-otp-section" class="hidden paj-otp-card">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
                             <i data-lucide="key-round" style="width: 16px; height: 16px; color: #a16207;"></i>
-                            <span style="font-size: 12px; font-weight: 600; color: #854d0e;">OTP Verification</span>
+                            <span style="font-size: 12px; font-weight: 700; color: #854d0e;">OTP Verification</span>
                         </div>
                         <p style="font-size: 12px; color: #a16207; margin-bottom: 12px;">Enter the 4-digit code sent to your email.</p>
-                        <div class="paj-otp-row" style="display: flex; gap: 8px;">
-                            <input type="text" id="paj-otp-input" placeholder="0000" maxlength="4" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 20px; font-weight: 600; letter-spacing: 8px; font-family: monospace; min-height: 52px; padding: 10px 8px;">
-                            <button class="btn-primary" id="paj-verify-btn" onclick="verifyPajOtp()" style="padding: 0 20px; white-space: nowrap; min-height: 52px; width: auto;">Verify</button>
+                        <div class="paj-otp-row">
+                            <input type="text" id="paj-otp-input" placeholder="0000" maxlength="4" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)" class="paj-digit-input">
+                            <button class="btn-primary paj-verify-btn" id="paj-verify-btn" onclick="verifyPajOtp()">Verify</button>
                         </div>
                     </div>
 
                     <!-- Action Buttons -->
-                    <div style="display: flex; gap: 10px;">
+                    <div class="cfg-btn-row">
                         <button class="btn-primary" id="paj-initiate-btn" onclick="initiatePajSession()" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             <i data-lucide="send" style="width: 16px; height: 16px;"></i>
                             <span>Initiate Session</span>
                         </button>
-                        <button class="refresh-btn" onclick="fetchPajSession()" title="Refresh" style="height: 50px; width: 50px; flex-shrink: 0;">
+                        <button class="refresh-btn cfg-icon-btn" onclick="fetchPajSession()" title="Refresh">
                             <i data-lucide="rotate-cw"></i>
                         </button>
                     </div>
@@ -1069,102 +1159,101 @@
             </div>
 
             <!-- Financial Withdrawal -->
-            <div class="table-card" style="margin-top: 20px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
-                    <div class="stat-icon-sm green"><i data-lucide="wallet-2"></i></div>
-                    <div>
-                        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">Fee Withdrawal</h3>
-                        <p style="font-size: 12px; color: var(--text-secondary);">Withdraw accumulated platform fees to Solana</p>
+            <div class="table-card settings-card" style="margin-top: 24px;">
+                <div class="settings-card-header">
+                    <div class="settings-card-header-left">
+                        <div class="stat-icon-sm green"><i data-lucide="wallet-2"></i></div>
+                        <div>
+                            <h3>Fee Treasury &amp; Solana Withdrawal</h3>
+                            <p>Withdraw accumulated platform earnings to your whitelisted address</p>
+                        </div>
                     </div>
+                    <span class="settings-card-badge">Solana Treasury</span>
                 </div>
 
-                <div style="background: var(--bg-light); padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
-                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
-                        <button id="btn-withdraw-otp" onclick="requestWithdrawOTP()" title="Request OTP for withdrawal" 
-                            style="background: var(--velcro-green); color: #0D0D59; border: none; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px;">
-                            Withdraw Fees to Solana
+                <div class="cfg-treasury-panel">
+                    <div class="cfg-treasury-top">
+                        <button id="btn-withdraw-otp" onclick="requestWithdrawOTP()" title="Request OTP for withdrawal" class="btn-primary cfg-withdraw-trigger">
+                            <i data-lucide="arrow-up-right"></i>
+                            <span>Withdraw Fees to Solana</span>
                         </button>
-                        <div style="font-size: 13px; color: var(--text-secondary);">
-                            Recipient: <code id="withdraw-recipient-display" style="background: var(--input-bg); padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--text-main); font-weight: 700; font-family: monospace;">—</code>
+                        <div class="cfg-recipient-wrap">
+                            <span class="cfg-recipient-label">Whitelisted Recipient:</span>
+                            <code id="withdraw-recipient-display" class="sol-recipient-badge">—</code>
                         </div>
                     </div>
 
-                    <div id="withdraw-security-banner" class="hidden" style="padding: 12px 16px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; font-size: 13px; font-weight: 600; margin-bottom: 16px;">
+                    <div id="withdraw-security-banner" class="hidden cfg-alert-banner is-danger">
                         🚫 Withdrawal BLOCKED — This recipient is NOT in your allowed whitelist.
                     </div>
 
                     <!-- OTP Section -->
-                    <div id="withdraw-otp-section" class="hidden" style="padding: 20px; border-radius: 16px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde047; margin-bottom: 16px;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <div id="withdraw-otp-section" class="hidden cfg-otp-drawer">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
                             <i data-lucide="mail" style="width: 18px; height: 18px; color: #a16207;"></i>
-                            <span style="font-size: 13px; font-weight: 700; color: #854d0e;">2FA Verification Required</span>
+                            <span style="font-size: 13px; font-weight: 700; color: #854d0e;">2FA Authorization Required</span>
                         </div>
-                        <p style="font-size: 13px; color: #a16207; margin-bottom: 16px;">A 6-digit OTP has been sent to your admin email. Enter it to authorize the transaction.</p>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <input type="text" id="withdraw-otp-input" placeholder="000000" maxlength="10" style="margin-bottom: 0; flex: 1; text-align: center; font-size: 20px; font-weight: 700; letter-spacing: 4px; font-family: monospace; max-width: 240px; border-radius: 12px;">
-                            <button class="btn-primary" id="btn-withdraw-confirm" onclick="confirmWithdrawal()" style="padding: 0 24px; white-space: nowrap; font-weight: 700;">Confirm Withdrawal</button>
-                            <button onclick="cancelWithdrawal()" style="background: var(--input-bg); border: 1px solid var(--border); padding: 0 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text-main);">Cancel</button>
+                        <p style="font-size: 12.5px; color: #a16207; margin-bottom: 14px;">A 6-digit verification code was dispatched to your admin email. Enter it below to release the payout.</p>
+                        <div class="cfg-withdraw-otp-row">
+                            <input type="text" id="withdraw-otp-input" placeholder="000000" maxlength="10" class="paj-digit-input" style="max-width: 200px;">
+                            <button class="btn-primary" id="btn-withdraw-confirm" onclick="confirmWithdrawal()" style="width: auto; padding: 0 20px;">Confirm Withdrawal</button>
+                            <button onclick="cancelWithdrawal()" class="btn-secondary" style="width: auto; padding: 0 16px;">Cancel</button>
                         </div>
                         <p id="withdraw-otp-status" style="font-size: 12px; margin-top: 10px; font-weight: 600;"></p>
                     </div>
 
-                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                    <p class="cfg-whitelist-notice">
                         ⚠️ Ensure the recipient address matches your intended wallet. To change it, update the <code>DEVELOPER_RECIPIENT</code> variable in your server's <code>.env</code> file and restart the platform.
                     </p>
                 </div>
             </div>
 
             <!-- System Maintenance -->
-            <div class="table-card" style="margin-top: 20px; max-width: 100%;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                    <div class="stat-icon-sm amber"><i data-lucide="wrench"></i></div>
-                    <div>
-                        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">System Maintenance</h3>
-                        <p style="font-size: 12px; color: var(--text-secondary);">Data fixes and cleanup tools</p>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(124, 58, 237, 0.1); display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="tag" style="width: 16px; height: 16px; color: #7c3aed;"></i>
-                            </div>
-                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Fix PAJ Channels</div>
+            <div class="table-card settings-card" style="margin-top: 24px;">
+                <div class="settings-card-header">
+                    <div class="settings-card-header-left">
+                        <div class="stat-icon-sm amber"><i data-lucide="wrench"></i></div>
+                        <div>
+                            <h3>System Diagnostics &amp; Maintenance</h3>
+                            <p>Data consistency tools, transaction remediation, and security audit log</p>
                         </div>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Retroactively tag old PAJ transactions that were incorrectly saved with <code>channel: 'BANK'</code>.</p>
-                        <button class="btn-secondary" onclick="fixPajChannels()" id="fix-paj-btn">Fix PAJ Channels</button>
+                    </div>
+                    <span class="settings-card-badge">Maintenance</span>
+                </div>
+                <div class="cfg-maint-grid">
+                    <div class="cfg-maint-tile">
+                        <div class="cfg-maint-tile-head">
+                            <div class="cfg-maint-icon is-purple"><i data-lucide="tag"></i></div>
+                            <span class="cfg-maint-title">Fix PAJ Channels</span>
+                        </div>
+                        <p class="cfg-maint-desc">Retroactively tag old PAJ transactions that were incorrectly saved with <code>channel: 'BANK'</code>.</p>
+                        <button class="btn-secondary cfg-maint-btn" onclick="fixPajChannels()" id="fix-paj-btn">Fix PAJ Channels</button>
                         <p id="fix-paj-status" style="font-size: 12px; margin-top: 8px; display: none;"></p>
                     </div>
-                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="tags" style="width: 16px; height: 16px; color: #b45309;"></i>
-                            </div>
-                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Fix PAJ Statuses</div>
+                    <div class="cfg-maint-tile">
+                        <div class="cfg-maint-tile-head">
+                            <div class="cfg-maint-icon is-amber"><i data-lucide="tags"></i></div>
+                            <span class="cfg-maint-title">Fix PAJ Statuses</span>
                         </div>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Map old raw PAJ statuses (INIT, PAID) to Velcro generic statuses (AWAITING_DEPOSIT, DETECTED).</p>
-                        <button class="btn-secondary" onclick="fixPajStatuses()" id="fix-paj-status-btn">Fix PAJ Statuses</button>
+                        <p class="cfg-maint-desc">Map old raw PAJ statuses (INIT, PAID) to generic statuses (AWAITING_DEPOSIT, DETECTED).</p>
+                        <button class="btn-secondary cfg-maint-btn" onclick="fixPajStatuses()" id="fix-paj-status-btn">Fix PAJ Statuses</button>
                         <p id="fix-paj-status-result" style="font-size: 12px; margin-top: 8px; display: none;"></p>
                     </div>
-                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(13, 13, 89, 0.08); display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="refresh-cw" style="width: 16px; height: 16px; color: var(--velcro-navy);"></i>
-                            </div>
-                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Refresh All Data</div>
+                    <div class="cfg-maint-tile">
+                        <div class="cfg-maint-tile-head">
+                            <div class="cfg-maint-icon is-blue"><i data-lucide="refresh-cw"></i></div>
+                            <span class="cfg-maint-title">Refresh All Data</span>
                         </div>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Pull the latest transactions, users, stats, and settings from the server.</p>
-                        <button class="btn-primary" onclick="fetchData()" style="width: 100%;">Refresh Data</button>
+                        <p class="cfg-maint-desc">Pull the latest transactions, users, stats, and settings directly from the server.</p>
+                        <button class="btn-primary cfg-maint-btn" onclick="fetchData()">Refresh Data</button>
                     </div>
-                    <div style="padding: 20px; border-radius: 14px; background: var(--bg-light); border: 1px solid var(--border);">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(220, 38, 38, 0.1); display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="shield-alert" style="width: 16px; height: 16px; color: #dc2626;"></i>
-                            </div>
-                            <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Security Audit Log</div>
+                    <div class="cfg-maint-tile">
+                        <div class="cfg-maint-tile-head">
+                            <div class="cfg-maint-icon is-red"><i data-lucide="shield-alert"></i></div>
+                            <span class="cfg-maint-title">Security Audit Log</span>
                         </div>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">View recent admin actions, login attempts, and withdrawal events.</p>
-                        <button class="btn-secondary" onclick="switchSection('audit'); fetchAuditLog()">View Audit Log</button>
+                        <p class="cfg-maint-desc">View recent administrative actions, authentication attempts, and withdrawal logs.</p>
+                        <button class="btn-secondary cfg-maint-btn" onclick="switchSection('audit'); fetchAuditLog()">View Audit Log</button>
                         <div id="audit-log-container" style="margin-top: 12px; max-height: 200px; overflow-y: auto; font-size: 11px; display: none;"></div>
                     </div>
                 </div>
