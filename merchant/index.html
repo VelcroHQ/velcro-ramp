@@ -70,28 +70,38 @@
   <meta name="twitter:title" content="Velcro Merchant — Run Your Own Crypto Exchange">
   <meta name="twitter:description" content="Sell crypto under your own brand, logo & custom prices. Keep 100% of your markup with instant Nigerian bank payouts.">
   <meta name="twitter:image" content="https://merchant.usevelcro.com/og-image.png?v=2">
-  <link href="merchant.css?v=33" rel="stylesheet">
+  <link href="merchant.css?v=35" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- The fonts never hold up the page: system text shows until they arrive. -->
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,700..800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
   <!-- ═══════════ Landing ═══════════ -->
   <div id="landing">
+    <!-- Ambient top glow -->
+    <div class="l-ambient-top" aria-hidden="true"></div>
+
     <header id="m-nav" class="l-nav">
       <div class="l-wrap l-nav-in">
-        <a href="./" class="l-brand" aria-label="Velcro Merchant home"><img src="velcro_logo.png" alt="Velcro"><span>Merchant</span></a>
+        <a href="./" class="l-brand" aria-label="Velcro Merchant home">
+          <img src="velcro_logo.png" alt="Velcro">
+          <span class="l-brand-tag">MERCHANT</span>
+        </a>
         <nav class="l-links">
+          <a href="#who">Operators</a>
           <a href="#how">How it works</a>
-          <a href="#features">Features</a>
+          <a href="#features">Architecture</a>
           <a href="#earnings">Earnings</a>
           <a href="#faq">FAQ</a>
         </nav>
         <div class="l-nav-cta">
           <button type="button" class="l-signin" onclick="openAuth('signin')">Sign in</button>
-          <button type="button" class="l-btn" onclick="openAuth('signup')">Open your exchange</button>
+          <button type="button" class="l-btn l-btn-primary" onclick="openAuth('signup')">
+            <span>Open your desk</span>
+            <svg class="ico-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
         </div>
       </div>
     </header>
@@ -100,142 +110,314 @@
     <section class="l-hero">
       <div class="l-wrap l-hero-in">
         <div class="l-hero-copy">
-          <p class="l-kicker">Velcro Merchant</p>
-          <h1>Run your own crypto desk, <em>under your own name.</em></h1>
-          <p class="l-lede">Sell crypto to your customers under your own name, logo and prices. Velcro runs the naira accounts, the swaps and the bank payouts behind the scenes, so you never hold a kobo of their money.</p>
-          <div class="l-hero-cta">
-            <button type="button" class="l-btn l-btn-lg" onclick="openAuth('signup')">Open your exchange <span aria-hidden="true">→</span></button>
-            <a href="#how" class="l-btn-line l-btn-lg">See how it works</a>
+          <div class="l-badge">
+            <span class="l-badge-pulse"></span>
+            <span>AUTONOMOUS EXCHANGE INFRASTRUCTURE</span>
           </div>
-          <ul class="l-ticks">
-            <li>No float needed</li>
-            <li>Your prices, your margin</li>
-            <li>Payouts to any Nigerian bank</li>
-          </ul>
+          <h1>Run your own branded crypto desk. <span class="l-hero-gradient">Keep 100% of your markup.</span></h1>
+          <p class="l-lede">Launch a white-label crypto exchange under your brand in under 5 minutes. Automated Nigerian bank accounts, zero floating capital, and direct NIP payouts to your bank on every completed trade.</p>
+          <div class="l-hero-cta">
+            <button type="button" class="l-btn l-btn-lg l-btn-primary" onclick="openAuth('signup')">
+              <span>Claim your exchange</span>
+              <svg class="ico-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <a href="#earnings" class="l-btn-line l-btn-lg">Calculate profit</a>
+          </div>
+          <div class="l-hero-pills">
+            <div class="l-pill-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span>₦0 capital float required</span>
+            </div>
+            <div class="l-pill-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m13 2-2 10h5L11 22l2-10H8z"/></svg>
+              <span>60s automated NIP settlement</span>
+            </div>
+            <div class="l-pill-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Non-custodial client funds</span>
+            </div>
+          </div>
         </div>
 
-        <!-- The merchant tries their own exchange right here: type a name, pick a colour. -->
+        <!-- Interactive Terminal Simulator -->
         <div class="l-demo">
-          <div class="l-demo-controls">
-            <label for="pv-name">Try your exchange name</label>
-            <div class="l-swatches" role="radiogroup" aria-label="Brand colour for the preview">
-              <span>Colour</span>
-              <button type="button" class="m-swatch is-on" style="--sw:#a8cf45" data-color="#a8cf45" aria-label="Green"></button>
-              <button type="button" class="m-swatch" style="--sw:#6366f1" data-color="#6366f1" aria-label="Indigo"></button>
-              <button type="button" class="m-swatch" style="--sw:#f59e0b" data-color="#f59e0b" aria-label="Amber"></button>
-              <button type="button" class="m-swatch" style="--sw:#ec4899" data-color="#ec4899" aria-label="Pink"></button>
-              <button type="button" class="m-swatch" style="--sw:#14b8a6" data-color="#14b8a6" aria-label="Teal"></button>
-            </div>
-          </div>
-
-          <div id="pv-store" class="l-window" style="--brand:#a8cf45;--on-brand:#14142b">
-            <div class="l-window-bar">
-              <span class="l-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="l-url">ramp.usevelcro.com/m/<b id="pv-slug">northline-exchange</b></span>
-            </div>
-            <div class="l-window-body">
-              <div class="l-store-head">
-                <span id="pv-logo" class="l-store-logo">N</span>
-                <input id="pv-name" type="text" maxlength="30" value="Northline Exchange" spellcheck="false" autocomplete="off">
-                <small>Powered by Velcro</small>
+          <div class="l-terminal" id="pv-store" style="--brand:#00df89;--on-brand:#08090d">
+            <div class="l-terminal-bar">
+              <div class="l-terminal-url">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>https://<b id="pv-slug">northline-exchange</b>.usevelcro.com</span>
               </div>
+              <div class="l-terminal-status">
+                <span class="l-status-dot"></span>
+                <span>Live</span>
+              </div>
+            </div>
+
+            <div class="l-terminal-body">
+              <div class="l-brand-editor">
+                <span id="pv-logo" class="l-brand-logo">N</span>
+                <div class="l-brand-field">
+                  <label for="pv-name">Exchange name</label>
+                  <input id="pv-name" type="text" maxlength="30" value="Northline Exchange" spellcheck="false" autocomplete="off" placeholder="Your Exchange Name">
+                </div>
+              </div>
+
+              <div class="l-swatches-row">
+                <span class="l-swatches-lbl">Accent:</span>
+                <div class="l-swatches" role="radiogroup" aria-label="Brand color">
+                  <button type="button" class="m-swatch is-on" style="--sw:#00df89" data-color="#00df89" aria-label="Emerald"></button>
+                  <button type="button" class="m-swatch" style="--sw:#6366f1" data-color="#6366f1" aria-label="Indigo"></button>
+                  <button type="button" class="m-swatch" style="--sw:#f59e0b" data-color="#f59e0b" aria-label="Amber"></button>
+                  <button type="button" class="m-swatch" style="--sw:#ec4899" data-color="#ec4899" aria-label="Rose"></button>
+                  <button type="button" class="m-swatch" style="--sw:#06b6d4" data-color="#06b6d4" aria-label="Cyan"></button>
+                </div>
+              </div>
+
               <div class="l-ticket">
                 <div class="l-ticket-tabs"><span class="is-on">Buy</span><span>Sell</span></div>
                 <div class="l-ticket-stack">
-                  <div><small>You pay</small><p><b>₦250,000</b><em>NGN</em></p></div>
-                  <div><small>You get</small><p><b id="pv-get">0.00194</b><em>BTC</em></p></div>
+                  <div class="l-stack-row">
+                    <span class="l-stack-lbl">Customer transfers</span>
+                    <p class="l-stack-val"><b>₦250,000</b><span class="l-curr">NGN</span></p>
+                  </div>
+                  <div class="l-stack-row l-stack-sub">
+                    <span class="l-stack-lbl">Customer receives</span>
+                    <p class="l-stack-val"><b id="pv-get">0.00194</b><span class="l-curr">BTC</span></p>
+                  </div>
                 </div>
-                <p class="l-ticket-rate">1 BTC = <span id="pv-rate">₦128,900,000</span> · your price</p>
-                <div class="l-tear" aria-hidden="true"></div>
-                <span class="l-ticket-go">Buy BTC</span>
-                <p class="l-ticket-coins">
-                  <span class="l-coin-row" aria-hidden="true"><img src="/logos/bitcoin.png" alt=""><img src="/logos/ethereum.png" alt=""><img src="/logos/solana.png" alt=""><img src="/logos/usdt.png" alt=""><img src="/logos/usdc.png" alt=""></span>
-                  BTC · ETH · SOL · USDT · USDC
-                </p>
+                <div class="l-ticket-footer">
+                  <span class="l-ticket-rate">1 BTC = <b id="pv-rate">₦128,900,000</b> (your custom rate)</span>
+                  <span class="l-ticket-go">Order Completed ✓</span>
+                </div>
               </div>
-            </div>
-            <div class="l-ledger" aria-hidden="true">
-              <div><b>₦250,000 received</b><small>Payment detected · 2s ago</small></div>
-              <div><b class="is-up">+₦2,500 earned</b><small>Your 1% markup</small></div>
+
+              <!-- Live settlement ledger -->
+              <div class="l-ledger">
+                <div class="l-ledger-item">
+                  <span class="l-ledger-lbl">Settlement Rail</span>
+                  <b>Automated NIP Match</b>
+                  <small>Dynamic Virtual Account</small>
+                </div>
+                <div class="l-ledger-item l-ledger-profit">
+                  <span class="l-ledger-lbl">Your Net Profit</span>
+                  <b class="is-up">+₦2,500</b>
+                  <small>Credited in 45s (1.0% markup)</small>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="l-wrap">
-        <div class="l-strip">
-          <span>Naira bank transfers</span>
-          <span>BTC · ETH · SOL · USDT · USDC</span>
-          <span>Payouts to any Nigerian bank</span>
-          <span>Live order tracking</span>
-          <span>Email receipts</span>
+      <!-- Marquee Proof Strip -->
+      <div class="l-strip-wrap">
+        <div class="l-wrap">
+          <div class="l-strip">
+            <div class="l-strip-chip"><span>⚡ Automated NIP Rails</span></div>
+            <div class="l-strip-chip"><span>🪙 BTC · ETH · SOL · USDT · USDC</span></div>
+            <div class="l-strip-chip"><span>🌐 Custom Subdomain Provided</span></div>
+            <div class="l-strip-chip"><span>🛡️ Zero Working Capital Needed</span></div>
+            <div class="l-strip-chip"><span>🏦 40+ Nigerian Banks Supported</span></div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Who it's for -->
-    <section class="l-sec">
-      <div class="l-wrap l-split">
-        <div class="l-split-head">
-          <p class="l-kicker">Who it's for</p>
-          <h2>Anyone who already has people asking them for crypto.</h2>
+    <!-- Built for High-Volume Operators (Who it's for) -->
+    <section id="who" class="l-sec">
+      <div class="l-wrap">
+        <div class="l-sec-header">
+          <div class="l-badge">WHO IT'S BUILT FOR</div>
+          <h2>Engineered for operators who demand scale.</h2>
+          <p class="l-sec-sub">Whether you trade high-volume OTC or manage a crypto community, Velcro automates the operational friction.</p>
         </div>
-        <div class="l-rows">
-          <article><h3>P2P traders</h3><p>Stop matching orders by hand at 2am. Your customers pay, the crypto goes out, you keep your margin.</p></article>
-          <article><h3>Communities &amp; creators</h3><p>Give your followers a trusted place to buy, under your brand, and earn on every order they make.</p></article>
-          <article><h3>Fintechs &amp; wallets</h3><p>Add buy and sell to your product without building rails, banking partners or a treasury desk.</p></article>
-          <article><h3>Payments &amp; remittance</h3><p>Move value between naira and stablecoins for your clients, with every order tracked end to end.</p></article>
+
+        <div class="l-bento">
+          <div class="l-bento-card">
+            <div class="l-bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L20 4M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+            </div>
+            <h3>P2P &amp; OTC Desks</h3>
+            <p>End the madness of manual bank confirmations, WhatsApp screenshots, and 2am matching. Customers receive individual payment accounts; settlement is 100% automated.</p>
+          </div>
+
+          <div class="l-bento-card">
+            <div class="l-bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h3>Communities &amp; Influencers</h3>
+            <p>Monetize your audience with a fully branded crypto destination. Your followers enjoy lightning-fast swaps, while you collect passive margins on every single trade.</p>
+          </div>
+
+          <div class="l-bento-card">
+            <div class="l-bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <h3>Fintechs &amp; Neobanks</h3>
+            <p>Embed bank-to-crypto rails into your existing customer touchpoints without building treasury infrastructure, bank partner agreements, or liquidity reserves.</p>
+          </div>
+
+          <div class="l-bento-card">
+            <div class="l-bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"/></svg>
+            </div>
+            <h3>Cross-Border Desks</h3>
+            <p>Move high-frequency liquidity between Nigerian Naira and USD stablecoins (USDT &amp; USDC) with predictable fees and institutional uptime.</p>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- How it works -->
-    <section id="how" class="l-how">
+    <section id="how" class="l-sec l-how-sec">
       <div class="l-wrap">
-        <p class="l-kicker">How it works</p>
-        <h2>From sign-up to first sale in four steps.</h2>
-        <ol class="l-steps">
-          <li><h3>Create your account</h3><p>Sign up with your email or Google and tell us about your business.</p></li>
-          <li><h3>Get approved</h3><p>We review your business details, usually within a working day.</p></li>
-          <li><h3>Make it yours</h3><p>Pick your exchange name, upload your logo, choose your colours and set your prices.</p></li>
-          <li><h3>Share your link</h3><p>Customers buy and sell on your exchange. You earn your markup on every completed order.</p></li>
-        </ol>
+        <div class="l-sec-header">
+          <div class="l-badge">OPERATIONAL WORKFLOW</div>
+          <h2>From onboarding to live trades in four steps.</h2>
+          <p class="l-sec-sub">No complex integrations or hardware security modules needed.</p>
+        </div>
+
+        <div class="l-steps-grid">
+          <div class="l-step-card">
+            <span class="l-step-num">01</span>
+            <h3>Claim Your Exchange</h3>
+            <p>Sign up in under 2 minutes. Claim your custom subdomain (e.g. <code>apex.usevelcro.com</code>) or connect your business name.</p>
+          </div>
+          <div class="l-step-card">
+            <span class="l-step-num">02</span>
+            <h3>Customize Your Brand</h3>
+            <p>Upload your logo, pick your accent colors, and configure your storefront. Velcro stays completely in the background.</p>
+          </div>
+          <div class="l-step-card">
+            <span class="l-step-num">03</span>
+            <h3>Set Your Markups</h3>
+            <p>Control your spreads with granular markup controls. Set different profit percentages across BTC, ETH, SOL, USDT, and USDC.</p>
+          </div>
+          <div class="l-step-card">
+            <span class="l-step-num">04</span>
+            <h3>Collect Automated Profits</h3>
+            <p>Customers buy and sell on your exchange. Your markup accumulates in your wallet with instant withdrawal to any Nigerian bank.</p>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- Features -->
+    <!-- Infrastructure Features -->
     <section id="features" class="l-sec">
       <div class="l-wrap">
-        <p class="l-kicker">Everything included</p>
-        <h2>The exchange is yours. The plumbing is ours.</h2>
-        <div class="l-features">
-          <div><h3>Your brand</h3><p>Your exchange name, logo and colours on every page your customers see. Velcro stays in the background.</p></div>
-          <div><h3>Your prices</h3><p>Set a markup per coin, separately for buys and sells. Your customers see one clean price.</p></div>
-          <div><h3>Your customers</h3><p>Customers sign up on your exchange. Their orders and history belong to your dashboard.</p></div>
-          <div><h3>No float, no custody</h3><p>Customers pay into a fresh bank account per order and crypto goes straight to their wallet. You never hold their funds.</p></div>
-          <div><h3>Earnings you can withdraw</h3><p>Your markup lands in your balance on every completed order. Withdraw to your bank whenever you like.</p></div>
-          <div><h3>Tracking that builds trust</h3><p>Live order steps, explorer links and email receipts, so customers know exactly where their money is.</p></div>
+        <div class="l-sec-header">
+          <div class="l-badge">PLATFORM ARCHITECTURE</div>
+          <h2>Everything needed to run an institutional desk.</h2>
+          <p class="l-sec-sub">We handle compliance rails, liquidity routing, and bank connectivity. You own the customer relationship.</p>
+        </div>
+
+        <div class="l-feat-grid">
+          <div class="l-feat-card">
+            <div class="l-feat-head">
+              <div class="l-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+              <h3>Zero Float Required</h3>
+            </div>
+            <p>Never tie up millions in working capital. Customers pay into single-use accounts created specifically for their order, and settlement flows atomically.</p>
+          </div>
+
+          <div class="l-feat-card">
+            <div class="l-feat-head">
+              <div class="l-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+              <h3>Full White-Label Isolation</h3>
+            </div>
+            <p>Your brand name, your logo, and your dedicated URL on every screen. Your customers remain loyal to your desk without platform leakage.</p>
+          </div>
+
+          <div class="l-feat-card">
+            <div class="l-feat-head">
+              <div class="l-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              </div>
+              <h3>Typically in Bank in 60s</h3>
+            </div>
+            <p>Direct integration into the Nigerian Inter-Bank Settlement System (NIP) ensures automated bank credit within seconds of deposit detection.</p>
+          </div>
+
+          <div class="l-feat-card">
+            <div class="l-feat-head">
+              <div class="l-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </div>
+              <h3>Real-Time Margin Telemetry</h3>
+            </div>
+            <p>Track every incoming volume kobo, active margin capture, and completed settlement through a high-frequency merchant telemetry dashboard.</p>
+          </div>
+
+          <div class="l-feat-card">
+            <div class="l-feat-head">
+              <div class="l-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              </div>
+              <h3>Instant Capital Withdrawals</h3>
+            </div>
+            <p>Your accumulated markup is your money. Withdraw accrued fees directly to your personal or corporate Nigerian bank account at any time.</p>
+          </div>
+
+          <div class="l-feat-card">
+            <div class="l-feat-head">
+              <div class="l-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+              <h3>Automated Email Receipts</h3>
+            </div>
+            <p>Every transaction automatically sends clean, branded email confirmations with blockchain tx hashes, timestamps, and customer receipt numbers.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Earnings calculator -->
-    <section id="earnings" class="l-earn">
-      <div class="l-wrap l-earn-in">
-        <div>
-          <p class="l-kicker">Earnings</p>
-          <h2>See what your exchange could earn.</h2>
-          <p class="l-earn-sub">Your markup is yours to set. Drag the sliders to see what a month could look like.</p>
-        </div>
-        <div class="l-calc">
-          <label><span>Monthly volume <b id="calc-vol-out">₦20,000,000</b></span>
-            <input id="calc-vol" type="range" min="1000000" max="200000000" step="1000000" value="20000000" class="l-range"></label>
-          <label><span>Your markup <b id="calc-mk-out">1.0%</b></span>
-            <input id="calc-mk" type="range" min="0.1" max="5" step="0.1" value="1" class="l-range"></label>
-          <div class="l-calc-out">
-            <p>You'd earn about</p>
-            <p class="l-calc-num"><span id="calc-out">₦200,000</span> <small>/ month</small></p>
-            <p class="l-calc-fine">An estimate before any fees. Actual earnings depend on your completed orders.</p>
+    <!-- Earnings Simulator -->
+    <section id="earnings" class="l-sec l-earn-sec">
+      <div class="l-wrap">
+        <div class="l-earn-card">
+          <div class="l-earn-left">
+            <div class="l-badge">PROFIT CALCULATOR</div>
+            <h2>See what your desk generates.</h2>
+            <p class="l-earn-sub">Adjust the monthly volume and your desired markup to see projected revenue.</p>
+
+            <div class="l-calc-controls">
+              <div class="l-control-group">
+                <div class="l-control-label">
+                  <span>Monthly Trade Volume</span>
+                  <b id="calc-vol-out">₦20,000,000</b>
+                </div>
+                <input id="calc-vol" type="range" min="1000000" max="200000000" step="1000000" value="20000000" class="l-range">
+                <div class="l-range-meta"><span>₦1,000,000</span><span>₦200,000,000+</span></div>
+              </div>
+
+              <div class="l-control-group">
+                <div class="l-control-label">
+                  <span>Your Markup Margin</span>
+                  <b id="calc-mk-out">1.0%</b>
+                </div>
+                <input id="calc-mk" type="range" min="0.1" max="5" step="0.1" value="1" class="l-range">
+                <div class="l-range-meta"><span>0.1%</span><span>5.0%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="l-earn-right">
+            <div class="l-payout-box">
+              <span class="l-payout-eyebrow">Projected Monthly Net Profit</span>
+              <div class="l-payout-figure">
+                <span id="calc-out">₦200,000</span>
+                <small>/ month</small>
+              </div>
+              <p class="l-payout-note">100% pure profit without stocking inventory or putting capital at risk. Calculated on completed order settlement.</p>
+              <button type="button" class="l-btn l-btn-lg l-btn-primary l-w-full" onclick="openAuth('signup')">
+                <span>Start earning this month</span>
+                <svg class="ico-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -243,43 +425,84 @@
 
     <!-- FAQ -->
     <section id="faq" class="l-sec">
-      <div class="l-wrap l-split">
-        <div class="l-split-head">
-          <p class="l-kicker">FAQ</p>
-          <h2>Questions merchants ask us.</h2>
+      <div class="l-wrap l-faq-wrap">
+        <div class="l-sec-header">
+          <div class="l-badge">FREQUENTLY ASKED QUESTIONS</div>
+          <h2>Everything you need to know.</h2>
         </div>
+
         <div class="l-faq">
-          <details><summary>Do I hold my customers' money?</summary><p>No. Each customer pays into a bank account made for their order, and crypto goes straight to their wallet (or naira straight to their bank when they sell). Your earnings collect in your Velcro balance.</p></details>
-          <details><summary>How do I make money?</summary><p>You set a markup on top of Velcro's price for each coin, separately for buying and selling. Your customers see one price, and the markup on every completed order goes to your balance.</p></details>
-          <details><summary>Which coins can my customers trade?</summary><p>BTC, ETH, SOL, USDT and USDC, bought with naira by bank transfer and sold for naira paid to any Nigerian bank.</p></details>
-          <details><summary>Who verifies my customers?</summary><p>You do. Velcro verifies your business before your exchange goes live, and the merchant terms make you responsible for knowing your customers. Check the rules that apply to your business with your own adviser.</p></details>
-          <details><summary>Can I use my own domain?</summary><p>Your exchange starts on a Velcro address you choose. Your own domain and your own subdomain on Velcro are coming next.</p></details>
-          <details><summary>How long does approval take?</summary><p>Usually within one working day. We'll email you as soon as your exchange is approved, or tell you what we need if something's missing.</p></details>
+          <details open>
+            <summary>
+              <span>Do I hold or handle my customers' money?</span>
+              <svg class="l-faq-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p>No. Each customer pays into a dynamic virtual account generated strictly for their individual order. The crypto goes straight to their wallet (or naira straight to their bank account when selling). You never take custody of customer funds.</p>
+          </details>
+          <details>
+            <summary>
+              <span>How do my profits accumulate and withdraw?</span>
+              <svg class="l-faq-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p>You set your custom markup percentage on top of base liquidity. When an order completes, your margin is credited immediately to your merchant balance. You can withdraw to any Nigerian bank account at any time with one click.</p>
+          </details>
+          <details>
+            <summary>
+              <span>Which assets and blockchains are supported?</span>
+              <svg class="l-faq-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p>USDT (Solana, Base, TRC20, BEP20, Polygon), USDC (Solana, Base, Polygon, Ethereum), BTC (native), ETH (native, Base, Arbitrum), and SOL (native).</p>
+          </details>
+          <details>
+            <summary>
+              <span>Can I use my own custom domain?</span>
+              <svg class="l-faq-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p>Yes! Every merchant immediately receives a dedicated subdomain (e.g. <code>brand.usevelcro.com</code>). You can also request a fully custom domain mapping directly through your dashboard settings.</p>
+          </details>
+          <details>
+            <summary>
+              <span>How fast does business approval take?</span>
+              <svg class="l-faq-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p>Account approval is fast and automated, typically reviewed within a single working day. You will receive an immediate email confirmation the moment your exchange goes live.</p>
+          </details>
         </div>
       </div>
     </section>
 
-    <!-- Closing CTA -->
+    <!-- Closing CTA Banner -->
     <section class="l-cta">
-      <div class="l-wrap l-cta-in">
-        <div>
-          <h2>Launch your exchange. Keep your brand.</h2>
-          <p>It takes a few minutes to apply. You'll hear from us within a working day.</p>
+      <div class="l-wrap">
+        <div class="l-cta-card">
+          <div class="l-cta-copy">
+            <h2>Ready to run your own crypto desk?</h2>
+            <p>Join operators, OTC brokers, and fintechs building on Velcro's automated rails.</p>
+          </div>
+          <div class="l-cta-action">
+            <button type="button" class="l-btn l-btn-lg l-btn-primary" onclick="openAuth('signup')">
+              <span>Open your exchange now</span>
+              <svg class="ico-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
         </div>
-        <button type="button" class="l-btn l-btn-lg" onclick="openAuth('signup')">Open your exchange <span aria-hidden="true">→</span></button>
+
+        <footer class="l-foot">
+          <div class="l-foot-brand">
+            <img src="/velcro_logo.png" alt="Velcro">
+            <span>MERCHANT INFRASTRUCTURE</span>
+          </div>
+          <div class="l-foot-links">
+            <a href="/">Velcro Convert</a>
+            <a href="/about.html">About</a>
+            <a href="/contact.html">Contact</a>
+            <a href="/terms.html">Terms</a>
+            <a href="/privacy.html">Privacy</a>
+            <a href="tel:+2347035428475">+234 703 542 8475</a>
+            <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>
+          </div>
+        </footer>
       </div>
-      <footer class="l-wrap l-foot">
-        <span class="l-brand l-brand-sm"><img src="/velcro_logo.png" alt="Velcro"><span>Merchant</span></span>
-        <span class="l-foot-links">
-          <a href="/">Velcro Convert</a>
-          <a href="/about.html">About</a>
-          <a href="/contact.html">Contact</a>
-          <a href="/terms.html">Terms</a>
-          <a href="/privacy.html">Privacy</a>
-          <a href="tel:+2347035428475">+234 703 542 8475</a>
-          <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>
-        </span>
-      </footer>
     </section>
   </div>
 
