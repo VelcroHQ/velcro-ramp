@@ -787,6 +787,12 @@ function hostfiBuyEstimate(ngn) {
 }
 
 function getEffectiveBuyMinLimit() {
+  // For PAJ, currentRate.buy holds the NGN-per-token rate (e.g. ₦119k/SOL),
+  // NOT the NGN/USD rate. Use currentRate.paj (NGN/USD) for the $1 minimum.
+  if (currentProvider === 'paj') {
+    const usdRate = Number(currentRate.paj) || 1600;
+    return Math.ceil(1 * usdRate);
+  }
   const rate = Number(currentRate.buy) || Number(currentRate.paj) || 1400;
   if (currentProvider === 'hostfi') {
     // Enough naira to cover the network fee and HostFi's minimum send.
