@@ -1630,6 +1630,9 @@ function openAuth(mode) {
 function closeAuth() {
   pendingTrade = false;
   $('auth').hidden = true;
+  if ($('a-pass-new')) $('a-pass-new').type = 'password';
+  if ($('a-pass')) $('a-pass').type = 'password';
+  updateStorePassEyeIcon(false);
 }
 
 function setAuthMode(mode) {
@@ -1645,23 +1648,98 @@ function setAuthMode(mode) {
   $('a-forgot').hidden = mode !== 'signin';
   $('a-pass-hint').hidden = !codeStep;
   $('a-pass-label').textContent = codeStep ? 'Choose a password' : 'Password';
-  $('a-pass').autocomplete = codeStep ? 'new-password' : 'current-password';
+
+  if ($('a-pass-new')) {
+    $('a-pass').hidden = codeStep;
+    $('a-pass-new').hidden = !codeStep;
+    if ($('a-suggest-pass')) $('a-suggest-pass').hidden = !codeStep;
+  } else {
+    $('a-pass').autocomplete = codeStep ? 'new-password' : 'current-password';
+  }
+
   $('a-email').readOnly = codeStep;
   $('google-wrap').hidden = !googleReady || codeStep || mode === 'reset';
   $('auth-switch').innerHTML = mode === 'signin'
     ? 'New here? <button type="button" onclick="setAuthMode(\'signup\')">Create an account</button>'
     : 'Already have an account? <button type="button" onclick="setAuthMode(\'signin\')">Sign in</button>';
-  if (codeStep) setTimeout(() => $('a-code').focus(), 50);
+  if (codeStep) {
+    setTimeout(() => {
+      if (!$('a-code').value) $('a-code').focus();
+      else if ($('a-pass-new')) $('a-pass-new').focus();
+    }, 50);
+  }
+}
+
+function toggleStorePassVisibility() {
+  const codeStep = authMode.endsWith('-code');
+  const input = (codeStep && $('a-pass-new')) ? $('a-pass-new') : $('a-pass');
+  if (!input) return;
+  const isPass = input.type === 'password';
+  input.type = isPass ? 'text' : 'password';
+  updateStorePassEyeIcon(isPass);
+}
+
+function updateStorePassEyeIcon(isVisible) {
+  const btn = $('a-pass-toggle');
+  if (!btn) return;
+  if (isVisible) {
+    btn.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+    btn.setAttribute('aria-label', 'Hide password');
+  } else {
+    btn.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    btn.setAttribute('aria-label', 'Show password');
+  }
+}
+
+function generateAndSetStorePassword() {
+  const chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
+  const array = new Uint32Array(14);
+  window.crypto.getRandomValues(array);
+  let pass = '';
+  for (let i = 0; i < 14; i++) {
+    pass += chars[array[i] % chars.length];
+  }
+  if (!/[a-z]/.test(pass)) pass += 'w';
+  if (!/[A-Z]/.test(pass)) pass += 'K';
+  if (!/[0-9]/.test(pass)) pass += '8';
+  if (!/[!@#$%&*]/.test(pass)) pass += '#';
+
+  const passInput = $('a-pass-new') || $('a-pass');
+  if (passInput) {
+    passInput.value = pass;
+    passInput.type = 'text';
+    updateStorePassEyeIcon(true);
+    passInput.dispatchEvent(new Event('input', { bubbles: true }));
+    passInput.focus();
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(pass);
+      }
+    } catch (e) { /* ignore */ }
+
+    const hint = $('a-pass-hint');
+    if (hint) {
+      hint.innerHTML = '<span style="color:#16a34a;font-weight:600">✓ Strong password generated & copied to clipboard!</span>';
+      hint.hidden = false;
+    }
+  }
 }
 
 async function submitAuth(e) {
   e.preventDefault();
   const email = $('a-email').value.trim();
-  const password = $('a-pass').value;
+  const passInput = (authMode.endsWith('-code') && $('a-pass-new')) ? $('a-pass-new') : $('a-pass');
+  const password = passInput ? passInput.value : '';
   const otp = $('a-code').value.trim();
   const btn = $('auth-btn');
   $('auth-error').hidden = true;
   if (!/^\S+@\S+\.\S+$/.test(email)) return authError('Enter a valid email address');
+  if (authMode.endsWith('-code')) {
+    if (!otp) return authError('Enter the 6-digit code from your email');
+    if (!password) return authError('Please choose a password');
+    if (password.length < 8) return authError('Password must be at least 8 characters');
+  }
   const label = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Please wait…';
@@ -1691,6 +1769,11 @@ function signedIn(data) {
   me = { email: data.email, name: data.name };
   closeAuth();
   $('a-pass').value = '';
+  if ($('a-pass-new')) {
+    $('a-pass-new').value = '';
+    $('a-pass-new').type = 'password';
+  }
+  updateStorePassEyeIcon(false);
   $('a-code').value = '';
   paintAccount();
   toast(`Signed in to ${store.info.name}`);

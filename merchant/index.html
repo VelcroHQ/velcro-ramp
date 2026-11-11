@@ -873,8 +873,21 @@
           <p class="m-hint">Can't find the code? Check your spam or junk folder.</p>
         </div>
         <div id="a-pass-row">
-          <div class="m-label-row"><label class="m-label" for="a-pass" id="a-pass-label">Password</label><button type="button" id="a-forgot" onclick="setAuthMode('reset')">Forgot password?</button></div>
-          <input id="a-pass" type="password" autocomplete="current-password" class="m-input" required>
+          <div class="m-label-row">
+            <label class="m-label" for="a-pass" id="a-pass-label">Password</label>
+            <button type="button" id="a-forgot" onclick="setAuthMode('reset')">Forgot password?</button>
+            <button type="button" id="a-suggest-pass" class="m-suggest-btn hidden" onclick="generateAndSetPassword()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21 2-2 2m-6 6 2-2m-8 8-2 2m14-8 2 2m-8 8 2-2M3 21l9-9m0 0 3-3m-3 3-3 3"/></svg>
+              Suggest password
+            </button>
+          </div>
+          <div class="m-pass-wrap">
+            <input id="a-pass" name="password" type="password" autocomplete="current-password" class="m-input" required>
+            <input id="a-pass-new" name="new-password" type="password" autocomplete="new-password" class="m-input hidden" placeholder="At least 8 characters">
+            <button type="button" id="a-pass-toggle" class="m-pass-eye" aria-label="Show password" title="Show password" onclick="togglePassVisibility()" tabindex="-1">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
           <p id="a-pass-hint" class="hidden m-hint">At least 8 characters, with letters and numbers.</p>
         </div>
         <p id="auth-error" class="hidden m-error"></p>

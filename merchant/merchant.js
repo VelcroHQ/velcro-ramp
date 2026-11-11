@@ -120,7 +120,12 @@ function openAuth(mode) {
   setTimeout(() => $('a-email').focus(), 50);
 }
 
-function closeAuth() { $('auth').classList.remove('is-open'); }
+function closeAuth() {
+  $('auth').classList.remove('is-open');
+  if ($('a-pass-new')) $('a-pass-new').type = 'password';
+  if ($('a-pass')) $('a-pass').type = 'password';
+  updatePassEyeIcon(false);
+}
 
 let signupDraft = { name: '', business: '' };
 
@@ -149,7 +154,17 @@ function setAuthMode(mode) {
   $('a-forgot').classList.toggle('hidden', mode !== 'signin');
   $('a-pass-hint').classList.toggle('hidden', !codeStep);
   $('a-pass-label').textContent = codeStep ? 'Choose a password' : 'Password';
-  $('a-pass').autocomplete = codeStep ? 'new-password' : 'current-password';
+
+  if ($('a-pass-new')) {
+    $('a-pass').classList.toggle('hidden', codeStep);
+    $('a-pass').required = !codeStep;
+    $('a-pass-new').classList.toggle('hidden', !codeStep);
+    $('a-pass-new').required = codeStep;
+    if ($('a-suggest-pass')) $('a-suggest-pass').classList.toggle('hidden', !codeStep);
+  } else {
+    $('a-pass').autocomplete = codeStep ? 'new-password' : 'current-password';
+  }
+
   $('a-email').readOnly = codeStep;
   $('google-wrap').classList.toggle('hidden', !googleReady || codeStep || mode === 'reset');
   $('auth-switch').innerHTML = mode === 'signin'
@@ -163,7 +178,11 @@ function setAuthMode(mode) {
       else $('a-email').focus();
     }, 50);
   } else if (codeStep) {
-    setTimeout(() => $('a-code').focus(), 50);
+    setTimeout(() => {
+      if (!$('a-code').value) $('a-code').focus();
+      else if ($('a-pass-new')) $('a-pass-new').focus();
+      else $('a-pass').focus();
+    }, 50);
   }
 }
 
@@ -172,11 +191,70 @@ function authError(msg) {
   $('auth-error').classList.remove('hidden');
 }
 
+function togglePassVisibility() {
+  const codeStep = authMode === 'signup-code' || authMode === 'reset-code';
+  const input = (codeStep && $('a-pass-new')) ? $('a-pass-new') : $('a-pass');
+  if (!input) return;
+  const isPass = input.type === 'password';
+  input.type = isPass ? 'text' : 'password';
+  updatePassEyeIcon(isPass);
+}
+
+function updatePassEyeIcon(isVisible) {
+  const btn = $('a-pass-toggle');
+  if (!btn) return;
+  if (isVisible) {
+    btn.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+    btn.setAttribute('aria-label', 'Hide password');
+    btn.title = 'Hide password';
+  } else {
+    btn.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    btn.setAttribute('aria-label', 'Show password');
+    btn.title = 'Show password';
+  }
+}
+
+function generateAndSetPassword() {
+  const chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
+  const array = new Uint32Array(14);
+  window.crypto.getRandomValues(array);
+  let pass = '';
+  for (let i = 0; i < 14; i++) {
+    pass += chars[array[i] % chars.length];
+  }
+  if (!/[a-z]/.test(pass)) pass += 'w';
+  if (!/[A-Z]/.test(pass)) pass += 'K';
+  if (!/[0-9]/.test(pass)) pass += '8';
+  if (!/[!@#$%&*]/.test(pass)) pass += '#';
+
+  const passInput = $('a-pass-new') || $('a-pass');
+  if (passInput) {
+    passInput.value = pass;
+    passInput.type = 'text';
+    updatePassEyeIcon(true);
+    passInput.dispatchEvent(new Event('input', { bubbles: true }));
+    passInput.focus();
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(pass);
+      }
+    } catch (e) { /* ignore clipboard failure */ }
+
+    const hint = $('a-pass-hint');
+    if (hint) {
+      hint.innerHTML = '<span style="color:#16a34a;font-weight:600">✓ Strong password generated & copied to clipboard!</span>';
+      hint.classList.remove('hidden');
+    }
+  }
+}
+
 async function submitAuth(e) {
   e.preventDefault();
   const btn = $('auth-btn');
   const email = $('a-email').value.trim();
-  const password = $('a-pass').value;
+  const passInput = (authMode === 'signup-code' || authMode === 'reset-code') ? ($('a-pass-new') || $('a-pass')) : $('a-pass');
+  const password = passInput ? passInput.value : '';
   const otp = $('a-code').value.trim();
   const name = $('a-name') ? $('a-name').value.trim() : '';
   const business = $('a-business') ? $('a-business').value.trim() : '';
@@ -188,6 +266,10 @@ async function submitAuth(e) {
     if (!/^\S+@\S+\.\S+$/.test(email)) return authError('Enter a valid email address');
     signupDraft.name = name;
     signupDraft.business = business;
+  } else if (authMode === 'signup-code' || authMode === 'reset-code') {
+    if (!otp) return authError('Enter the 6-digit code from your email');
+    if (!password) return authError('Please choose a password');
+    if (password.length < 8) return authError('Password must be at least 8 characters');
   } else if (!/^\S+@\S+\.\S+$/.test(email)) {
     return authError('Enter a valid email address');
   }
@@ -223,6 +305,11 @@ function signedIn(data) {
   setToken(data.token);
   closeAuth();
   $('a-pass').value = '';
+  if ($('a-pass-new')) {
+    $('a-pass-new').value = '';
+    $('a-pass-new').type = 'password';
+  }
+  updatePassEyeIcon(false);
   $('a-code').value = '';
   if ($('a-name')) $('a-name').value = '';
   if ($('a-business')) $('a-business').value = '';

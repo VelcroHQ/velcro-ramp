@@ -199,8 +199,21 @@
           <p class="s-hint">Can't find the code? Check your spam or junk folder.</p>
         </div>
         <div id="a-pass-row">
-          <div class="s-label-row"><label class="s-label" for="a-pass" id="a-pass-label">Password</label><button type="button" id="a-forgot" class="s-mini" onclick="setAuthMode('reset')">Forgot password?</button></div>
-          <input id="a-pass" type="password" autocomplete="current-password" class="s-input">
+          <div class="s-label-row">
+            <label class="s-label" for="a-pass" id="a-pass-label">Password</label>
+            <button type="button" id="a-forgot" class="s-mini" onclick="setAuthMode('reset')">Forgot password?</button>
+            <button type="button" id="a-suggest-pass" class="s-suggest-btn" onclick="generateAndSetStorePassword()" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><path d="m21 2-2 2m-6 6 2-2m-8 8-2 2m14-8 2 2m-8 8 2-2M3 21l9-9m0 0 3-3m-3 3-3 3"/></svg>
+              Suggest password
+            </button>
+          </div>
+          <div class="s-pass-wrap">
+            <input id="a-pass" name="password" type="password" autocomplete="current-password" class="s-input">
+            <input id="a-pass-new" name="new-password" type="password" autocomplete="new-password" class="s-input" placeholder="At least 8 characters" hidden>
+            <button type="button" id="a-pass-toggle" class="s-pass-eye" aria-label="Show password" onclick="toggleStorePassVisibility()" tabindex="-1">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
           <p id="a-pass-hint" class="s-hint" hidden>At least 8 characters, with letters and numbers.</p>
         </div>
         <p id="auth-error" class="s-error" hidden></p>

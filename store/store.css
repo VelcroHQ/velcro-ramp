@@ -349,6 +349,12 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-error { margin-top: 10px; font-size: 13.5px; color: #b42318; }
 .s-mini { margin-bottom: 6px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
 .s-mini:hover { color: var(--ink); }
+.s-pass-wrap { position: relative; width: 100%; }
+.s-pass-wrap .s-input { padding-right: 44px; }
+.s-pass-eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 6px; cursor: pointer; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; transition: color .15s; }
+.s-pass-eye:hover { color: var(--ink); }
+.s-suggest-btn { margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #15803d; background: rgba(22, 101, 52, .08); border: 1px solid rgba(22, 101, 52, .22); padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all .15s; }
+.s-suggest-btn:hover { background: rgba(22, 101, 52, .15); color: #14532d; border-color: rgba(22, 101, 52, .4); }
 
 /* Checkout: the same ticket, one step on */
 .s-checkout { padding-top: 14px; }
