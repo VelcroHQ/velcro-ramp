@@ -926,129 +926,232 @@
           </form>
 
           <!-- Dedicated Domain Panel -->
-          <div id="panel-domain" class="d-panel d-form" style="max-width: 580px;">
-            <div class="d-head">
-              <span class="d-st is-live" style="font-size: 11px; margin-bottom: 6px; display: inline-block;">Premium Upgrade</span>
-              <h1>Dedicated Subdomain</h1>
-              <p>Run your exchange on your own exclusive address like <code id="dom-head-preview">yourbrand.usevelcro.com</code> with zero <code>/m/</code> in the link.</p>
-            </div>
-
-            <!-- Standard Free Link Callout -->
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.5px;">Standard Exchange Link (Active &amp; Free)</span>
-                <span class="d-st is-live" style="font-size: 10px; padding: 2px 6px;">Free Forever</span>
+          <div id="panel-domain" class="d-panel d-form dom-upgrade-card">
+            <!-- Header -->
+            <div class="dom-hero-head">
+              <div class="dom-badge-row">
+                <span class="dom-pill-vip">
+                  <span class="dom-pulse-dot"></span>
+                  EXECUTIVE UPGRADE
+                </span>
+                <span class="dom-pill-sub">Zero /m/ in URL</span>
               </div>
-              <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
-                <code id="dom-standard-link-display" style="color: var(--brand);">https://ramp.usevelcro.com/m/your-store</code>
-              </div>
-              <p style="font-size: 11px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
-                Your customers can always trade on your standard link. Upgrading gives you a dedicated subdomain (<span id="dom-standard-upgrade-preview" style="color: var(--text-primary); font-weight: 600;">yourbrand.usevelcro.com</span>) for a standalone, executive presence.
+              <h1 class="dom-title">Dedicated Subdomain Rail</h1>
+              <p class="dom-subtitle">
+                Elevate your crypto desk into a standalone institution. Your customers trade directly on
+                <code class="dom-sub-code" id="dom-head-preview">yourbrand.usevelcro.com</code> with zero platform redirects.
               </p>
             </div>
 
+            <!-- Live Browser Simulator -->
+            <div class="dom-simulator-wrap">
+              <div class="dom-sim-bar">
+                <div class="dom-sim-dots">
+                  <span class="sim-dot red"></span>
+                  <span class="sim-dot yellow"></span>
+                  <span class="sim-dot green"></span>
+                </div>
+                <div class="dom-sim-url">
+                  <svg class="dom-sim-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span class="dom-sim-https">https://</span><span id="dom-browser-slug" class="dom-sim-slug">yourbrand</span><span class="dom-sim-ext">.usevelcro.com</span>
+                </div>
+                <span class="dom-sim-ssl">SSL ACTIVE</span>
+              </div>
+              <div class="dom-sim-body">
+                <div class="dom-sim-brand">
+                  <div class="dom-sim-avatar" id="dom-sim-avatar">V</div>
+                  <div class="dom-sim-titles">
+                    <span class="dom-sim-name" id="dom-preview-store-name">Your Exchange Name</span>
+                    <span class="dom-sim-desc">Automated Nigerian Interbank Settlement &middot; Direct Crypto Rail</span>
+                  </div>
+                </div>
+                <div class="dom-sim-badge">Live White-Label</div>
+              </div>
+            </div>
+
+            <!-- Standard vs Dedicated Comparative Pill -->
+            <div class="dom-compare-card">
+              <div class="dom-compare-row">
+                <div class="dom-compare-col">
+                  <span class="dom-compare-label">Standard Free Address</span>
+                  <div class="dom-compare-val">
+                    <code id="dom-standard-link-display">https://ramp.usevelcro.com/m/your-store</code>
+                  </div>
+                  <span class="dom-compare-status is-free">Active &middot; Free Forever</span>
+                </div>
+                <div class="dom-compare-divider"></div>
+                <div class="dom-compare-col">
+                  <span class="dom-compare-label">Dedicated Executive Address</span>
+                  <div class="dom-compare-val">
+                    <code id="dom-standard-upgrade-preview" class="is-vip">yourbrand.usevelcro.com</code>
+                  </div>
+                  <span class="dom-compare-status is-pro">Standalone &middot; Executive Presence</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Active State -->
-            <div id="dom-view-active" class="hidden" style="background: rgba(168,207,69,0.08); border: 1px solid rgba(168,207,69,0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                <span class="d-st is-live" style="font-size: 13px;">Dedicated Domain Active</span>
-                <span id="dom-active-plan" style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Lifetime</span>
+            <div id="dom-view-active" class="hidden dom-state-card is-active">
+              <div class="dom-state-top">
+                <div class="dom-state-tag is-live">
+                  <span class="dom-pulse-green"></span>
+                  Dedicated Domain Active
+                </div>
+                <span id="dom-active-plan" class="dom-plan-pill">Lifetime Access</span>
               </div>
-              <div style="font-size: 18px; font-weight: 700; margin-bottom: 6px; word-break: break-all;">
-                <a id="dom-active-link" href="#" target="_blank" rel="noopener" style="color: var(--brand); text-decoration: none;">https://...</a>
+              <div class="dom-active-url-box">
+                <a id="dom-active-link" href="#" target="_blank" rel="noopener">https://...</a>
               </div>
-              <p id="dom-active-expires" style="font-size: 12px; color: var(--text-secondary); margin: 0 0 16px;">Active permanent VIP pass.</p>
-              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <a id="dom-open-btn" href="#" target="_blank" rel="noopener" class="d-btn-lime" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 9px 18px; font-size: 13px;">Open dedicated exchange ↗</a>
-                <button type="button" class="d-btn-quiet" style="padding: 9px 14px; font-size: 13px;" onclick="copyDomActiveLink()">Copy link</button>
+              <p id="dom-active-expires" class="dom-state-msg">Permanent VIP pass with lifetime updates.</p>
+              <div class="dom-active-actions">
+                <a id="dom-open-btn" href="#" target="_blank" rel="noopener" class="d-btn-lime">
+                  Open dedicated exchange
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px;margin-left:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6m4-3h6v6m-11 5L21 3"/></svg>
+                </a>
+                <button type="button" class="d-btn-quiet" onclick="copyDomActiveLink()">Copy link</button>
                 <button type="button" id="dom-renew-btn" class="d-btn-quiet hidden" onclick="startDomainUpgrade()">Renew subscription</button>
               </div>
             </div>
 
             <!-- Pending Verification State -->
-            <div id="dom-view-pending" class="hidden" style="background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                <span class="d-st is-wait" style="font-size: 13px;">Setup in Progress</span>
-                <span id="dom-pending-amount" style="font-weight: 600; font-size: 13px;">₦10,000</span>
+            <div id="dom-view-pending" class="hidden dom-state-card is-pending">
+              <div class="dom-state-top">
+                <div class="dom-state-tag is-waiting">
+                  <span class="dom-pulse-amber"></span>
+                  Verification &amp; Setup in Progress
+                </div>
+                <span id="dom-pending-amount" class="dom-pending-amt">₦10,000</span>
               </div>
-              <p style="font-size: 13px; margin: 0 0 12px; color: var(--text-primary); line-height: 1.5;">
-                We received your payment verification for <code id="dom-pending-sub" style="color: var(--brand); font-weight: 700;">...</code>. Our infrastructure team is verifying the funds with Kuda Bank and provisioning your dedicated subdomain on our servers. You'll receive an email as soon as it goes live (usually 1–2 hours).
+              <p class="dom-pending-desc">
+                We received your payment verification for <code id="dom-pending-sub" class="dom-bold-sub">...</code>. Our infrastructure team is reconciling the transfer with Kuda Bank and provisioning the DNS routes on our edge servers.
               </p>
-              <div style="font-size: 12px; color: var(--text-secondary); background: rgba(0,0,0,0.15); padding: 12px 14px; border-radius: 8px; line-height: 1.6;">
-                <b>Requested Address:</b> <span id="dom-pending-full-url" style="color: var(--text-primary); font-family: monospace;">—</span><br>
-                <b>Payment Reference:</b> <span id="dom-pending-ref" style="color: var(--text-primary);">—</span><br>
-                <b>Bank:</b> Kuda Bank &middot; <code>3000911925</code> &middot; Novastaq Technologies Limited
+              <div class="dom-pending-details">
+                <div class="dom-pending-item">
+                  <span>Reserved Address</span>
+                  <b id="dom-pending-full-url">—</b>
+                </div>
+                <div class="dom-pending-item">
+                  <span>Payment Narration / Ref</span>
+                  <b id="dom-pending-ref">—</b>
+                </div>
+                <div class="dom-pending-item">
+                  <span>Settlement Bank</span>
+                  <b>Kuda Bank &middot; <code>3000911925</code> &middot; Novastaq Technologies Limited</b>
+                </div>
+              </div>
+              <div class="dom-pending-eta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Estimated activation: <strong>1&ndash;2 hours</strong>. You'll receive a confirmation email once live.</span>
               </div>
             </div>
 
             <!-- Upgrade / Subscribe Form -->
             <div id="dom-view-form">
               <!-- Step 1: Subdomain Slug Selection -->
-              <div class="d-field" style="margin-bottom: 20px;">
-                <label class="m-label" for="dom-custom-slug">1. Choose Your Desired Subdomain Slug</label>
-                <div style="display: flex; align-items: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
-                  <span style="padding: 10px 12px; color: var(--text-secondary); font-size: 13px; background: rgba(255,255,255,0.03); border-right: 1px solid var(--border);">https://</span>
-                  <input id="dom-custom-slug" type="text" maxlength="30" placeholder="yourbrand" style="flex: 1; border: none; background: transparent; padding: 10px 12px; font-size: 14px; color: var(--text-primary); outline: none; font-weight: 600;" oninput="updateDomainPreviewSlug(this.value)">
-                  <span style="padding: 10px 12px; color: var(--brand); font-size: 13px; font-weight: 600; background: rgba(168,207,69,0.08); border-left: 1px solid var(--border);">.usevelcro.com</span>
+              <div class="dom-step-block">
+                <div class="dom-step-num">STEP 1</div>
+                <label class="dom-step-title" for="dom-custom-slug">Choose Your Dedicated Subdomain</label>
+                <div class="dom-slug-field-wrap">
+                  <span class="dom-slug-prefix">https://</span>
+                  <input id="dom-custom-slug" type="text" maxlength="30" placeholder="yourbrand" class="dom-slug-input" oninput="updateDomainPreviewSlug(this.value)">
+                  <span class="dom-slug-suffix">.usevelcro.com</span>
                 </div>
-                <p class="m-hint">Your exchange will be live at this address without <code>/m/</code>. Use 3–30 lowercase letters, numbers, or hyphens.</p>
+                <p class="dom-step-hint">Your exchange will be live at this direct address without <code>/m/</code>. Use 3&ndash;30 lowercase letters, numbers, or hyphens.</p>
               </div>
 
               <!-- Step 2: Plan Selection Cards -->
-              <div style="margin-bottom: 20px;">
-                <span class="m-label" style="display: block; margin-bottom: 10px;">2. Select Your Upgrade Plan</span>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="dom-plan-grid">
+              <div class="dom-step-block">
+                <div class="dom-step-num">STEP 2</div>
+                <span class="dom-step-title">Select Your Upgrade Plan</span>
+                <div class="dom-plan-grid">
                   <!-- Monthly Card -->
-                  <label id="plan-card-monthly" style="border: 2px solid var(--brand); background: rgba(168,207,69,0.06); border-radius: 10px; padding: 16px; cursor: pointer; display: block; position: relative;">
-                    <input type="radio" name="domain_plan_choice" value="MONTHLY" checked style="position: absolute; top: 14px; right: 14px; accent-color: var(--brand);" onchange="selectDomainPlan('MONTHLY')">
-                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 4px;">Monthly</div>
-                    <div style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">₦10,000 <small style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">/ mo</small></div>
-                    <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Billed every 30 days. Cancel or renew anytime.</p>
+                  <label id="plan-card-monthly" class="dom-plan-card is-selected" onclick="selectDomainPlan('MONTHLY')">
+                    <input type="radio" name="domain_plan_choice" value="MONTHLY" checked class="dom-plan-radio">
+                    <div class="dom-plan-header">
+                      <span class="dom-plan-type">Monthly Pass</span>
+                      <span class="dom-plan-badge">Flexible</span>
+                    </div>
+                    <div class="dom-plan-price">
+                      ₦10,000 <span class="dom-plan-cycle">/ mo</span>
+                    </div>
+                    <p class="dom-plan-note">Billed every 30 days. Cancel, pause or renew anytime.</p>
+                    <div class="dom-plan-check-circle">✓</div>
                   </label>
 
                   <!-- Lifetime Card -->
-                  <label id="plan-card-lifetime" style="border: 2px solid var(--border); background: var(--bg-card); border-radius: 10px; padding: 16px; cursor: pointer; display: block; position: relative;">
-                    <input type="radio" name="domain_plan_choice" value="LIFETIME" style="position: absolute; top: 14px; right: 14px; accent-color: var(--brand);" onchange="selectDomainPlan('LIFETIME')">
-                    <span style="display: inline-block; background: var(--brand); color: #000; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-bottom: 4px; text-transform: uppercase;">Best Value</span>
-                    <div style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">₦200,000</div>
-                    <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">One-time fee. Yours permanently with zero renewals.</p>
+                  <label id="plan-card-lifetime" class="dom-plan-card is-founder" onclick="selectDomainPlan('LIFETIME')">
+                    <input type="radio" name="domain_plan_choice" value="LIFETIME" class="dom-plan-radio">
+                    <div class="dom-plan-header">
+                      <span class="dom-plan-type">Founder Pass</span>
+                      <span class="dom-plan-badge is-gold">★ Best Value</span>
+                    </div>
+                    <div class="dom-plan-price">
+                      ₦200,000 <span class="dom-plan-cycle">one-time</span>
+                    </div>
+                    <p class="dom-plan-note">Permanent VIP ownership. Yours forever with zero renewal fees.</p>
+                    <div class="dom-plan-check-circle">✓</div>
                   </label>
                 </div>
               </div>
 
               <!-- Step 3: Payment Details Box -->
-              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border, #2a344d); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
-                <span class="m-label" style="margin-bottom: 10px; display: block;">3. Transfer Funds to Velcro Company Account</span>
-                <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 14px;">
-                  Transfer <b id="dom-amount-highlight" style="color: var(--brand); font-size: 14px;">₦10,000</b> to the parent account below:
-                </p>
-                <div style="display: grid; gap: 10px; font-size: 13px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
-                    <span style="color: var(--text-secondary);">Bank</span>
-                    <b style="color: var(--text-primary);">Kuda Bank</b>
-                  </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
-                    <span style="color: var(--text-secondary);">Account Number</span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <code style="font-size: 16px; font-weight: 700; letter-spacing: 1px; color: var(--brand);">3000911925</code>
-                      <button type="button" class="d-btn-quiet" style="padding: 3px 8px; font-size: 11px;" onclick="copyDomAccount()">Copy</button>
+              <div class="dom-step-block">
+                <div class="dom-step-num">STEP 3</div>
+                <span class="dom-step-title">Transfer Funds to Velcro Company Account</span>
+                <div class="dom-bank-card">
+                  <div class="dom-bank-card-head">
+                    <div class="dom-bank-brand">
+                      <div class="dom-bank-logo-badge">KUDA</div>
+                      <div>
+                        <div class="dom-bank-inst-name">Kuda Microfinance Bank</div>
+                        <div class="dom-bank-inst-sub">Official Corporate Settlement Account</div>
+                      </div>
+                    </div>
+                    <div class="dom-bank-amt-badge">
+                      <span>Exact Amount</span>
+                      <b id="dom-amount-highlight">₦10,000</b>
                     </div>
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: var(--text-secondary);">Account Name</span>
-                    <b style="color: var(--text-primary); text-align: right;">Novastaq Technologies Limited</b>
+
+                  <div class="dom-bank-card-body">
+                    <div class="dom-bank-row">
+                      <span class="dom-bank-label">Account Number</span>
+                      <div class="dom-bank-acct-group">
+                        <code class="dom-bank-num" id="dom-acct-display">3000911925</code>
+                        <button type="button" id="dom-copy-btn" class="dom-bank-copy-btn" onclick="copyDomAccount()" title="Copy account number">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                          <span>Copy</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="dom-bank-row">
+                      <span class="dom-bank-label">Account Name</span>
+                      <b class="dom-bank-val">Novastaq Technologies Limited</b>
+                    </div>
+                  </div>
+
+                  <div class="dom-bank-card-foot">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>Instant automatic reconciliation via Central Bank / NIP interbank clearing.</span>
                   </div>
                 </div>
               </div>
 
               <!-- Step 4: Submit Payment Verification -->
-              <form id="dom-pay-form" onsubmit="submitDomainUpgrade(event)">
-                <div class="d-field" style="margin-bottom: 16px;">
-                  <label class="m-label" for="dom-sender-ref">4. Sender Name or Transfer Narration</label>
-                  <input id="dom-sender-ref" type="text" maxlength="150" required placeholder="e.g. Megamind Tech / Access Bank transfer" class="m-input">
-                  <p class="m-hint">Name on the bank account you transferred from or transaction reference so our team can immediately verify your payment.</p>
+              <form id="dom-pay-form" onsubmit="submitDomainUpgrade(event)" class="dom-step-block">
+                <div class="dom-step-num">STEP 4</div>
+                <label class="dom-step-title" for="dom-sender-ref">Sender Name or Transfer Narration</label>
+                <div class="dom-input-wrap">
+                  <input id="dom-sender-ref" type="text" maxlength="150" required placeholder="e.g. Shehu Kamal / Kuda Bank transfer" class="dom-text-input">
                 </div>
-                <p id="dom-error" class="hidden m-error" style="margin-bottom: 12px;"></p>
-                <button type="submit" id="dom-submit-btn" class="d-btn-lime" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;">Submit Payment Verification</button>
+                <p class="dom-step-hint">Name on your bank account or payment reference code so our team can immediately confirm and provision your domain.</p>
+
+                <p id="dom-error" class="hidden m-error" style="margin-top: 14px; margin-bottom: 12px;"></p>
+                <button type="submit" id="dom-submit-btn" class="dom-cta-submit">
+                  <span>Submit Payment Verification &amp; Reserve Subdomain</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px;"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+                </button>
               </form>
             </div>
           </div>

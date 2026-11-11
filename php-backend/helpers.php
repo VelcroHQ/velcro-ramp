@@ -347,13 +347,56 @@ function routeEnabled(string $side, string $provider, string $symbol, ?array $se
     };
 }
 
-/** Switch and PAJ routes that are off, as "side:provider:SYM" keys, for the site to hide. */
+/** Whether a liquidity provider actually offers this asset on the given side. */
+function providerSupportsCoin(string $provider, string $side, string $symbol): bool
+{
+    $sym = strtoupper(trim($symbol));
+    $prov = strtolower(trim($provider));
+    $s = strtolower(trim($side));
+    if ($prov === 'hostfi') {
+        return in_array($sym, HOSTFI_ROUTE_COINS[$s] ?? [], true);
+    }
+    if ($prov === 'paj') {
+        return in_array($sym, ['SOL', 'USDT', 'USDC', 'JUP', 'BONK', 'WIF', 'PYTH'], true);
+    }
+    if ($prov === 'switch') {
+        $cache = json_decode((string) @file_get_contents(BASE_PATH . '/data/switch_assets_cache.json'), true) ?: [];
+        $list = $cache[$s === 'sell' ? 'offramp' : 'onramp'] ?? null;
+        if (is_array($list) && !empty($list)) {
+            return array_key_exists($sym, $list);
+        }
+        return in_array($sym, ['USDT', 'USDC', 'BTC', 'ETH', 'SOL'], true);
+    }
+    return false;
+}
+
+/** Whether any configured provider has this coin enabled on the given side (buy or sell). */
+function isCoinRouteEnabled(string $side, string $symbol, ?array $settings = null): bool
+{
+    $s = $settings ?? loadSettings();
+    $sym = strtoupper(trim($symbol));
+    foreach (ROUTE_PROVIDERS as $prov) {
+        if (providerSupportsCoin($prov, $side, $sym) && routeEnabled($side, $prov, $sym, $s)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** Whether a coin is enabled on at least one side (buy or sell) across any provider. */
+function isCoinGloballyEnabled(string $symbol, ?array $settings = null): bool
+{
+    $s = $settings ?? loadSettings();
+    return isCoinRouteEnabled('buy', $symbol, $s) || isCoinRouteEnabled('sell', $symbol, $s);
+}
+
+/** All routes that are off, as "side:provider:SYM" keys, for the site to hide. */
 function routesOff(): array
 {
     $s = loadSettings();
     $off = [];
     foreach ((array) ($s['routes'] ?? []) as $key => $on) {
-        if (!$on && !str_contains((string) $key, ':hostfi:')) {
+        if (!$on) {
             $off[] = (string) $key;
         }
     }

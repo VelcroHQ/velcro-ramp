@@ -2864,16 +2864,36 @@ function renderRoutes() {
     });
     const cols = ['buy:switch', 'buy:paj', 'buy:hostfi', 'sell:switch', 'sell:paj', 'sell:hostfi'];
     const labels = { 'buy:switch': 'Buy · Switch', 'buy:paj': 'Buy · PAJ', 'buy:hostfi': 'Buy · HostFi', 'sell:switch': 'Sell · Switch', 'sell:paj': 'Sell · PAJ', 'sell:hostfi': 'Sell · HostFi' };
-    document.getElementById('coins-body').innerHTML = coins.length ? coins.map(coin => `
+    document.getElementById('coins-body').innerHTML = coins.length ? coins.map(coin => {
+        const activeCols = cols.filter(col => col in byCoin[coin]);
+        const allOn = activeCols.length > 0 && activeCols.every(col => {
+            const key = `${col}:${coin}`;
+            return key in routeEdits ? routeEdits[key] : byCoin[coin][col];
+        });
+        const anyOn = activeCols.some(col => {
+            const key = `${col}:${coin}`;
+            return key in routeEdits ? routeEdits[key] : byCoin[coin][col];
+        });
+        const masterStatusColor = allOn ? '#10b981' : (anyOn ? '#eab308' : '#ef4444');
+        const masterStatusText = allOn ? 'All On' : (anyOn ? 'Partial' : 'All Off');
+
+        return `
         <tr>
-            <td data-label="Coin" class="coin-cell">${coin}</td>
+            <td data-label="Coin" class="coin-cell"><b>${coin}</b></td>
+            <td data-label="Master">
+                <span class="route-cell" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" class="route-toggle" aria-label="Master toggle for ${coin}" ${allOn ? 'checked' : ''} onchange="toggleMasterCoin('${coin}', this.checked)" title="Toggle all routes on/off for ${coin}">
+                    <span style="font-size: 11px; font-weight: 700; color: ${masterStatusColor}">${masterStatusText}</span>
+                </span>
+            </td>
             ${cols.map(col => {
                 if (!(col in byCoin[coin])) return `<td data-label="${labels[col]}"><span class="route-none">—</span></td>`;
                 const key = `${col}:${coin}`;
                 const on = key in routeEdits ? routeEdits[key] : byCoin[coin][col];
                 return `<td data-label="${labels[col]}"><span class="route-cell${key in routeEdits ? ' changed' : ''}"><input type="checkbox" class="route-toggle" aria-label="${labels[col]} ${coin}" ${on ? 'checked' : ''} onchange="editRoute('${key}', this.checked)"></span></td>`;
             }).join('')}
-        </tr>`).join('') : '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">No coins match.</td></tr>';
+        </tr>`;
+    }).join('') : '<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--text-secondary);">No coins match.</td></tr>';
     const btn = document.getElementById('coins-save-btn');
     const n = Object.keys(routeEdits).length;
     btn.innerText = n ? `Save ${n} change${n === 1 ? '' : 's'}` : 'Save changes';
@@ -2885,6 +2905,20 @@ function editRoute(key, on) {
     const row = routeRows.find(r => r.side === side && r.provider === provider && r.symbol === symbol);
     if (row && row.enabled === on) delete routeEdits[key];
     else routeEdits[key] = on;
+    renderRoutes();
+}
+
+function toggleMasterCoin(coin, enable) {
+    const cols = ['buy:switch', 'buy:paj', 'buy:hostfi', 'sell:switch', 'sell:paj', 'sell:hostfi'];
+    cols.forEach(col => {
+        const key = `${col}:${coin}`;
+        const [side, provider] = col.split(':');
+        const row = routeRows.find(r => r.side === side && r.provider === provider && r.symbol === coin);
+        if (row) {
+            if (row.enabled === enable) delete routeEdits[key];
+            else routeEdits[key] = enable;
+        }
+    });
     renderRoutes();
 }
 

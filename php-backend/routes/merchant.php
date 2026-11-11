@@ -1018,7 +1018,7 @@ function registerMerchantRoutes(Router $router): void
             'email' => $email,
             'name' => $account['name'] ?? null,
             'merchant' => merchantView(merchantFor($email)),
-            'coins' => MERCHANT_COINS,
+            'coins' => array_filter(MERCHANT_COINS, fn ($name, $sym) => isCoinGloballyEnabled($sym), ARRAY_FILTER_USE_BOTH),
             'max_markup' => MERCHANT_MAX_MARKUP,
             'business_types' => MERCHANT_BUSINESS_TYPES,
             'volumes' => MERCHANT_VOLUMES,
@@ -1202,8 +1202,15 @@ function registerMerchantRoutes(Router $router): void
         $coins = [];
         $rates = merchantVelcroRates();
         foreach (MERCHANT_COINS as $sym => $name) {
-            $c = $pricing[$sym];
-            if (!$c['buy_on'] && !$c['sell_on']) {
+            $buyAvail = isCoinRouteEnabled('buy', $sym);
+            $sellAvail = isCoinRouteEnabled('sell', $sym);
+            if (!$buyAvail && !$sellAvail) {
+                continue; // Admin disabled this coin completely across all providers
+            }
+            $c = $pricing[$sym] ?? ['buy_on' => false, 'sell_on' => false, 'buy' => 0.0, 'sell' => 0.0];
+            $buyOn = !empty($c['buy_on']) && $buyAvail;
+            $sellOn = !empty($c['sell_on']) && $sellAvail;
+            if (!$buyOn && !$sellOn) {
                 continue;
             }
             $velcro = $rates[$sym] ?? ['buy' => null, 'sell' => null];
@@ -1213,14 +1220,14 @@ function registerMerchantRoutes(Router $router): void
                 'name' => $name,
                 'usd_price' => $usd,
                 'provider' => MERCHANT_COIN_PROVIDERS[$sym] ?? null,
-                'buy_on' => $c['buy_on'],
-                'sell_on' => $c['sell_on'],
+                'buy_on' => $buyOn,
+                'sell_on' => $sellOn,
                 // Naira per $1. The base rate and markup are only shown if the merchant chose 'breakdown'.
-                'buy_rate' => $c['buy_on'] ? merchantCustomerRate($velcro['buy'], $c['buy'], 'buy') : null,
-                'sell_rate' => $c['sell_on'] ? merchantCustomerRate($velcro['sell'], $c['sell'], 'sell') : null,
+                'buy_rate' => $buyOn ? merchantCustomerRate($velcro['buy'], $c['buy'], 'buy') : null,
+                'sell_rate' => $sellOn ? merchantCustomerRate($velcro['sell'], $c['sell'], 'sell') : null,
             ] + (merchantRateDisplay($m) === 'breakdown' ? [
-                'velcro_buy_rate' => $c['buy_on'] ? $velcro['buy'] : null,
-                'velcro_sell_rate' => $c['sell_on'] ? $velcro['sell'] : null,
+                'velcro_buy_rate' => $buyOn ? $velcro['buy'] : null,
+                'velcro_sell_rate' => $sellOn ? $velcro['sell'] : null,
                 'buy_markup_percent' => $c['buy'],
                 'sell_markup_percent' => $c['sell'],
             ] : []);

@@ -1010,11 +1010,13 @@ function registerHostfiBuyRoutes(Router $router): void
         $email = strtolower(trim((string) body($b, 'email', '')));
         // A store order: the store decides the coins, the customer's email is used, and the
         // merchant's markup is added to our fee.
+        requireRouteEnabled('buy', 'hostfi', $symbol);
+        if (!in_array($symbol, hostfiEnabledAssets('buy'), true)) {
+            jsonResponse(errorResponse("{$symbol} buys are not available right now"), 400);
+        }
         $store = storeOrderContext('buy', $symbol, 'hostfi');
         if ($store) {
             $email = (string) $store['customer']['email'];
-        } elseif (!in_array($symbol, hostfiEnabledAssets('buy'), true)) {
-            jsonResponse(errorResponse("{$symbol} buys are not available right now"), 400);
         }
         $fee = hostfiFee() + ($store['markup'] ?? 0.0);
         if ($email !== '' && !isValidEmail($email)) {

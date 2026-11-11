@@ -260,7 +260,7 @@ function renderAssetList(side) {
   const container = document.getElementById(`${side}-asset-list`);
   if (!container) return;
   const hostfi = side === 'sell' ? hostfiAssets : hostfiBuyAssets;
-  const viaHostfi = sym => Object.prototype.hasOwnProperty.call(hostfi, sym);
+  const viaHostfi = sym => Object.prototype.hasOwnProperty.call(hostfi, sym) && routeOn(side, 'hostfi', sym);
   const hostfiItems = ['USDT', 'USDC', 'BTC', 'ETH', 'SOL'].filter(viaHostfi).map(sym => {
     const a = hostfi[sym];
     return assetPickerItem(side, sym, a.name && a.name !== sym ? a.name : (COIN_NAMES[sym] || sym), getAssetLogo(sym), 'hostfi');
@@ -272,6 +272,34 @@ function renderAssetList(side) {
   const pajItems = PAJ_TOKENS.filter(([sym]) => !viaHostfi(sym) && routeOn(side, 'paj', sym))
     .map(([sym, name, logo]) => assetPickerItem(side, sym, name, logo, 'paj')).join('');
   container.innerHTML = hostfiItems + switchItems + (pajItems ? `<div class="asset-picker-divider">SOLANA</div>${pajItems}` : '');
+}
+
+function isAssetAvailable(side, symbol) {
+  if (!symbol) return false;
+  const sym = String(symbol).toUpperCase();
+  const hostfi = side === 'sell' ? hostfiAssets : hostfiBuyAssets;
+  if (Object.prototype.hasOwnProperty.call(hostfi, sym) && routeOn(side, 'hostfi', sym)) return true;
+  const switchList = switchAssetsData ? (switchAssetsData[side === 'sell' ? 'offramp' : 'onramp'] || {}) : {};
+  if (Object.prototype.hasOwnProperty.call(switchList, sym) && routeOn(side, 'switch', sym)) return true;
+  if (PAJ_TOKENS.some(([s]) => s === sym) && routeOn(side, 'paj', sym)) return true;
+  return false;
+}
+
+function ensureActiveAssetsSelected() {
+  if (currentSellAsset && !isAssetAvailable('sell', currentSellAsset)) {
+    const fallback = ['USDT', 'USDC', 'SOL'].find(s => isAssetAvailable('sell', s));
+    if (fallback && typeof selectSellAsset === 'function') {
+      const prov = (hostfiAssets && hostfiAssets[fallback] && routeOn('sell', 'hostfi', fallback)) ? 'hostfi' : 'switch';
+      selectSellAsset(fallback, getAssetLogo(fallback), COIN_NAMES[fallback] || fallback, prov);
+    }
+  }
+  if (currentBuyAsset && !isAssetAvailable('buy', currentBuyAsset)) {
+    const fallback = ['USDT', 'USDC', 'SOL'].find(s => isAssetAvailable('buy', s));
+    if (fallback && typeof selectBuyAsset === 'function') {
+      const prov = (hostfiBuyAssets && hostfiBuyAssets[fallback] && routeOn('buy', 'hostfi', fallback)) ? 'hostfi' : 'switch';
+      selectBuyAsset(fallback, getAssetLogo(fallback), COIN_NAMES[fallback] || fallback, prov);
+    }
+  }
 }
 
 function renderSellAssetList() { renderAssetList('sell'); }

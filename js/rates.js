@@ -46,6 +46,7 @@ async function fetchSettings() {
         routesOff = data.data.routes_off;
         renderSellAssetList();
         renderBuyAssetList();
+        if (typeof ensureActiveAssetsSelected === 'function') ensureActiveAssetsSelected();
       }
       if (typeof data.data.hostfi_fee === 'number') hostfiFee = data.data.hostfi_fee;
       if (data.data.sell_timer_minutes) sellTimerMinutes = data.data.sell_timer_minutes;

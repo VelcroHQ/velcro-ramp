@@ -1646,19 +1646,30 @@ function selectDomainPlan(plan) {
   const mCard = $('plan-card-monthly');
   const lCard = $('plan-card-lifetime');
   const amtHighlight = $('dom-amount-highlight');
+  const mRadio = mCard ? mCard.querySelector('input[type="radio"]') : null;
+  const lRadio = lCard ? lCard.querySelector('input[type="radio"]') : null;
+
   if (plan === 'MONTHLY') {
-    if (mCard) { mCard.style.borderColor = 'var(--brand)'; mCard.style.background = 'rgba(168,207,69,0.06)'; }
-    if (lCard) { lCard.style.borderColor = 'var(--border)'; lCard.style.background = 'var(--bg-card)'; }
+    if (mCard) mCard.classList.add('is-selected');
+    if (lCard) lCard.classList.remove('is-selected');
+    if (mRadio) mRadio.checked = true;
     if (amtHighlight) amtHighlight.textContent = '₦10,000';
   } else {
-    if (lCard) { lCard.style.borderColor = 'var(--brand)'; lCard.style.background = 'rgba(168,207,69,0.06)'; }
-    if (mCard) { mCard.style.borderColor = 'var(--border)'; mCard.style.background = 'var(--bg-card)'; }
+    if (lCard) lCard.classList.add('is-selected');
+    if (mCard) mCard.classList.remove('is-selected');
+    if (lRadio) lRadio.checked = true;
     if (amtHighlight) amtHighlight.textContent = '₦200,000';
   }
 }
 
 function copyDomAccount() {
+  const btn = $('dom-copy-btn');
   navigator.clipboard.writeText('3000911925').then(() => {
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;"><polyline points="20 6 9 17 4 12"/></svg><span>Copied! ✓</span>';
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }
     toast('Account number 3000911925 copied!');
   }).catch(() => {
     toast('3000911925');
@@ -1670,6 +1681,8 @@ function updateDomainPreviewSlug(val) {
   const sub = clean ? clean + '.usevelcro.com' : ((merchant && merchant.slug) ? merchant.slug + '.usevelcro.com' : 'yourbrand.usevelcro.com');
   const headPreview = $('dom-head-preview');
   if (headPreview) headPreview.textContent = sub;
+  const browserSlug = $('dom-browser-slug');
+  if (browserSlug) browserSlug.textContent = clean || ((merchant && merchant.slug) ? merchant.slug : 'yourbrand');
   const standardUpgradePreview = $('dom-standard-upgrade-preview');
   if (standardUpgradePreview) standardUpgradePreview.textContent = sub;
 }
@@ -1686,8 +1699,19 @@ function renderDomainPanel() {
   const d = merchant.domain || {};
   const slug = merchant.slug || '';
   const sub = d.subdomain || (slug ? slug + '.usevelcro.com' : 'your-store.usevelcro.com');
+  const rawSlug = d.subdomain ? d.subdomain.replace('.usevelcro.com', '') : (slug || 'yourbrand');
+
   const headPreview = $('dom-head-preview');
   if (headPreview) headPreview.textContent = sub;
+
+  const browserSlug = $('dom-browser-slug');
+  if (browserSlug) browserSlug.textContent = rawSlug;
+
+  const storeNamePreview = $('dom-preview-store-name');
+  if (storeNamePreview) storeNamePreview.textContent = (merchant.brand && merchant.brand.name) || merchant.business_name || 'Your Exchange';
+
+  const avatar = $('dom-sim-avatar');
+  if (avatar) avatar.textContent = ((merchant.brand && merchant.brand.name) || merchant.business_name || 'V').trim().charAt(0).toUpperCase();
 
   const bPreview = $('b-domain-preview');
   if (bPreview) bPreview.textContent = sub;
