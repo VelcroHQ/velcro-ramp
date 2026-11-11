@@ -755,7 +755,7 @@ function calculateSellFromNgn() {
   calculateSell(); // To update preview
 }
 
-const BUY_MIN_LIMIT = 2000;
+const BUY_MIN_LIMIT = 1400;
 
 function isUsdtOrUsdcOnTrxOrEth() {
   const asset = (currentBuyAsset || '').toUpperCase();
@@ -781,30 +781,31 @@ function hostfiBuyEstimate(ngn) {
 }
 
 function getEffectiveBuyMinLimit() {
+  const rate = Number(currentRate.buy) || Number(currentRate.paj) || 1400;
   if (currentProvider === 'hostfi') {
     // Enough naira to cover the network fee and HostFi's minimum send.
     const a = hostfiBuyAssets[currentBuyAsset];
     const n = hostfiBuyNetwork();
-    if (!a || !n || !(Number(a.coin_per_ngn) > 0)) return BUY_MIN_LIMIT;
+    if (!a || !n || !(Number(a.coin_per_ngn) > 0)) return Math.ceil(1 * rate);
     const ngn = (Number(n.min) + Number(n.fee)) / (Number(a.coin_per_ngn) * (1 - Number(n.fee_percent || 0) / 100)) + Number(a.collection_fee_ngn || 0);
-    return Math.max(BUY_MIN_LIMIT, Math.ceil(ngn / 100) * 100);
+    return Math.max(Math.ceil(1 * rate), Math.ceil(ngn / 100) * 100);
   }
   if (isUsdtOrUsdcOnTrxOrEth()) {
-    const rate = Number(currentRate.buy) || Number(currentRate.paj) || 1500;
     const fiveUsdInNgn = Math.ceil(5 * rate);
-    return Math.max(BUY_MIN_LIMIT, fiveUsdInNgn);
+    return fiveUsdInNgn;
   }
-  return BUY_MIN_LIMIT;
+  // For EVM L2s (Base, Arbitrum, BSC, Polygon, Optimism) and Solana: minimum is $1
+  return Math.ceil(1 * rate);
 }
 
 function updateBuyMinLimitUI() {
   const minLabel = document.getElementById('buy-min-label');
   if (!minLabel) return;
+  const minLimit = getEffectiveBuyMinLimit();
   if (isUsdtOrUsdcOnTrxOrEth()) {
-    const minLimit = getEffectiveBuyMinLimit();
     minLabel.textContent = `Min: ₦${minLimit.toLocaleString()} ($5)`;
   } else {
-    minLabel.textContent = `Min: ₦${getEffectiveBuyMinLimit().toLocaleString()}`;
+    minLabel.textContent = `Min: ₦${minLimit.toLocaleString()} ($1)`;
   }
 }
 
@@ -815,9 +816,9 @@ function validateBuyLimit(amount) {
   const minLimit = getEffectiveBuyMinLimit();
   if (amount > 0 && amount < minLimit) {
     if (isUsdtOrUsdcOnTrxOrEth()) {
-      errorEl.textContent = `Minimum buy amount for USDT/USDC on TRON/Ethereum is $5 worth (₦${minLimit.toLocaleString()}).`;
+      errorEl.textContent = `Minimum buy amount on Ethereum/TRON is $5 worth (₦${minLimit.toLocaleString()}).`;
     } else {
-      errorEl.textContent = `Minimum buy amount is ₦${minLimit.toLocaleString()}.`;
+      errorEl.textContent = `Minimum buy amount on this network is $1 worth (₦${minLimit.toLocaleString()}).`;
     }
     errorEl.classList.remove('hidden');
     return false;
@@ -831,15 +832,25 @@ function validateBuyLimit(amount) {
   return true;
 }
 
+function isSellTrxOrEth() {
+  const net = (currentSellNetwork || '').toLowerCase();
+  return net.includes('eth') || net.includes('ethereum') || net.includes('tron') || net.includes('trx');
+}
+
+function getEffectiveSellMinLimit() {
+  return isSellTrxOrEth() ? 5 : 1;
+}
+
 function validateSellLimit(amount) {
   if (currentProvider === 'hostfi' && currentSellInputMode !== 'USD') {
     amount = amount * (Number((hostfiAssets[currentSellAsset] || {}).usd_per_unit) || 0);
   }
   const errorEl = document.getElementById('sell-limit-error');
   const symbol = currentSellInputMode === 'USD' || currentProvider === 'hostfi' ? '$' : '';
-  if (amount > 0 && amount < SELL_MIN_LIMIT) {
+  const minLimit = getEffectiveSellMinLimit();
+  if (amount > 0 && amount < minLimit) {
     if (errorEl) {
-      errorEl.textContent = `Minimum sell amount is ${symbol}${SELL_MIN_LIMIT.toLocaleString()}.`;
+      errorEl.textContent = `Minimum sell amount on this network is ${symbol}${minLimit.toLocaleString()}.`;
       errorEl.classList.remove('hidden');
     }
     return false;

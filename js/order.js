@@ -481,9 +481,9 @@ async function generateBankAccount() {
   const minBuyLimit = getEffectiveBuyMinLimit();
   if (!amount || amount < minBuyLimit) {
     if (isUsdtOrUsdcOnTrxOrEth()) {
-      showToast(`Minimum buy amount for USDT/USDC on TRON/Ethereum is $5 worth (₦${minBuyLimit.toLocaleString()})`, 'warning');
+      showToast(`Minimum buy amount on Ethereum/TRON is $5 worth (₦${minBuyLimit.toLocaleString()})`, 'warning');
     } else {
-      showToast(`Minimum buy amount is ₦${minBuyLimit.toLocaleString()}`, 'warning');
+      showToast(`Minimum buy amount is $1 worth (₦${minBuyLimit.toLocaleString()})`, 'warning');
     }
     return;
   }

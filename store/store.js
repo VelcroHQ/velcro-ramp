@@ -244,6 +244,10 @@ function setSide(side) {
   }
   // Steps and details read differently for buying and selling.
   const buying = side === 'buy';
+  const speedMsg = $('s-speed-msg');
+  if (speedMsg) {
+    speedMsg.innerHTML = buying ? 'Typically in your wallet within <b>60 seconds</b>' : 'Typically in your bank within <b>60 seconds</b>';
+  }
   $('how-2-title').textContent = buying ? 'Pay by bank transfer' : 'Send your crypto';
   $('how-2-text').textContent = buying ? 'You get an account number for your order. Transfer from any Nigerian bank.' : 'You get a deposit address for your order. Send from any wallet or exchange.';
   $('how-3-title').textContent = buying ? 'Receive your crypto' : 'Get paid in naira';
@@ -1147,6 +1151,13 @@ async function createSell() {
   err.hidden = true;
   const bank = checkout.banks.find(b => b.id === checkout.bank) || {};
   if (!checkout.accountName) return;
+  const chain = (checkout.nets.find(n => n.code === checkout.network) || {}).chain;
+  const minSell = ['tron', 'ethereum'].includes(chain) ? 5 : 1;
+  if (checkout.amount > 0 && checkout.amount < minSell && ['USDT', 'USDC'].includes(checkout.coin)) {
+    err.textContent = `The minimum sell amount on ${CHAIN_LABELS[chain] || chain} is $${minSell}. Go back and enter a bigger amount.`;
+    err.hidden = false;
+    return;
+  }
   const btn = $('s-checkout').querySelector('[data-act="create"]');
   btn.disabled = true;
   btn.textContent = 'Creating your order…';

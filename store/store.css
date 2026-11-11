@@ -177,6 +177,90 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-summary { font-size: 13.5px; color: var(--muted); text-align: center; margin-bottom: 14px; }
 .s-note { font-size: 13.5px; color: #b42318; text-align: center; margin-bottom: 10px; }
 .s-note:empty { display: none; }
+.s-speed-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 12px 0 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  color: #065f46;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+}
+.s-speed-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.s-layout-card .s-speed-pill {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+.s-speed-dot {
+  position: relative;
+  display: inline-flex;
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+}
+.s-speed-dot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #10b981;
+  animation: s-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  opacity: 0.75;
+}
+.s-speed-dot::after {
+  content: '';
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+}
+@keyframes s-ping {
+  75%, 100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.s-speed-ico {
+  width: 13px;
+  height: 13px;
+  fill: #059669;
+  flex-shrink: 0;
+}
+.s-speed-pill b {
+  font-weight: 700;
+  color: #047857;
+}
+.s-layout-card .s-speed-pill b {
+  color: #34d399;
+}
+.s-speed-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.16);
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.s-layout-card .s-speed-tag {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.24);
+}
 .s-trust { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 12px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 .s-trust svg { width: 14px; height: 14px; margin-top: 2px; }
 .s-support {
