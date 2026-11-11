@@ -122,8 +122,14 @@ function openAuth(mode) {
 
 function closeAuth() {
   $('auth').classList.remove('is-open');
-  if ($('a-pass-new')) $('a-pass-new').type = 'password';
-  if ($('a-pass')) $('a-pass').type = 'password';
+  if ($('a-pass-new')) {
+    $('a-pass-new').type = 'password';
+    $('a-pass-new').disabled = true;
+  }
+  if ($('a-pass')) {
+    $('a-pass').type = 'password';
+    $('a-pass').disabled = false;
+  }
   updatePassEyeIcon(false);
 }
 
@@ -158,8 +164,10 @@ function setAuthMode(mode) {
   if ($('a-pass-new')) {
     $('a-pass').classList.toggle('hidden', codeStep);
     $('a-pass').required = !codeStep;
+    $('a-pass').disabled = codeStep;
     $('a-pass-new').classList.toggle('hidden', !codeStep);
     $('a-pass-new').required = codeStep;
+    $('a-pass-new').disabled = !codeStep;
     if ($('a-suggest-pass')) $('a-suggest-pass').classList.toggle('hidden', !codeStep);
   } else {
     $('a-pass').autocomplete = codeStep ? 'new-password' : 'current-password';

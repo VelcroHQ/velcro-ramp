@@ -1651,8 +1651,14 @@ function openAuth(mode) {
 function closeAuth() {
   pendingTrade = false;
   $('auth').hidden = true;
-  if ($('a-pass-new')) $('a-pass-new').type = 'password';
-  if ($('a-pass')) $('a-pass').type = 'password';
+  if ($('a-pass-new')) {
+    $('a-pass-new').type = 'password';
+    $('a-pass-new').disabled = true;
+  }
+  if ($('a-pass')) {
+    $('a-pass').type = 'password';
+    $('a-pass').disabled = false;
+  }
   updateStorePassEyeIcon(false);
 }
 
@@ -1672,7 +1678,9 @@ function setAuthMode(mode) {
 
   if ($('a-pass-new')) {
     $('a-pass').hidden = codeStep;
+    $('a-pass').disabled = codeStep;
     $('a-pass-new').hidden = !codeStep;
+    $('a-pass-new').disabled = !codeStep;
     if ($('a-suggest-pass')) $('a-suggest-pass').hidden = !codeStep;
   } else {
     $('a-pass').autocomplete = codeStep ? 'new-password' : 'current-password';
