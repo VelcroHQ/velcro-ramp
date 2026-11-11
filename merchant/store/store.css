@@ -873,7 +873,8 @@ body.s-in-checkout .s-main {
   margin: 0 auto;
 }
 .s-qr-code canvas {
-  display: none !important;
+  display: block;
+  margin: 0 auto;
 }
 .s-qr-code img {
   display: block !important;

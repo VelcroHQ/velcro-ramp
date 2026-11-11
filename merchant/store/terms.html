@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">Terms of Service — Digital Exchange</title>
+  <meta name="description" content="Terms of Service for customer digital asset exchange transactions, powered by Velcro autonomous infrastructure.">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" type="image/png" href="/velcro_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #00df89;
+      --accent-subtle: rgba(0, 223, 137, 0.1);
+      --navy: #0D0D59;
+      --bg: #0b0d14;
+      --surface: #121520;
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.7;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Top Navigation */
+    .st-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(11, 13, 20, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .st-nav-in {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .st-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
+      text-decoration: none !important;
+    }
+    .st-brand-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--accent-subtle);
+      border: 1px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--accent);
+      overflow: hidden;
+    }
+    .st-brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .st-powered {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+    .st-powered strong { color: var(--text-muted); }
+    .st-nav-back {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-decoration: none !important;
+      transition: color .15s;
+    }
+    .st-nav-back:hover { color: #fff; }
+
+    /* Hero */
+    .st-hero {
+      max-width: 860px;
+      margin: 48px auto 0;
+      padding: 0 24px 32px;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .st-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-subtle);
+      border: 1px solid rgba(0, 223, 137, 0.25);
+      border-radius: 999px;
+      padding: 3px 12px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .st-hero h1 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .st-hero p {
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .st-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 18px;
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+    .st-meta strong { color: var(--text-muted); }
+
+    /* Content Cards */
+    .st-container {
+      max-width: 860px;
+      margin: 36px auto 0;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .st-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      padding: 28px 26px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    .st-card-hdr {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .st-card-num {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-subtle);
+      border: 1px solid rgba(0, 223, 137, 0.25);
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+    .st-card h2 {
+      font-size: 19px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -.02em;
+    }
+    .st-card p {
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      font-size: 14.5px;
+    }
+    .st-card p:last-child { margin-bottom: 0; }
+    .st-card strong { color: #fff; font-weight: 600; }
+    .st-card ul {
+      margin: 12px 0 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .st-card li {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .st-callout {
+      background: rgba(0, 223, 137, 0.05);
+      border: 1px solid rgba(0, 223, 137, 0.2);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 13.5px;
+      color: #c9ccd8;
+    }
+    .st-callout.alert {
+      background: rgba(239, 68, 68, 0.06);
+      border-color: rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+    }
+
+    /* Footer */
+    .st-footer {
+      max-width: 860px;
+      margin: 56px auto 0;
+      padding: 24px 24px 0;
+      border-top: 1px solid var(--surface-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .st-footer-links { display: flex; gap: 16px; }
+    .st-footer-links a { color: var(--text-muted); text-decoration: none; }
+    .st-footer-links a:hover { color: #fff; text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="st-nav">
+    <div class="st-nav-in">
+      <a href="index.html" class="st-brand" id="nav-brand-link">
+        <div class="st-brand-logo" id="nav-logo-box">V</div>
+        <span id="nav-store-name">Northline Exchange</span>
+      </a>
+      <div class="st-powered">
+        Powered by <strong>Velcro Infrastructure</strong>
+      </div>
+      <a href="index.html" class="st-nav-back" id="nav-return-btn">← Back to Exchange</a>
+    </div>
+  </nav>
+
+  <!-- Hero Header -->
+  <header class="st-hero">
+    <div class="st-badge">CUSTOMER OPERATING AGREEMENT</div>
+    <h1 id="hero-title"><span class="dyn-store-name">Northline Exchange</span> Terms of Service</h1>
+    <p>These Terms of Service govern your use of the digital currency exchange desk operated by <strong class="dyn-store-name">Northline Exchange</strong> and powered non-custodially by Velcro Technologies Limited.</p>
+    <div class="st-meta">
+      <div><strong>Storefront Operator:</strong> <span class="dyn-store-name">Northline Exchange</span></div>
+      <div><strong>Infrastructure Rail:</strong> Velcro Technologies Limited</div>
+      <div><strong>Governing Law:</strong> Federal Republic of Nigeria</div>
+      <div><strong>Last Updated:</strong> April 2026</div>
+    </div>
+  </header>
+
+  <!-- Container -->
+  <main class="st-container">
+
+    <!-- Section 1 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">01</span>
+        <h2>Dual-Party Architecture &amp; Acceptance</h2>
+      </div>
+      <p>By initiating an exchange order, registering an account, or transferring funds through this storefront, you enter into a legally binding agreement governed by these Terms.</p>
+      <p>This exchange operates through a dual-party technical structure:</p>
+      <ul>
+        <li><strong>The Storefront Operator ("Merchant", "Desk"):</strong> <strong class="dyn-store-name">This Exchange Desk</strong> is an independent merchant setting retail exchange markups, storefront branding, and customer relationships.</li>
+        <li><strong>The Infrastructure Rail ("Velcro"):</strong> Technical execution, dynamic virtual account creation, automated Nigerian Inter-Bank Settlement System (NIP) matching, liquidity routing, and on-chain blockchain disbursements are provided non-custodially by <strong>Velcro Technologies Limited</strong> (Wuye District, Abuja, FCT, Nigeria).</li>
+      </ul>
+      <p>You agree that both the Storefront Operator and Velcro Technologies Limited are entitled to enforce the protections, disclaimers, and liability limits set forth in these Terms.</p>
+    </section>
+
+    <!-- Section 2 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">02</span>
+        <h2>Non-Custodial Order Execution</h2>
+      </div>
+      <p>All transactions executed on this platform are strictly non-custodial:</p>
+      <ul>
+        <li><strong>Buy Orders (On-Ramp):</strong> You enter your personal destination cryptocurrency wallet address. An order-specific dynamic Nigerian virtual account number is created. Upon confirmed receipt of your fiat transfer via NIP, cryptocurrency is transferred directly from liquidity rails to your designated wallet.</li>
+        <li><strong>Sell Orders (Off-Ramp):</strong> You provide your verified Nigerian bank account details and transfer cryptocurrency to an order-specific blockchain deposit address or QR code. Once confirmed on-chain, Nigerian Naira (NGN) is immediately credited to your bank account via automated NIP transfer.</li>
+      </ul>
+      <div class="st-callout">
+        Neither the Merchant nor Velcro holds your crypto assets or fiat in custodial balances. All transactions settle directly between verified Nigerian banking rails and your self-custody blockchain wallets.
+      </div>
+    </section>
+
+    <!-- Section 3 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">03</span>
+        <h2>Irreversibility &amp; User Accuracy</h2>
+      </div>
+      <p>You bear sole responsibility for verifying all transaction details before submitting payment:</p>
+      <ul>
+        <li><strong>Wallet Addresses:</strong> Crypto transfers broadcast to public blockchain networks (e.g. Solana, Base, Bitcoin, Tron) are mathematically irreversible. Funds sent to an incorrect address or wrong network cannot be retrieved.</li>
+        <li><strong>Bank Account Details:</strong> You must ensure the destination Nigerian bank account number and bank name are accurate.</li>
+        <li><strong>Payment Windows:</strong> Virtual bank accounts and crypto deposit rates are locked for a specific countdown period (typically 30–60 minutes). Payments transferred outside this window may experience automated rate recalculation or delayed processing.</li>
+      </ul>
+    </section>
+
+    <!-- Section 4 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">04</span>
+        <h2>Pricing, Markups &amp; Fees</h2>
+      </div>
+      <p>Exchange rates displayed on the storefront represent all-inclusive retail rates. The retail price incorporates real-time base liquidity rates plus the Merchant's custom retail markup.</p>
+      <p>All fees are transparently factored into the final quote shown before you click to get payment details. There are no hidden deductions from your received cryptocurrency or fiat payout.</p>
+    </section>
+
+    <!-- Section 5 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">05</span>
+        <h2>Eligibility &amp; AML/CFT Compliance</h2>
+      </div>
+      <p>To use this exchange desk, you must be at least 18 years old and possess full legal capacity under Nigerian law. You agree and warrant that:</p>
+      <ul>
+        <li>All funds and digital assets utilized originate from legitimate and lawful sources;</li>
+        <li>You are not subject to sanctions administered by OFAC, the United Nations, or the Nigerian Financial Intelligence Unit (NFIU);</li>
+        <li>You will not use this platform to conduct fraud, identity theft, money laundering, terrorist financing, or to evade tax or sanctions;</li>
+        <li>The Merchant and Velcro reserve the right to verify transactions, request identity documentation, delay or decline flagged transfers, and report suspicious activities to law enforcement authorities without notice.</li>
+      </ul>
+    </section>
+
+    <!-- Section 6 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">06</span>
+        <h2>Digital Asset Volatility &amp; Disclaimers</h2>
+      </div>
+      <p>Cryptocurrency prices fluctuate significantly and can experience rapid volatility. You acknowledge that dealing in digital assets carries market risk.</p>
+      <p>Digital assets are not legal tender in Nigeria and are not insured by the Nigeria Deposit Insurance Corporation (NDIC). Neither the Merchant nor Velcro provides financial, investment, legal, or tax advice.</p>
+    </section>
+
+    <!-- Section 7 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">07</span>
+        <h2>Limitation of Liability</h2>
+      </div>
+      <p>To the maximum extent permitted by Nigerian law:</p>
+      <ul>
+        <li>Neither the Storefront Operator nor Velcro Technologies Limited shall be liable for indirect, incidental, special, or consequential damages, including loss of profits, crypto market declines, or delays caused by third-party bank downtime or blockchain reorganizations.</li>
+        <li>The total aggregate liability of the Operator and Velcro for any dispute arising from a transaction shall strictly not exceed the specific markup or fee collected from that transaction.</li>
+      </ul>
+    </section>
+
+    <!-- Section 8 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">08</span>
+        <h2>Governing Law &amp; Dispute Resolution</h2>
+      </div>
+      <p>These Terms are governed by and construed in accordance with the laws of the <strong>Federal Republic of Nigeria</strong>.</p>
+      <p>Any dispute arising out of an order must first be submitted for informal amicable resolution to the Storefront Operator support channel or to Velcro infrastructure support at <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>. Failing informal settlement within thirty (30) days, disputes may be submitted to the competent courts of the Federal Republic of Nigeria.</p>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="st-footer">
+    <div>&copy; 2026 <span class="dyn-store-name">Northline Exchange</span>. Autonomous rails powered by Velcro Technologies Limited.</div>
+    <div class="st-footer-links">
+      <a href="terms.html" id="footer-terms-link">Terms of Service</a>
+      <a href="privacy.html" id="footer-privacy-link">Privacy Policy</a>
+      <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>
+    </div>
+  </footer>
+
+  <!-- Dynamic Storefront Branding Script -->
+  <script>
+    (function() {
+      // 1. Detect store slug from query param, path, or hostname
+      const params = new URLSearchParams(window.location.search);
+      let storeSlug = params.get('m') || params.get('store');
+      
+      if (!storeSlug) {
+        // Check path /m/{slug} or /store/{slug}
+        const pathMatch = window.location.pathname.match(/\/(?:m|store)\/([a-zA-Z0-9_-]+)/);
+        if (pathMatch) storeSlug = pathMatch[1];
+      }
+      
+      if (!storeSlug) {
+        // Check hostname subdomain: e.g. northline.usevelcro.com
+        const host = window.location.hostname;
+        if (host && !['localhost', '127.0.0.1', 'ramp.usevelcro.com', 'usevelcro.com', 'goat.usevelcro.com', 'merchant.usevelcro.com'].includes(host)) {
+          const parts = host.split('.');
+          if (parts.length >= 3 && parts[parts.length - 2] === 'usevelcro') {
+            storeSlug = parts[0];
+          }
+        }
+      }
+
+      function formatBrand(slug) {
+        if (!slug) return 'Digital Exchange Desk';
+        return slug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + (slug.toLowerCase().includes('exchange') || slug.toLowerCase().includes('desk') ? '' : ' Exchange');
+      }
+
+      let storeName = formatBrand(storeSlug);
+
+      function updateDOM(name, accentColor, logoUrl) {
+        document.querySelectorAll('.dyn-store-name').forEach(el => el.textContent = name);
+        const navName = document.getElementById('nav-store-name');
+        if (navName) navName.textContent = name;
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) pageTitle.textContent = `Terms of Service — ${name}`;
+        
+        const logoBox = document.getElementById('nav-logo-box');
+        if (logoBox) {
+          if (logoUrl) {
+            logoBox.innerHTML = `<img src="${logoUrl}" alt="${name}">`;
+          } else {
+            logoBox.textContent = name.charAt(0).toUpperCase();
+          }
+        }
+
+        if (accentColor) {
+          document.documentElement.style.setProperty('--accent', accentColor);
+          document.documentElement.style.setProperty('--accent-subtle', accentColor + '18');
+        }
+
+        // Preserve store parameter in navigation links
+        if (storeSlug) {
+          const returnBtn = document.getElementById('nav-return-btn');
+          const brandLink = document.getElementById('nav-brand-link');
+          const termsLink = document.getElementById('footer-terms-link');
+          const privacyLink = document.getElementById('footer-privacy-link');
+          
+          const appendParam = (el, base) => {
+            if (el) el.href = `${base}?m=${encodeURIComponent(storeSlug)}`;
+          };
+          appendParam(returnBtn, 'index.html');
+          appendParam(brandLink, 'index.html');
+          appendParam(termsLink, 'terms.html');
+          appendParam(privacyLink, 'privacy.html');
+        }
+      }
+
+      // Initial populate from slug
+      updateDOM(storeName);
+
+      // Async fetch full profile if slug is present
+      if (storeSlug) {
+        fetch(`/api/merchant/public-store?store=${encodeURIComponent(storeSlug)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && data.store) {
+              const name = data.store.name || data.store.store_name || storeName;
+              const accent = data.store.brand_color || data.store.accent_color;
+              const logo = data.store.logo_url;
+              updateDOM(name, accent, logo);
+            }
+          })
+          .catch(() => { /* keep initial fallback */ });
+      }
+    })();
+  </script>
+
+</body>
+</html>

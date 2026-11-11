@@ -3,115 +3,733 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Velcro Convert Terms & Conditions. Read the rules for using our crypto onramp and offramp service in Nigeria.">
+  <title>Terms of Use — Velcro</title>
+  <meta name="description" content="Terms of Use and Operating Agreement for Velcro autonomous exchange and payment infrastructure in Nigeria.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://ramp.usevelcro.com/terms.html">
-  <title>Terms & Conditions - Velcro Convert</title>
   <link rel="icon" type="image/png" href="/velcro_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="style.css?v=2" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
-    * { font-family: 'Inter', system-ui, sans-serif; }
-    .max-w-4xl { max-width: 56rem; }
-    .max-w-3xl { max-width: 48rem; }
-    .space-y-8 > :not([hidden]) ~ :not([hidden]) { margin-top: 2rem; }
-    .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
-    .list-disc { list-style-type: disc; }
-    .list-inside { list-style-position: inside; }
+    :root {
+      --navy: #0D0D59;
+      --navy-deep: #070738;
+      --navy-light: #161678;
+      --green: #A8CF45;
+      --green-dark: #82a829;
+      --green-subtle: rgba(168, 207, 69, 0.12);
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --card-bg: #ffffff;
+      --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--slate-50);
+      color: var(--slate-700);
+      font-family: var(--font);
+      line-height: 1.7;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 96px;
+    }
+
+    a { color: var(--navy); text-decoration: underline; text-decoration-color: var(--slate-300); text-underline-offset: 3px; }
+    a:hover { color: var(--green-dark); text-decoration-color: var(--green-dark); }
+
+    /* Top Navigation */
+    .v-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--slate-200);
+    }
+    .v-nav-in {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .v-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none !important;
+      font-weight: 800;
+      font-size: 17px;
+      color: var(--navy);
+    }
+    .v-brand img { height: 28px; width: auto; }
+    .v-brand-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--green-subtle);
+      color: var(--navy);
+      border: 1px solid rgba(168, 207, 69, 0.4);
+    }
+    .v-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .v-nav-link {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--slate-600);
+      text-decoration: none !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .15s;
+    }
+    .v-nav-link:hover { color: var(--navy); }
+
+    /* Hero Header */
+    .v-hero {
+      background: linear-gradient(180deg, #ffffff 0%, var(--slate-50) 100%);
+      border-bottom: 1px solid var(--slate-200);
+      padding: 56px 24px 44px;
+    }
+    .v-hero-in {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+    .v-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--navy);
+      background: var(--green-subtle);
+      border: 1px solid rgba(168, 207, 69, 0.45);
+      border-radius: 999px;
+      padding: 4px 14px;
+      margin-bottom: 16px;
+      letter-spacing: .02em;
+    }
+    .v-pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+    }
+    .v-hero h1 {
+      font-size: clamp(32px, 4.4vw, 46px);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: var(--navy);
+      line-height: 1.18;
+      margin-bottom: 12px;
+    }
+    .v-hero p {
+      font-size: 16px;
+      color: var(--slate-600);
+      max-width: 760px;
+      line-height: 1.6;
+    }
+    .v-hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--slate-200);
+      font-size: 13px;
+      color: var(--slate-500);
+    }
+    .v-hero-meta strong { color: var(--slate-800); }
+
+    /* Layout: Sidebar TOC + Main Content */
+    .v-layout {
+      max-width: 1140px;
+      margin: 40px auto 0;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    /* Table of contents sticky sidebar */
+    .v-toc-wrap {
+      position: sticky;
+      top: 92px;
+      max-height: calc(100vh - 110px);
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+    .v-toc-title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--navy);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .v-toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .v-toc-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--slate-600);
+      text-decoration: none !important;
+      display: block;
+      padding: 6px 10px;
+      border-radius: 8px;
+      transition: all .15s;
+      line-height: 1.4;
+    }
+    .v-toc-link:hover {
+      background: var(--slate-100);
+      color: var(--navy);
+      padding-left: 14px;
+    }
+    .v-toc-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--slate-400);
+      margin-right: 6px;
+    }
+
+    /* Content Cards */
+    .v-content {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .v-card {
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      padding: 36px 32px;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+      scroll-margin-top: 88px;
+    }
+    .v-card-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--slate-100);
+    }
+    .v-card-num {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+      background: var(--green-subtle);
+      border: 1px solid rgba(168, 207, 69, 0.4);
+      padding: 3px 9px;
+      border-radius: 6px;
+    }
+    .v-card h2 {
+      font-size: 21px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -.02em;
+    }
+    .v-card p {
+      margin-bottom: 14px;
+      color: var(--slate-700);
+      line-height: 1.75;
+    }
+    .v-card p:last-child { margin-bottom: 0; }
+    .v-card strong { color: var(--slate-900); font-weight: 600; }
+
+    .v-card ul, .v-card ol {
+      margin: 14px 0 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .v-card li {
+      color: var(--slate-700);
+      line-height: 1.7;
+    }
+
+    /* High-contrast callout boxes */
+    .v-callout {
+      background: #f8fafc;
+      border: 1.5px solid var(--slate-200);
+      border-left: 4px solid var(--navy);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 18px 0;
+      font-size: 14px;
+      color: var(--slate-800);
+    }
+    .v-callout.warning {
+      background: #fffbeb;
+      border-color: #fde68a;
+      border-left-color: #f59e0b;
+      color: #92400e;
+    }
+    .v-callout.info {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      border-left-color: #16a34a;
+      color: #166534;
+    }
+
+    /* Definitions list */
+    .v-defs {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .v-def-item {
+      padding: 10px 14px;
+      background: var(--slate-50);
+      border-radius: 8px;
+      border: 1px solid var(--slate-200);
+      font-size: 14px;
+    }
+    .v-def-term {
+      font-weight: 700;
+      color: var(--navy);
+      font-family: var(--mono);
+      margin-right: 6px;
+    }
+
+    /* Footer */
+    .v-footer {
+      max-width: 1140px;
+      margin: 64px auto 0;
+      padding: 28px 24px 0;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--slate-500);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .v-footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    .v-footer-links a {
+      color: var(--slate-600);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .v-footer-links a:hover { color: var(--navy); text-decoration: underline; }
+
+    @media (max-width: 900px) {
+      .v-layout {
+        grid-template-columns: 1fr;
+      }
+      .v-toc-wrap {
+        display: none;
+      }
+      .v-card {
+        padding: 26px 20px;
+      }
+    }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body>
 
-  <nav class="bg-white border-b border-gray-100">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <a href="/" class="flex items-center gap-3">
-          <img src="/velcro_logo.png" alt="Velcro" class="h-8 w-auto">
-          <span class="text-lg font-bold bg-gradient-to-r from-velcro-green to-lime-400 bg-clip-text text-transparent tracking-tight">Convert</span>
-        </a>
-        <a href="/" class="text-sm text-gray-500 hover:text-velcro-navy transition-colors">&larr; Back to Convert</a>
+  <!-- Navigation -->
+  <nav class="v-nav">
+    <div class="v-nav-in">
+      <a href="/" class="v-brand">
+        <img src="/velcro_logo.png" alt="Velcro">
+        <span>Velcro</span>
+        <span class="v-brand-tag">Convert</span>
+      </a>
+      <div class="v-nav-actions">
+        <a href="/privacy.html" class="v-nav-link">Privacy Policy</a>
+        <a href="/" class="v-nav-link">← Return to Convert</a>
       </div>
     </div>
   </nav>
 
-  <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">Terms & Conditions</h1>
-    <p class="text-sm text-gray-500 mb-8">Last updated: April 2026</p>
-
-    <div class="space-y-8 text-gray-700">
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">1. Acceptance of Terms</h2>
-        <p class="text-sm leading-relaxed">By accessing or using Velcro Convert, you agree to be bound by these Terms & Conditions. If you do not agree, please do not use our services. These terms apply to all users, including those who browse, convert, buy, or sell cryptocurrencies through our platform.</p>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">2. Eligibility</h2>
-        <p class="text-sm leading-relaxed">You must be at least 18 years old and capable of entering into a legally binding agreement to use Velcro Convert. By using our services, you represent and warrant that you meet these requirements. We reserve the right to suspend or terminate accounts that violate this requirement.</p>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">3. Account Registration</h2>
-        <p class="text-sm leading-relaxed">To access certain features, you may be required to register an account using a valid email address. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. Notify us immediately of any unauthorized use.</p>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">4. Transactions</h2>
-        <p class="text-sm leading-relaxed mb-2">All cryptocurrency conversions and trades are subject to the following conditions:</p>
-        <ul class="list-disc list-inside text-sm leading-relaxed space-y-1">
-          <li>Rates displayed are estimates and may change based on market conditions.</li>
-          <li>You must send the exact amount and correct asset on the selected network. Sending wrong assets or using wrong networks may result in permanent loss.</li>
-          <li>Minimum transaction limits apply. Transactions below the minimum will not be processed.</li>
-          <li>We reserve the right to delay or cancel transactions suspected of fraud or illegal activity.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">5. Fees</h2>
-        <p class="text-sm leading-relaxed">Velcro Convert charges a service fee on each transaction, which is included in the displayed rate. Fees are subject to change and will be communicated before you confirm any transaction. There are no hidden charges.</p>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">6. Prohibited Uses</h2>
-        <p class="text-sm leading-relaxed mb-2">You may not use Velcro Convert for any unlawful purpose, including but not limited to:</p>
-        <ul class="list-disc list-inside text-sm leading-relaxed space-y-1">
-          <li>Money laundering, terrorist financing, or sanctions evasion.</li>
-          <li>Fraudulent transactions or identity theft.</li>
-          <li>Any activity that violates applicable laws in Nigeria or your jurisdiction.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">7. Limitation of Liability</h2>
-        <p class="text-sm leading-relaxed">Velcro Convert is provided "as is" without warranties of any kind. We are not liable for losses resulting from market volatility, user error (e.g., sending to wrong addresses), network failures, or events beyond our reasonable control. Our total liability shall not exceed the value of the transaction in dispute.</p>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">8. Privacy</h2>
-        <p class="text-sm leading-relaxed">Your use of Velcro Convert is also governed by our Privacy Policy. We collect and process personal data necessary to provide our services, comply with legal obligations, and prevent fraud. We do not sell your personal information to third parties.</p>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">9. Changes to Terms</h2>
-        <p class="text-sm leading-relaxed">We may update these Terms & Conditions from time to time. Changes will be posted on this page with an updated effective date. Continued use of the platform after changes constitutes acceptance of the revised terms.</p>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">10. Contact</h2>
-        <p class="text-sm leading-relaxed">For questions about these Terms, contact us at <a href="mailto:support@usevelcro.com" class="text-velcro-navy hover:underline">support@usevelcro.com</a> or via WhatsApp at <a href="https://wa.me/2347035428475" target="_blank" class="text-velcro-navy hover:underline">+234 703 542 8475</a>.</p>
-      </section>
-    </div>
-  </main>
-
-  <footer class="bg-gray-50 border-t-4 border-velcro-green py-10 mt-auto">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <img src="/velcro_logo.png" alt="Velcro" class="h-8 w-auto mx-auto mb-4">
-      <p class="text-sm text-gray-500 mb-6">&copy; 2026 Velcro Technologies. All rights reserved.</p>
-      <div class="flex items-center justify-center gap-8 text-sm text-gray-500">
-        <a href="/terms.html" class="hover:text-velcro-navy transition-colors">Terms</a>
-        <a href="/privacy.html" class="hover:text-velcro-navy transition-colors">Privacy</a>
-        <a href="mailto:support@usevelcro.com" class="hover:text-velcro-navy transition-colors">Support</a>
+  <!-- Hero Header -->
+  <header class="v-hero">
+    <div class="v-hero-in">
+      <div class="v-pill">
+        <span class="v-pill-dot"></span>
+        OFFICIAL OPERATING AGREEMENT &bull; BINDING LEGAL TERMS
       </div>
+      <h1>Terms of Use</h1>
+      <p>Please read these Terms of Use carefully before accessing or using the Velcro digital asset exchange, dynamic virtual accounts, automated settlement rails, or related infrastructure.</p>
+      <div class="v-hero-meta">
+        <div><strong>Entity:</strong> Velcro Technologies Limited</div>
+        <div><strong>Jurisdiction:</strong> Federal Republic of Nigeria</div>
+        <div><strong>Registered Office:</strong> Wuye District, Abuja, FCT, Nigeria</div>
+        <div><strong>Last Updated:</strong> April 2026</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="v-layout">
+    
+    <!-- Table of Contents -->
+    <aside class="v-toc-wrap">
+      <div class="v-toc-title">Table of Contents</div>
+      <ol class="v-toc-list">
+        <li><a href="#s1" class="v-toc-link"><span class="v-toc-num">01.</span> Acceptance of Terms</a></li>
+        <li><a href="#s2" class="v-toc-link"><span class="v-toc-num">02.</span> Definitions</a></li>
+        <li><a href="#s3" class="v-toc-link"><span class="v-toc-num">03.</span> About Us &amp; Contact</a></li>
+        <li><a href="#s4" class="v-toc-link"><span class="v-toc-num">04.</span> Eligibility</a></li>
+        <li><a href="#s5" class="v-toc-link"><span class="v-toc-num">05.</span> Related Documents</a></li>
+        <li><a href="#s6" class="v-toc-link"><span class="v-toc-num">06.</span> Changes to Terms</a></li>
+        <li><a href="#s7" class="v-toc-link"><span class="v-toc-num">07.</span> Access &amp; Use</a></li>
+        <li><a href="#s8" class="v-toc-link"><span class="v-toc-num">08.</span> Platform Functionality</a></li>
+        <li><a href="#s9" class="v-toc-link"><span class="v-toc-num">09.</span> Digital Asset Risks</a></li>
+        <li><a href="#s10" class="v-toc-link"><span class="v-toc-num">10.</span> Prohibited Activities</a></li>
+        <li><a href="#s11" class="v-toc-link"><span class="v-toc-num">11.</span> AML &amp; Sanctions</a></li>
+        <li><a href="#s12" class="v-toc-link"><span class="v-toc-num">12.</span> Intellectual Property</a></li>
+        <li><a href="#s13" class="v-toc-link"><span class="v-toc-num">13.</span> User Submissions</a></li>
+        <li><a href="#s14" class="v-toc-link"><span class="v-toc-num">14.</span> Third-Party Services</a></li>
+        <li><a href="#s15" class="v-toc-link"><span class="v-toc-num">15.</span> Privacy &amp; Data</a></li>
+        <li><a href="#s16" class="v-toc-link"><span class="v-toc-num">16.</span> Security &amp; Passkeys</a></li>
+        <li><a href="#s17" class="v-toc-link"><span class="v-toc-num">17.</span> Suspension &amp; Closure</a></li>
+        <li><a href="#s18" class="v-toc-link"><span class="v-toc-num">18.</span> Disclaimers</a></li>
+        <li><a href="#s19" class="v-toc-link"><span class="v-toc-num">19.</span> Limitation of Liability</a></li>
+        <li><a href="#s20" class="v-toc-link"><span class="v-toc-num">20.</span> Indemnification</a></li>
+        <li><a href="#s21" class="v-toc-link"><span class="v-toc-num">21.</span> Force Majeure</a></li>
+        <li><a href="#s22" class="v-toc-link"><span class="v-toc-num">22.</span> Governing Law</a></li>
+        <li><a href="#s23" class="v-toc-link"><span class="v-toc-num">23.</span> Legal Notices</a></li>
+        <li><a href="#s24" class="v-toc-link"><span class="v-toc-num">24.</span> General Provisions</a></li>
+      </ol>
+    </aside>
+
+    <!-- Content Sections -->
+    <main class="v-content">
+
+      <!-- Section 1 -->
+      <section id="s1" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">01</span>
+          <h2>Introduction and Acceptance</h2>
+        </div>
+        <p><strong>1.1</strong> These Terms of Use (the "Terms") govern your access to and use of the platform and digital interfaces operated by <strong>Velcro Technologies Limited</strong> ("the Company", "Velcro", "we", "us", or "our"), including https://ramp.usevelcro.com, https://usevelcro.com, subdomains, APIs, dynamic storefronts, and all associated software and settlement features (collectively, the "Platform").</p>
+        <p><strong>1.2</strong> Please read these Terms carefully before using the Platform. By accessing the Platform, initiating an order, registering an Account, ticking an acceptance checkbox, or clicking "Agree and Continue", "Proceed", or "Get payment details", you acknowledge that you have read, understood, and agreed to be legally bound by these Terms and our <a href="/privacy.html">Privacy Policy</a>.</p>
+        <p><strong>1.3</strong> If you do not agree to these Terms in their entirety, you must immediately discontinue your use of the Platform and refrain from initiating any transactions.</p>
+        <p><strong>1.4</strong> If you access or use the Platform on behalf of a company, partnership, or other legal entity, you represent and warrant that you are duly authorized to bind that entity to these Terms. In such circumstances, references to "you" or "User" apply jointly to the individual and that legal entity.</p>
+      </section>
+
+      <!-- Section 2 -->
+      <section id="s2" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">02</span>
+          <h2>Definitions and Interpretation</h2>
+        </div>
+        <p><strong>2.1</strong> In these Terms, the following terms have the meanings assigned to them below:</p>
+        <div class="v-defs">
+          <div class="v-def-item"><span class="v-def-term">Account:</span> The authenticated profile or session established by a User on the Platform to execute transactions or access merchant features.</div>
+          <div class="v-def-item"><span class="v-def-term">Applicable Law:</span> All federal, state, and local laws, regulations, circulars, directives, and guidelines in force from time to time in the Federal Republic of Nigeria, including the Nigeria Data Protection Act 2023 (NDPA), the Money Laundering (Prevention and Prohibition) Act 2022, the Terrorism (Prevention and Prohibition) Act 2022, Central Bank of Nigeria (CBN) regulatory guidelines, and Securities and Exchange Commission (SEC) digital asset rules.</div>
+          <div class="v-def-item"><span class="v-def-term">Content:</span> All interface graphics, logos, text, designs, price quotation algorithms, software code, dynamic account generators, audio, video, and documentation accessible via the Platform.</div>
+          <div class="v-def-item"><span class="v-def-term">Country:</span> The Federal Republic of Nigeria.</div>
+          <div class="v-def-item"><span class="v-def-term">Device:</span> Any smartphone, computer, tablet, hardware security key, or browser used to access the Platform.</div>
+          <div class="v-def-item"><span class="v-def-term">Digital Asset:</span> Any cryptographic virtual currency, token, or stablecoin supported on the Platform from time to time (including USDT, USDC, BTC, and SOL).</div>
+          <div class="v-def-item"><span class="v-def-term">Dynamic Virtual Account:</span> A real-time, order-specific bank account number generated via Nigerian Inter-Bank Settlement System (NIP) rails to match and automate customer fiat payments.</div>
+          <div class="v-def-item"><span class="v-def-term">Services:</span> Velcro's non-custodial digital asset on-ramp and off-ramp infrastructure, rate calculation engines, dynamic bank settlement rails, merchant storefront software, and automated blockchain payout routers.</div>
+          <div class="v-def-item"><span class="v-def-term">User or You:</span> Any individual, business, or entity that browses, initiates, or completes a transaction on the Platform.</div>
+        </div>
+      </section>
+
+      <!-- Section 3 -->
+      <section id="s3" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">03</span>
+          <h2>About Us and How to Contact Us</h2>
+        </div>
+        <p><strong>3.1 Entity Information:</strong> Velcro Technologies Limited is a private company limited by shares, incorporated and organized under the laws of the Federal Republic of Nigeria.</p>
+        <p><strong>3.2 Registered Office:</strong> Wuye District, Abuja, Federal Capital Territory, Nigeria.</p>
+        <p><strong>3.3 Official Inquiries &amp; Support:</strong> You may contact our legal and customer operations teams via email at <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>. Official communications will only be recognized when delivered to this authorized address.</p>
+      </section>
+
+      <!-- Section 4 -->
+      <section id="s4" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">04</span>
+          <h2>Eligibility</h2>
+        </div>
+        <p><strong>4.1 Requirements:</strong> To use the Platform or any Services, you must:</p>
+        <ul>
+          <li>Be at least eighteen (18) years of age (or the age of majority in your jurisdiction, if higher) with full capacity to enter into legally binding contracts;</li>
+          <li>Not be listed on any national or international sanctions, watch, or anti-money laundering prohibition lists (including OFAC, UN Sanctions, or NFIU watchlists);</li>
+          <li>Not have had an account or transaction privileges previously suspended, terminated, or blocked by Velcro for breach of security or terms; and</li>
+          <li>Where transacting on behalf of a corporate entity, be authorized under board resolution or power of attorney.</li>
+        </ul>
+        <p><strong>4.2 Geographic Scope:</strong> The Services are directed at persons located in Nigeria and other jurisdictions approved by Velcro. Users accessing the Platform from other locations are responsible for compliance with all local laws.</p>
+      </section>
+
+      <!-- Section 5 -->
+      <section id="s5" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">05</span>
+          <h2>Relationship with Other Documents</h2>
+        </div>
+        <p><strong>5.1 Integrated Policies:</strong> These Terms govern the general use of the Platform and must be read alongside our <a href="/privacy.html">Privacy Policy</a>, Merchant Operating Agreement (for OTC desks and white-label partners), and any transaction-specific disclosures displayed during checkout.</p>
+        <p><strong>5.2 Priority:</strong> In the event of an unavoidable conflict between these Terms and specific product disclosures agreed during an order confirmation, the order-specific confirmation terms shall prevail solely with respect to that transaction.</p>
+      </section>
+
+      <!-- Section 6 -->
+      <section id="s6" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">06</span>
+          <h2>Changes to the Website and to These Terms</h2>
+        </div>
+        <p><strong>6.1 Modifications:</strong> Velcro reserves the right to update, modify, enhance, or discontinue any feature, rate quotation engine, supported blockchain network, or part of the Platform at any time without liability.</p>
+        <p><strong>6.2 Amendments:</strong> We may revise these Terms to reflect legislative changes, technological advancements, or security enhancements. Changes take effect upon posting to the Platform with an updated "Last Updated" date. Continued use constitutes acceptance of revised terms.</p>
+      </section>
+
+      <!-- Section 7 -->
+      <section id="s7" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">07</span>
+          <h2>Access to and Use of the Platform</h2>
+        </div>
+        <p><strong>7.1 License Grant:</strong> Subject to your ongoing compliance with these Terms, Velcro grants you a limited, revocable, non-exclusive, non-transferable, non-sublicensable license to access the Platform for lawful on-ramp and off-ramp transactions.</p>
+        <p><strong>7.2 Equipment &amp; Connectivity:</strong> You are solely responsible for obtaining and securing the Devices, internet connection, and software required to access the Platform.</p>
+        <p><strong>7.3 Platform Availability:</strong> While we aim for 99.9% uptime, we do not guarantee uninterrupted, error-free service. Systems may undergo maintenance, updates, or experience third-party rail disruptions beyond our control.</p>
+      </section>
+
+      <!-- Section 8 -->
+      <section id="s8" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">08</span>
+          <h2>Platform Functionality &amp; Autonomous Execution</h2>
+        </div>
+        <p><strong>8.1 Non-Custodial Architecture:</strong> Velcro operates as an autonomous, non-custodial technology rail. Velcro does not take custody of customer fiat funds, hold private keys, or maintain speculative trading accounts for retail users.</p>
+        <p><strong>8.2 On-Ramp Execution (Buy Crypto):</strong></p>
+        <ul>
+          <li>You enter your destination blockchain wallet address and desired fiat amount;</li>
+          <li>The Platform dynamically issues a dedicated virtual bank account with a fixed payment window;</li>
+          <li>Upon receipt and automated confirmation of your NIP bank transfer, crypto is dispatched straight from institutional liquidity pools to your designated wallet address.</li>
+        </ul>
+        <p><strong>8.3 Off-Ramp Execution (Sell Crypto):</strong></p>
+        <ul>
+          <li>You supply your verified Nigerian bank account details (account number and bank name) and initiate a sell request;</li>
+          <li>The Platform generates a unique cryptographic deposit address or QR code on the selected network (e.g., Solana, Tron, Base, Bitcoin);</li>
+          <li>Upon required on-chain block confirmations, Velcro automatically triggers an instant NIP transfer to your verified Nigerian bank account.</li>
+        </ul>
+        <div class="v-callout warning">
+          <strong>Irreversibility Notice:</strong> Cryptocurrency transactions are irreversible once broadcast to the blockchain. Velcro is not responsible for funds sent to incorrect addresses, wrong networks, or omitted memo/tag identifiers.
+        </div>
+      </section>
+
+      <!-- Section 9 -->
+      <section id="s9" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">09</span>
+          <h2>Digital Asset Risk Notice</h2>
+        </div>
+        <p><strong>9.1 Market Volatility:</strong> The prices of Digital Assets can experience rapid and extreme fluctuations. You acknowledge that you may experience substantial capital losses.</p>
+        <p><strong>9.2 Technical Risks:</strong> Blockchain networks are subject to congestion, forks, software defects, validator halts, and cyber threats. Delays caused by on-chain congestion or network reorganizations are outside Velcro's operational control.</p>
+        <p><strong>9.3 Not Legal Tender:</strong> Digital Assets are not legal tender in the Federal Republic of Nigeria and are not insured by the Nigeria Deposit Insurance Corporation (NDIC) or guaranteed by the Central Bank of Nigeria.</p>
+        <p><strong>9.4 No Advisory Services:</strong> Velcro does not provide financial, investment, legal, tax, or accounting advice. You make all decisions independently.</p>
+      </section>
+
+      <!-- Section 10 -->
+      <section id="s10" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">10</span>
+          <h2>Prohibited Activities</h2>
+        </div>
+        <p><strong>10.1 Prohibitions:</strong> You agree not to engage in or facilitate any of the following activities on or through the Platform:</p>
+        <ul>
+          <li>Money laundering, terrorist financing, proliferation financing, sanctions evasion, tax evasion, or fraud;</li>
+          <li>Using bank accounts, debit cards, or credentials that do not belong to you or for which you lack express authorization;</li>
+          <li>Deploying automated scraping bots, crawlers, or high-frequency automated request scripts without explicit API authorization;</li>
+          <li>Interfering with or disrupting Platform servers, network rails, or rate quotation systems;</li>
+          <li>Attempting to bypass access controls, spoof IP locations via anonymous VPN nodes to evade geographical restrictions, or inject malicious payloads;</li>
+          <li>Wash trading, rate manipulation, front-running, or market exploitation.</li>
+        </ul>
+      </section>
+
+      <!-- Section 11 -->
+      <section id="s11" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">11</span>
+          <h2>Compliance, Anti-Money Laundering &amp; Sanctions</h2>
+        </div>
+        <p><strong>11.1 Statutory Commitment:</strong> Velcro strictly adheres to the Money Laundering (Prevention and Prohibition) Act 2022, Terrorism (Prevention and Prohibition) Act 2022, and relevant Nigerian Financial Intelligence Unit (NFIU) directives.</p>
+        <p><strong>11.2 Monitoring &amp; Reporting:</strong> We reserve the right to monitor all transactions, implement real-time blockchain analytics screening, request identity documents (KYC/KYB), delay or freeze suspicious orders, and submit statutory reports (including Suspicious Transaction Reports) to regulatory authorities without prior notice.</p>
+      </section>
+
+      <!-- Section 12 -->
+      <section id="s12" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">12</span>
+          <h2>Intellectual Property</h2>
+        </div>
+        <p><strong>12.1 Proprietary Ownership:</strong> The Platform, brand name "Velcro", logos, software code, UI designs, dynamic account matching algorithms, documentation, and databases are the exclusive intellectual property of Velcro Technologies Limited.</p>
+        <p><strong>12.2 Restrictions:</strong> You may not copy, reproduce, reverse engineer, decompile, republish, distribute, or create derivative works from the Platform or its Content without our express prior written permission.</p>
+      </section>
+
+      <!-- Section 13 -->
+      <section id="s13" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">13</span>
+          <h2>User Submissions and Feedback</h2>
+        </div>
+        <p><strong>13.1 Communications:</strong> Any feedback, technical ideas, bug reports, or feature recommendations submitted to Velcro become our property and may be utilized freely without obligation, attribution, or financial compensation to you.</p>
+      </section>
+
+      <!-- Section 14 -->
+      <section id="s14" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">14</span>
+          <h2>Third-Party Services and Rails</h2>
+        </div>
+        <p><strong>14.1 Integrated Infrastructure:</strong> Velcro integrates commercial banking partners, the NIP switch, liquidity providers (e.g., HostFi, PAJ, Switch), and public blockchain nodes to settle transactions.</p>
+        <p><strong>14.2 Third-Party Outages:</strong> Velcro is not liable for service downtime, delayed bank credits, NIP switch maintenance, or network errors originating from external banking institutions or third-party liquidity providers.</p>
+      </section>
+
+      <!-- Section 15 -->
+      <section id="s15" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">15</span>
+          <h2>Privacy and Data Protection</h2>
+        </div>
+        <p><strong>15.1 NDPA Compliance:</strong> Velcro collects, processes, and protects personal data in strict compliance with the Nigeria Data Protection Act 2023 (NDPA) and NDPA General Application and Implementation Directive 2025. Please review our <a href="/privacy.html">Privacy Policy</a> for full details on data retention, security safeguards, and your statutory data rights.</p>
+      </section>
+
+      <!-- Section 16 -->
+      <section id="s16" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">16</span>
+          <h2>Security &amp; Passkeys</h2>
+        </div>
+        <p><strong>16.1 Modern Authentication:</strong> Velcro employs passkey-based authentication, hardware token cryptographic validation, and one-time password (OTP) verification to eliminate password vulnerability.</p>
+        <p><strong>16.2 User Safeguards:</strong> You are responsible for safeguarding your personal devices, email access, biometric passkey authenticators, and private keys. Velcro will never ask for your private keys, seed phrases, or one-time verification tokens.</p>
+      </section>
+
+      <!-- Section 17 -->
+      <section id="s17" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">17</span>
+          <h2>Suspension and Termination</h2>
+        </div>
+        <p><strong>17.1 Platform Rights:</strong> Velcro reserves the right to immediately suspend, restrict, or terminate your access to the Platform if we reasonably suspect fraud, AML non-compliance, unauthorized third-party chargebacks, system abuse, or breach of these Terms.</p>
+      </section>
+
+      <!-- Section 18 -->
+      <section id="s18" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">18</span>
+          <h2>Disclaimers</h2>
+        </div>
+        <p><strong>18.1 "As Is" Basis:</strong> The Platform and Services are provided on an "as is" and "as available" basis without warranties of any kind, whether express, statutory, or implied, including warranties of merchantability, fitness for a particular purpose, or uninterrupted availability.</p>
+        <p><strong>18.2 Indicative Rates:</strong> Displayed exchange rates and conversion quotations are real-time market estimates and become binding only upon successful lock and order execution within the designated payment timer window.</p>
+      </section>
+
+      <!-- Section 19 -->
+      <section id="s19" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">19</span>
+          <h2>Limitation of Liability</h2>
+        </div>
+        <p><strong>19.1 Consequential Damages:</strong> To the maximum extent permitted by Nigerian law, Velcro Technologies Limited, its directors, employees, and infrastructure partners shall not be liable for any indirect, incidental, punitive, consequential, or special damages, including lost profits, loss of data, loss of business, or cryptocurrency market depreciation.</p>
+        <p><strong>19.2 Aggregate Liability Cap:</strong> In all events, the maximum aggregate liability of Velcro arising out of or related to any single transaction shall not exceed the actual service fee earned by Velcro from that specific transaction.</p>
+      </section>
+
+      <!-- Section 20 -->
+      <section id="s20" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">20</span>
+          <h2>Indemnity</h2>
+        </div>
+        <p><strong>20.1 User Indemnification:</strong> You agree to defend, indemnify, and hold harmless Velcro Technologies Limited, its officers, directors, agents, and affiliates from and against any claims, liabilities, damages, losses, or legal expenses arising from your violation of these Terms, breach of Applicable Law, or infringement of third-party rights.</p>
+      </section>
+
+      <!-- Section 21 -->
+      <section id="s21" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">21</span>
+          <h2>Force Majeure</h2>
+        </div>
+        <p><strong>21.1 Excused Delays:</strong> Velcro shall not be held liable or in default for delays or failures in performance resulting from causes beyond reasonable control, including acts of God, civil unrest, telecommunications disruptions, banking switch crashes, power grid outages, blockchain reorganizations, cyber attacks, or regulatory enforcement actions.</p>
+      </section>
+
+      <!-- Section 22 -->
+      <section id="s22" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">22</span>
+          <h2>Governing Law and Dispute Resolution</h2>
+        </div>
+        <p><strong>22.1 Governing Law:</strong> These Terms and any disputes or claims arising out of or in connection with them shall be governed by and construed in accordance with the laws of the <strong>Federal Republic of Nigeria</strong>.</p>
+        <p><strong>22.2 Good Faith Amicable Resolution:</strong> In the event of any controversy, claim, or dispute, the Parties agree to first attempt in good faith to resolve the matter informally by submitting written notice with full transaction details to <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>. The Parties shall engage in good faith consultations for a period of thirty (30) days from receipt of such notice.</p>
+        <p><strong>22.3 Judicial Jurisdiction:</strong> If the dispute is not resolved amicably within the 30-day consultation period, either party may submit the dispute to the non-exclusive jurisdiction of the competent courts of the Federal Republic of Nigeria.</p>
+      </section>
+
+      <!-- Section 23 -->
+      <section id="s23" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">23</span>
+          <h2>Legal Notices</h2>
+        </div>
+        <p><strong>23.1 Electronic Delivery:</strong> We deliver notices to you electronically via Platform interfaces, email to your registered address, or public announcements. Electronic notices satisfy any statutory requirement for written communication.</p>
+        <p><strong>23.2 Notice to Velcro:</strong> Any formal legal notice to the Company must be sent by email to <a href="mailto:support@usevelcro.com">support@usevelcro.com</a> marked for the attention of the Legal Operations Department.</p>
+      </section>
+
+      <!-- Section 24 -->
+      <section id="s24" class="v-card">
+        <div class="v-card-header">
+          <span class="v-card-num">24</span>
+          <h2>General Provisions</h2>
+        </div>
+        <p><strong>24.1 Entire Agreement:</strong> These Terms, together with the Privacy Policy and applicable service schedules, constitute the entire agreement between you and Velcro with respect to the Platform, superseding all prior oral or written understandings.</p>
+        <p><strong>24.2 Severability:</strong> If any provision of these Terms is determined to be invalid or unenforceable under Applicable Law, such provision shall be severed or modified to the minimum extent necessary, and the remaining provisions shall remain in full force and effect.</p>
+        <p><strong>24.3 No Waiver:</strong> Failure or delay by Velcro in exercising any statutory or contractual right shall not operate as a waiver of that right.</p>
+        <p><strong>24.4 Assignment:</strong> You may not assign or transfer your rights or obligations under these Terms without prior written consent. Velcro may freely assign its rights and obligations to a corporate affiliate or successor entity.</p>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="v-footer">
+    <div>&copy; 2026 Velcro Technologies Limited. All rights reserved. Wuye District, Abuja, FCT, Nigeria.</div>
+    <div class="v-footer-links">
+      <a href="/terms.html">Terms of Use</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>
     </div>
   </footer>
 

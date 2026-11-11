@@ -861,20 +861,33 @@ function renderModalQr(address) {
     try {
       new QRCode(qrEl, {
         text: address,
-        width: 280,
-        height: 280,
+        width: 140,
+        height: 140,
         colorDark: '#15151f',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });
       const canvas = qrEl.querySelector('canvas');
-      if (canvas) canvas.style.display = 'none';
+      const img = qrEl.querySelector('img');
+      if (canvas && img) {
+        img.onload = () => { if (img.src && img.src.startsWith('data:')) canvas.style.display = 'none'; };
+        if (img.src && img.src.startsWith('data:')) canvas.style.display = 'none';
+      }
+      return;
     } catch (e) {
-      qrEl.innerHTML = '<span style="font-size:12px;color:var(--muted)">QR Code ready</span>';
+      console.warn('Merchant QRCode fallback:', e);
     }
-  } else {
-    qrEl.innerHTML = '<span style="font-size:12px;color:var(--muted)">QR Code ready</span>';
   }
+
+  // Fallback direct image if library fails or is blocked
+  const img = document.createElement('img');
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(address)}&margin=0`;
+  img.width = 140;
+  img.height = 140;
+  img.alt = 'Scan deposit address';
+  img.style.display = 'block';
+  img.style.margin = '0 auto';
+  qrEl.appendChild(img);
 }
 
 function openOrderDetail(ref, isSilentUpdate = false, fromCustomerEmail = null) {

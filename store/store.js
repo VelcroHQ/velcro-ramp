@@ -126,6 +126,15 @@ async function loadStore() {
   }
   document.querySelector('.s-ngn-store').textContent = s.name;
   $('s-foot-name').textContent = s.name;
+  const termsParam = SLUG ? `?m=${encodeURIComponent(SLUG)}` : '';
+  const footTerms = document.querySelector('.s-foot-links a[href*="terms"]');
+  if (footTerms) footTerms.href = `/store/terms.html${termsParam}`;
+  const footPriv = document.querySelector('.s-foot-links a[href*="privacy"]');
+  if (footPriv) footPriv.href = `/store/privacy.html${termsParam}`;
+  const authTerms = document.querySelector('.s-fine a[href*="terms"]');
+  if (authTerms) authTerms.href = `/store/terms.html${termsParam}`;
+  const authPriv = document.querySelector('.s-fine a[href*="privacy"]');
+  if (authPriv) authPriv.href = `/store/privacy.html${termsParam}`;
   $('s-home').href = location.pathname.startsWith('/m/') ? '/m/' + SLUG : '/';
   paintLogo($('s-logo'));
   paintLogo($('auth-logo'));
@@ -729,6 +738,43 @@ function showForm() {
   $('s-form').hidden = false;
 }
 
+function safeRenderStoreQrCode(container, text, size = 220) {
+  if (!container || !text || text === '-') return;
+  container.innerHTML = '';
+
+  if (typeof QRCode !== 'undefined') {
+    try {
+      new QRCode(container, {
+        text: text,
+        width: size,
+        height: size,
+        colorDark: '#15151f',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      const canvas = container.querySelector('canvas');
+      const img = container.querySelector('img');
+      if (canvas && img) {
+        img.onload = () => { if (img.src && img.src.startsWith('data:')) canvas.style.display = 'none'; };
+        if (img.src && img.src.startsWith('data:')) canvas.style.display = 'none';
+      }
+      return;
+    } catch (e) {
+      console.warn('Store QRCode fallback:', e);
+    }
+  }
+
+  // Fallback direct image if library fails or is blocked
+  const img = document.createElement('img');
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&margin=0`;
+  img.width = size;
+  img.height = size;
+  img.alt = 'Scan deposit address';
+  img.style.display = 'block';
+  img.style.margin = '0 auto';
+  container.appendChild(img);
+}
+
 function renderCheckout() {
   document.body.classList.add('s-in-checkout');
   $('s-form').hidden = true;
@@ -740,21 +786,9 @@ function renderCheckout() {
     box.innerHTML = selling ? sellPayHtml() : checkoutPayHtml();
     if (selling && checkout.order && checkout.order.address) {
       const qrEl = $('co-sell-qr');
-      if (qrEl && typeof QRCode !== 'undefined') {
-        qrEl.innerHTML = '';
-        try {
-          const qrSize = Math.max(220, Math.min(280, (window.innerWidth || 360) - 80));
-          new QRCode(qrEl, {
-            text: checkout.order.address,
-            width: qrSize,
-            height: qrSize,
-            colorDark: '#15151f',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
-          });
-          const canvas = qrEl.querySelector('canvas');
-          if (canvas) canvas.style.display = 'none';
-        } catch (e) { /* ignore */ }
+      if (qrEl) {
+        const qrSize = Math.max(220, Math.min(280, (window.innerWidth || 360) - 80));
+        safeRenderStoreQrCode(qrEl, checkout.order.address, qrSize);
       }
     }
   }

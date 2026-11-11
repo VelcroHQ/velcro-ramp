@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">Privacy Policy — Digital Exchange</title>
+  <meta name="description" content="Privacy Policy for customer digital asset exchange transactions, powered by Velcro autonomous infrastructure.">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" type="image/png" href="/velcro_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #00df89;
+      --accent-subtle: rgba(0, 223, 137, 0.1);
+      --navy: #0D0D59;
+      --bg: #0b0d14;
+      --surface: #121520;
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.7;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .st-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(11, 13, 20, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .st-nav-in {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .st-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
+      text-decoration: none !important;
+    }
+    .st-brand-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--accent-subtle);
+      border: 1px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--accent);
+      overflow: hidden;
+    }
+    .st-brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .st-powered {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+    .st-powered strong { color: var(--text-muted); }
+    .st-nav-back {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-decoration: none !important;
+      transition: color .15s;
+    }
+    .st-nav-back:hover { color: #fff; }
+
+    .st-hero {
+      max-width: 860px;
+      margin: 48px auto 0;
+      padding: 0 24px 32px;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .st-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-subtle);
+      border: 1px solid rgba(0, 223, 137, 0.25);
+      border-radius: 999px;
+      padding: 3px 12px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .st-hero h1 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .st-hero p {
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .st-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 18px;
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+    .st-meta strong { color: var(--text-muted); }
+
+    .st-container {
+      max-width: 860px;
+      margin: 36px auto 0;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .st-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      padding: 28px 26px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    .st-card-hdr {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .st-card-num {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-subtle);
+      border: 1px solid rgba(0, 223, 137, 0.25);
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+    .st-card h2 {
+      font-size: 19px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -.02em;
+    }
+    .st-card p {
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      font-size: 14.5px;
+    }
+    .st-card p:last-child { margin-bottom: 0; }
+    .st-card strong { color: #fff; font-weight: 600; }
+    .st-card ul {
+      margin: 12px 0 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .st-card li {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .st-callout {
+      background: rgba(0, 223, 137, 0.05);
+      border: 1px solid rgba(0, 223, 137, 0.2);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 13.5px;
+      color: #c9ccd8;
+    }
+
+    .st-footer {
+      max-width: 860px;
+      margin: 56px auto 0;
+      padding: 24px 24px 0;
+      border-top: 1px solid var(--surface-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .st-footer-links { display: flex; gap: 16px; }
+    .st-footer-links a { color: var(--text-muted); text-decoration: none; }
+    .st-footer-links a:hover { color: #fff; text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="st-nav">
+    <div class="st-nav-in">
+      <a href="index.html" class="st-brand" id="nav-brand-link">
+        <div class="st-brand-logo" id="nav-logo-box">V</div>
+        <span id="nav-store-name">Northline Exchange</span>
+      </a>
+      <div class="st-powered">
+        Powered by <strong>Velcro Infrastructure</strong>
+      </div>
+      <a href="index.html" class="st-nav-back" id="nav-return-btn">← Back to Exchange</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="st-hero">
+    <div class="st-badge">DATA PROTECTION NOTICE &bull; NDPA 2023</div>
+    <h1 id="hero-title"><span class="dyn-store-name">Northline Exchange</span> Privacy Policy</h1>
+    <p>This Privacy Policy explains how your personal data is handled when you buy or sell digital assets through <strong class="dyn-store-name">Northline Exchange</strong>, powered by Velcro Technologies Limited.</p>
+    <div class="st-meta">
+      <div><strong>Storefront Operator:</strong> <span class="dyn-store-name">Northline Exchange</span></div>
+      <div><strong>Infrastructure Processor:</strong> Velcro Technologies Limited</div>
+      <div><strong>Statutory Law:</strong> Nigeria Data Protection Act 2023</div>
+      <div><strong>Last Updated:</strong> April 2026</div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="st-container">
+
+    <!-- Card 1 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">01</span>
+        <h2>Dual Roles under the NDPA 2023</h2>
+      </div>
+      <p>When you conduct transactions on this digital exchange storefront, your personal data is processed under a clear division of operational responsibilities:</p>
+      <ul>
+        <li><strong>The Storefront Merchant (<span class="dyn-store-name">This Exchange Desk</span>):</strong> Functions as the retail customer relationship manager, setting markup rates and receiving order confirmations.</li>
+        <li><strong>Velcro Technologies Limited:</strong> Acts as the autonomous infrastructure rail and data processor (having its registered office at Wuye District, Abuja, FCT, Nigeria; <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>), executing dynamic virtual account matching via NIP banking switches and on-chain crypto distribution.</li>
+      </ul>
+    </section>
+
+    <!-- Card 2 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">02</span>
+        <h2>Information We Process</h2>
+      </div>
+      <p>We collect and process the minimum information required to complete your exchange orders securely:</p>
+      <ul>
+        <li><strong>Authentication:</strong> Email address for passkey or OTP session verification;</li>
+        <li><strong>Bank Settlement:</strong> Destination Nigerian bank account number, bank name, and account holder name (verified electronically via NIP name enquiry) for off-ramp payouts;</li>
+        <li><strong>Cryptocurrency Details:</strong> Destination public wallet address, network selection, and on-chain transaction hashes;</li>
+        <li><strong>Security Logs:</strong> IP address, device telemetry, and anti-fraud timestamps to safeguard accounts from unauthorized tampering.</li>
+      </ul>
+      <div class="st-callout">
+        We never sell, rent, or trade your personal data with third-party advertisers. All data is processed strictly for transaction fulfillment, anti-fraud safeguards, and statutory Nigerian compliance.
+      </div>
+    </section>
+
+    <!-- Card 3 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">03</span>
+        <h2>Lawful Bases for Processing</h2>
+      </div>
+      <p>Data processing is conducted pursuant to Section 25 of the Nigeria Data Protection Act 2023:</p>
+      <ul>
+        <li><strong>Performance of Contract:</strong> To generate order-specific virtual bank accounts, match NIP payments, and broadcast cryptocurrency deliveries;</li>
+        <li><strong>Legal Compliance:</strong> Adhering to statutory anti-money laundering (AML), counter-terrorist financing (CFT), and NFIU reporting mandates;</li>
+        <li><strong>Legitimate Interests:</strong> Protecting the storefront against bot abuse, cyber attacks, and unauthorized payment recalls.</li>
+      </ul>
+    </section>
+
+    <!-- Card 4 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">04</span>
+        <h2>Security &amp; Retention</h2>
+      </div>
+      <p>Data in transit and at rest is protected by AES-256 encryption, TLS 1.3 cryptographic protocols, and passkey authentication.</p>
+      <p>Transaction records are retained for a minimum statutory period of five (5) years in compliance with Nigerian financial regulations, after which they are securely scrubbed.</p>
+    </section>
+
+    <!-- Card 5 -->
+    <section class="st-card">
+      <div class="st-card-hdr">
+        <span class="st-card-num">05</span>
+        <h2>Your Data Subject Rights</h2>
+      </div>
+      <p>Under the NDPA 2023, you have the right to request access to your personal data, rectify inaccurate records, request deletion where retention is no longer statutory, and lodge inquiries with our privacy team at <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>.</p>
+      <p>You also maintain the right to lodge a formal complaint with the <strong>Nigeria Data Protection Commission (NDPC)</strong> at <a href="https://ndpc.gov.ng" target="_blank" rel="noopener">https://ndpc.gov.ng</a>.</p>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="st-footer">
+    <div>&copy; 2026 <span class="dyn-store-name">Northline Exchange</span>. Powered by Velcro Technologies Limited.</div>
+    <div class="st-footer-links">
+      <a href="terms.html" id="footer-terms-link">Terms of Service</a>
+      <a href="privacy.html" id="footer-privacy-link">Privacy Policy</a>
+      <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>
+    </div>
+  </footer>
+
+  <!-- Dynamic Branding Script -->
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      let storeSlug = params.get('m') || params.get('store');
+      
+      if (!storeSlug) {
+        const pathMatch = window.location.pathname.match(/\/(?:m|store)\/([a-zA-Z0-9_-]+)/);
+        if (pathMatch) storeSlug = pathMatch[1];
+      }
+      
+      if (!storeSlug) {
+        const host = window.location.hostname;
+        if (host && !['localhost', '127.0.0.1', 'ramp.usevelcro.com', 'usevelcro.com', 'goat.usevelcro.com', 'merchant.usevelcro.com'].includes(host)) {
+          const parts = host.split('.');
+          if (parts.length >= 3 && parts[parts.length - 2] === 'usevelcro') {
+            storeSlug = parts[0];
+          }
+        }
+      }
+
+      function formatBrand(slug) {
+        if (!slug) return 'Digital Exchange Desk';
+        return slug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + (slug.toLowerCase().includes('exchange') || slug.toLowerCase().includes('desk') ? '' : ' Exchange');
+      }
+
+      let storeName = formatBrand(storeSlug);
+
+      function updateDOM(name, accentColor, logoUrl) {
+        document.querySelectorAll('.dyn-store-name').forEach(el => el.textContent = name);
+        const navName = document.getElementById('nav-store-name');
+        if (navName) navName.textContent = name;
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) pageTitle.textContent = `Privacy Policy — ${name}`;
+        
+        const logoBox = document.getElementById('nav-logo-box');
+        if (logoBox) {
+          if (logoUrl) {
+            logoBox.innerHTML = `<img src="${logoUrl}" alt="${name}">`;
+          } else {
+            logoBox.textContent = name.charAt(0).toUpperCase();
+          }
+        }
+
+        if (accentColor) {
+          document.documentElement.style.setProperty('--accent', accentColor);
+          document.documentElement.style.setProperty('--accent-subtle', accentColor + '18');
+        }
+
+        if (storeSlug) {
+          const returnBtn = document.getElementById('nav-return-btn');
+          const brandLink = document.getElementById('nav-brand-link');
+          const termsLink = document.getElementById('footer-terms-link');
+          const privacyLink = document.getElementById('footer-privacy-link');
+          
+          const appendParam = (el, base) => {
+            if (el) el.href = `${base}?m=${encodeURIComponent(storeSlug)}`;
+          };
+          appendParam(returnBtn, 'index.html');
+          appendParam(brandLink, 'index.html');
+          appendParam(termsLink, 'terms.html');
+          appendParam(privacyLink, 'privacy.html');
+        }
+      }
+
+      updateDOM(storeName);
+
+      if (storeSlug) {
+        fetch(`/api/merchant/public-store?store=${encodeURIComponent(storeSlug)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && data.store) {
+              const name = data.store.name || data.store.store_name || storeName;
+              const accent = data.store.brand_color || data.store.accent_color;
+              const logo = data.store.logo_url;
+              updateDOM(name, accent, logo);
+            }
+          })
+          .catch(() => {});
+      }
+    })();
+  </script>
+
+</body>
+</html>

@@ -2426,7 +2426,7 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 .ord-qr-instruction { font-size: 13px; color: var(--ink-2); margin: 0; }
 .ord-qr-wrap { padding: 10px; background: #ffffff; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 4px 14px rgba(0, 0, 0, .06); display: inline-block; }
 #ord-qr-code { width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; }
-#ord-qr-code canvas { display: none !important; }
+#ord-qr-code canvas { display: block; margin: 0 auto; }
 #ord-qr-code img { display: block !important; margin: 0 auto; width: 140px !important; height: 140px !important; border-radius: 6px; }
 .ord-addr-block { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 10px; }
 .ord-addr-block code { font-family: monospace; font-size: 12px; font-weight: 600; color: #0f172a; word-break: break-all; text-align: left; }

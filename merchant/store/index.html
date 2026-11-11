@@ -167,8 +167,8 @@
           <a href="/about.html" target="_blank" rel="noopener">About</a>
           <a href="/contact.html" target="_blank" rel="noopener">Contact</a>
           <a id="s-foot-support" target="_blank" rel="noopener" hidden>Support</a>
-          <a href="/terms.html" target="_blank" rel="noopener">Terms</a>
-          <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>
+          <a href="terms.html" target="_blank" rel="noopener">Terms</a>
+          <a href="privacy.html" target="_blank" rel="noopener">Privacy</a>
         </span>
       </div>
     </footer>
@@ -216,12 +216,13 @@
         <button type="submit" id="auth-btn" class="s-btn s-go">Sign in</button>
       </form>
       <p id="auth-switch" class="s-switch"></p>
-      <p class="s-fine">By continuing you agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+      <p class="s-fine">By continuing you agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
     </div>
   </div>
 
   <div id="s-toast" class="s-toast" role="status" aria-live="polite"></div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="/store/qrcode.min.js"></script>
+  <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
   <script src="/store/store.js?v=44"></script>
 </body>
 
