@@ -431,7 +431,13 @@ function selectSellBank(name, switchCode, pajId, optionEl) {
   currentBankPajId = pajId || '';
   currentBankName = name || '';
   currentBankCode = currentProvider === 'paj' ? (pajId || switchCode) : (switchCode || pajId);
-  document.getElementById('sell-bank-display').innerHTML = `<span class="text-gray-900 font-medium">${escapeHtml(name)}</span>`;
+  const logoUrl = optionEl?.dataset?.bankLogo || (typeof getBankLogoUrl === 'function' ? getBankLogoUrl({ name, switchCode, pajId, code: currentBankCode }) : '/logos/banks/generic-bank.svg');
+  document.getElementById('sell-bank-display').innerHTML = `
+    <div class="w-5 h-5 rounded-full bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 flex items-center justify-center overflow-hidden shrink-0 p-0.5 mr-1">
+      <img src="${logoUrl}" class="w-full h-full object-contain" alt="" onerror="this.src='/logos/banks/generic-bank.svg'">
+    </div>
+    <span class="text-gray-900 dark:text-white font-medium text-sm truncate">${escapeHtml(name)}</span>
+  `;
   
   // Update highlights
   document.querySelectorAll('#sell-bank-options .custom-option').forEach(o => o.classList.remove('selected'));

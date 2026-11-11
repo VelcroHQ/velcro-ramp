@@ -1,6 +1,25 @@
 // Velcro Convert — Order lifecycle: create, deposit details, confirm, status polling, reset.
 // Classic script sharing globals with the other files in /js; load order is set in index.html.
 
+function renderBuyBankDisplay(bankName) {
+  const el = document.getElementById('buy-bank-name');
+  if (!el) return;
+  const safeName = escapeHtml(bankName || '-');
+  if (!bankName || bankName === '-') {
+    el.textContent = '-';
+    return;
+  }
+  const logoUrl = typeof getBankLogoUrl === 'function' ? getBankLogoUrl({ name: bankName }) : '/logos/banks/generic-bank.svg';
+  el.innerHTML = `
+    <span class="inline-flex items-center gap-1.5">
+      <span class="w-5 h-5 rounded-full bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 inline-flex items-center justify-center overflow-hidden shrink-0 p-0.5 shadow-2xs">
+        <img src="${logoUrl}" class="w-full h-full object-contain" alt="" onerror="this.src='/logos/banks/generic-bank.svg'">
+      </span>
+      <span>${safeName}</span>
+    </span>
+  `;
+}
+
 function safeRenderQrCode(container, text, size = 160) {
   if (!container || !text || text === '-') return;
   container.innerHTML = '';
@@ -531,7 +550,7 @@ async function generateBankAccount() {
       const payload = await res.json().catch(() => ({}));
       if (!res.ok || !payload.success) throw new Error(payload.message || 'Failed to create your payment account');
       const data = payload.data;
-      document.getElementById('buy-bank-name').textContent = data.bank_name || '-';
+      renderBuyBankDisplay(data.bank_name || '-');
       document.getElementById('buy-account-number').textContent = data.account_number || '-';
       document.getElementById('buy-account-name').textContent = data.account_name || 'Velcro Checkout';
       document.getElementById('buy-reference').textContent = data.reference;
@@ -586,7 +605,7 @@ async function generateBankAccount() {
       const data = payload.data || {};
       const exactPayAmount = Number(data.fiatAmount) > 0 ? Number(data.fiatAmount) : amount;
       document.getElementById('buy-confirm-ngn').textContent = Number(exactPayAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-      document.getElementById('buy-bank-name').textContent = data.bank || 'Partner Bank';
+      renderBuyBankDisplay(data.bank || 'Partner Bank');
       document.getElementById('buy-account-number').textContent = data.accountNumber || '-';
       document.getElementById('buy-account-name').textContent = data.accountName || 'Velcro Checkout';
       document.getElementById('buy-reference').textContent = data.id || '-';
@@ -658,7 +677,7 @@ async function generateBankAccount() {
     const payload = JSON.parse(responseBody);
     const data = payload.data || {};
     const deposit = data.deposit || {};
-    document.getElementById('buy-bank-name').textContent = deposit.bank_name || data.bank_name || '-';
+    renderBuyBankDisplay(deposit.bank_name || data.bank_name || '-');
     document.getElementById('buy-account-number').textContent = deposit.account_number || data.account_number || '-';
     document.getElementById('buy-account-name').textContent = 'Velcro(switchLabsLtd. checkout)';
     document.getElementById('buy-reference').textContent = data.reference || '-';

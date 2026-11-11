@@ -535,7 +535,7 @@ function populateBanks(filter = '') {
   banks.forEach((b, i) => {
     const isTop = TOP_BANK_CODES.includes(b.code);
     if (!isTop && topCount > 0 && topCount < 16 && !term) {
-      html += `<div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border-y border-gray-100">More Banks</div>`;
+      html += `<div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-slate-800/80 border-y border-gray-100 dark:border-slate-800">More Banks</div>`;
       topCount = 99;
     }
     if (isTop) topCount++;
@@ -543,11 +543,19 @@ function populateBanks(filter = '') {
     const sc = escapeHtml(b.switchCode || '');
     const pj = escapeHtml(b.pajId || '');
     const safeCode = escapeHtml(b.code || '');
-    html += `<div class="custom-option" data-bank-code="${safeCode}" data-bank-name="${safeName}" data-switch-code="${sc}" data-paj-id="${pj}">${safeName}</div>`;
+    const logoUrl = typeof getBankLogoUrl === 'function' ? getBankLogoUrl(b) : '/logos/banks/generic-bank.svg';
+    html += `
+      <div class="custom-option flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+           data-bank-code="${safeCode}" data-bank-name="${safeName}" data-switch-code="${sc}" data-paj-id="${pj}" data-bank-logo="${logoUrl}">
+        <div class="w-6 h-6 rounded-full bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs p-0.5">
+          <img src="${logoUrl}" class="w-full h-full object-contain" alt="" onerror="this.src='/logos/banks/generic-bank.svg'">
+        </div>
+        <span class="font-medium text-sm text-gray-800 dark:text-gray-200 truncate flex-1 min-w-0">${safeName}</span>
+      </div>`;
   });
 
   if (banks.length === 0) {
-    html += `<div class="custom-option text-gray-400">No banks found</div>`;
+    html += `<div class="custom-option text-gray-400 p-3 text-sm">No banks found</div>`;
   }
   listContainer.innerHTML = html;
 }

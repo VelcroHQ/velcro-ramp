@@ -2432,6 +2432,9 @@ textarea.m-input { resize: vertical; line-height: 1.45; }
 .ord-addr-block code { font-family: monospace; font-size: 12px; font-weight: 600; color: #0f172a; word-break: break-all; text-align: left; }
 .ord-copy-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; background: var(--navy, #0D0D59); color: #fff; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: opacity .15s, transform .1s; }
 .ord-copy-btn:hover { opacity: .9; }
+.ord-bank-with-logo { display: inline-flex; align-items: center; gap: 8px; }
+.ord-bank-logo-wrap { width: 22px; height: 22px; border-radius: 50%; background: #ffffff; border: 1px solid var(--line); display: inline-flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; padding: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+.ord-bank-logo-wrap img { width: 100%; height: 100%; object-fit: contain; }
 .ord-copy-btn:active { transform: scale(.98); }
 .ord-memo-callout { width: 100%; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 10px 12px; text-align: left; display: flex; flex-direction: column; gap: 5px; }
 .ord-memo-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

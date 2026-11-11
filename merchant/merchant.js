@@ -8,6 +8,127 @@ const CLAIM_KEY = 'velcro_merchant_claim'; // store address picked on the landin
 const CLAIM_NAME_KEY = 'velcro_merchant_claim_name'; // and the name it came from
 const COIN_LOGOS = { BTC: '/logos/bitcoin.png', ETH: '/logos/ethereum.png', SOL: '/logos/solana.png', USDT: '/logos/usdt.png', USDC: '/logos/usdc.png' };
 
+const BANK_LOGO_MAP = {
+  // 3-digit NIP codes
+  '058': '/logos/banks/guaranty-trust-bank.png',
+  '044': '/logos/banks/access-bank.png',
+  '063': '/logos/banks/access-bank-diamond.png',
+  '057': '/logos/banks/zenith-bank.png',
+  '011': '/logos/banks/first-bank-of-nigeria.png',
+  '033': '/logos/banks/united-bank-for-africa.png',
+  '070': '/logos/banks/fidelity-bank.png',
+  '214': '/logos/banks/first-city-monument-bank.png',
+  '221': '/logos/banks/stanbic-ibtc-bank.png',
+  '232': '/logos/banks/sterling-bank.png',
+  '032': '/logos/banks/union-bank-of-nigeria.png',
+  '215': '/logos/banks/unity-bank.png',
+  '035': '/logos/banks/wema-bank.png',
+  '035A': '/logos/banks/alat-by-wema.png',
+  '076': '/logos/banks/polaris-bank.png',
+  '050': '/logos/banks/ecobank-nigeria.png',
+  '082': '/logos/banks/keystone-bank.png',
+  '030': '/logos/banks/heritage-bank.png',
+  '101': '/logos/banks/providus-bank.png',
+  '102': '/logos/banks/titan-trust-bank.png',
+  '103': '/logos/banks/globus-bank.png',
+  '104': '/logos/banks/parallex-bank.png',
+  '105': '/logos/banks/premiumtrust-bank.png',
+  '100': '/logos/banks/suntrust-bank.png',
+  '068': '/logos/banks/standard-chartered-bank.png',
+  '023': '/logos/banks/citibank-nigeria.png',
+  '301': '/logos/banks/jaiz-bank.png',
+  '302': '/logos/banks/taj-bank.png',
+  '303': '/logos/banks/lotus-bank.png',
+  // 6-digit NIP & fintech codes
+  '000013': '/logos/banks/guaranty-trust-bank.png',
+  '000014': '/logos/banks/access-bank.png',
+  '000015': '/logos/banks/zenith-bank.png',
+  '000016': '/logos/banks/first-bank-of-nigeria.png',
+  '000004': '/logos/banks/united-bank-for-africa.png',
+  '000007': '/logos/banks/fidelity-bank.png',
+  '000003': '/logos/banks/first-city-monument-bank.png',
+  '000012': '/logos/banks/stanbic-ibtc-bank.png',
+  '000001': '/logos/banks/sterling-bank.png',
+  '000018': '/logos/banks/union-bank-of-nigeria.png',
+  '000011': '/logos/banks/unity-bank.png',
+  '000017': '/logos/banks/wema-bank.png',
+  '000008': '/logos/banks/polaris-bank.png',
+  '000010': '/logos/banks/ecobank-nigeria.png',
+  '000023': '/logos/banks/providus-bank.png',
+  '000026': '/logos/banks/taj-bank.png',
+  '000027': '/logos/banks/globus-bank.png',
+  '000029': '/logos/banks/lotus-bank.png',
+  '000031': '/logos/banks/premiumtrust-bank.png',
+  '000006': '/logos/banks/jaiz-bank.png',
+  '000021': '/logos/banks/standard-chartered-bank.png',
+  '100004': '/logos/banks/paycom.png',
+  '999992': '/logos/banks/paycom.png',
+  '100033': '/logos/banks/palmpay.png',
+  '999991': '/logos/banks/palmpay.png',
+  '090267': '/logos/banks/kuda-bank.png',
+  '50211': '/logos/banks/kuda-bank.png',
+  '090405': '/logos/banks/moniepoint-mfb-ng.png',
+  '50515': '/logos/banks/moniepoint-mfb-ng.png',
+  '090110': '/logos/banks/vfd.png',
+  '090701': '/logos/banks/carbon.png',
+  '090551': '/logos/banks/fairmoney-microfinance-bank.png',
+};
+
+function getBankLogoUrl(bank) {
+  if (!bank) return '/logos/banks/generic-bank.svg';
+  let code = '';
+  let name = '';
+  if (typeof bank === 'string') {
+    if (/^\d+$/.test(bank.trim())) code = bank.trim();
+    else name = bank.toLowerCase();
+  } else if (typeof bank === 'object') {
+    code = String(bank.code || bank.switchCode || bank.pajId || bank.id || '').trim();
+    name = String(bank.name || '').toLowerCase();
+  }
+
+  if (code && BANK_LOGO_MAP[code]) return BANK_LOGO_MAP[code];
+
+  if (name) {
+    if (name.includes('guaranty') || name.includes('gtbank') || name.includes('gtb')) return '/logos/banks/guaranty-trust-bank.png';
+    if (name.includes('access')) return name.includes('diamond') ? '/logos/banks/access-bank-diamond.png' : '/logos/banks/access-bank.png';
+    if (name.includes('zenith')) return '/logos/banks/zenith-bank.png';
+    if (name.includes('first bank') || name.includes('firstbank') || name.includes('fbn')) return '/logos/banks/first-bank-of-nigeria.png';
+    if (name.includes('united bank') || name.includes('uba')) return '/logos/banks/united-bank-for-africa.png';
+    if (name.includes('opay') || name.includes('paycom')) return '/logos/banks/paycom.png';
+    if (name.includes('palmpay')) return '/logos/banks/palmpay.png';
+    if (name.includes('kuda')) return '/logos/banks/kuda-bank.png';
+    if (name.includes('moniepoint')) return '/logos/banks/moniepoint-mfb-ng.png';
+    if (name.includes('fidelity')) return '/logos/banks/fidelity-bank.png';
+    if (name.includes('first city') || name.includes('fcmb')) return '/logos/banks/first-city-monument-bank.png';
+    if (name.includes('stanbic')) return '/logos/banks/stanbic-ibtc-bank.png';
+    if (name.includes('sterling')) return '/logos/banks/sterling-bank.png';
+    if (name.includes('union bank') || name.includes('union')) return '/logos/banks/union-bank-of-nigeria.png';
+    if (name.includes('unity')) return '/logos/banks/unity-bank.png';
+    if (name.includes('alat')) return '/logos/banks/alat-by-wema.png';
+    if (name.includes('wema')) return '/logos/banks/wema-bank.png';
+    if (name.includes('polaris')) return '/logos/banks/polaris-bank.png';
+    if (name.includes('ecobank')) return '/logos/banks/ecobank-nigeria.png';
+    if (name.includes('keystone')) return '/logos/banks/keystone-bank.png';
+    if (name.includes('vfd')) return '/logos/banks/vfd.png';
+    if (name.includes('carbon')) return '/logos/banks/carbon.png';
+    if (name.includes('fairmoney')) return '/logos/banks/fairmoney-microfinance-bank.png';
+    if (name.includes('jaiz')) return '/logos/banks/jaiz-bank.png';
+    if (name.includes('taj')) return '/logos/banks/taj-bank.png';
+    if (name.includes('lotus')) return '/logos/banks/lotus-bank.png';
+    if (name.includes('providus')) return '/logos/banks/providus-bank.png';
+    if (name.includes('titan')) return '/logos/banks/titan-trust-bank.png';
+    if (name.includes('premium')) return '/logos/banks/premiumtrust-bank.png';
+    if (name.includes('standard chartered')) return '/logos/banks/standard-chartered-bank.png';
+    if (name.includes('citibank') || name.includes('citi')) return '/logos/banks/citibank-nigeria.png';
+    if (name.includes('globus')) return '/logos/banks/globus-bank.png';
+    if (name.includes('parallex')) return '/logos/banks/parallex-bank.png';
+    if (name.includes('suntrust')) return '/logos/banks/suntrust-bank.png';
+    if (name.includes('heritage')) return '/logos/banks/heritage-bank.png';
+  }
+
+  return '/logos/banks/generic-bank.svg';
+}
+
 let token = '';
 try { token = localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { /* private mode */ }
 let authMode = 'signin'; // signin | signup | signup-code | reset | reset-code
@@ -825,7 +946,10 @@ function orderBankPayHtml(o) {
       <div class="ord-bank-rows">
         <div class="ord-bank-row">
           <span>Bank</span>
-          <b>${esc(o.deposit_bank_name)}</b>
+          <b class="ord-bank-with-logo">
+            <span class="ord-bank-logo-wrap"><img src="${getBankLogoUrl({name: o.deposit_bank_name})}" alt="" onerror="this.src='/logos/banks/generic-bank.svg'"></span>
+            <span>${esc(o.deposit_bank_name)}</span>
+          </b>
         </div>
         <div class="ord-bank-row is-highlight">
           <span>Account number</span>
