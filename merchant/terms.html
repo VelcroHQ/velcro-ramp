@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Merchant Terms of Service — Velcro Merchant</title>
+  <meta name="description" content="Terms of Service and operating agreement for businesses, OTC desks, and operators running white-label crypto desks on Velcro infrastructure.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://merchant.usevelcro.com/terms">
+  <link rel="icon" type="image/png" href="velcro_favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #08090e;
+      --surface: #0f111a;
+      --card: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --emerald: #00df89;
+      --text-main: #f3f4f8;
+      --text-muted: #9499ad;
+      --text-dim: #64687d;
+      --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }
+
+    a { color: var(--emerald); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .t-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(8, 9, 14, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .t-nav-in {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .t-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .t-brand img { height: 24px; width: auto; }
+    .t-brand span {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--emerald);
+    }
+
+    .t-back {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .15s;
+    }
+    .t-back:hover { color: #fff; text-decoration: none; }
+
+    .t-container {
+      max-width: 860px;
+      margin: 48px auto 0;
+      padding: 0 24px;
+    }
+
+    .t-header {
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .t-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--emerald);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .t-header h1 {
+      font-size: clamp(32px, 4.2vw, 48px);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: #fff;
+      line-height: 1.15;
+    }
+
+    .t-meta {
+      margin-top: 10px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+    }
+
+    .t-body {
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+    }
+
+    .t-card {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 32px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .t-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -.02em;
+    }
+
+    .t-num {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--emerald);
+      background: rgba(0, 223, 137, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .t-card p {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    .t-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .t-card ul {
+      list-style: none;
+      margin: 14px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .t-card li {
+      position: relative;
+      padding-left: 20px;
+      font-size: 14.5px;
+      color: var(--text-muted);
+    }
+
+    .t-card li::before {
+      content: '•';
+      position: absolute;
+      left: 4px;
+      top: -1px;
+      color: var(--emerald);
+      font-size: 18px;
+    }
+
+    .t-callout {
+      background: rgba(0, 223, 137, 0.04);
+      border: 1px solid rgba(0, 223, 137, 0.18);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 14px;
+      font-size: 14px;
+      color: #c9ccd8;
+    }
+
+    .t-footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    @media (max-width: 640px) {
+      .t-card { padding: 24px 20px; }
+      .t-footer { flex-direction: column; gap: 12px; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="t-nav">
+    <div class="t-nav-in">
+      <a href="/" class="t-brand">
+        <img src="velcro_logo.png" alt="Velcro">
+        <span>MERCHANT</span>
+      </a>
+      <a href="/" class="t-back">← Back to Merchant Portal</a>
+    </div>
+  </nav>
+
+  <main class="t-container">
+    <div class="t-header">
+      <div class="t-badge">LEGAL ARCHITECTURE &amp; OPERATING AGREEMENT</div>
+      <h1>Velcro Merchant Terms of Service</h1>
+      <p class="t-meta">Effective Date: April 2026 · Applicable to all registered desk operators, OTC brokers, and platform partners</p>
+    </div>
+
+    <div class="t-body">
+      <section class="t-card">
+        <h2><span class="t-num">01</span> Scope &amp; Role of Velcro</h2>
+        <p>Velcro provides non-custodial, white-label cryptocurrency exchange infrastructure. By registering a merchant account, deploying a dedicated storefront, or connecting via API, you ("Operator" or "Merchant") enter into a binding operating agreement with Velcro ("Velcro", "we", "our").</p>
+        <p>Velcro acts solely as a technology and liquidity router. Velcro is not an investment adviser, banking institution, or custodial trustee. The Operator maintains direct relationship ownership with their customers.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">02</span> Zero-Float &amp; Non-Custodial Architecture</h2>
+        <p>Velcro's infrastructure operates entirely on automated, non-custodial settlement rails:</p>
+        <ul>
+          <li><strong>Autonomous Inbound Routing:</strong> For every buy order, a single-use Nigerian bank virtual account is dynamically generated for the end customer. Customer fiat deposits are routed straight to automated settlement engines.</li>
+          <li><strong>Direct Wallet Dispatch:</strong> Cryptocurrency purchased by the customer is delivered straight to the blockchain wallet address specified by the customer.</li>
+          <li><strong>Direct Bank Off-Ramp:</strong> When a customer sells crypto, payout is dispatched directly to the customer's verified Nigerian commercial or microfinance bank account.</li>
+          <li><strong>Zero Capital Lockup:</strong> The Operator is never required to provide capital float, liquidity deposits, or collateral reserves to process customer orders.</li>
+        </ul>
+        <div class="t-callout">
+          <strong>Important:</strong> Neither the Operator nor Velcro holds custody of customer fiat or crypto balances during standard exchange flows. Each transaction executes and settles atomically.
+        </div>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">03</span> Merchant Verification &amp; Customer Due Diligence (KYC)</h2>
+        <p>Before launching a live exchange desk or accepting public volume, the Operator must successfully complete Velcro's business verification process, providing accurate corporate, business, and operational documentation.</p>
+        <p><strong>Operator's Responsibility to Know Customers:</strong> As an independent exchange desk operator, you agree that you are solely responsible for knowing and screening your end customers in compliance with applicable anti-money laundering (AML), counter-terrorism financing (CFT), and consumer protection regulations in your operating jurisdiction.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">04</span> Pricing, Markups &amp; Revenue Settlement</h2>
+        <p>Operators hold full discretion over their consumer pricing spreads:</p>
+        <ul>
+          <li><strong>Custom Markup Configuration:</strong> The Operator sets independent profit margins (percentages) per asset across both Buy and Sell sides in their merchant dashboard.</li>
+          <li><strong>Unified Customer Pricing:</strong> End customers view a single, transparent, all-inclusive price. The Operator's configured margin is embedded seamlessly into the displayed exchange quote.</li>
+          <li><strong>Accrued Earnings:</strong> Upon successful order completion, the Operator's markup is credited instantaneously to their merchant ledger balance.</li>
+          <li><strong>Bank Withdrawals:</strong> Accrued merchant earnings may be withdrawn directly to the Operator's designated Nigerian bank account at any time, subject to standard automated banking verification.</li>
+        </ul>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">05</span> Supported Assets &amp; Network Rules</h2>
+        <p>Velcro supports digital assets across verified liquidity providers, including USDT (Solana, Base, TRON, BSC, Polygon), USDC (Solana, Base, Polygon, Ethereum), Bitcoin (BTC), Ethereum (ETH), and Solana (SOL).</p>
+        <p>Minimum transaction limits apply ($1 for EVM L2s and Solana; $5 for Ethereum Mainnet and TRON). Customers attempting transactions below minimum limits or sending mismatched blockchain assets bear sole liability for blockchain transaction fees or recovery constraints.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">06</span> Prohibited Activities &amp; Anti-Financial Crime</h2>
+        <p>The Operator covenants and agrees that the platform and any associated subdomains shall never be used for:</p>
+        <ul>
+          <li>Money laundering, terrorist financing, or handling proceeds of unlawful activities.</li>
+          <li>Transactions involving sanctioned individuals, entities, or jurisdictions listed by OFAC, the UN, or Nigerian regulatory authorities.</li>
+          <li>Phishing, romance scams, identity theft, unauthorized account access, or financial extortion.</li>
+          <li>Operating gambling, darknet marketplaces, or unregulated investment ponzi schemes.</li>
+        </ul>
+        <p>Velcro reserves the right to immediately terminate access, freeze platform features, and report suspicious transaction telemetry to relevant compliance authorities if illicit activities are detected.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">07</span> White-Label Intellectual Property &amp; Branding</h2>
+        <p>The Operator retains all intellectual property rights to their business name, registered trademarks, logos, and customer goodwill. Velcro retains all rights, title, and interest in and to the underlying software infrastructure, APIs, and smart contract integrations.</p>
+        <p>Velcro grants the Operator a revocable, non-exclusive license to use the hosted exchange infrastructure on Velcro-provided subdomains (e.g. <code>brand.usevelcro.com</code>) or authorized custom domain configurations.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">08</span> System Availability &amp; External Network Disclaimers</h2>
+        <p>Velcro strives for 99.9% uptime. However, digital asset exchange relies on decentralized blockchain networks and external Nigerian interbank switching rails (NIP). Velcro shall not be held liable for settlement delays arising from:</p>
+        <ul>
+          <li>Blockchain network congestion, re-organizations, extreme gas spikes, or chain-level halts.</li>
+          <li>Commercial banking downtime, interbank switch maintenance, or Central Bank regulatory directives.</li>
+          <li>Incorrect customer wallet address inputs or memo/tag omissions.</li>
+        </ul>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">09</span> Termination &amp; Suspension</h2>
+        <p>Either party may terminate this agreement at any time. Upon termination, the Operator may withdraw all accrued, undisputed merchant earnings. Velcro may suspend or terminate an Operator immediately upon evidence of fraud, compliance breach, or violation of these Terms.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">10</span> Governing Law &amp; Dispute Resolution</h2>
+        <p>These Terms of Service are governed by and construed in accordance with the laws of the Federal Republic of Nigeria. Any disputes arising out of or in connection with these Terms shall be resolved amicably through good-faith arbitration in Abuja or Lagos, Nigeria.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">11</span> Regulatory &amp; Merchant Support</h2>
+        <p>For questions regarding these Terms, compliance verification, or operational agreements, contact Velcro Merchant Relations:</p>
+        <p><strong>Email:</strong> <a href="mailto:support@usevelcro.com">support@usevelcro.com</a><br>
+        <strong>Telephone / WhatsApp:</strong> <a href="tel:+2347035428475">+234 703 542 8475</a><br>
+        <strong>Registered Office:</strong> Plot 1088, Cadastral Zone A01, Central Business District, Abuja, Nigeria.</p>
+      </section>
+    </div>
+
+    <footer class="t-footer">
+      <span>&copy; 2026 Velcro. All rights reserved.</span>
+      <span>
+        <a href="/privacy" style="margin-right: 18px;">Privacy Policy</a>
+        <a href="/">Velcro Merchant Home</a>
+      </span>
+    </footer>
+  </main>
+
+</body>
+</html>

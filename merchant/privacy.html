@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Merchant Privacy Policy — Velcro Merchant</title>
+  <meta name="description" content="Privacy Policy for businesses and operators using Velcro white-label exchange infrastructure. How we handle merchant and transactional data.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://merchant.usevelcro.com/privacy">
+  <link rel="icon" type="image/png" href="velcro_favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #08090e;
+      --surface: #0f111a;
+      --card: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --emerald: #00df89;
+      --text-main: #f3f4f8;
+      --text-muted: #9499ad;
+      --text-dim: #64687d;
+      --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }
+
+    a { color: var(--emerald); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .t-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(8, 9, 14, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .t-nav-in {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .t-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .t-brand img { height: 24px; width: auto; }
+    .t-brand span {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--emerald);
+    }
+
+    .t-back {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .15s;
+    }
+    .t-back:hover { color: #fff; text-decoration: none; }
+
+    .t-container {
+      max-width: 860px;
+      margin: 48px auto 0;
+      padding: 0 24px;
+    }
+
+    .t-header {
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .t-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--emerald);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .t-header h1 {
+      font-size: clamp(32px, 4.2vw, 48px);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: #fff;
+      line-height: 1.15;
+    }
+
+    .t-meta {
+      margin-top: 10px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+    }
+
+    .t-body {
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+    }
+
+    .t-card {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 32px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .t-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -.02em;
+    }
+
+    .t-num {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--emerald);
+      background: rgba(0, 223, 137, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .t-card p {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    .t-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .t-card ul {
+      list-style: none;
+      margin: 14px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .t-card li {
+      position: relative;
+      padding-left: 20px;
+      font-size: 14.5px;
+      color: var(--text-muted);
+    }
+
+    .t-card li::before {
+      content: '•';
+      position: absolute;
+      left: 4px;
+      top: -1px;
+      color: var(--emerald);
+      font-size: 18px;
+    }
+
+    .t-footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    @media (max-width: 640px) {
+      .t-card { padding: 24px 20px; }
+      .t-footer { flex-direction: column; gap: 12px; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="t-nav">
+    <div class="t-nav-in">
+      <a href="/" class="t-brand">
+        <img src="velcro_logo.png" alt="Velcro">
+        <span>MERCHANT</span>
+      </a>
+      <a href="/" class="t-back">← Back to Merchant Portal</a>
+    </div>
+  </nav>
+
+  <main class="t-container">
+    <div class="t-header">
+      <div class="t-badge">DATA PRIVACY &amp; SECURITY PROTOCOLS</div>
+      <h1>Velcro Merchant Privacy Policy</h1>
+      <p class="t-meta">Effective Date: April 2026 · Information and telemetry practices for Velcro Merchant infrastructure</p>
+    </div>
+
+    <div class="t-body">
+      <section class="t-card">
+        <h2><span class="t-num">01</span> Overview &amp; Data Principles</h2>
+        <p>This Privacy Policy outlines how Velcro ("we", "us") collects, secures, and handles information relating to Operators ("Merchants") and transactional telemetry processed across white-label exchange storefronts.</p>
+        <p>Our guiding architecture is minimal data retention: we collect only what is strictly necessary to execute automated blockchain settlements, process Nigerian Interbank Settlement System (NIP) transfers, and maintain regulatory compliance.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">02</span> Information We Collect</h2>
+        <p>When operating a merchant account, we collect:</p>
+        <ul>
+          <li><strong>Merchant Profile Data:</strong> Operating name, trading name, email address, password hash, and payout Nigerian bank account numbers.</li>
+          <li><strong>Storefront Branding Data:</strong> Logo assets, brand color specifications, custom subdomain preferences, and markup configurations.</li>
+          <li><strong>Transactional Telemetry:</strong> Order IDs, amounts, crypto asset codes, destination wallet addresses, and NIP bank transfer reference identifiers.</li>
+          <li><strong>Technical Data:</strong> IP addresses, browser user-agents, and API request logs used exclusively for DDoS prevention, rate-limiting, and fraud monitoring.</li>
+        </ul>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">03</span> How We Use Your Data</h2>
+        <p>Collected information is used exclusively to:</p>
+        <ul>
+          <li>Route automated order settlement between bank accounts and blockchain liquidity protocols.</li>
+          <li>Accrue and disburse merchant markup earnings to your verified bank account.</li>
+          <li>Dispatch automated order receipts and transactional updates to customers.</li>
+          <li>Detect, prevent, and report fraudulent activity, unauthorized account takeovers, or sanctions evasion.</li>
+        </ul>
+        <p>We do not sell, rent, or trade merchant or customer data to marketing aggregators or third-party advertisers under any circumstances.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">04</span> Data Security &amp; Encryption</h2>
+        <p>All data in transit is encrypted using Transport Layer Security (TLS 1.3). Sensitive credentials and API tokens are hashed using cryptographic salt functions. Production database instances are isolated behind internal virtual private clouds with zero public exposure.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">05</span> Data Retention &amp; Rights</h2>
+        <p>Transactional records are retained for the duration mandated by financial anti-money laundering regulations in Nigeria. Merchants may update their account information or request account closure at any time through their dashboard settings.</p>
+      </section>
+
+      <section class="t-card">
+        <h2><span class="t-num">06</span> Contact</h2>
+        <p>For data inquiries or privacy concerns, contact our Data Protection Team at <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>.</p>
+      </section>
+    </div>
+
+    <footer class="t-footer">
+      <span>&copy; 2026 Velcro. All rights reserved.</span>
+      <span>
+        <a href="/terms" style="margin-right: 18px;">Terms of Service</a>
+        <a href="/">Velcro Merchant Home</a>
+      </span>
+    </footer>
+  </main>
+
+</body>
+</html>
