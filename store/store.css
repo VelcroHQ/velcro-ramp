@@ -182,16 +182,17 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin: 12px 0 6px;
+  margin: 12px 0 8px;
   padding: 8px 12px;
-  border-radius: 12px;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.22);
-  color: #065f46;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
   font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
   text-align: left;
+  transition: all 0.2s ease;
 }
 .s-speed-left {
   display: flex;
@@ -200,66 +201,42 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
   min-width: 0;
 }
 .s-layout-card .s-speed-pill {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.12);
-  border-color: rgba(16, 185, 129, 0.28);
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 .s-speed-dot {
   position: relative;
   display: inline-flex;
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-}
-.s-speed-dot::before {
-  content: '';
-  position: absolute;
-  inset: 0;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #10b981;
-  animation: s-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
-  opacity: 0.75;
-}
-.s-speed-dot::after {
-  content: '';
-  position: relative;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #10b981;
-}
-@keyframes s-ping {
-  75%, 100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
-}
-.s-speed-ico {
-  width: 13px;
-  height: 13px;
-  fill: #059669;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.22);
   flex-shrink: 0;
 }
 .s-speed-pill b {
   font-weight: 700;
-  color: #047857;
+  color: #0f172a;
 }
 .s-layout-card .s-speed-pill b {
-  color: #34d399;
+  color: #f8fafc;
 }
 .s-speed-tag {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  color: #059669;
-  background: rgba(16, 185, 129, 0.16);
+  color: #475569;
+  background: #e2e8f0;
   padding: 2px 7px;
-  border-radius: 6px;
+  border-radius: 4px;
   white-space: nowrap;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   flex-shrink: 0;
 }
 .s-layout-card .s-speed-tag {
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.24);
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
 }
 .s-trust { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 12px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 .s-trust svg { width: 14px; height: 14px; margin-top: 2px; }

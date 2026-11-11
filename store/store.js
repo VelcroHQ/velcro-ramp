@@ -252,7 +252,7 @@ function setSide(side) {
   $('how-2-text').textContent = buying ? 'You get an account number for your order. Transfer from any Nigerian bank.' : 'You get a deposit address for your order. Send from any wallet or exchange.';
   $('how-3-title').textContent = buying ? 'Receive your crypto' : 'Get paid in naira';
   $('how-3-text').textContent = buying ? "It's sent to your wallet automatically. Follow every step and get a receipt by email." : 'Naira goes to your bank account automatically. Follow every step and get a receipt by email.';
-  $('s-dest').textContent = buying ? 'Delivered to your wallet' : 'Paid to your bank account';
+  $('s-dest').textContent = buying ? 'Delivered directly to your wallet' : 'Paid directly to your bank account';
   $('s-chips').innerHTML = buying ? BUY_CHIPS.map(v => `<button type="button" data-v="${v}" aria-label="Pay ${fmtNgn(v)}">₦${v / 1000}k</button>`).join('') : '';
   document.querySelectorAll('#s-chips button').forEach(b => b.addEventListener('click', () => {
     $('f-in').value = Number(b.dataset.v).toLocaleString('en-US');
@@ -412,7 +412,15 @@ function render() {
     $('s-go').disabled = true;
     return;
   }
-  $('s-time').textContent = tradeTime(c.symbol, buying);
+  if ($('s-time')) $('s-time').textContent = tradeTime(c.symbol, buying);
+  const speedMsg = $('s-speed-msg');
+  if (speedMsg) {
+    if (c.symbol === 'BTC') {
+      speedMsg.innerHTML = buying ? 'Typically in your wallet in <b>10–30 mins</b>' : 'Typically in your bank in <b>20–60 mins</b>';
+    } else {
+      speedMsg.innerHTML = buying ? 'Typically in your wallet within <b>60 seconds</b>' : 'Typically in your bank within <b>60 seconds</b>';
+    }
+  }
   const rate = buying ? c.buy_rate : c.sell_rate;
   if (!rate || !c.usd_price) {
     $('s-coin-name').textContent = 'Rate unavailable right now';
