@@ -663,7 +663,20 @@ async function switchNetworks(symbol, selling = false) {
     try { switchAssets = await api('/api/assets'); } catch (e) { return []; }
   }
   const chains = ((switchAssets[selling ? 'offramp' : 'onramp'] || {})[symbol] || {}).chains || [];
-  return SWITCH_CHAINS.filter(ch => chains.includes(ch)).map(ch => ({ code: `${ch}:${symbol.toLowerCase()}`, chain: ch, label: CHAIN_LABELS[ch] }));
+  // Prioritize common chains, but dynamically include ANY chain Switch enables automatically
+  const sorted = [...chains].sort((a, b) => {
+    const ia = SWITCH_CHAINS.indexOf(a);
+    const ib = SWITCH_CHAINS.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
+  return sorted.map(ch => ({
+    code: `${ch}:${symbol.toLowerCase()}`,
+    chain: ch,
+    label: CHAIN_LABELS[ch] || ((switchAssets.blockchains && switchAssets.blockchains[ch]) ? switchAssets.blockchains[ch].name : (ch.charAt(0).toUpperCase() + ch.slice(1)))
+  }));
 }
 
 async function hostfiNetworks(symbol) {
@@ -1331,7 +1344,8 @@ function wireCheckout() {
 
 async function createBuy() {
   const wallet = $('co-wallet').value.trim();
-  const rule = WALLET_RULES[(checkout.nets.find(n => n.code === checkout.network) || {}).chain];
+  const chain = (checkout.nets.find(n => n.code === checkout.network) || {}).chain || '';
+  const rule = WALLET_RULES[chain] || (chain.includes('sol') ? WALLET_RULES.solana : (chain.includes('tron') ? WALLET_RULES.tron : (chain.includes('btc') || chain.includes('bit') ? WALLET_RULES.bitcoin : EVM_RULE)));
   const err = $('co-error');
   err.hidden = true;
   if (rule && !rule[0].test(wallet)) {
@@ -1340,7 +1354,6 @@ async function createBuy() {
     return;
   }
   if (checkout.provider === 'switch') {
-    const chain = (checkout.nets.find(n => n.code === checkout.network) || {}).chain;
     const min = ['tron', 'ethereum'].includes(chain) ? 5 : 1;
     if (estimateFor(checkout.coin, checkout.amount) < min) {
       err.textContent = `The minimum on ${CHAIN_LABELS[chain] || chain} is ${min} ${checkout.coin}. Go back and enter a bigger amount.`;

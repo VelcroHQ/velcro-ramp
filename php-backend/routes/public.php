@@ -45,9 +45,10 @@ function registerPublicRoutes(Router $router): void
     $router->get('/api/assets', function () {
         $cacheFile = BASE_PATH . '/data/switch_assets_cache.json';
         $cacheTtl = 600; // 10 minutes cache
+        $force = query('refresh') === '1';
 
         // 1. Check if valid fresh cache exists
-        if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+        if (!$force && file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
             $cached = @json_decode((string) file_get_contents($cacheFile), true);
             if (is_array($cached) && !empty($cached['offramp'])) {
                 jsonResponse(successResponse($cached));
