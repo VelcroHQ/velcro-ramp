@@ -1129,29 +1129,72 @@
   <div id="toast-container" class="fixed top-4 right-4 z-[9999] space-y-3 pointer-events-none"></div>
 
   <!-- Footer -->
-  <footer class="bg-white/60 backdrop-blur-sm border-t-4 border-velcro-green pt-20 pb-10 mt-auto">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <img src="/velcro_logo.png" alt="Velcro" class="h-8 w-auto mx-auto mb-4" style="margin-top: 60px;">
-      <p class="text-sm text-gray-500 mb-2">Powered by <a href="https://usevelcro.com" target="_blank" rel="noopener noreferrer" class="font-semibold text-velcro-navy hover:underline">Velcro</a> (usevelcro.com)</p>
-      <p class="text-xs text-gray-400 mb-6">© 2026 Velcro Technologies. All rights reserved.</p>
-      <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500">
-        <a href="/about.html" class="hover:text-velcro-navy transition-colors">About</a>
-        <a href="/contact.html" class="hover:text-velcro-navy transition-colors">Contact</a>
-        <a href="/terms.html" class="hover:text-velcro-navy transition-colors">Terms</a>
-        <a href="/privacy.html" class="hover:text-velcro-navy transition-colors">Privacy</a>
-        <a href="tel:+2347035428475" class="hover:text-velcro-navy transition-colors font-mono">+234 703 542 8475</a>
-        <a href="mailto:support@usevelcro.com" class="hover:text-velcro-navy transition-colors">support@usevelcro.com</a>
-        <a href="https://wa.me/2347035428475" target="_blank" rel="noopener noreferrer" class="hover:text-velcro-navy transition-colors">WhatsApp Support</a>
+  <footer class="bg-white border-t border-gray-100 mt-auto" itemscope itemtype="https://schema.org/FinancialService">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <!-- Main footer grid -->
+      <div class="py-10 grid grid-cols-1 sm:grid-cols-3 gap-8">
+
+        <!-- Brand column -->
+        <div class="sm:col-span-1">
+          <img src="/velcro_logo.png" alt="Velcro" class="h-7 w-auto mb-3">
+          <p class="text-xs text-gray-400 leading-relaxed">Nigeria's fastest crypto on-ramp &amp; off-ramp. Buy and sell crypto instantly with direct bank settlement.</p>
+          <p class="text-xs text-gray-400 mt-3">© 2026 <span itemprop="name">Velcro Technologies</span>. All rights reserved.</p>
+        </div>
+
+        <!-- Links column -->
+        <div class="sm:col-span-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Company</p>
+          <ul class="space-y-2">
+            <li><a href="/about.html" class="text-sm text-gray-500 hover:text-velcro-navy transition-colors">About Velcro</a></li>
+            <li><a href="/contact.html" class="text-sm text-gray-500 hover:text-velcro-navy transition-colors">Contact Us</a></li>
+            <li><a href="/terms.html" class="text-sm text-gray-500 hover:text-velcro-navy transition-colors">Terms of Service</a></li>
+            <li><a href="/privacy.html" class="text-sm text-gray-500 hover:text-velcro-navy transition-colors">Privacy Policy</a></li>
+          </ul>
+        </div>
+
+        <!-- Contact column -->
+        <div class="sm:col-span-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Support</p>
+          <ul class="space-y-2">
+            <li>
+              <a href="mailto:support@usevelcro.com" itemprop="email" class="text-sm text-gray-500 hover:text-velcro-navy transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                support@usevelcro.com
+              </a>
+            </li>
+            <li>
+              <a href="tel:+2347035428475" itemprop="telephone" class="text-sm text-gray-500 hover:text-velcro-navy transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.17 3.4 2 2 0 0 1 3.14 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z"/></svg>
+                +234 703 542 8475
+              </a>
+            </li>
+            <li>
+              <a href="https://wa.me/2347035428475" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-500 hover:text-green-600 transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 text-green-500" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                WhatsApp Support
+              </a>
+            </li>
+          </ul>
+          <div class="mt-4 text-xs text-gray-400" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 inline mr-1 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span itemprop="streetAddress">Plot 1088 CBD</span>, <span itemprop="addressLocality">Abuja</span>, <span itemprop="addressRegion">FCT</span>, <span itemprop="addressCountry">Nigeria</span>
+          </div>
+        </div>
+
       </div>
 
-      <div class="mt-6 pt-4 border-t border-gray-100 text-xs text-gray-400 max-w-xl mx-auto" itemscope itemtype="https://schema.org/FinancialService">
-        <span itemprop="name" class="font-semibold text-gray-600">Velcro HQ</span> •
-        <a href="mailto:support@usevelcro.com" itemprop="email" class="text-velcro-navy hover:underline">support@usevelcro.com</a> •
-        <a href="tel:+2347035428475" itemprop="telephone" class="text-velcro-navy hover:underline font-mono">+234 703 542 8475</a> •
-        <span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
-          <span itemprop="streetAddress">Plot 1088 CBD</span>, <span itemprop="addressLocality">Abuja</span>, <span itemprop="addressRegion">FCT</span>, <span itemprop="addressCountry">Nigeria</span>
-        </span>
+      <!-- Bottom bar -->
+      <div class="border-t border-gray-100 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <p class="text-xs text-gray-400">Regulated under Nigerian digital asset laws. Non-custodial. Your funds, your keys.</p>
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live
+          </span>
+          <a href="https://usevelcro.com" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-400 hover:text-velcro-navy transition-colors">usevelcro.com</a>
+        </div>
       </div>
+
     </div>
   </footer>
 
