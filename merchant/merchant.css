@@ -292,29 +292,37 @@ fieldset { border: 0; min-width: 0; }
   margin-top: 32px;
 }
 
-.l-hero-pills {
+.l-hero-assure {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 36px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.l-pill-item {
-  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 14px;
+  margin-top: 32px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13.5px;
+  font-weight: 500;
   color: #8c92a6;
 }
 
-.l-pill-item svg {
-  width: 15px;
-  height: 15px;
-  color: #00df89;
-  flex-shrink: 0;
+.l-assure-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.l-assure-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.l-assure-sep {
+  color: rgba(255, 255, 255, 0.2);
+  font-weight: 300;
+  user-select: none;
 }
 
 /* Interactive Terminal Simulator */
@@ -630,26 +638,65 @@ fieldset { border: 0; min-width: 0; }
   font-variant-numeric: tabular-nums;
 }
 
-/* Marquee Proof Strip */
+/* Architecture Specifications Bar */
 .l-strip-wrap {
-  margin-top: 48px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-top: 56px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.015);
-  padding: 18px 0;
+  padding: 22px 0;
 }
 
-.l-strip {
+.l-specs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.l-spec-cell {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 12px 24px;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 16px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.l-strip-chip {
-  font-size: 13.5px;
+.l-spec-cell:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.l-spec-k {
+  font-size: 11px;
   font-weight: 600;
-  color: #9499ad;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6c728a;
+}
+
+.l-spec-v {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #f1f3f9;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 960px) {
+  .l-specs {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px 20px;
+  }
+  .l-spec-cell {
+    border-left: none;
+    padding: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .l-specs {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
 }
 
 /* Section Common Structure */
