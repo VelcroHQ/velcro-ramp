@@ -62,6 +62,13 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     RewriteRule ^(.*)$ store/index.html [L]
 
     # ── Standard Merchant Portal (merchant.usevelcro.com) ──
+    # Redirect .html requests to clean URLs (e.g. /terms.html -> /terms)
+    RewriteCond %{THE_REQUEST} \s/+(about|contact|terms|privacy)\.html[\s?] [NC]
+    RewriteRule ^ %1 [R=301,L]
+
+    # Serve clean URLs (e.g. /terms -> terms.html, /privacy -> privacy.html)
+    RewriteRule ^(about|contact|terms|privacy)/?$ $1.html [L]
+
     # If requested as /merchant/asset.ext, strip the /merchant/ prefix
     RewriteRule ^merchant/(.*)$ $1 [L]
 
