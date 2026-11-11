@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Terms of Use — Velcro</title>
-  <meta name="description" content="Terms of Use and Operating Agreement for Velcro autonomous exchange and payment infrastructure in Nigeria.">
+  <title>Terms of Use — Velcro Convert</title>
+  <meta name="description" content="How orders, payments, digital asset transfers and account use work on Velcro Convert.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://ramp.usevelcro.com/terms.html">
   <link rel="icon" type="image/png" href="/velcro_logo.png">
@@ -307,6 +307,14 @@
       border-left-color: #16a34a;
       color: #166534;
     }
+    .v-summary {
+      margin: 0 0 2px;
+      background: #f0f4e7;
+      border: 0;
+      border-left: 3px solid var(--green-dark);
+      color: var(--slate-800);
+      font-size: 14px;
+    }
 
     /* Definitions list */
     .v-defs {
@@ -357,13 +365,25 @@
     @media (max-width: 900px) {
       .v-layout {
         grid-template-columns: 1fr;
+        gap: 20px;
       }
       .v-toc-wrap {
-        display: none;
+        position: static;
+        max-height: none;
+        padding: 16px;
       }
+      .v-toc-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .v-card {
         padding: 26px 20px;
       }
+    }
+    @media (max-width: 520px) {
+      .v-toc-list { grid-template-columns: 1fr; }
+      .v-hero { padding: 40px 18px 32px; }
+      .v-layout { margin-top: 24px; padding: 0 16px; }
+      .v-hero-meta { gap: 10px 18px; }
+      .v-card-header { align-items: flex-start; }
+      .v-card h2 { font-size: 19px; }
     }
   </style>
 </head>
@@ -372,14 +392,10 @@
   <!-- Navigation -->
   <nav class="v-nav">
     <div class="v-nav-in">
-      <a href="/" class="v-brand">
-        <img src="/velcro_logo.png" alt="Velcro">
-        <span>Velcro</span>
-        <span class="v-brand-tag">Convert</span>
-      </a>
+      <a href="/" class="v-brand">Velcro Convert</a>
       <div class="v-nav-actions">
-        <a href="/privacy.html" class="v-nav-link">Privacy Policy</a>
-        <a href="/" class="v-nav-link">← Return to Convert</a>
+        <a href="/privacy.html" class="v-nav-link">Privacy</a>
+        <a href="/" class="v-nav-link">Back to Convert</a>
       </div>
     </div>
   </nav>
@@ -388,12 +404,11 @@
   <header class="v-hero">
     <div class="v-hero-in">
       <h1>Terms of Use</h1>
-      <p>Please read these Terms of Use carefully before accessing or using the Velcro digital asset exchange, dynamic virtual accounts, automated settlement rails, or related infrastructure.</p>
+      <p>These terms explain how Velcro Convert works when you buy or sell digital assets with naira. Please read them before placing an order.</p>
       <div class="v-hero-meta">
         <div><strong>Entity:</strong> Velcro Technologies Limited</div>
-        <div><strong>Jurisdiction:</strong> Federal Republic of Nigeria</div>
-        <div><strong>Registered Office:</strong> Wuye District, Abuja, FCT, Nigeria</div>
-        <div><strong>Last Updated:</strong> April 2026</div>
+        <div><strong>Based in:</strong> Abuja, Nigeria</div>
+        <div><strong>Last updated:</strong> 12 November 2026</div>
       </div>
     </div>
   </header>
@@ -403,32 +418,32 @@
     
     <!-- Table of Contents -->
     <aside class="v-toc-wrap">
-      <div class="v-toc-title">Table of Contents</div>
+      <div class="v-toc-title">On this page</div>
       <ol class="v-toc-list">
-        <li><a href="#s1" class="v-toc-link"><span class="v-toc-num">01.</span> Acceptance of Terms</a></li>
-        <li><a href="#s2" class="v-toc-link"><span class="v-toc-num">02.</span> Definitions</a></li>
-        <li><a href="#s3" class="v-toc-link"><span class="v-toc-num">03.</span> About Us &amp; Contact</a></li>
-        <li><a href="#s4" class="v-toc-link"><span class="v-toc-num">04.</span> Eligibility</a></li>
-        <li><a href="#s5" class="v-toc-link"><span class="v-toc-num">05.</span> Related Documents</a></li>
+        <li><a href="#s1" class="v-toc-link"><span class="v-toc-num">01.</span> Using Convert</a></li>
+        <li><a href="#s2" class="v-toc-link"><span class="v-toc-num">02.</span> Terms we use</a></li>
+        <li><a href="#s3" class="v-toc-link"><span class="v-toc-num">03.</span> Who runs Convert</a></li>
+        <li><a href="#s4" class="v-toc-link"><span class="v-toc-num">04.</span> Who can use it</a></li>
+        <li><a href="#s5" class="v-toc-link"><span class="v-toc-num">05.</span> Other policies</a></li>
         <li><a href="#s6" class="v-toc-link"><span class="v-toc-num">06.</span> Changes to Terms</a></li>
-        <li><a href="#s7" class="v-toc-link"><span class="v-toc-num">07.</span> Access &amp; Use</a></li>
-        <li><a href="#s8" class="v-toc-link"><span class="v-toc-num">08.</span> Platform Functionality</a></li>
-        <li><a href="#s9" class="v-toc-link"><span class="v-toc-num">09.</span> Digital Asset Risks</a></li>
-        <li><a href="#s10" class="v-toc-link"><span class="v-toc-num">10.</span> Prohibited Activities</a></li>
-        <li><a href="#s11" class="v-toc-link"><span class="v-toc-num">11.</span> AML &amp; Sanctions</a></li>
-        <li><a href="#s12" class="v-toc-link"><span class="v-toc-num">12.</span> Intellectual Property</a></li>
-        <li><a href="#s13" class="v-toc-link"><span class="v-toc-num">13.</span> User Submissions</a></li>
-        <li><a href="#s14" class="v-toc-link"><span class="v-toc-num">14.</span> Third-Party Services</a></li>
-        <li><a href="#s15" class="v-toc-link"><span class="v-toc-num">15.</span> Privacy &amp; Data</a></li>
-        <li><a href="#s16" class="v-toc-link"><span class="v-toc-num">16.</span> Security &amp; Passkeys</a></li>
-        <li><a href="#s17" class="v-toc-link"><span class="v-toc-num">17.</span> Suspension &amp; Closure</a></li>
-        <li><a href="#s18" class="v-toc-link"><span class="v-toc-num">18.</span> Disclaimers</a></li>
-        <li><a href="#s19" class="v-toc-link"><span class="v-toc-num">19.</span> Limitation of Liability</a></li>
-        <li><a href="#s20" class="v-toc-link"><span class="v-toc-num">20.</span> Indemnification</a></li>
-        <li><a href="#s21" class="v-toc-link"><span class="v-toc-num">21.</span> Force Majeure</a></li>
-        <li><a href="#s22" class="v-toc-link"><span class="v-toc-num">22.</span> Governing Law</a></li>
-        <li><a href="#s23" class="v-toc-link"><span class="v-toc-num">23.</span> Legal Notices</a></li>
-        <li><a href="#s24" class="v-toc-link"><span class="v-toc-num">24.</span> General Provisions</a></li>
+        <li><a href="#s7" class="v-toc-link"><span class="v-toc-num">07.</span> Your account</a></li>
+        <li><a href="#s8" class="v-toc-link"><span class="v-toc-num">08.</span> How orders work</a></li>
+        <li><a href="#s9" class="v-toc-link"><span class="v-toc-num">09.</span> Digital asset risks</a></li>
+        <li><a href="#s10" class="v-toc-link"><span class="v-toc-num">10.</span> What you must not do</a></li>
+        <li><a href="#s11" class="v-toc-link"><span class="v-toc-num">11.</span> Checks and legal requirements</a></li>
+        <li><a href="#s12" class="v-toc-link"><span class="v-toc-num">12.</span> Our content</a></li>
+        <li><a href="#s13" class="v-toc-link"><span class="v-toc-num">13.</span> Feedback</a></li>
+        <li><a href="#s14" class="v-toc-link"><span class="v-toc-num">14.</span> Banks and networks</a></li>
+        <li><a href="#s15" class="v-toc-link"><span class="v-toc-num">15.</span> Your information</a></li>
+        <li><a href="#s16" class="v-toc-link"><span class="v-toc-num">16.</span> Account safety</a></li>
+        <li><a href="#s17" class="v-toc-link"><span class="v-toc-num">17.</span> Pausing or closing access</a></li>
+        <li><a href="#s18" class="v-toc-link"><span class="v-toc-num">18.</span> Availability and quotes</a></li>
+        <li><a href="#s19" class="v-toc-link"><span class="v-toc-num">19.</span> Limits on liability</a></li>
+        <li><a href="#s20" class="v-toc-link"><span class="v-toc-num">20.</span> Claims involving your use</a></li>
+        <li><a href="#s21" class="v-toc-link"><span class="v-toc-num">21.</span> Events outside our control</a></li>
+        <li><a href="#s22" class="v-toc-link"><span class="v-toc-num">22.</span> Disputes</a></li>
+        <li><a href="#s23" class="v-toc-link"><span class="v-toc-num">23.</span> Notices</a></li>
+        <li><a href="#s24" class="v-toc-link"><span class="v-toc-num">24.</span> General</a></li>
       </ol>
     </aside>
 
@@ -436,34 +451,28 @@
     <main class="v-content">
 
       <!-- Section 1 -->
+      <div class="v-callout v-summary"><strong>Before you place an order:</strong> Check the rate, amount, payment details and network shown on the order screen. Crypto sent to the wrong address or network usually cannot be recovered.</div>
+
       <section id="s1" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">01</span>
-          <h2>Introduction and Acceptance</h2>
+          <h2>Using Velcro Convert</h2>
         </div>
-        <p><strong>1.1</strong> These Terms of Use (the "Terms") govern your access to and use of the platform and digital interfaces operated by <strong>Velcro Technologies Limited</strong> ("the Company", "Velcro", "we", "us", or "our"), including https://ramp.usevelcro.com, https://usevelcro.com, subdomains, APIs, dynamic storefronts, and all associated software and settlement features (collectively, the "Platform").</p>
-        <p><strong>1.2</strong> Please read these Terms carefully before using the Platform. By accessing the Platform, initiating an order, registering an Account, ticking an acceptance checkbox, or clicking "Agree and Continue", "Proceed", or "Get payment details", you acknowledge that you have read, understood, and agreed to be legally bound by these Terms and our <a href="/privacy.html">Privacy Policy</a>.</p>
-        <p><strong>1.3</strong> If you do not agree to these Terms in their entirety, you must immediately discontinue your use of the Platform and refrain from initiating any transactions.</p>
-        <p><strong>1.4</strong> If you access or use the Platform on behalf of a company, partnership, or other legal entity, you represent and warrant that you are duly authorized to bind that entity to these Terms. In such circumstances, references to "you" or "User" apply jointly to the individual and that legal entity.</p>
+        <p>These Terms apply when you use Velcro Convert or place an order through it. By continuing to use the service, you agree to these Terms and our <a href="/privacy.html">Privacy Policy</a>. If you do not agree, please do not place an order.</p>
+        <p>If you use the service for a business or another person, you confirm that you have permission to act for them.</p>
       </section>
 
       <!-- Section 2 -->
       <section id="s2" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">02</span>
-          <h2>Definitions and Interpretation</h2>
+          <h2>A few terms we use</h2>
         </div>
-        <p><strong>2.1</strong> In these Terms, the following terms have the meanings assigned to them below:</p>
+        <p>For clarity, these words have the following meanings in this document:</p>
         <div class="v-defs">
-          <div class="v-def-item"><span class="v-def-term">Account:</span> The authenticated profile or session established by a User on the Platform to execute transactions or access merchant features.</div>
-          <div class="v-def-item"><span class="v-def-term">Applicable Law:</span> All federal, state, and local laws, regulations, circulars, directives, and guidelines in force from time to time in the Federal Republic of Nigeria, including the Nigeria Data Protection Act 2023 (NDPA), the Money Laundering (Prevention and Prohibition) Act 2022, the Terrorism (Prevention and Prohibition) Act 2022, Central Bank of Nigeria (CBN) regulatory guidelines, and Securities and Exchange Commission (SEC) digital asset rules.</div>
-          <div class="v-def-item"><span class="v-def-term">Content:</span> All interface graphics, logos, text, designs, price quotation algorithms, software code, dynamic account generators, audio, video, and documentation accessible via the Platform.</div>
-          <div class="v-def-item"><span class="v-def-term">Country:</span> The Federal Republic of Nigeria.</div>
-          <div class="v-def-item"><span class="v-def-term">Device:</span> Any smartphone, computer, tablet, hardware security key, or browser used to access the Platform.</div>
-          <div class="v-def-item"><span class="v-def-term">Digital Asset:</span> Any cryptographic virtual currency, token, or stablecoin supported on the Platform from time to time (including USDT, USDC, BTC, and SOL).</div>
-          <div class="v-def-item"><span class="v-def-term">Dynamic Virtual Account:</span> A real-time, order-specific bank account number generated via Nigerian Inter-Bank Settlement System (NIP) rails to match and automate customer fiat payments.</div>
-          <div class="v-def-item"><span class="v-def-term">Services:</span> Velcro's non-custodial digital asset on-ramp and off-ramp infrastructure, rate calculation engines, dynamic bank settlement rails, merchant storefront software, and automated blockchain payout routers.</div>
-          <div class="v-def-item"><span class="v-def-term">User or You:</span> Any individual, business, or entity that browses, initiates, or completes a transaction on the Platform.</div>
+          <div class="v-def-item"><span class="v-def-term">Order:</span> A request to buy or sell a supported digital asset using the instructions shown in Convert.</div>
+          <div class="v-def-item"><span class="v-def-term">Digital asset:</span> A cryptocurrency or token that Convert currently supports, such as USDT, USDC, BTC, ETH or SOL.</div>
+          <div class="v-def-item"><span class="v-def-term">You:</span> The person placing or managing an order through Convert.</div>
         </div>
       </section>
 
@@ -471,36 +480,33 @@
       <section id="s3" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">03</span>
-          <h2>About Us and How to Contact Us</h2>
+          <h2>Who runs Convert</h2>
         </div>
-        <p><strong>3.1 Entity Information:</strong> Velcro Technologies Limited is a private company limited by shares, incorporated and organized under the laws of the Federal Republic of Nigeria.</p>
-        <p><strong>3.2 Registered Office:</strong> Wuye District, Abuja, Federal Capital Territory, Nigeria.</p>
-        <p><strong>3.3 Official Inquiries &amp; Support:</strong> You may contact our legal and customer operations teams via email at <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>. Official communications will only be recognized when delivered to this authorized address.</p>
+        <p>Velcro Convert is operated by Velcro Technologies Limited in Nigeria. For help with an order or a question about these Terms, email <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>.</p>
       </section>
 
       <!-- Section 4 -->
       <section id="s4" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">04</span>
-          <h2>Eligibility</h2>
+          <h2>Who can use the service</h2>
         </div>
-        <p><strong>4.1 Requirements:</strong> To use the Platform or any Services, you must:</p>
+        <p>You must be at least 18 and legally able to enter into an agreement. You also agree that:</p>
         <ul>
-          <li>Be at least eighteen (18) years of age (or the age of majority in your jurisdiction, if higher) with full capacity to enter into legally binding contracts;</li>
-          <li>Not be listed on any national or international sanctions, watch, or anti-money laundering prohibition lists (including OFAC, UN Sanctions, or NFIU watchlists);</li>
-          <li>Not have had an account or transaction privileges previously suspended, terminated, or blocked by Velcro for breach of security or terms; and</li>
-          <li>Where transacting on behalf of a corporate entity, be authorized under board resolution or power of attorney.</li>
+          <li>The bank account and wallet you use belong to you or you are authorised to use them;</li>
+          <li>The information you provide is accurate and up to date; and</li>
+          <li>You will follow the laws that apply to you and will not use Convert for fraud or other unlawful activity.</li>
         </ul>
-        <p><strong>4.2 Geographic Scope:</strong> The Services are directed at persons located in Nigeria and other jurisdictions approved by Velcro. Users accessing the Platform from other locations are responsible for compliance with all local laws.</p>
+        <p>Convert is designed primarily for customers in Nigeria. We may limit access in places where the service is not available or where we cannot lawfully provide it.</p>
       </section>
 
       <!-- Section 5 -->
       <section id="s5" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">05</span>
-          <h2>Relationship with Other Documents</h2>
+          <h2>Other terms and policies</h2>
         </div>
-        <p><strong>5.1 Integrated Policies:</strong> These Terms govern the general use of the Platform and must be read alongside our <a href="/privacy.html">Privacy Policy</a>, Merchant Operating Agreement (for OTC desks and white-label partners), and any transaction-specific disclosures displayed during checkout.</p>
+        <p>These Terms cover Velcro Convert. If you use Velcro Merchant or a branded exchange page, separate terms may apply. Also review our <a href="/privacy.html">Privacy Policy</a> and the order details shown before you pay or send crypto.</p>
         <p><strong>5.2 Priority:</strong> In the event of an unavoidable conflict between these Terms and specific product disclosures agreed during an order confirmation, the order-specific confirmation terms shall prevail solely with respect to that transaction.</p>
       </section>
 
@@ -508,44 +514,44 @@
       <section id="s6" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">06</span>
-          <h2>Changes to the Website and to These Terms</h2>
+          <h2>Changes to the service or these terms</h2>
         </div>
-        <p><strong>6.1 Modifications:</strong> Velcro reserves the right to update, modify, enhance, or discontinue any feature, rate quotation engine, supported blockchain network, or part of the Platform at any time without liability.</p>
-        <p><strong>6.2 Amendments:</strong> We may revise these Terms to reflect legislative changes, technological advancements, or security enhancements. Changes take effect upon posting to the Platform with an updated "Last Updated" date. Continued use constitutes acceptance of revised terms.</p>
+        <p>We may change, pause or remove parts of Convert as the service develops or when a provider, bank or network changes its requirements.</p>
+        <p>When we update these Terms, we will change the date at the top of this page. The updated version applies from the date it is posted. If you do not agree with a change, stop using the service.</p>
       </section>
 
       <!-- Section 7 -->
       <section id="s7" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">07</span>
-          <h2>Access to and Use of the Platform</h2>
+          <h2>Your account and use of Convert</h2>
         </div>
-        <p><strong>7.1 License Grant:</strong> Subject to your ongoing compliance with these Terms, Velcro grants you a limited, revocable, non-exclusive, non-transferable, non-sublicensable license to access the Platform for lawful on-ramp and off-ramp transactions.</p>
-        <p><strong>7.2 Equipment &amp; Connectivity:</strong> You are solely responsible for obtaining and securing the Devices, internet connection, and software required to access the Platform.</p>
-        <p><strong>7.3 Platform Availability:</strong> While we aim for 99.9% uptime, we do not guarantee uninterrupted, error-free service. Systems may undergo maintenance, updates, or experience third-party rail disruptions beyond our control.</p>
+        <p>Use Convert only for lawful transactions and follow the instructions shown for each order. Keep your sign-in details and device secure, and tell us if you think someone else has accessed your account.</p>
+        <p>You need a working internet connection and a supported device to use the service. Convert may be unavailable during maintenance or when a bank, payment provider or blockchain network is delayed.</p>
       </section>
 
       <!-- Section 8 -->
       <section id="s8" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">08</span>
-          <h2>Platform Functionality &amp; Autonomous Execution</h2>
+          <h2>How an order works</h2>
         </div>
-        <p><strong>8.1 Non-Custodial Architecture:</strong> Velcro operates as an autonomous, non-custodial technology rail. Velcro does not take custody of customer fiat funds, hold private keys, or maintain speculative trading accounts for retail users.</p>
-        <p><strong>8.2 On-Ramp Execution (Buy Crypto):</strong></p>
+        <p>Before you confirm an order, Convert shows the asset, quote, payment or deposit details, and any time limit that applies. Follow the instructions on that order screen.</p>
+        <p>Many orders finish within 1–3 minutes after payment or a crypto deposit is confirmed. Bitcoin network confirmation often takes 10–60 minutes. Bank and provider processing can add time.</p>
+        <p><strong>Buying crypto:</strong></p>
         <ul>
-          <li>You enter your destination blockchain wallet address and desired fiat amount;</li>
-          <li>The Platform dynamically issues a dedicated virtual bank account with a fixed payment window;</li>
-          <li>Upon receipt and automated confirmation of your NIP bank transfer, crypto is dispatched straight from institutional liquidity pools to your designated wallet address.</li>
+          <li>Enter the wallet address and amount you want to buy;</li>
+          <li>Transfer the stated naira amount to the bank details shown for that order, before the payment window closes; and</li>
+          <li>Once the payment is confirmed, the purchased asset is sent to the wallet address you entered.</li>
         </ul>
-        <p><strong>8.3 Off-Ramp Execution (Sell Crypto):</strong></p>
+        <p><strong>Selling crypto:</strong></p>
         <ul>
-          <li>You supply your verified Nigerian bank account details (account number and bank name) and initiate a sell request;</li>
-          <li>The Platform generates a unique cryptographic deposit address or QR code on the selected network (e.g., Solana, Tron, Base, Bitcoin);</li>
-          <li>Upon required on-chain block confirmations, Velcro automatically triggers an instant NIP transfer to your verified Nigerian bank account.</li>
+          <li>Enter the bank account where you want to receive naira;</li>
+          <li>Send the asset to the address shown, using the network specified on the order; and</li>
+          <li>After the network confirms the deposit, the naira payout is processed to your bank account.</li>
         </ul>
         <div class="v-callout warning">
-          <strong>Irreversibility Notice:</strong> Cryptocurrency transactions are irreversible once broadcast to the blockchain. Velcro is not responsible for funds sent to incorrect addresses, wrong networks, or omitted memo/tag identifiers.
+          <strong>Check before sending:</strong> Blockchain transfers are usually irreversible. A transfer sent to the wrong address or network, or without a required memo, may not be recoverable.
         </div>
       </section>
 
@@ -553,28 +559,24 @@
       <section id="s9" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">09</span>
-          <h2>Digital Asset Risk Notice</h2>
+          <h2>Digital asset risks</h2>
         </div>
-        <p><strong>9.1 Market Volatility:</strong> The prices of Digital Assets can experience rapid and extreme fluctuations. You acknowledge that you may experience substantial capital losses.</p>
-        <p><strong>9.2 Technical Risks:</strong> Blockchain networks are subject to congestion, forks, software defects, validator halts, and cyber threats. Delays caused by on-chain congestion or network reorganizations are outside Velcro's operational control.</p>
-        <p><strong>9.3 Not Legal Tender:</strong> Digital Assets are not legal tender in the Federal Republic of Nigeria and are not insured by the Nigeria Deposit Insurance Corporation (NDIC) or guaranteed by the Central Bank of Nigeria.</p>
-        <p><strong>9.4 No Advisory Services:</strong> Velcro does not provide financial, investment, legal, tax, or accounting advice. You make all decisions independently.</p>
+        <p>Digital asset prices can move quickly, and a token may lose value. Blockchain transfers may also be delayed by congestion or service interruptions. Only trade amounts you can afford to lose.</p>
+        <p>Convert provides transaction services, not financial, investment, tax or legal advice. Consider your circumstances before placing an order.</p>
       </section>
 
       <!-- Section 10 -->
       <section id="s10" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">10</span>
-          <h2>Prohibited Activities</h2>
+          <h2>What you must not do</h2>
         </div>
         <p><strong>10.1 Prohibitions:</strong> You agree not to engage in or facilitate any of the following activities on or through the Platform:</p>
         <ul>
-          <li>Money laundering, terrorist financing, proliferation financing, sanctions evasion, tax evasion, or fraud;</li>
-          <li>Using bank accounts, debit cards, or credentials that do not belong to you or for which you lack express authorization;</li>
-          <li>Deploying automated scraping bots, crawlers, or high-frequency automated request scripts without explicit API authorization;</li>
-          <li>Interfering with or disrupting Platform servers, network rails, or rate quotation systems;</li>
-          <li>Attempting to bypass access controls, spoof IP locations via anonymous VPN nodes to evade geographical restrictions, or inject malicious payloads;</li>
-          <li>Wash trading, rate manipulation, front-running, or market exploitation.</li>
+          <li>Fraud, money laundering, terrorist financing, or other unlawful activity;</li>
+          <li>Using a bank account, wallet or payment method without permission;</li>
+          <li>Trying to disrupt, probe or gain unauthorised access to Convert; or</li>
+          <li>Using the service to deceive another person or manipulate an order.</li>
         </ul>
       </section>
 
@@ -582,116 +584,112 @@
       <section id="s11" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">11</span>
-          <h2>Compliance, Anti-Money Laundering &amp; Sanctions</h2>
+          <h2>Checks and legal requirements</h2>
         </div>
-        <p><strong>11.1 Statutory Commitment:</strong> Velcro strictly adheres to the Money Laundering (Prevention and Prohibition) Act 2022, Terrorism (Prevention and Prohibition) Act 2022, and relevant Nigerian Financial Intelligence Unit (NFIU) directives.</p>
-        <p><strong>11.2 Monitoring &amp; Reporting:</strong> We reserve the right to monitor all transactions, implement real-time blockchain analytics screening, request identity documents (KYC/KYB), delay or freeze suspicious orders, and submit statutory reports (including Suspicious Transaction Reports) to regulatory authorities without prior notice.</p>
+        <p>We may ask for information to verify your identity, payment or source of funds. We may also delay, decline or restrict an order when needed to investigate suspicious activity or meet a legal requirement. Where the law allows, we will explain what happens next.</p>
       </section>
 
       <!-- Section 12 -->
       <section id="s12" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">12</span>
-          <h2>Intellectual Property</h2>
+          <h2>Our content and software</h2>
         </div>
-        <p><strong>12.1 Proprietary Ownership:</strong> The Platform, brand name "Velcro", logos, software code, UI designs, dynamic account matching algorithms, documentation, and databases are the exclusive intellectual property of Velcro Technologies Limited.</p>
-        <p><strong>12.2 Restrictions:</strong> You may not copy, reproduce, reverse engineer, decompile, republish, distribute, or create derivative works from the Platform or its Content without our express prior written permission.</p>
+        <p>Velcro Technologies Limited owns or licenses the Convert name, logo, software and other materials on the service. These Terms let you use Convert for your own orders; they do not transfer ownership to you.</p>
+        <p>Please do not copy, modify or redistribute our software or materials without permission, except where the law allows.</p>
       </section>
 
       <!-- Section 13 -->
       <section id="s13" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">13</span>
-          <h2>User Submissions and Feedback</h2>
+          <h2>Feedback</h2>
         </div>
-        <p><strong>13.1 Communications:</strong> Any feedback, technical ideas, bug reports, or feature recommendations submitted to Velcro become our property and may be utilized freely without obligation, attribution, or financial compensation to you.</p>
+        <p>If you send us a suggestion or report a problem, we may use that feedback to improve Convert. You do not give up ownership of anything else you create or share with us.</p>
       </section>
 
       <!-- Section 14 -->
       <section id="s14" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">14</span>
-          <h2>Third-Party Services and Rails</h2>
+          <h2>Banks, providers and networks</h2>
         </div>
-        <p><strong>14.1 Integrated Infrastructure:</strong> Velcro integrates commercial banking partners, the NIP switch, liquidity providers (e.g., HostFi, PAJ, Switch), and public blockchain nodes to settle transactions.</p>
-        <p><strong>14.2 Third-Party Outages:</strong> Velcro is not liable for service downtime, delayed bank credits, NIP switch maintenance, or network errors originating from external banking institutions or third-party liquidity providers.</p>
+        <p>Orders depend on banks, payment providers and blockchain networks. Their processing times, availability and rules can affect when an order completes. We will show the status available to us, but we cannot control another provider's systems.</p>
       </section>
 
       <!-- Section 15 -->
       <section id="s15" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">15</span>
-          <h2>Privacy and Data Protection</h2>
+          <h2>Your information</h2>
         </div>
-        <p><strong>15.1 NDPA Compliance:</strong> Velcro collects, processes, and protects personal data in strict compliance with the Nigeria Data Protection Act 2023 (NDPA) and NDPA General Application and Implementation Directive 2025. Please review our <a href="/privacy.html">Privacy Policy</a> for full details on data retention, security safeguards, and your statutory data rights.</p>
+        <p>Our <a href="/privacy.html">Privacy Policy</a> explains what information we collect, why we use it, and how to contact us about it.</p>
       </section>
 
       <!-- Section 16 -->
       <section id="s16" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">16</span>
-          <h2>Security &amp; Passkeys</h2>
+          <h2>Keeping your account safe</h2>
         </div>
-        <p><strong>16.1 Modern Authentication:</strong> Velcro employs passkey-based authentication, hardware token cryptographic validation, and one-time password (OTP) verification to eliminate password vulnerability.</p>
-        <p><strong>16.2 User Safeguards:</strong> You are responsible for safeguarding your personal devices, email access, biometric passkey authenticators, and private keys. Velcro will never ask for your private keys, seed phrases, or one-time verification tokens.</p>
+        <p>Keep access to your email and device private. Do not share sign-in codes, wallet recovery phrases or private keys with anyone claiming to be support. We do not need your wallet recovery phrase to process an order.</p>
       </section>
 
       <!-- Section 17 -->
       <section id="s17" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">17</span>
-          <h2>Suspension and Termination</h2>
+          <h2>Pausing or closing access</h2>
         </div>
-        <p><strong>17.1 Platform Rights:</strong> Velcro reserves the right to immediately suspend, restrict, or terminate your access to the Platform if we reasonably suspect fraud, AML non-compliance, unauthorized third-party chargebacks, system abuse, or breach of these Terms.</p>
+        <p>We may pause or restrict your access if we need to protect the service, investigate an order, address a breach of these Terms, or meet a legal requirement. If this affects an open order, contact support and include the order reference.</p>
       </section>
 
       <!-- Section 18 -->
       <section id="s18" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">18</span>
-          <h2>Disclaimers</h2>
+          <h2>Service availability and quotes</h2>
         </div>
-        <p><strong>18.1 "As Is" Basis:</strong> The Platform and Services are provided on an "as is" and "as available" basis without warranties of any kind, whether express, statutory, or implied, including warranties of merchantability, fitness for a particular purpose, or uninterrupted availability.</p>
-        <p><strong>18.2 Indicative Rates:</strong> Displayed exchange rates and conversion quotations are real-time market estimates and become binding only upon successful lock and order execution within the designated payment timer window.</p>
+        <p>Convert is designed to be available around the clock. Maintenance or a bank, payment provider or blockchain issue can slow or interrupt service. A quote may change or expire; the rate and instructions shown when you place an order apply to that order, subject to its stated time limit.</p>
       </section>
 
       <!-- Section 19 -->
       <section id="s19" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">19</span>
-          <h2>Limitation of Liability</h2>
+          <h2>Limits on liability</h2>
         </div>
-        <p><strong>19.1 Consequential Damages:</strong> To the maximum extent permitted by Nigerian law, Velcro Technologies Limited, its directors, employees, and infrastructure partners shall not be liable for any indirect, incidental, punitive, consequential, or special damages, including lost profits, loss of data, loss of business, or cryptocurrency market depreciation.</p>
-        <p><strong>19.2 Aggregate Liability Cap:</strong> In all events, the maximum aggregate liability of Velcro arising out of or related to any single transaction shall not exceed the actual service fee earned by Velcro from that specific transaction.</p>
+        <p>To the extent the law allows, Velcro Technologies Limited is not responsible for indirect or consequential losses, including lost profits, lost business, lost data or changes in digital asset prices.</p>
+        <p>To the extent the law allows, Velcro's total liability for a particular order is limited to the service fee Velcro received for that order. Nothing in these Terms limits liability where the law does not allow it to be limited.</p>
       </section>
 
       <!-- Section 20 -->
       <section id="s20" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">20</span>
-          <h2>Indemnity</h2>
+          <h2>Claims involving your use of Convert</h2>
         </div>
-        <p><strong>20.1 User Indemnification:</strong> You agree to defend, indemnify, and hold harmless Velcro Technologies Limited, its officers, directors, agents, and affiliates from and against any claims, liabilities, damages, losses, or legal expenses arising from your violation of these Terms, breach of Applicable Law, or infringement of third-party rights.</p>
+        <p>If your unlawful use of Convert or breach of these Terms causes a claim against Velcro Technologies Limited, you agree to cover the losses and reasonable costs that result, to the extent the law allows.</p>
       </section>
 
       <!-- Section 21 -->
       <section id="s21" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">21</span>
-          <h2>Force Majeure</h2>
+          <h2>Events outside our control</h2>
         </div>
-        <p><strong>21.1 Excused Delays:</strong> Velcro shall not be held liable or in default for delays or failures in performance resulting from causes beyond reasonable control, including acts of God, civil unrest, telecommunications disruptions, banking switch crashes, power grid outages, blockchain reorganizations, cyber attacks, or regulatory enforcement actions.</p>
+        <p>We are not responsible for a delay caused by events outside our reasonable control, such as a bank or network outage, power or telecommunications failure, public emergency or government action. We will resume the affected service when we can.</p>
       </section>
 
       <!-- Section 22 -->
       <section id="s22" class="v-card">
         <div class="v-card-header">
           <span class="v-card-num">22</span>
-          <h2>Governing Law and Dispute Resolution</h2>
+          <h2>Disputes and governing law</h2>
         </div>
         <p><strong>22.1 Governing Law:</strong> These Terms and any disputes or claims arising out of or in connection with them shall be governed by and construed in accordance with the laws of the <strong>Federal Republic of Nigeria</strong>.</p>
-        <p><strong>22.2 Good Faith Amicable Resolution:</strong> In the event of any controversy, claim, or dispute, the Parties agree to first attempt in good faith to resolve the matter informally by submitting written notice with full transaction details to <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>. The Parties shall engage in good faith consultations for a period of thirty (30) days from receipt of such notice.</p>
-        <p><strong>22.3 Judicial Jurisdiction:</strong> If the dispute is not resolved amicably within the 30-day consultation period, either party may submit the dispute to the non-exclusive jurisdiction of the competent courts of the Federal Republic of Nigeria.</p>
+        <p>If you have a complaint, email <a href="mailto:support@usevelcro.com">support@usevelcro.com</a> with your order reference and a description of the issue. We will try to resolve it with you.</p>
+        <p>These Terms are governed by Nigerian law. Any dispute that cannot be resolved directly may be brought before a competent Nigerian court.</p>
       </section>
 
       <!-- Section 23 -->
@@ -700,8 +698,8 @@
           <span class="v-card-num">23</span>
           <h2>Legal Notices</h2>
         </div>
-        <p><strong>23.1 Electronic Delivery:</strong> We deliver notices to you electronically via Platform interfaces, email to your registered address, or public announcements. Electronic notices satisfy any statutory requirement for written communication.</p>
-        <p><strong>23.2 Notice to Velcro:</strong> Any formal legal notice to the Company must be sent by email to <a href="mailto:support@usevelcro.com">support@usevelcro.com</a> marked for the attention of the Legal Operations Department.</p>
+        <p>We may contact you through Convert or the email address linked to your account. Keep that address current and check it for order updates.</p>
+        <p>For a legal notice or a question about these Terms, email <a href="mailto:support@usevelcro.com">support@usevelcro.com</a>.</p>
       </section>
 
       <!-- Section 24 -->
@@ -710,10 +708,9 @@
           <span class="v-card-num">24</span>
           <h2>General Provisions</h2>
         </div>
-        <p><strong>24.1 Entire Agreement:</strong> These Terms, together with the Privacy Policy and applicable service schedules, constitute the entire agreement between you and Velcro with respect to the Platform, superseding all prior oral or written understandings.</p>
-        <p><strong>24.2 Severability:</strong> If any provision of these Terms is determined to be invalid or unenforceable under Applicable Law, such provision shall be severed or modified to the minimum extent necessary, and the remaining provisions shall remain in full force and effect.</p>
-        <p><strong>24.3 No Waiver:</strong> Failure or delay by Velcro in exercising any statutory or contractual right shall not operate as a waiver of that right.</p>
-        <p><strong>24.4 Assignment:</strong> You may not assign or transfer your rights or obligations under these Terms without prior written consent. Velcro may freely assign its rights and obligations to a corporate affiliate or successor entity.</p>
+        <p>These Terms and our <a href="/privacy.html">Privacy Policy</a> describe your agreement with Velcro for use of Convert.</p>
+        <p>If a court finds part of these Terms unenforceable, the rest will continue to apply to the extent permitted by law. If we do not enforce a term right away, that does not mean we have given it up.</p>
+        <p>You may not transfer your rights or obligations under these Terms without our written consent. Velcro may transfer them as part of a business reorganisation or sale, where permitted by law.</p>
       </section>
 
     </main>
