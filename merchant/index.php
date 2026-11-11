@@ -9,6 +9,14 @@ declare(strict_types=1);
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
 
+// If accessed via ramp.usevelcro.com/merchant, redirect permanently to merchant.usevelcro.com
+if ($host === 'ramp.usevelcro.com') {
+    $path = preg_replace('#^/merchant(/|$)#i', '/', (string) parse_url($uri, PHP_URL_PATH));
+    $query = isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] !== '' ? '?' . $_SERVER['QUERY_STRING'] : '';
+    header('Location: https://merchant.usevelcro.com' . $path . $query, true, 301);
+    exit;
+}
+
 // If request is for an API endpoint (/api/...) or webhook (/webhook/...)
 if (str_contains($uri, '/api/') || str_contains($uri, '/webhook/')) {
     require_once __DIR__ . '/../php-backend/index.php';

@@ -28,6 +28,10 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
+    # ── Redirect any traffic on ramp.usevelcro.com/merchant to merchant.usevelcro.com ──
+    RewriteCond %{HTTP_HOST} ^ramp\.usevelcro\.com$ [NC]
+    RewriteRule ^(.*)$ https://merchant.usevelcro.com/$1 [R=301,L]
+
     # Pass Authorization header to CGI/PHP environment
     RewriteCond %{HTTP:Authorization} ^(.*)
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
