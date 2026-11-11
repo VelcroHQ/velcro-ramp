@@ -15,6 +15,23 @@ if (str_contains($uri, '/api/') || str_contains($uri, '/webhook/')) {
     exit;
 }
 
+// Clean pretty URLs for legal pages (/terms, /privacy)
+$cleanPath = rtrim((string) parse_url($uri, PHP_URL_PATH), '/');
+if ($cleanPath === '/terms') {
+    header('Content-Type: text/html; charset=UTF-8');
+    if (file_exists(__DIR__ . '/terms.html')) {
+        readfile(__DIR__ . '/terms.html');
+        exit;
+    }
+}
+if ($cleanPath === '/privacy') {
+    header('Content-Type: text/html; charset=UTF-8');
+    if (file_exists(__DIR__ . '/privacy.html')) {
+        readfile(__DIR__ . '/privacy.html');
+        exit;
+    }
+}
+
 // If this is a merchant storefront subdomain (e.g. megamind.usevelcro.com, not merchant.usevelcro.com)
 if ($host !== '' && !str_starts_with($host, 'merchant.') && !str_starts_with($host, 'ramp.') && !str_starts_with($host, 'goat.')) {
     header('Content-Type: text/html; charset=UTF-8');
