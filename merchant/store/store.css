@@ -180,30 +180,28 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .s-speed-pill {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 12px 0 8px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #334155;
-  font-size: 12px;
+  justify-content: center;
+  gap: 7px;
+  margin: 14px 0 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 12.5px;
   font-weight: 500;
-  line-height: 1.35;
-  text-align: left;
-  transition: all 0.2s ease;
+  line-height: 1.4;
+  text-align: center;
 }
 .s-speed-left {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-width: 0;
+  justify-content: center;
+  gap: 6px;
 }
 .s-layout-card .s-speed-pill {
-  color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  background: transparent;
+  border-color: transparent;
 }
 .s-speed-dot {
   position: relative;
@@ -216,27 +214,14 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
   flex-shrink: 0;
 }
 .s-speed-pill b {
-  font-weight: 700;
-  color: #0f172a;
+  font-weight: 600;
+  color: var(--ink);
 }
 .s-layout-card .s-speed-pill b {
   color: #f8fafc;
 }
 .s-speed-tag {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #475569;
-  background: #e2e8f0;
-  padding: 2px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-.s-layout-card .s-speed-tag {
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.08);
+  display: none !important;
 }
 .s-trust { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin-top: 12px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 .s-trust svg { width: 14px; height: 14px; margin-top: 2px; }

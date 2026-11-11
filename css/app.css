@@ -178,6 +178,12 @@
     padding: 0.4rem 0.6rem;
     font-size: 0.8125rem;
   }
+  /* Prevent iOS Safari auto-zoom on input focus */
+  input[type="text"]:not(.display-input),
+  input[type="tel"]:not(.display-input),
+  input[type="email"]:not(.display-input) {
+    font-size: 16px !important;
+  }
   /* Modal optimizations on mobile */
   #history-modal .p-6 {
     padding: 1.25rem 1rem !important;
