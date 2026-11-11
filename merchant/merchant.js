@@ -183,7 +183,7 @@ async function submitAuth(e) {
   $('auth-error').classList.add('hidden');
 
   if (authMode === 'signup') {
-    if (!name) return authError('Enter your full legal name (KYC name)');
+    if (!name) return authError('Enter your full name');
     if (!business) return authError('Enter your trading or business name');
     if (!/^\S+@\S+\.\S+$/.test(email)) return authError('Enter a valid email address');
     signupDraft.name = name;
