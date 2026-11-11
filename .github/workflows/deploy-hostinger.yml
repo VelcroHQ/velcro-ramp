@@ -1,0 +1,65 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hostinger-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy production site over SSH
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Sync files to Hostinger
+        env:
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.HOSTINGER_SSH_KNOWN_HOSTS }}
+          DEPLOY_PATH: /home/u749801214/domains/usevelcro.com/public_html
+        run: |
+          set -euo pipefail
+
+          for name in SSH_HOST SSH_USER SSH_PORT SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
+            if [[ -z "${!name}" ]]; then
+              echo "Required GitHub Actions secret is missing: $name"
+              exit 1
+            fi
+          done
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/hostinger_deploy_key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/hostinger_deploy_key" "$HOME/.ssh/known_hosts"
+
+          ssh -i "$HOME/.ssh/hostinger_deploy_key" \
+            -p "$SSH_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" "mkdir -p '$DEPLOY_PATH'"
+
+          rsync -az --itemize-changes \
+            --exclude='/.git/' \
+            --exclude='/.github/' \
+            --exclude='/.claude/' \
+            --exclude='/probe_paj.php' \
+            --exclude='**/.env' \
+            --exclude='**/.env.*' \
+            --exclude='**/data/' \
+            --exclude='**/tests/' \
+            --exclude='**/.vscode/' \
+            -e "ssh -i $HOME/.ssh/hostinger_deploy_key -p $SSH_PORT -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts" \
+            ./ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
