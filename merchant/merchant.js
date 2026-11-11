@@ -2002,50 +2002,68 @@ function renderPrices() {
   const rows = $('price-rows');
   if (rows) {
     rows.innerHTML = coins.map(([sym, name]) => {
-      const sideBlock = (sideKey, sideLabel) => `
-        <div class="d-side-mature-wrap is-${sideKey}" data-cell="${sym}-${sideKey}">
-          <div class="d-side-mature-top">
-            <span class="d-side-mature-badge is-${sideKey}">${sideLabel}</span>
-            <div class="d-side-mature-input-group">
-              <button type="button" class="d-mature-step-btn" onclick="stepMarkup('${sym}', '${sideKey}', -0.1)" title="Decrease markup">−</button>
-              <label class="d-mature-markup-box">
-                <input type="number" inputmode="decimal" min="0" max="${me.max_markup}" step="0.05" data-sym="${sym}" data-side="${sideKey}" aria-label="${sym} ${sideKey} markup %">
-                <span>%</span>
-              </label>
-              <button type="button" class="d-mature-step-btn" onclick="stepMarkup('${sym}', '${sideKey}', 0.1)" title="Increase markup">+</button>
+      const railBlock = (sideKey, sideTitle, sideSubtitle) => `
+        <div class="d-rail-card is-${sideKey}" data-cell="${sym}-${sideKey}">
+          <div class="d-rail-header">
+            <div class="d-rail-header-left">
+              <span class="d-rail-badge is-${sideKey}">${sideTitle}</span>
+              <span class="d-rail-sub">${sideSubtitle}</span>
             </div>
-            <button type="button" class="d-toggle" role="switch" aria-label="${sym} ${sideKey} on/off" data-sym="${sym}" data-side="${sideKey}"></button>
+            <div class="d-rail-header-right">
+              <span class="d-rail-status-label" data-rail-state="${sym}-${sideKey}">Active</span>
+              <button type="button" class="d-toggle" role="switch" aria-label="${sym} ${sideKey} rail status" data-sym="${sym}" data-side="${sideKey}"></button>
+            </div>
           </div>
-          <div class="d-side-result" data-out="${sym}-${sideKey}"></div>
+
+          <div class="d-rail-quote-block" data-out="${sym}-${sideKey}"></div>
+
+          <div class="d-rail-stepper-row">
+            <span class="d-rail-stepper-label">${sideKey === 'buy' ? 'Profit markup' : 'Profit markdown'}</span>
+            <div class="d-rail-stepper">
+              <button type="button" class="d-stepper-btn" onclick="stepMarkup('${sym}', '${sideKey}', -0.1)" title="Decrease markup by 0.1%" aria-label="Decrease ${sym} ${sideKey} markup">
+                <svg viewBox="0 0 24 24" class="ico-step"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="d-stepper-field">
+                <input type="number" inputmode="decimal" min="0" max="${me.max_markup}" step="0.05" data-sym="${sym}" data-side="${sideKey}" aria-label="${sym} ${sideKey} markup percentage">
+                <span class="d-stepper-pct">%</span>
+              </div>
+              <button type="button" class="d-stepper-btn" onclick="stepMarkup('${sym}', '${sideKey}', 0.1)" title="Increase markup by 0.1%" aria-label="Increase ${sym} ${sideKey} markup">
+                <svg viewBox="0 0 24 24" class="ico-step"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+          </div>
         </div>
       `;
 
       return `
         <div class="d-pricing-row-mature" data-card="${sym}">
           <div class="d-td d-td-asset">
-            ${logoImg(sym)}
+            <div class="d-asset-avatar-wrap">
+              ${logoImg(sym)}
+            </div>
             <div class="d-asset-title-block">
               <div class="d-asset-main-name">
                 <b class="d-asset-sym-txt">${sym}</b>
                 <span class="d-asset-name-txt">${esc(name)}</span>
               </div>
-              <small class="d-asset-base-txt" data-base-display="${sym}">Live base rates active</small>
+              <div class="d-asset-base-tag" data-base-display="${sym}">Provider Base: Syncing…</div>
             </div>
           </div>
 
           <div class="d-td d-td-buy">
-            <span class="d-mobile-side-label">Customers Buy</span>
-            ${sideBlock('buy', 'Buy')}
+            <span class="d-mobile-side-label">Customers Buy (On-Ramp)</span>
+            ${railBlock('buy', 'BUY RAIL', 'NGN → ' + sym)}
           </div>
 
           <div class="d-td d-td-sell">
-            <span class="d-mobile-side-label">Customers Sell</span>
-            ${sideBlock('sell', 'Sell')}
+            <span class="d-mobile-side-label">Customers Sell (Off-Ramp)</span>
+            ${railBlock('sell', 'SELL RAIL', sym + ' → NGN')}
           </div>
 
           <div class="d-td d-td-spread">
-            <span class="d-mobile-side-label">Spread &amp; Status</span>
+            <span class="d-mobile-side-label">Net Spread &amp; Status</span>
             <div class="d-spread-mature-box">
+              <span class="d-spread-label">ROUND-TRIP MARGIN</span>
               <div class="d-asset-spread-tag" data-spread="${sym}">—</div>
               <div class="d-asset-status" data-card-status="${sym}"></div>
             </div>
@@ -2101,32 +2119,40 @@ function paintPriceRows(dirty) {
       const cell = document.querySelector(`[data-cell="${sym}-${side}"]`);
       if (cell) cell.classList.toggle('is-off', !on);
 
+      const railState = document.querySelector(`[data-rail-state="${sym}-${side}"]`);
+      if (railState) railState.textContent = on ? 'Active' : 'Paused';
+
       const out = document.querySelector(`[data-out="${sym}-${side}"]`);
       if (out) {
         if (!on) {
           out.innerHTML = `
-            <div class="d-rate-mature-off">
-              <span class="d-rate-off-dot"></span>
-              <span>Inactive</span>
-              <button type="button" class="d-btn-inline-enable" onclick="toggleSide('${sym}', '${side}', true)">Enable</button>
+            <div class="d-rail-paused-card">
+              <div class="d-rail-paused-info">
+                <span class="d-paused-dot"></span>
+                <span>Rail paused</span>
+              </div>
+              <button type="button" class="d-btn-inline-enable" onclick="toggleSide('${sym}', '${side}', true)">Enable rail</button>
             </div>
           `;
         } else if (rate && base) {
           const profitPerDollar = Math.abs(rate - base);
           out.innerHTML = `
-            <div class="d-rate-mature-box">
-              <div class="d-rate-mature-main">
-                <span class="d-rate-mature-lbl">${side === 'buy' ? 'Customer Pays' : 'Customer Gets'}</span>
-                <b class="d-rate-mature-val">${rateText(rate)}</b>
+            <div class="d-rail-rate-active">
+              <div class="d-rail-rate-main">
+                <span class="d-rail-rate-lbl">${side === 'buy' ? 'Customer Pays' : 'Customer Gets'}</span>
+                <div class="d-rail-rate-val-row">
+                  <b class="d-rate-num">${rateText(rate)}</b>
+                </div>
               </div>
-              <div class="d-rate-mature-sub">
+              <div class="d-rail-rate-sub">
                 <span class="d-mature-base-tag">Base: ${nairaRate(base)}</span>
+                <span class="d-meta-sep">·</span>
                 <span class="d-mature-profit-tag">+${nairaRate(profitPerDollar)} / $1 (${markup.toFixed(2)}%)</span>
               </div>
             </div>
           `;
         } else {
-          out.innerHTML = `<div class="d-rate-mature-off"><span class="is-none">Rate temporarily unavailable</span></div>`;
+          out.innerHTML = `<div class="d-rail-paused-card"><span class="is-none">Rate temporarily unavailable</span></div>`;
         }
       }
     });
@@ -2148,13 +2174,13 @@ function paintPriceRows(dirty) {
 
     if (cardStatus) {
       if (buyOn && sellOn) {
-        cardStatus.innerHTML = '<span class="d-st is-live">Active</span>';
+        cardStatus.innerHTML = '<span class="d-st is-live"><span class="d-status-dot is-live"></span>Active</span>';
       } else if (buyOn) {
-        cardStatus.innerHTML = '<span class="d-st is-wait">Buy Only</span>';
+        cardStatus.innerHTML = '<span class="d-st is-wait"><span class="d-status-dot is-wait"></span>Buy Only</span>';
       } else if (sellOn) {
-        cardStatus.innerHTML = '<span class="d-st is-wait">Sell Only</span>';
+        cardStatus.innerHTML = '<span class="d-st is-wait"><span class="d-status-dot is-wait"></span>Sell Only</span>';
       } else {
-        cardStatus.innerHTML = '<span class="d-st is-off">Disabled</span>';
+        cardStatus.innerHTML = '<span class="d-st is-off"><span class="d-status-dot is-off"></span>Paused</span>';
       }
     }
 
@@ -2163,13 +2189,18 @@ function paintPriceRows(dirty) {
         const diff = activeBuyRate - activeSellRate;
         const avgBase = ((baseBuy || activeBuyRate) + (baseSell || activeSellRate)) / 2;
         const spreadPct = (diff / avgBase) * 100;
-        cardSpread.innerHTML = `<span>Spread: <b>${nairaRate(diff)}</b> (${spreadPct.toFixed(2)}%)</span>`;
+        cardSpread.innerHTML = `
+          <div class="d-spread-data">
+            <b class="d-spread-num">${nairaRate(diff)}</b>
+            <span class="d-spread-pct">+${spreadPct.toFixed(2)}% net spread</span>
+          </div>
+        `;
         cardSpread.className = 'd-asset-spread-tag is-positive';
       } else if (buyOn || sellOn) {
-        cardSpread.innerHTML = `<span>Single side</span>`;
+        cardSpread.innerHTML = `<span class="d-spread-single">Single rail active</span>`;
         cardSpread.className = 'd-asset-spread-tag is-neutral';
       } else {
-        cardSpread.innerHTML = `<span>Disabled</span>`;
+        cardSpread.innerHTML = `<span class="d-spread-muted">Trading paused</span>`;
         cardSpread.className = 'd-asset-spread-tag is-muted';
       }
     }

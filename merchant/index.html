@@ -586,76 +586,105 @@
       <!-- Prices -->
       <section id="tab-prices" class="d-tab hidden">
         <div class="d-head d-prices-head-bar">
-          <div>
-            <h1>Prices &amp; Markup</h1>
+          <div class="d-prices-head-titles">
+            <div class="d-desk-badge">
+              <span class="d-pulse-dot"></span>
+              <span>LIVE BASE LIQUIDITY</span>
+            </div>
+            <h1>Prices &amp; Markup Desk</h1>
             <p>Velcro provides real-time base rates with zero liquidity fees. Set your profit markup per coin—customer rates calculate automatically.</p>
           </div>
-          <div class="d-rates-status-pill">
-            <span class="d-pulse-dot"></span>
-            <span id="rates-status-text">Live Base Rates</span>
-            <button type="button" class="d-btn-icon-subtle" id="btn-refresh-rates" onclick="refreshRates()" title="Refresh live rates" aria-label="Refresh live rates">
-              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-            </button>
+          <div class="d-rates-status-cluster">
+            <div class="d-rates-feed-card">
+              <div class="d-feed-indicator">
+                <span class="d-pulse-dot"></span>
+                <span id="rates-status-text">Provider Feeds Live</span>
+              </div>
+              <button type="button" class="d-btn-sync-feed" id="btn-refresh-rates" onclick="refreshRates()" title="Refresh live base rates" aria-label="Refresh live rates">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                <span>Sync rates</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Mature Unified Controls Bar -->
+        <!-- Mature Unified Controls Deck -->
         <div class="d-pricing-ctrl-bar">
           <div class="d-pricing-ctrl-block">
-            <span class="d-pricing-ctrl-title">Customer Rate Format</span>
+            <div class="d-ctrl-title-wrap">
+              <span class="d-pricing-ctrl-title">Customer Storefront Format</span>
+              <span class="d-ctrl-caption">How prices appear to buyers and sellers on your storefront</span>
+            </div>
             <div class="d-rate-format-seg">
               <label class="d-seg-item">
                 <input type="radio" name="rate-display" value="final">
                 <span class="d-seg-box">
-                  <b>Final rate only</b>
-                  <small id="disp-final">e.g. $1 = ₦1,426</small>
+                  <b class="d-seg-title">All-Inclusive Price</b>
+                  <small class="d-seg-preview" id="disp-final">e.g. $1 = ₦1,425.95</small>
                 </span>
               </label>
               <label class="d-seg-item">
                 <input type="radio" name="rate-display" value="breakdown">
                 <span class="d-seg-box">
-                  <b>Rate + fee breakdown</b>
-                  <small id="disp-breakdown">e.g. ₦1,412 + 1%</small>
+                  <b class="d-seg-title">Rate + Fee Breakdown</b>
+                  <small class="d-seg-preview" id="disp-breakdown">e.g. ₦1,411.83 + 1.0%</small>
                 </span>
               </label>
             </div>
           </div>
 
           <div class="d-pricing-ctrl-block d-pricing-ctrl-right">
+            <div class="d-ctrl-title-wrap d-text-right">
+              <span class="d-pricing-ctrl-title">Quick Margin Presets</span>
+              <span class="d-ctrl-caption">Apply uniform profit margin across all active coins</span>
+            </div>
             <div class="d-pricing-preset-row">
-              <span class="d-pricing-ctrl-title">Set markup for all</span>
               <div class="d-preset-pill-group">
-                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(0.5)">0.5%</button>
-                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(1.0)">1.0%</button>
-                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(1.5)">1.5%</button>
-                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(2.0)">2.0%</button>
+                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(0.5)">+0.5%</button>
+                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(1.0)">+1.0%</button>
+                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(1.5)">+1.5%</button>
+                <button type="button" class="d-preset-pill" onclick="applyMarkupPreset(2.0)">+2.0%</button>
               </div>
             </div>
             <div class="d-pricing-bulk-row">
-              <button type="button" class="d-bulk-link" onclick="toggleAllSides('buy', true)">Enable all buys</button>
-              <span class="d-bulk-sep">·</span>
-              <button type="button" class="d-bulk-link" onclick="toggleAllSides('sell', true)">Enable all sells</button>
-              <span class="d-bulk-sep">·</span>
-              <button type="button" class="d-bulk-link is-danger" onclick="toggleAllSides('all', false)">Disable all</button>
+              <button type="button" class="d-bulk-btn" onclick="toggleAllSides('buy', true)">
+                <svg class="ico-micro" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Enable buys</span>
+              </button>
+              <button type="button" class="d-bulk-btn" onclick="toggleAllSides('sell', true)">
+                <svg class="ico-micro" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Enable sells</span>
+              </button>
+              <button type="button" class="d-bulk-btn is-danger" onclick="toggleAllSides('all', false)">
+                <svg class="ico-micro" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                <span>Pause all</span>
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- Clean Financial Pricing Table -->
+        <!-- Clean Financial Pricing Desk Matrix -->
         <div class="d-pricing-table-card">
           <div class="d-pricing-table-head">
-            <div class="d-th d-th-asset">Cryptocurrency</div>
-            <div class="d-th d-th-buy">Customers Buy (NGN → Crypto)</div>
-            <div class="d-th d-th-sell">Customers Sell (Crypto → NGN)</div>
-            <div class="d-th d-th-spread">Spread &amp; Status</div>
+            <div class="d-th d-th-asset">Asset</div>
+            <div class="d-th d-th-buy">Customers Buy (On-Ramp)</div>
+            <div class="d-th d-th-sell">Customers Sell (Off-Ramp)</div>
+            <div class="d-th d-th-spread">Net Spread &amp; Status</div>
           </div>
           <div id="price-rows" class="d-pricing-table-body"></div>
         </div>
 
         <div class="d-savebar d-savebar-pop" id="prices-bar">
-          <span class="d-savebar-note is-dirty">Unsaved changes</span>
-          <button type="button" class="d-btn-quiet" onclick="renderPrices()">Discard</button>
-          <button type="button" id="prices-save" class="d-btn" onclick="savePrices()">Save prices</button>
+          <div class="d-savebar-inner">
+            <div class="d-savebar-left">
+              <span class="d-savebar-dot"></span>
+              <span class="d-savebar-note is-dirty">Unsaved pricing adjustments</span>
+            </div>
+            <div class="d-savebar-actions">
+              <button type="button" class="d-btn-quiet" onclick="renderPrices()">Discard</button>
+              <button type="button" id="prices-save" class="d-btn" onclick="savePrices()">Save prices</button>
+            </div>
+          </div>
         </div>
       </section>
 
