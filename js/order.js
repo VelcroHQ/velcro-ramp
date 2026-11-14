@@ -827,7 +827,13 @@ function showHostfiStepDetail(type, progress) {
     }
     if (p.payout === 'done') setStepDetail(document.getElementById('bstatus-4'), 'Confirmed on the network', p.explorer_url);
   }
-  if (p.converted === 'pending') working = isBuy ? `Converting your naira to ${sym}…` : 'Converting to naira…';
+  if (p.converted === 'pending') {
+    if (isBuy) {
+      working = `Converting your naira to ${sym}…`;
+    } else {
+      working = sym === 'BTC' ? 'Exchanging BTC to Naira (typically 5–10 mins on liquidity desk)…' : (sym === 'ETH' ? 'Exchanging ETH to Naira…' : 'Converting to Naira…');
+    }
+  }
   else if (isBuy && (p.payout === 'sent' || p.payout === 'done')) working = `${coin(p.payout_amount, sym)} sent to your wallet.` + (p.payout === 'sent' ? ' Waiting for network confirmation.' : '');
   else if (p.payout === 'pending' && p.payout_amount) working = isBuy ? `Sending ${coin(p.payout_amount, sym)} to your wallet…` : `${naira(p.payout_amount)} sent to your bank. Waiting for the bank's final confirmation.`;
   else if (p.payout === 'review') working = "Being checked by our team. We'll email you.";

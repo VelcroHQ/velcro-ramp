@@ -1237,10 +1237,29 @@ function sellProgressHtml(o) {
   const received = RECEIVED_STATUSES.includes(o.status) || !!p.amount;
   const paying = received && (p.payout === 'pending' || p.converted === 'done' || o.status === 'PROCESSING');
   const paid = p.payout === 'done' || o.status === 'COMPLETED';
+  const sym = String(o.coin || '').toUpperCase();
+  const txHash = p.tx_hash || o.hash || '';
+  const expUrl = p.explorer_url || (txHash ? getExplorerUrl(txHash, o.network || o.coin) : '');
+
+  let convertNote = '';
+  if (paying) {
+    if (p.converted === 'pending') {
+      if (sym === 'BTC') {
+        convertNote = 'Exchanging BTC to Naira (5–10 mins on liquidity desk) · Payout queued';
+      } else if (sym === 'ETH') {
+        convertNote = 'Exchanging ETH to Naira · Payout queued';
+      } else {
+        convertNote = 'Converting to Naira… · Payout queued';
+      }
+    } else {
+      convertNote = 'Sending Naira to your bank account…';
+    }
+  }
+
   const steps = [
     [received ? 'Order created' : `Waiting for your ${esc(o.coin)}`, received ? 'done' : 'now', received ? '' : 'We check for it every few seconds.'],
-    [`${esc(o.coin)} received`, received ? 'done' : 'next', received && p.amount ? `${fmtCoin(p.amount, o.coin)} ${esc(o.coin)}` : ''],
-    ['Paying your bank', paid ? 'done' : (received ? 'now' : 'next'), paying && p.converted === 'pending' ? 'Converting…' : ''],
+    [`${esc(o.coin)} received`, received ? 'done' : 'next', received ? (p.amount ? `${fmtCoin(p.amount, o.coin)} ${esc(o.coin)}` : 'Confirmed on blockchain') + (expUrl ? ` · <a href="${esc(expUrl)}" target="_blank" rel="noopener" style="color:var(--s-accent);text-decoration:underline;">View on explorer ↗</a>` : '') : ''],
+    ['Paying your bank', paid ? 'done' : (received ? 'now' : 'next'), convertNote],
     ['Naira paid', paid ? 'done' : 'next', p.payout_amount ? fmtNgn(p.payout_amount) : ''],
   ];
   if (p.payout === 'failed' || p.payout === 'review' || o.status === 'REVIEW') {

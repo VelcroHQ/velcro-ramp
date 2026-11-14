@@ -808,6 +808,10 @@ function orderTimelineHtml(o) {
     step3State = 'is-active';
     if (isBuy) {
       step3Desc = `Broadcasting ${coinText(o)} to customer wallet on blockchain`;
+    } else if (o.coin === 'BTC') {
+      step3Desc = `Exchanging BTC to Naira on liquidity desk (~5–10 mins) · NIP transfer to ${esc(resolveOrderBankName(o))} queued`;
+    } else if (o.coin === 'ETH') {
+      step3Desc = `Exchanging ETH to Naira on liquidity desk · NIP transfer to ${esc(resolveOrderBankName(o))} queued`;
     } else {
       step3Desc = `Converting and dispatching ${naira(o.naira)} via NIP bank transfer`;
     }
