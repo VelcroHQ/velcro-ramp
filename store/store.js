@@ -1635,7 +1635,7 @@ function startPolling(every = 5000) {
   stopTimers();
   const o = checkout.order;
   if (!o.claimed) o.claimed = paidAt(o.reference);
-  if (o.claimed) every = 3000;
+  if (o.claimed || ['PROCESSING', 'CONFIRMED', 'RECEIVED'].includes(o.status)) every = 3000;
   const tickExpiry = () => {
     const chk = $('co-checking');
     if (chk && o.claimed) {

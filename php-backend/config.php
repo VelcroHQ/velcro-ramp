@@ -113,7 +113,7 @@ define('HOSTFI_CLIENT_SECRET', env('HOSTFI_CLIENT_SECRET', ''));
 // Chosen by us in the HostFi portal's webhook subscription; HostFi sends it back as `x-auth-secret`.
 define('HOSTFI_WEBHOOK_SECRET', env('HOSTFI_WEBHOOK_SECRET', ''));
 // HostFi briefly holds what a swap produces: wait this long between checks before sending it on.
-define('HOSTFI_FUNDS_WAIT_SECONDS', (int) env('HOSTFI_FUNDS_WAIT_SECONDS', '10'));
+define('HOSTFI_FUNDS_WAIT_SECONDS', (int) env('HOSTFI_FUNDS_WAIT_SECONDS', '3'));
 
 // ─── Velcro Merchant ───
 // OAuth client ID from Google Cloud Console (Credentials → OAuth client ID → Web). Empty hides Google sign-in.

@@ -535,15 +535,15 @@ function hostfiSendWhenFree(string $currency, float $need, callable $fn): void
             fastcgi_finish_request();
         }
         for ($i = 0; $i < 6; $i++) {
-            if (HOSTFI_FUNDS_WAIT_SECONDS > 0) {
-                sleep(HOSTFI_FUNDS_WAIT_SECONDS);
-            }
             try {
                 if (hostfiApi()->freeBalance($currency) + 1e-9 >= $need) {
                     break;
                 }
             } catch (Throwable $e) {
                 break;
+            }
+            if ($i < 5 && HOSTFI_FUNDS_WAIT_SECONDS > 0) {
+                sleep(min(3, HOSTFI_FUNDS_WAIT_SECONDS));
             }
         }
         try {
@@ -847,20 +847,20 @@ function hostfiReconcileOrder(string $orderRef): void
             continue;
         }
         if ($dep['status'] === 'SWAPPING' || $dep['status'] === 'SWAP_PENDING') {
-            if (strtotime((string) $dep['updated_at']) < time() - 30) {
+            if (strtotime((string) $dep['updated_at']) <= time() - 5) {
                 hostfiCheckSwap($dep);
             }
             continue;
         }
         if ($dep['status'] === 'SWAPPED') {
-            // Check if HostFi has released the naira (or if 120s passed since last attempt)
+            // Check if HostFi has released the naira (or if 5s passed since last attempt)
             $need = (float) $dep['payout_amount'] + HOSTFI_PAYOUT_FEE_NGN;
             try {
                 $free = hostfiApi()->freeBalance('NGN');
             } catch (Throwable $e) {
                 $free = 0.0;
             }
-            if ($free + 1e-9 >= $need || strtotime((string) $dep['updated_at']) < time() - 120) {
+            if ($free + 1e-9 >= $need || strtotime((string) $dep['updated_at']) <= time() - 5) {
                 hostfiSendPayout($dep, hostfiOrderFor($dep)[1]);
             }
             continue;

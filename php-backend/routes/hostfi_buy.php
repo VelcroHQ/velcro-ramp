@@ -480,15 +480,19 @@ function hostfiBuyResumeWaiting(array $buy): void
 function hostfiBuyResumeOrder(string $orderRef): void
 {
     ensureHostfiBuySchema();
-    $rows = Database::select("SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r AND `status` IN ('RECEIVED','SWAPPED','SEND_WAITING','SEND_PENDING')", ['r' => $orderRef]);
+    $rows = Database::select("SELECT * FROM `hostfi_buys` WHERE `order_ref` = :r AND `status` IN ('RECEIVED','SWAPPING','SWAP_PENDING','SWAPPED','SEND_WAITING','SEND_PENDING')", ['r' => $orderRef]);
     foreach ($rows as $buy) {
         if ($buy['status'] === 'RECEIVED') {
             // Payment arrived; if still sitting after 60s, process the swap and send now.
             if (strtotime((string) $buy['updated_at']) < time() - 60) {
                 hostfiProcessPayment((int) $buy['id']);
             }
+        } elseif ($buy['status'] === 'SWAPPING' || $buy['status'] === 'SWAP_PENDING') {
+            if (strtotime((string) $buy['updated_at']) <= time() - 5) {
+                hostfiBuyCheckSwap($buy);
+            }
         } elseif ($buy['status'] === 'SWAPPED') {
-            // Coin is swapped; send as soon as free balance permits (or after 120s max).
+            // Coin is swapped; send as soon as free balance permits (or after 5s max).
             $currency = (string) $buy['currency'];
             try {
                 $need = (float) $buy['send_amount'] + hostfiSendFee($currency, (string) $buy['network'], (float) $buy['send_amount'])['fee'];
@@ -497,7 +501,7 @@ function hostfiBuyResumeOrder(string $orderRef): void
                 $need = (float) $buy['send_amount'];
                 $free = 0.0;
             }
-            if ($free + 1e-9 >= $need || strtotime((string) $buy['updated_at']) < time() - 120) {
+            if ($free + 1e-9 >= $need || strtotime((string) $buy['updated_at']) <= time() - 5) {
                 hostfiBuySend($buy);
             }
         } elseif ($buy['status'] === 'SEND_WAITING') {
