@@ -836,13 +836,19 @@ function hostfiReconcileOrder(string $orderRef): void
     }
     ensureHostfiSchema();
     $deps = Database::select(
-        "SELECT * FROM `hostfi_deposits` WHERE `order_ref` = :r AND `status` IN ('RECEIVED','SWAPPED','PAYOUT_PENDING','PAYOUT_UNCERTAIN')",
+        "SELECT * FROM `hostfi_deposits` WHERE `order_ref` = :r AND `status` IN ('RECEIVED','SWAPPING','SWAP_PENDING','SWAPPED','PAYOUT_PENDING','PAYOUT_UNCERTAIN')",
         ['r' => $orderRef]
     );
     foreach ($deps as $dep) {
         if ($dep['status'] === 'RECEIVED') {
             if (strtotime((string) $dep['updated_at']) < time() - 60) {
                 hostfiProcessDeposit((int) $dep['id']);
+            }
+            continue;
+        }
+        if ($dep['status'] === 'SWAPPING' || $dep['status'] === 'SWAP_PENDING') {
+            if (strtotime((string) $dep['updated_at']) < time() - 30) {
+                hostfiCheckSwap($dep);
             }
             continue;
         }

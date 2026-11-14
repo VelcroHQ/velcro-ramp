@@ -108,8 +108,7 @@ function registerAdminRoutes(Router $router): void
                                 ELSE (amount * COALESCE(NULLIF(rate, 0), 1500)) 
                             END
                         ELSE 0 
-                    END), 0) AS total_volume_ngn,
-                    COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN COALESCE(fee_developer, 0) ELSE 0 END), 0) AS local_developer_fees
+                    END), 0) AS total_volume_ngn
                 FROM `transactions`
             ");
             $statsRow = $statsRows[0] ?? [];
@@ -119,23 +118,17 @@ function registerAdminRoutes(Router $router): void
             $completed = (int) ($statsRow['completed_transactions'] ?? 0);
             $volumeUSD = (float) ($statsRow['total_volume_usd'] ?? 0.0);
             $volumeNGN = (float) ($statsRow['total_volume_ngn'] ?? 0.0);
-            $localFees = (float) ($statsRow['local_developer_fees'] ?? 0.0);
-
-            $switchFee = 0.0;
-            $feeCurrency = 'USDC';
-            try {
-                $feesData = switchApi()->getDeveloperFees();
-                $switchFee = (float) ($feesData['data']['amount'] ?? 0);
-                $feeCurrency = $feesData['data']['currency'] ?? 'USDC';
-            } catch (Throwable $e) {}
-
             $pajFeesRows = Database::safeSelect("
                 SELECT COALESCE(SUM(fee_developer), 0) AS paj_developer_fees
                 FROM `transactions`
-                WHERE `channel` = 'PAJ' AND `status` = 'COMPLETED'
+                WHERE `status` = 'COMPLETED'
+                  AND (
+                    UPPER(`channel`) = 'PAJ'
+                    OR LEFT(`reference`, 4) = 'paj_'
+                    OR LOWER(COALESCE(`deposit_bank_name`, '')) LIKE '%paj%'
+                  )
             ");
             $pajFees = (float) ($pajFeesRows[0]['paj_developer_fees'] ?? 0.0);
-            $totalFeeAmount = $switchFee > 0 ? round($switchFee + $pajFees, 2) : round($localFees, 2);
 
             jsonResponse([
                 'totalUsers' => $totalUsers,
@@ -144,10 +137,9 @@ function registerAdminRoutes(Router $router): void
                 'totalVolumeUSD' => $volumeUSD,
                 'totalVolumeNGN' => $volumeNGN,
                 'developerFees' => [
-                    'amount' => $totalFeeAmount,
-                    'currency' => $feeCurrency,
-                    'switch' => $switchFee,
-                    'paj' => $pajFees,
+                    'amount' => round($pajFees, 2),
+                    'currency' => 'USDC',
+                    'paj' => round($pajFees, 2),
                 ],
             ]);
         } catch (Throwable $e) {
@@ -158,7 +150,7 @@ function registerAdminRoutes(Router $router): void
                 'completedTransactions' => 0,
                 'totalVolumeUSD' => 0.0,
                 'totalVolumeNGN' => 0.0,
-                'developerFees' => ['amount' => 0, 'currency' => 'USDC'],
+                'developerFees' => ['amount' => 0, 'currency' => 'USDC', 'paj' => 0],
                 'error' => $e->getMessage(),
             ]);
         }

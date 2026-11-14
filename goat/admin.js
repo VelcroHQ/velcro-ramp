@@ -117,7 +117,7 @@ async function fetchData() {
             document.getElementById('stat-total-users').innerText = stats.totalUsers;
             document.getElementById('stat-total-txs').innerText = stats.allTransactions;
             document.getElementById('stat-total-volume').innerText = `$${Number(stats.totalVolumeUSD).toLocaleString(undefined, {maximumFractionDigits: 0})} | ₦${Number(stats.totalVolumeNGN).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
-            document.getElementById('stat-total-earned').innerText = `${Number(stats.developerFees.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${stats.developerFees.currency || 'USDC'}`;
+            document.getElementById('stat-total-earned').innerText = `${Number(stats.developerFees.paj ?? stats.developerFees.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${stats.developerFees.currency || 'USDC'}`;
         }
 
         // 2. Config (recipient address, etc.)
@@ -142,7 +142,7 @@ async function fetchData() {
                 if (withdrawBtn) {
                     withdrawBtn.style.opacity = '1';
                     withdrawBtn.style.cursor = 'pointer';
-                    withdrawBtn.title = 'Withdraw all fees to Solana wallet';
+                    withdrawBtn.title = 'Withdraw any remaining Switch API fees to Solana wallet';
                 }
             }
         }
@@ -1788,7 +1788,7 @@ function cancelWithdrawal() {
     document.getElementById('withdraw-otp-section').classList.add('hidden');
     document.getElementById('withdraw-otp-input').value = '';
     const btn = document.getElementById('btn-withdraw-otp');
-    btn.innerText = 'Withdraw Fees to Solana';
+    btn.innerText = 'Withdraw Switch Fees to Solana';
     btn.disabled = false;
 }
 
