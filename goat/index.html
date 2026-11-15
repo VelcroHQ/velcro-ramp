@@ -30,8 +30,11 @@
             <img src="velcro_logo.png" onerror="if(this.src.indexOf('Velcro_logo.png')===-1)this.src='Velcro_logo.png';" alt="Velcro">
             <h2>Admin Login</h2>
             <p>Enter your secure credentials to manage the platform.</p>
-            <input type="password" id="admin-pass" placeholder="Password">
-            <button class="btn-primary" onclick="authenticate()">Sign In</button>
+            <form id="admin-login-form" onsubmit="event.preventDefault(); authenticate();" style="width: 100%;">
+                <input type="text" id="admin-user" name="username" value="goat-admin" autocomplete="username" style="display:none;" tabindex="-1" aria-hidden="true">
+                <input type="password" id="admin-pass" name="password" autocomplete="current-password" placeholder="Password" autofocus>
+                <button type="submit" class="btn-primary">Sign In</button>
+            </form>
             <p id="auth-error" style="color: var(--failed); margin-top: 15px; display: none;">Invalid credentials. Try again.</p>
         </div>
     </div>
