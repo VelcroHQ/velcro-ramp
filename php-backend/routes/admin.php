@@ -71,13 +71,13 @@ function registerAdminRoutes(Router $router): void
             jsonResponse(['error' => 'Forbidden'], 403);
         }
         $rlKey = 'admin_fail_' . $ip;
-        if (!rateLimitCheck($rlKey, 5, 900, true)) {
+        if (!rateLimitCheck($rlKey, 10, 900, true)) {
             auditLog('ADMIN_LOCKOUT', ['ip' => $ip, 'source' => 'login_ratelimit']);
             if (rateLimitCheck('alert_lockout_' . $ip, 1, 900)) {
                 runAfterResponse(static function () use ($ip): void {
                     $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown device';
                     $subject = "[Security Alert] Admin login locked out for IP {$ip}";
-                    $html = "<h2>Velcro Security Alert</h2><p>5 consecutive failed admin login attempts were detected from IP: <strong>{$ip}</strong></p><p>Device: <code>{$ua}</code></p><p>This IP address has been temporarily blocked for 15 minutes.</p>";
+                    $html = "<h2>Velcro Security Alert</h2><p>Multiple failed admin login attempts were detected from IP: <strong>{$ip}</strong></p><p>Device: <code>{$ua}</code></p><p>This IP address has been temporarily blocked for 15 minutes.</p>";
                     sendMail($subject, $html, strip_tags($html));
                 }, 'Admin lockout alert email');
             }
@@ -88,6 +88,7 @@ function registerAdminRoutes(Router $router): void
             auditLog('ADMIN_AUTH_FAIL', ['ip' => $ip, 'source' => 'login']);
             jsonResponse(['error' => 'Unauthorized'], 401);
         }
+        rateLimitReset($rlKey, 900);
         auditLog('ADMIN_LOGIN', ['ip' => $ip]);
         jsonResponse(issueAdminToken());
     });

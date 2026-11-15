@@ -206,7 +206,7 @@ function verifyAdminPassword(string $input): bool
         return false;
     }
     $rlKey = 'admin_fail_' . clientIp();
-    if (ADMIN_PASSWORD_HASH === '' || !rateLimitCheck($rlKey, 5, 900, true)) {
+    if (ADMIN_PASSWORD_HASH === '' || !rateLimitCheck($rlKey, 10, 900, true)) {
         return false;
     }
     // ADMIN_PASSWORD may be a password_hash() value ($2y$ / $argon2) or a legacy sha256 hex digest.
@@ -216,7 +216,7 @@ function verifyAdminPassword(string $input): bool
     if ($ok) {
         return true;
     }
-    rateLimitCheck($rlKey, 5, 900);
+    rateLimitCheck($rlKey, 10, 900);
     return false;
 }
 
@@ -741,6 +741,20 @@ function rateLimitCheck(string $key, int $max = RATE_LIMIT_MAX_REQUESTS, int $wi
         @file_put_contents($file, (string) ($count + 1), LOCK_EX);
     }
     return true;
+}
+
+function rateLimitReset(string $key, int $window = RATE_LIMIT_WINDOW_SECONDS): void
+{
+    if (extension_loaded('apcu') && ini_get('apc.enabled')) {
+        $cacheKey = 'velcro_rl_' . $key;
+        $windowKey = $cacheKey . '_' . (int) (time() / $window);
+        apcu_delete($windowKey);
+    }
+    $dir = BASE_PATH . '/data/ratelimit';
+    $file = $dir . '/' . preg_replace('/[^a-z0-9_-]/i', '_', $key) . '_' . (int) (time() / $window) . '.json';
+    if (file_exists($file)) {
+        @unlink($file);
+    }
 }
 
 // ─── Telegram Real-Time Alerts ───

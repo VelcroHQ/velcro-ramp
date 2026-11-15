@@ -43,7 +43,14 @@ function authenticate() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pass })
     })
-        .then(res => res.ok ? res.json() : Promise.reject(new Error(res.status === 401 ? 'denied' : `server returned ${res.status}`)))
+        .then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const msg = data.error || (res.status === 401 ? 'Incorrect access key. Access denied.' : `server returned ${res.status}`);
+                return Promise.reject(new Error(msg));
+            }
+            return data;
+        })
         .then(data => {
             adminKey = `Bearer ${data.token}`;
             localStorage.setItem('velcro_admin_key', adminKey);
@@ -54,7 +61,7 @@ function authenticate() {
         .catch(err => {
             errEl.innerText = err.message === 'denied'
                 ? 'Incorrect access key. Access denied.'
-                : 'Unable to connect to server: ' + err.message;
+                : (err.message.startsWith('Too many') || err.message.startsWith('Incorrect') ? err.message : 'Unable to connect to server: ' + err.message);
             errEl.style.display = 'block';
         });
 }
