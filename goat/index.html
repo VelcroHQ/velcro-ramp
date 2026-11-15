@@ -1256,6 +1256,15 @@
                         <button class="btn-secondary cfg-maint-btn" onclick="switchSection('audit'); fetchAuditLog()">View Audit Log</button>
                         <div id="audit-log-container" style="margin-top: 12px; max-height: 200px; overflow-y: auto; font-size: 11px; display: none;"></div>
                     </div>
+                    <div class="cfg-maint-tile">
+                        <div class="cfg-maint-tile-head">
+                            <div class="cfg-maint-icon is-red"><i data-lucide="user-x"></i></div>
+                            <span class="cfg-maint-title">Purge Spam Accounts</span>
+                        </div>
+                        <p class="cfg-maint-desc">Clean out bot accounts and unpaid spam orders registered with disposable domains (e.g. <code>@fldubai.com</code>).</p>
+                        <button class="btn-secondary cfg-maint-btn" onclick="cleanSpamAccounts()" id="clean-spam-btn" style="border-color: rgba(239, 68, 68, 0.4); color: #ef4444;">Purge Spam Accounts</button>
+                        <p id="clean-spam-status" style="font-size: 12px; margin-top: 8px; display: none;"></p>
+                    </div>
                 </div>
             </div>
         </div>

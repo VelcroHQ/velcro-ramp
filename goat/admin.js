@@ -591,6 +591,44 @@ async function fixPajChannels() {
     }
 }
 
+async function cleanSpamAccounts() {
+    const btn = document.getElementById('clean-spam-btn');
+    const statusEl = document.getElementById('clean-spam-status');
+    const domain = prompt('Enter the spam domain to purge (e.g. fldubai.com):', 'fldubai.com');
+    if (!domain) return;
+    if (!confirm(`Are you sure you want to purge all spam accounts and unpaid fake orders under @${domain}?`)) return;
+    
+    btn.disabled = true;
+    btn.innerText = 'Purging...';
+    if (statusEl) statusEl.style.display = 'none';
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/clean-spam`, {
+            method: 'POST',
+            headers: { 'Authorization': adminKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain: domain })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const p = data.data?.purged || {};
+            const total = (p.store_customers || 0) + (p.merchant_accounts || 0) + (p.merchants || 0) + (p.referrers || 0) + (p.transactions || 0);
+            showToast(`Purged ${total} spam records under @${domain}!`, 'success');
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--success)';
+                statusEl.innerText = `Cleaned: ${p.store_customers || 0} customers, ${p.merchant_accounts || 0} merchants, ${p.referrers || 0} referrers, ${p.transactions || 0} fake orders.`;
+            }
+            await fetchData();
+        } else {
+            showToast(data.error || data.message || 'Spam cleanup failed', 'error');
+        }
+    } catch (e) {
+        showToast('Spam cleanup failed: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Purge Spam Accounts';
+    }
+}
+
 function getWalletExplorerUrl(address, network) {
     const map = {
         'solana': `https://solscan.io/account/${address}`,
