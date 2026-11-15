@@ -145,6 +145,54 @@ function isValidEmail(string $email): bool
     return (bool) preg_match('/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i', $email);
 }
 
+const BLOCKED_EMAIL_DOMAINS = [
+    'fldubai.com', 'flydubai.com', 'fldubai.net', 'fldubai.org',
+    'tempmail.com', 'temp-mail.org', '10minutemail.com', 'guerrillamail.com',
+    'mailinator.com', 'yopmail.com', 'trashmail.com', 'sharklasers.com',
+    'getairmail.com', 'throwawaymail.com', 'maildrop.cc', 'dispostable.com',
+    'crazymailing.com', 'mohmal.com', 'mytemp.email', 'generator.email',
+    'emailondeck.com', 'fakemailgenerator.com', 'inboxkitten.com',
+    'armyspy.com', 'cuvox.de', 'dayrep.com', 'einrot.com', 'fleckens.hu',
+    'gustr.com', 'jourrapide.com', 'rhyta.com', 'superrito.com', 'teleworm.us',
+    'nada.ltd', 'burnermail.io', 'dropmail.me', 'getnada.com', 'tempail.com',
+    'fakeinbox.com', 'mailcatch.com', 'trashmail.net', 'mytempmail.com'
+];
+
+/**
+ * Validates an email address and checks for disposable domains, spam catch-alls,
+ * and bot username patterns (e.g. velcro123172@fldubai.com).
+ * Returns an error string if blocked, or null if allowed.
+ */
+function isSuspiciousEmail(string $email): ?string
+{
+    $email = strtolower(trim($email));
+    if (!isValidEmail($email)) {
+        return 'Enter a valid email address';
+    }
+    $parts = explode('@', $email, 2);
+    $user = $parts[0] ?? '';
+    $domain = $parts[1] ?? '';
+
+    // Bot pattern: velcro123172@... or brand/bot prefix with trailing digits
+    if (preg_match('/^(velcro|ramp|bot|fake|test)\d{3,}@/i', $email) && !str_ends_with($domain, 'usevelcro.com')) {
+        return 'Automated and temporary email addresses are not permitted';
+    }
+
+    // Blocked disposable and scam domains
+    $customBlocked = [];
+    if (function_exists('loadSettings')) {
+        try {
+            $customBlocked = (array) (loadSettings()['blocked_email_domains'] ?? []);
+        } catch (Throwable $e) {}
+    }
+    $allBlocked = array_unique(array_merge(BLOCKED_EMAIL_DOMAINS, array_map('strtolower', $customBlocked)));
+    if (in_array($domain, $allBlocked, true)) {
+        return 'Disposable and temporary email addresses are not permitted. Please use a permanent email address (e.g. Gmail, Outlook, Yahoo, or your custom domain).';
+    }
+
+    return null;
+}
+
 // ─── Admin Auth ───
 
 /**

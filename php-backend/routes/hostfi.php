@@ -1075,8 +1075,8 @@ function registerHostfiRoutes(Router $router): void
         if ($amount < 0 || strlen($accountNumber) < 10) {
             jsonResponse(errorResponse('A valid accountNumber is required'), 400);
         }
-        if ($email !== '' && !isValidEmail($email)) {
-            jsonResponse(errorResponse('Invalid email address'), 400);
+        if ($email !== '' && (($problem = isSuspiciousEmail($email)) !== null)) {
+            jsonResponse(errorResponse($problem), 400);
         }
         try {
             $asset = hostfiApi()->walletAsset($symbol);

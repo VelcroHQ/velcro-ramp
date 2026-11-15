@@ -294,8 +294,8 @@ function sendReferralCode(string $email, string $otpKey, string $subject, string
 function referralEmailFrom(mixed $raw): string
 {
     $email = strtolower(trim((string) $raw));
-    if (!isValidEmail($email)) {
-        jsonResponse(errorResponse('A valid email is required'), 400);
+    if (($problem = isSuspiciousEmail($email)) !== null) {
+        jsonResponse(errorResponse($problem), 400);
     }
     return $email;
 }

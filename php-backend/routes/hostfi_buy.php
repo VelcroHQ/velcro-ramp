@@ -1027,8 +1027,8 @@ function registerHostfiBuyRoutes(Router $router): void
             $email = (string) $store['customer']['email'];
         }
         $fee = hostfiFee() + ($store['markup'] ?? 0.0);
-        if ($email !== '' && !isValidEmail($email)) {
-            jsonResponse(errorResponse('Invalid email address'), 400);
+        if ($email !== '' && (($problem = isSuspiciousEmail($email)) !== null)) {
+            jsonResponse(errorResponse($problem), 400);
         }
         $chain = hostfiChain($network);
         if (!hostfiValidWallet($chain, $wallet)) {

@@ -1090,6 +1090,49 @@ function registerAdminRoutes(Router $router): void
             jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
         }
     });
+
+    $router->post('/api/admin/clean-spam', function () {
+        requireAdminAuth();
+        $b = getJsonBody();
+        $domain = strtolower(trim((string) body($b, 'domain', 'fldubai.com')));
+        if ($domain === '') {
+            $domain = 'fldubai.com';
+        }
+        $match = '%@' . $domain;
+        $purged = [
+            'store_customers' => 0,
+            'merchant_accounts' => 0,
+            'merchants' => 0,
+            'referrers' => 0,
+            'transactions' => 0,
+        ];
+
+        try {
+            $purged['store_customers'] = Database::safeExecute('DELETE FROM `store_customers` WHERE `email` LIKE :m', ['m' => $match])->rowCount();
+        } catch (Throwable $e) {}
+
+        try {
+            $purged['merchant_accounts'] = Database::safeExecute('DELETE FROM `merchant_accounts` WHERE `email` LIKE :m', ['m' => $match])->rowCount();
+        } catch (Throwable $e) {}
+
+        try {
+            $purged['merchants'] = Database::safeExecute('DELETE FROM `merchants` WHERE `email` LIKE :m', ['m' => $match])->rowCount();
+        } catch (Throwable $e) {}
+
+        try {
+            $purged['referrers'] = Database::safeExecute('DELETE FROM `referrers` WHERE `email` LIKE :m', ['m' => $match])->rowCount();
+        } catch (Throwable $e) {}
+
+        try {
+            $purged['transactions'] = Database::safeExecute(
+                "DELETE FROM `transactions` WHERE `email` LIKE :m AND `status` IN ('AWAITING_DEPOSIT', 'EXPIRED', 'CANCELLED')",
+                ['m' => $match]
+            )->rowCount();
+        } catch (Throwable $e) {}
+
+        auditLog('SPAM_CLEANUP', ['domain' => $domain, 'purged' => $purged, 'ip' => clientIp()]);
+        jsonResponse(successResponse(['domain' => $domain, 'purged' => $purged], 'Spam cleanup completed successfully'));
+    });
 }
 
 function executeWithdrawal(string $asset, string $ip, string $source): array

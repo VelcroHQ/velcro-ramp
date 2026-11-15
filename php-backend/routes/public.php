@@ -406,8 +406,8 @@ function registerPublicRoutes(Router $router): void
         $callbackUrl = body($body, 'callback_url');
         $walletAddress = body($body, 'wallet_address');
         $email = $store ? (string) $store['customer']['email'] : strtolower(trim((string) body($body, 'email', '')));
-        if ($email !== '' && !isValidEmail($email)) {
-            jsonResponse(errorResponse('Invalid email address'), 400);
+        if ($email !== '' && (($problem = isSuspiciousEmail($email)) !== null)) {
+            jsonResponse(errorResponse($problem), 400);
         }
         $beneficiary = body($body, 'beneficiary');
 
