@@ -83,6 +83,9 @@ function handleCors(): void
     }
     header('Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         http_response_code(204);
         exit;
@@ -150,11 +153,14 @@ function isValidEmail(string $email): bool
  */
 function verifyAdminPassword(string $input): bool
 {
-    $rlKey = 'admin_fail_' . clientIp();
-    if (ADMIN_PASSWORD_HASH === '' || !rateLimitCheck($rlKey, 10, 900, true)) {
+    $clean = preg_replace('/^Bearer\s+/i', '', trim($input));
+    if ($clean === '') {
         return false;
     }
-    $clean = preg_replace('/^Bearer\s+/i', '', trim($input));
+    $rlKey = 'admin_fail_' . clientIp();
+    if (ADMIN_PASSWORD_HASH === '' || !rateLimitCheck($rlKey, 5, 900, true)) {
+        return false;
+    }
     // ADMIN_PASSWORD may be a password_hash() value ($2y$ / $argon2) or a legacy sha256 hex digest.
     $ok = str_starts_with(ADMIN_PASSWORD_HASH, '$')
         ? password_verify($clean, ADMIN_PASSWORD_HASH)
@@ -162,7 +168,7 @@ function verifyAdminPassword(string $input): bool
     if ($ok) {
         return true;
     }
-    rateLimitCheck($rlKey, 10, 900);
+    rateLimitCheck($rlKey, 5, 900);
     return false;
 }
 
@@ -192,6 +198,20 @@ function verifyAdminToken(string $input): bool
     return hash_equals($expected, $m[2]);
 }
 
+function checkAdminIpAllowed(string $ip): bool
+{
+    $s = loadSettings();
+    $allowed = trim((string) ($s['admin_allowed_ips'] ?? ''));
+    if ($allowed === '') {
+        return true;
+    }
+    $list = array_filter(array_map('trim', explode(',', $allowed)));
+    if (empty($list)) {
+        return true;
+    }
+    return in_array($ip, $list, true);
+}
+
 function appKey(): string
 {
     static $key = null;
@@ -215,13 +235,18 @@ function appKey(): string
 
 function requireAdminAuth(): void
 {
+    $ip = clientIp();
+    if (!checkAdminIpAllowed($ip)) {
+        auditLog('ADMIN_IP_BLOCKED', ['ip' => $ip, 'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown']);
+        jsonResponse(['error' => 'Forbidden'], 403);
+    }
     $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_GET['token'] ?? ($_GET['key'] ?? ''));
     if ($auth === '' && function_exists('apache_request_headers')) {
         $headers = apache_request_headers();
         $auth = $headers['Authorization'] ?? '';
     }
     if (!verifyAdminToken($auth) && !verifyAdminPassword($auth)) {
-        auditLog('ADMIN_AUTH_FAIL', ['ip' => clientIp(), 'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown']);
+        auditLog('ADMIN_AUTH_FAIL', ['ip' => $ip, 'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown']);
         jsonResponse(['error' => 'Unauthorized'], 401);
     }
 }
