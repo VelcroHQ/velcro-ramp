@@ -477,9 +477,9 @@ function populateBanks(filter = '') {
   if (!container.querySelector('.dropdown-header')) {
     container.innerHTML = `
       <div class="dropdown-header shrink-0 p-3 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <div class="flex items-center gap-2 mb-2 sm:hidden">
+        <div class="flex items-center gap-2 mb-2 md:hidden">
           <span class="text-sm font-bold text-gray-900 dark:text-white flex-1 px-1">Choose bank</span>
-          <button onclick="closeAllDropdowns()" class="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-500 dark:text-gray-400">
+          <button onclick="closeAllDropdowns()" class="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-500 dark:text-gray-400" aria-label="Close">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
@@ -494,6 +494,27 @@ function populateBanks(filter = '') {
   }
 
   const listContainer = document.getElementById('bank-list-items');
+  if (listContainer && !listContainer._kbDismissBound) {
+    listContainer._kbDismissBound = true;
+    let startY = 0;
+    listContainer.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches[0]) startY = e.touches[0].clientY;
+    }, { passive: true });
+    listContainer.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches[0] && Math.abs(e.touches[0].clientY - startY) > 6) {
+        const active = document.activeElement;
+        if (active && (active.id === 'bank-filter' || active.tagName === 'INPUT')) {
+          active.blur();
+        }
+      }
+    }, { passive: true });
+    listContainer.addEventListener('scroll', () => {
+      const active = document.activeElement;
+      if (active && (active.id === 'bank-filter' || active.tagName === 'INPUT')) {
+        active.blur();
+      }
+    }, { passive: true });
+  }
   let banks = (cachedBanks && cachedBanks.length > 0) ? cachedBanks : (currentCountry === 'NG' ? DEFAULT_NIGERIAN_BANKS : []);
   banks = banks.filter(b => b && b.name);
   if (banks.length === 0) {

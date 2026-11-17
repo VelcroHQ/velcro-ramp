@@ -72,8 +72,9 @@ function toggleDropdown(id) {
     const card = el.closest('.premium-card');
     if (card) card.style.zIndex = '100000';
 
-    if (window.innerWidth <= 640) {
-      // On mobile, teleport el to document.body so position:fixed is never trapped inside card stacking context
+    const isMobileOrTablet = window.innerWidth <= 768 || (window.innerWidth <= 1024 && ('ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)));
+    if (isMobileOrTablet) {
+      // On mobile and tablets, teleport el to document.body so position:fixed is never trapped inside card stacking context
       if (el.parentElement !== document.body) {
         el._originalParent = el.parentElement;
         el._nextSibling = el.nextSibling;
@@ -86,6 +87,28 @@ function toggleDropdown(id) {
   }
 }
 
+// Adjust mobile & tablet bottom sheet position when virtual keyboard appears
+if (typeof window !== 'undefined' && window.visualViewport) {
+  const adjustDropdownForKeyboard = () => {
+    const el = document.getElementById('sell-bank-options');
+    if (!el || !el.classList.contains('open')) return;
+    const isMobileOrTablet = window.innerWidth <= 768 || (window.innerWidth <= 1024 && ('ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)));
+    if (isMobileOrTablet) {
+      const vh = window.visualViewport.height;
+      const kbHeight = Math.max(0, window.innerHeight - vh);
+      if (kbHeight > 80) {
+        el.style.bottom = `${kbHeight}px`;
+        el.style.maxHeight = `${vh - 12}px`;
+      } else {
+        el.style.bottom = '';
+        el.style.maxHeight = '';
+      }
+    }
+  };
+  window.visualViewport.addEventListener('resize', adjustDropdownForKeyboard);
+  window.visualViewport.addEventListener('scroll', adjustDropdownForKeyboard);
+}
+
 function closeAllDropdowns() {
   // Do not blur search inputs inside open modals/dropdowns when closing
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
@@ -96,6 +119,8 @@ function closeAllDropdowns() {
   }
   document.querySelectorAll('.custom-select-options').forEach(o => {
     o.classList.remove('open');
+    o.style.bottom = '';
+    o.style.maxHeight = '';
     const p = o.closest('.custom-select');
     if (p) p.style.zIndex = '';
     // Return teleported element to original position in DOM tree
@@ -1076,6 +1101,9 @@ function markPickerItems(list) {
     if (item.hasAttribute('tabindex')) return;
     item.setAttribute('tabindex', '0');
     item.setAttribute('role', 'option');
+    item.addEventListener('focus', () => {
+      item.scrollIntoView({ block: 'nearest' });
+    });
   });
 }
 function focusPickerTrigger(list) {

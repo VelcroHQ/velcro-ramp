@@ -1134,6 +1134,21 @@ function renderBankList(query) {
       selectBank(btn.dataset.bid);
     };
   });
+  if (!listEl._kbDismissBound) {
+    listEl._kbDismissBound = true;
+    let startY = 0;
+    listEl.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches[0]) startY = e.touches[0].clientY;
+    }, { passive: true });
+    listEl.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches[0] && Math.abs(e.touches[0].clientY - startY) > 6) {
+        $('co-bank-search')?.blur();
+      }
+    }, { passive: true });
+    listEl.addEventListener('scroll', () => {
+      $('co-bank-search')?.blur();
+    }, { passive: true });
+  }
 }
 
 document.addEventListener('click', e => {

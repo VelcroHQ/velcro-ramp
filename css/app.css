@@ -599,8 +599,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
   margin-top: 4px;
-  max-height: 300px;
-  overflow-y: auto;
+  max-height: 400px;
   flex-direction: column;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
@@ -610,7 +609,28 @@
 }
 
 .custom-select-options.open {
-  display: block;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#sell-bank-options {
+  overflow: hidden !important;
+  max-height: 420px;
+  width: 100%;
+  min-width: 320px;
+}
+
+#sell-bank-options .dropdown-header {
+  flex-shrink: 0 !important;
+}
+
+#sell-bank-options #bank-list-items {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  overscroll-behavior: contain !important;
 }
 
 /* Dropdown backdrop: only used on mobile bottom sheets, completely hidden on desktop */
@@ -618,8 +638,8 @@
   display: none;
 }
 
-/* Mobile dropdown overlay */
-@media (max-width: 640px) {
+/* Mobile & tablet dropdown overlay */
+@media (max-width: 768px) {
   .custom-select-options.open {
     position: fixed !important;
     top: auto !important;
@@ -642,6 +662,7 @@
     overflow: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-y !important;
+    transition: bottom 0.2s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
   .dark .custom-select-options.open {
     background: #0f172a !important;
