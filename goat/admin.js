@@ -694,10 +694,41 @@ function isPajTx(tx) {
     if (tx.reference?.startsWith('paj_')) return true;
     if (tx.deposit_bank_name?.toLowerCase().includes('paj')) return true;
     try {
-        const meta = JSON.parse(tx.meta || '{}');
+        const meta = typeof tx.meta === 'string' ? JSON.parse(tx.meta || '{}') : (tx.meta || {});
         if (meta.mint || meta.provider === 'PAJ' || meta.id?.startsWith('paj')) return true;
     } catch (e) {}
     return false;
+}
+
+function isHostfiTx(tx) {
+    if (!tx) return false;
+    if (String(tx.channel || '').toUpperCase() === 'HOSTFI') return true;
+    if (String(tx.reference || '').startsWith('hfb_')) return true;
+    try {
+        const meta = typeof tx.meta === 'string' ? JSON.parse(tx.meta || '{}') : (tx.meta || {});
+        if (meta.hostfi) return true;
+    } catch (e) {}
+    return false;
+}
+
+function getTxCoinSymbol(tx) {
+    if (!tx) return '';
+    if (tx.destination_currency && tx.destination_currency !== 'NGN') return tx.destination_currency.toUpperCase();
+    if (tx.source_currency && tx.source_currency !== 'NGN') return tx.source_currency.toUpperCase();
+    if (tx.asset) {
+        const parts = String(tx.asset).split(':');
+        const c = parts[1] || parts[0];
+        if (c && c.toUpperCase() !== 'NGN') return c.toUpperCase();
+    }
+    return '';
+}
+
+function getHostfiNgnPerUsd(tx) {
+    try {
+        const m = typeof tx.meta === 'string' ? JSON.parse(tx.meta || '{}') : (tx.meta || {});
+        if (m?.hostfi?.quote?.ngn_per_usd > 0) return Number(m.hostfi.quote.ngn_per_usd);
+    } catch (e) {}
+    return 0;
 }
 
 function getTxCurrencySymbol(tx) {
@@ -709,43 +740,57 @@ function getTxCurrencySymbol(tx) {
 
 function getTxVolumes(tx) {
     if (!tx) return { usd: 0, ngn: 0 };
-    const rate = safeNum(tx.rate, 1500) || 1500;
+    const rawRate = safeNum(tx.rate, 0);
     const isPaj = isPajTx(tx);
+    const isHostfi = isHostfiTx(tx);
     const amt = safeNum(tx.amount || tx.fiat_amount);
     const dest = safeNum(tx.destination_amount);
-    const asset = ((tx.asset || '') + '').toUpperCase();
-    const curr = ((tx.currency || '') + '').toUpperCase();
-    const destCurr = ((tx.destination_currency || '') + '').toUpperCase();
-    const isDollarAsset = ['USDT', 'USDC', 'USD'].includes(asset) ||
-        ['USDT', 'USDC', 'USD'].includes(curr) ||
-        ['USDT', 'USDC', 'USD'].includes(destCurr);
+    const coin = getTxCoinSymbol(tx);
+    const isDollarAsset = ['USDT', 'USDC', 'USD'].includes(coin);
+    const hostfiNgnPerUsd = isHostfi ? getHostfiNgnPerUsd(tx) : 0;
+    const usdNgnRate = hostfiNgnPerUsd > 0 ? hostfiNgnPerUsd : (rawRate > 500 && rawRate < 5000 ? rawRate : 1500);
 
     let usd = 0;
     let ngn = 0;
 
     if (tx.type === 'ONRAMP') {
+        // User pays NGN (amt), receives crypto (dest)
         ngn = amt;
         if (isDollarAsset && dest > 0) {
             usd = dest;
         } else {
-            usd = rate > 0 ? (amt / rate) : (amt / 1500);
+            usd = ngn / usdNgnRate;
         }
     } else {
-        // OFFRAMP (Sell)
+        // OFFRAMP: User sends crypto, receives NGN
         if (isPaj) {
-            ngn = amt;
-            usd = rate > 0 ? (amt / rate) : (amt / 1500);
+            ngn = amt > 0 ? amt : dest;
+            usd = ngn / usdNgnRate;
+        } else if (isHostfi) {
+            // In HostFi OFFRAMP: dest is NGN payout; amt is crypto amount
+            if (dest > 0) {
+                ngn = dest;
+                usd = dest / usdNgnRate;
+            } else if (amt > 0) {
+                if (isDollarAsset) {
+                    usd = amt;
+                    ngn = amt * usdNgnRate;
+                } else if (rawRate > 0) {
+                    ngn = amt * rawRate;
+                    usd = ngn / usdNgnRate;
+                }
+            }
         } else {
             // Switch OFFRAMP: amt is crypto/USD, dest is NGN
             if (dest > 0) {
                 ngn = dest;
-                usd = (isDollarAsset && amt > 0) ? amt : (dest / (rate > 0 ? rate : 1500));
+                usd = (isDollarAsset && amt > 0) ? amt : (dest / usdNgnRate);
             } else if (isDollarAsset && amt > 0) {
                 usd = amt;
-                ngn = amt * (rate > 0 ? rate : 1500);
+                ngn = amt * usdNgnRate;
             } else {
                 usd = amt;
-                ngn = usd * (rate > 0 ? rate : 1500);
+                ngn = usd * usdNgnRate;
             }
         }
     }
@@ -754,17 +799,55 @@ function getTxVolumes(tx) {
 
 function formatTxTableAmount(tx) {
     const vols = getTxVolumes(tx);
-    const sym = getTxCurrencySymbol(tx);
-    const amt = safeNum(tx.amount);
-    const maxDigits = sym === '$' ? 4 : 2;
-    const primary = `${sym}${amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: maxDigits})}`;
-    
-    let approx = '';
-    if (sym === '\u20A6') {
-        approx = `~$${vols.usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
-    } else {
-        approx = `~₦${vols.ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} NGN`;
+    const isPaj = isPajTx(tx);
+    const coin = getTxCoinSymbol(tx);
+    const isDollarAsset = ['USDT', 'USDC', 'USD'].includes(coin);
+
+    // 1. ONRAMP (User pays Naira)
+    if (tx.type === 'ONRAMP') {
+        const ngnVal = safeNum(tx.amount || tx.source_amount);
+        const primary = `\u20A6${ngnVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const dest = safeNum(tx.destination_amount);
+        let approx = '';
+        if (dest > 0 && coin && !isDollarAsset) {
+            const digits = dest < 0.01 ? 6 : (dest < 1 ? 4 : 2);
+            approx = `~${dest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: digits})} ${coin} ($${vols.usd.toFixed(2)})`;
+        } else {
+            approx = `~$${vols.usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
+        }
+        return `<div><b>${primary}</b><div style="font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-top: 1px;">${approx}</div></div>`;
     }
+
+    // 2. PAJ OFFRAMP (amounts stored in NGN)
+    if (isPaj) {
+        const ngnVal = safeNum(tx.amount || tx.destination_amount);
+        const primary = `\u20A6${ngnVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const approx = `~$${vols.usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
+        return `<div><b>${primary}</b><div style="font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-top: 1px;">${approx}</div></div>`;
+    }
+
+    // 3. HostFi & Switch OFFRAMP (User sells crypto, gets Naira)
+    const cryptoAmt = safeNum(tx.amount || tx.source_amount);
+    const ngnAmt = safeNum(tx.destination_amount);
+
+    let primary = '';
+    if (cryptoAmt > 0) {
+        if (isDollarAsset || !coin) {
+            primary = `$${cryptoAmt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}`;
+        } else {
+            const digits = cryptoAmt < 0.01 ? 6 : (cryptoAmt < 1 ? 4 : 2);
+            primary = `${cryptoAmt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: digits})} ${coin}`;
+        }
+    } else if (vols.usd > 0) {
+        primary = `~$${vols.usd.toFixed(2)} USD`;
+    } else if (ngnAmt > 0) {
+        primary = `\u20A6${ngnAmt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    } else {
+        primary = '$0.00';
+    }
+
+    const approxNgn = ngnAmt > 0 ? ngnAmt : vols.ngn;
+    const approx = `~₦${approxNgn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} NGN`;
     return `<div><b>${primary}</b><div style="font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-top: 1px;">${approx}</div></div>`;
 }
 
@@ -1149,11 +1232,41 @@ function viewTransaction(ref) {
     document.getElementById('modal-status').innerText = statusLabel(tx.status);
     document.getElementById('modal-status').className = `status-pill ${tx.status.toLowerCase()}`;
     const modalVols = getTxVolumes(tx);
-    const modalSym = getTxCurrencySymbol(tx);
-    const modalPrimary = `${modalSym}${safeNum(tx.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-    const modalApprox = modalSym === '\u20A6'
-        ? `~$${modalVols.usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`
-        : `~₦${modalVols.ngn.toLocaleString(undefined, {maximumFractionDigits: 0})} NGN`;
+    const modalCoin = getTxCoinSymbol(tx);
+    const modalIsDollar = ['USDT', 'USDC', 'USD'].includes(modalCoin);
+    let modalPrimary = '';
+    let modalApprox = '';
+    if (tx.type === 'ONRAMP') {
+        const ngn = safeNum(tx.amount || tx.source_amount);
+        modalPrimary = `\u20A6${ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const dest = safeNum(tx.destination_amount);
+        if (dest > 0 && modalCoin && !modalIsDollar) {
+            const digits = dest < 0.01 ? 6 : (dest < 1 ? 4 : 2);
+            modalApprox = `~${dest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: digits})} ${modalCoin} ($${modalVols.usd.toFixed(2)})`;
+        } else {
+            modalApprox = `~$${modalVols.usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
+        }
+    } else if (isPajTx(tx)) {
+        const ngn = safeNum(tx.amount || tx.destination_amount);
+        modalPrimary = `\u20A6${ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        modalApprox = `~$${modalVols.usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
+    } else {
+        const cryptoAmt = safeNum(tx.amount || tx.source_amount);
+        const ngn = safeNum(tx.destination_amount);
+        if (cryptoAmt > 0) {
+            if (modalIsDollar || !modalCoin) {
+                modalPrimary = `$${cryptoAmt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}`;
+            } else {
+                const digits = cryptoAmt < 0.01 ? 6 : (cryptoAmt < 1 ? 4 : 2);
+                modalPrimary = `${cryptoAmt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: digits})} ${modalCoin}`;
+            }
+        } else if (modalVols.usd > 0) {
+            modalPrimary = `~$${modalVols.usd.toFixed(2)} USD`;
+        } else {
+            modalPrimary = `\u20A6${ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+        modalApprox = `~₦${(ngn > 0 ? ngn : modalVols.ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} NGN`;
+    }
     document.getElementById('modal-amount').innerHTML = `${modalPrimary} <span style="font-size: 13px; font-weight: normal; color: var(--text-secondary); margin-left: 6px;">(${modalApprox})</span>`;
     document.getElementById('modal-type').innerText = tx.type;
     document.getElementById('modal-channel').innerText = txProviderLabel(tx);
