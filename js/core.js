@@ -753,6 +753,12 @@ function popOrderHistory(type) {
 }
 
 function getTopOpenModal() {
+  const navMenu = document.getElementById('nav-menu-overlay');
+  if (navMenu && !navMenu.classList.contains('hidden')) return 'navMenu';
+  const vipModal = document.getElementById('vip-modal');
+  if (vipModal && !vipModal.classList.contains('hidden')) return 'vip';
+  const tour = document.getElementById('tour-overlay');
+  if (tour && !tour.classList.contains('hidden')) return 'tour';
   const picker = document.querySelector('.asset-picker-modal.open, .custom-select-options.open');
   if (picker) return 'picker';
   const login = document.getElementById('login-overlay');
@@ -769,6 +775,18 @@ function getTopOpenModal() {
 function closeTopOpenModal() {
   const top = getTopOpenModal();
   if (!top) return false;
+  if (top === 'navMenu') {
+    if (typeof closeNavMenu === 'function') closeNavMenu();
+    return true;
+  }
+  if (top === 'vip') {
+    if (typeof closeVipModal === 'function') closeVipModal();
+    return true;
+  }
+  if (top === 'tour') {
+    if (typeof endExchangeTour === 'function') endExchangeTour();
+    return true;
+  }
   if (top === 'picker') {
     if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
     return true;
