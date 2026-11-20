@@ -863,10 +863,11 @@ function updateBuyMinLimitUI() {
   const minLabel = document.getElementById('buy-min-label');
   if (!minLabel) return;
   const minLimit = getEffectiveBuyMinLimit();
+  const fiatSymbol = (typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry)?.symbol : null) || '₦';
   if (isUsdtOrUsdcOnTrxOrEth()) {
-    minLabel.textContent = `Min: ₦${minLimit.toLocaleString()} ($5)`;
+    minLabel.innerHTML = `Min: ${fiatSymbol}${minLimit.toLocaleString()} ($5)`;
   } else {
-    minLabel.textContent = `Min: ₦${minLimit.toLocaleString()} ($1)`;
+    minLabel.innerHTML = `Min: ${fiatSymbol}${minLimit.toLocaleString()} ($1)`;
   }
 }
 
@@ -875,16 +876,17 @@ function validateBuyLimit(amount) {
   const errorEl = document.getElementById('buy-limit-error');
   if (!errorEl) return true;
   const minLimit = getEffectiveBuyMinLimit();
+  const fiatSymbol = (typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry)?.symbol : null) || '₦';
   if (amount > 0 && amount < minLimit) {
     if (isUsdtOrUsdcOnTrxOrEth()) {
-      errorEl.textContent = `Minimum buy amount on Ethereum/TRON is $5 worth (₦${minLimit.toLocaleString()}).`;
+      errorEl.innerHTML = `Minimum buy amount on Ethereum/TRON is $5 worth (${fiatSymbol}${minLimit.toLocaleString()}).`;
     } else {
-      errorEl.textContent = `Minimum buy amount on this network is $1 worth (₦${minLimit.toLocaleString()}).`;
+      errorEl.innerHTML = `Minimum buy amount on this network is $1 worth (${fiatSymbol}${minLimit.toLocaleString()}).`;
     }
     errorEl.classList.remove('hidden');
     return false;
   }
-  if (amount > BUY_MAX_LIMIT) {
+  if (currentCountry === 'NG' && amount > BUY_MAX_LIMIT) {
     errorEl.textContent = `Maximum buy amount is ₦${BUY_MAX_LIMIT.toLocaleString()} per transaction.`;
     errorEl.classList.remove('hidden');
     return false;

@@ -435,6 +435,19 @@ function updateCurrencySymbols() {
     accNumInput.placeholder = (cfg.channel === 'MOBILEMONEY') ? 'Enter mobile money number' : 'Enter account number';
   }
 
+  if (typeof updateBuyMinLimitUI === 'function') {
+    updateBuyMinLimitUI();
+  }
+  const maxLabel = document.getElementById('buy-max-label');
+  if (maxLabel) {
+    if (cfg.code === 'NG') {
+      maxLabel.textContent = `Max: ₦${BUY_MAX_LIMIT.toLocaleString()}`;
+    } else {
+      const approxMax = Math.round(3500 * (Number(currentRate.buy) || 12));
+      maxLabel.innerHTML = `Max: ${cfg.symbol}${approxMax.toLocaleString()}`;
+    }
+  }
+
   updateCurrencyPillState();
 }
 

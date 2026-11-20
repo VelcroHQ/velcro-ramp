@@ -254,7 +254,7 @@ async function generateWalletAddress() {
     promptLoginOverlay(generateWalletAddress);
     return;
   }
-  if (currentCountry !== 'NG') {
+  if (typeof isCountryEnabled === 'function' ? !isCountryEnabled(currentCountry) : (currentCountry !== 'NG')) {
     showToast('Transactions for this country are currently disabled.', 'warning');
     return;
   }
@@ -421,7 +421,7 @@ async function generateWalletAddress() {
         country: currentCountry,
         currency: currentCurrency,
         asset: currentSwitchAsset,
-        channel: (currentCountry === 'GH' || currentCountry === 'KE') ? 'MOBILEMONEY' : 'BANK',
+        channel: (typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry)?.channel : null) || ((currentCountry === 'GH' || currentCountry === 'KE') ? 'MOBILEMONEY' : 'BANK'),
         reason: 'PERSONAL_TRANSFER',
         narration: 'Crypto Offramp Settlement',
         beneficiary: {
@@ -517,7 +517,7 @@ async function generateBankAccount() {
     promptLoginOverlay(generateBankAccount);
     return;
   }
-  if (currentCountry !== 'NG') {
+  if (typeof isCountryEnabled === 'function' ? !isCountryEnabled(currentCountry) : (currentCountry !== 'NG')) {
     showToast('Transactions for this country are currently disabled.', 'warning');
     return;
   }
@@ -525,19 +525,23 @@ async function generateBankAccount() {
   const amount = getNum('buy-amount');
   const receive = getNum('buy-receive');
   const minBuyLimit = getEffectiveBuyMinLimit();
+  const countryCfg = typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry) : null;
+  const fiatSymbol = (countryCfg && countryCfg.symbol) ? countryCfg.symbol : '₦';
   if (!amount || amount < minBuyLimit) {
     if (isUsdtOrUsdcOnTrxOrEth()) {
-      showToast(`Minimum buy amount on Ethereum/TRON is $5 worth (₦${minBuyLimit.toLocaleString()})`, 'warning');
+      showToast(`Minimum buy amount on Ethereum/TRON is $5 worth (${fiatSymbol}${minBuyLimit.toLocaleString()})`, 'warning');
     } else {
-      showToast(`Minimum buy amount is $1 worth (₦${minBuyLimit.toLocaleString()})`, 'warning');
+      showToast(`Minimum buy amount is $1 worth (${fiatSymbol}${minBuyLimit.toLocaleString()})`, 'warning');
     }
     return;
   }
-  if (amount > BUY_MAX_LIMIT) { showToast(`Maximum buy amount is ₦${BUY_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
+  if (currentCountry === 'NG' && amount > BUY_MAX_LIMIT) { showToast(`Maximum buy amount is ₦${BUY_MAX_LIMIT.toLocaleString()} per transaction`, 'warning'); return; }
   const wallet = document.getElementById('buy-wallet').value.trim();
   if (!wallet) { showToast('Please enter your wallet address', 'warning'); return; }
 
   const btn = document.getElementById('buy-btn');
+  const curSymEl = document.getElementById('buy-confirm-currency-symbol');
+  if (curSymEl) curSymEl.innerHTML = fiatSymbol;
   document.getElementById('buy-confirm-ngn').textContent = Number(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
   btn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
 
@@ -670,7 +674,7 @@ async function generateBankAccount() {
         country: currentCountry,
         currency: currentCurrency,
         asset: currentSwitchAsset,
-        channel: (currentCountry === 'GH' || currentCountry === 'KE') ? 'MOBILEMONEY' : 'BANK',
+        channel: (typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry)?.channel : null) || ((currentCountry === 'GH' || currentCountry === 'KE') ? 'MOBILEMONEY' : 'BANK'),
         reason: 'PERSONAL_TRANSFER',
         narration: 'Crypto Onramp Settlement',
         wallet_address: wallet,
