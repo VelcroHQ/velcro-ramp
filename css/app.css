@@ -1319,52 +1319,109 @@
 /* Right-anchored hamburger menu dropdown & backdrop */
 #nav-menu-backdrop:not(.hidden) {
   display: block !important;
-  animation: fadeInOverlay 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  z-index: 1040 !important;
+  animation: fadeInOverlay 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 #nav-menu-dropdown {
-  position: absolute !important;
-  right: 0 !important;
-  top: 100% !important;
-  margin-top: 8px !important;
-  z-index: 1000 !important;
-  max-height: calc(100vh - 84px) !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch !important;
+  z-index: 1050 !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
-  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.16), 0 6px 12px -3px rgba(0, 0, 0, 0.08) !important;
+  overscroll-behavior: contain !important;
 }
 
 #nav-menu-dropdown::-webkit-scrollbar {
   display: none !important;
 }
 
-#nav-menu-dropdown:not(.hidden) {
-  display: flex !important;
-  animation: slideInMenu 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+/* Mobile: Full-height sleek slide-over drawer */
+@media (max-width: 640px) {
+  #nav-menu-dropdown {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    width: 310px !important;
+    max-width: 88vw !important;
+    margin: 0 !important;
+    border-radius: 28px 0 0 28px !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-right: none !important;
+    padding: 20px 16px 20px 16px !important;
+    box-shadow: -10px 0 35px -5px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  #nav-menu-dropdown:not(.hidden) {
+    display: flex !important;
+    flex-direction: column !important;
+    animation: drawerSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+}
+
+/* Desktop: Refined floating card */
+@media (min-width: 641px) {
+  #nav-menu-dropdown {
+    position: absolute !important;
+    right: 0 !important;
+    top: 100% !important;
+    margin-top: 10px !important;
+    width: 290px !important;
+    max-height: calc(100vh - 84px) !important;
+    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    border-radius: 22px !important;
+    padding: 12px !important;
+  }
+
+  #nav-menu-dropdown:not(.hidden) {
+    display: flex !important;
+    flex-direction: column !important;
+    animation: dropdownPopIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+}
+
+@keyframes drawerSlideIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes dropdownPopIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .menu-nav-pill {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease !important;
+  transition: background-color 0.15s ease, transform 0.1s ease !important;
 }
 
 .menu-nav-pill:active {
   transform: scale(0.98) !important;
 }
 
-@keyframes fadeInOverlay {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.menu-nav-pill.menu-pill-active {
+  background: rgba(107, 70, 255, 0.09) !important;
 }
 
-@keyframes slideInMenu {
-  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+.menu-nav-pill.menu-pill-active span.font-semibold {
+  color: #6b46ff !important;
+  font-weight: 700 !important;
+}
+
+.dark .menu-nav-pill.menu-pill-active {
+  background: rgba(107, 70, 255, 0.22) !important;
+}
+
+.dark .menu-nav-pill.menu-pill-active span.font-semibold {
+  color: #c4b5fd !important;
+  font-weight: 700 !important;
 }
 
 #vip-modal > div:last-child,

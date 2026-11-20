@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=19" rel="stylesheet">
+  <link href="/css/app.css?v=20" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -329,58 +329,182 @@
               </svg>
             </button>
 
-            <!-- Dropdown: Positioned directly on the Right Hand Side under the Hamburger button -->
-            <div id="nav-menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 sm:w-52 p-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700/80 z-[1000] flex-col gap-0.5" onclick="event.stopPropagation()">
-              <!-- 1. Swap -->
-              <button type="button" id="menu-btn-swap" onclick="handleMenuClick('swap')"
-                class="menu-nav-pill w-full py-2 px-3 rounded-xl font-semibold text-left text-xs sm:text-sm bg-[#6b46ff] text-white shadow-xs transition-all cursor-pointer flex items-center gap-2.5">
-                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-                <span>Swap</span>
-              </button>
+            <!-- Dropdown / Mobile Slide-over Drawer: Positioned on Right Hand Side -->
+            <div id="nav-menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-72 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 z-[1050] flex-col overflow-y-auto" onclick="event.stopPropagation()">
+              
+              <!-- Drawer Header (Visible on Mobile) -->
+              <div class="flex items-center justify-between pb-3 mb-2 border-b border-gray-100 dark:border-slate-800 sm:hidden">
+                <div class="flex items-center gap-2">
+                  <img src="/logos/velcro-brand.svg" class="h-6 w-auto" alt="Velcro" onerror="this.src='/logos/velcro.svg'">
+                  <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Menu</span>
+                </div>
+                <button type="button" onclick="closeNavMenu()" aria-label="Close menu"
+                  class="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
 
-              <!-- 2. Payment -->
-              <button type="button" id="menu-btn-payment" onclick="handleMenuClick('payment')"
-                class="menu-nav-pill w-full py-2 px-3 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer flex items-center gap-2.5">
-                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-                <span>Payment</span>
-              </button>
+              <!-- User Profile / Session Card -->
+              <div id="menu-user-card" class="mb-2.5 p-2.5 rounded-xl bg-gray-50/90 dark:bg-slate-800/70 border border-gray-100 dark:border-slate-700/60 flex items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div id="menu-user-avatar" class="w-8 h-8 rounded-full bg-[#6b46ff]/10 text-[#6b46ff] dark:bg-[#6b46ff]/25 dark:text-[#c4b5fd] flex items-center justify-center font-bold text-xs shrink-0">
+                    V
+                  </div>
+                  <div class="min-w-0">
+                    <p id="menu-user-email" class="text-xs font-bold text-gray-900 dark:text-white truncate">Account</p>
+                    <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Verified Session</span>
+                    </p>
+                  </div>
+                </div>
+                <button type="button" onclick="openProfile(); closeNavMenu();" class="text-[11px] font-semibold text-[#6b46ff] hover:text-[#5b36ef] dark:text-[#c4b5fd] shrink-0 px-2 py-1 rounded-lg hover:bg-[#6b46ff]/10 transition-colors cursor-pointer">
+                  Profile &rarr;
+                </button>
+              </div>
 
-              <!-- 3. History -->
-              <button type="button" id="menu-btn-history" onclick="handleMenuClick('history')"
-                class="menu-nav-pill w-full py-2 px-3 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer flex items-center gap-2.5">
-                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span>History</span>
-              </button>
+              <!-- Nav Items List -->
+              <div class="flex flex-col gap-1">
+                <!-- 1. Swap -->
+                <button type="button" id="menu-btn-swap" onclick="handleMenuClick('swap')"
+                  class="menu-nav-pill menu-pill-active w-full p-2 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between group">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950/60 text-[#6b46ff] dark:text-purple-300 flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                    </span>
+                    <div class="min-w-0">
+                      <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Swap Crypto</span>
+                      <span class="text-[10px] text-gray-400 dark:text-gray-500 block truncate">Instant buy &amp; sell</span>
+                    </div>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
 
-              <!-- 4. Earn -->
-              <button type="button" id="menu-btn-earn" onclick="handleMenuClick('earn')"
-                class="menu-nav-pill w-full py-2 px-3 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer flex items-center gap-2.5">
-                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-                <span>Earn</span>
-              </button>
+                <!-- 2. Payment -->
+                <button type="button" id="menu-btn-payment" onclick="handleMenuClick('payment')"
+                  class="menu-nav-pill w-full p-2 rounded-xl text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-between group">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                    </span>
+                    <div class="min-w-0">
+                      <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Payment</span>
+                      <span class="text-[10px] text-gray-400 dark:text-gray-500 block truncate">Send with links</span>
+                    </div>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
 
-              <!-- 5. VIP -->
-              <button type="button" id="menu-btn-vip" onclick="handleMenuClick('vip')"
-                class="menu-nav-pill w-full py-2 px-3 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer flex items-center gap-2.5">
-                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
-                <span>VIP</span>
-              </button>
+                <!-- 3. History -->
+                <button type="button" id="menu-btn-history" onclick="handleMenuClick('history')"
+                  class="menu-nav-pill w-full p-2 rounded-xl text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-between group">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </span>
+                    <div class="min-w-0">
+                      <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Order History</span>
+                      <span class="text-[10px] text-gray-400 dark:text-gray-500 block truncate">Track past orders</span>
+                    </div>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
 
-              <!-- 6. Rewards -->
-              <button type="button" id="menu-btn-rewards" onclick="handleMenuClick('rewards')"
-                class="menu-nav-pill w-full py-2 px-3 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer flex items-center gap-2.5">
-                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="14" rx="2"/><path d="M12 8v14"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 4.8 0 0 1 12 8a4.8 4.8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
-                <span>Rewards</span>
-              </button>
+                <!-- 4. Earn -->
+                <button type="button" id="menu-btn-earn" onclick="handleMenuClick('earn')"
+                  class="menu-nav-pill w-full p-2 rounded-xl text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-between group">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                    </span>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Refer &amp; Earn</span>
+                        <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300">0.3%</span>
+                      </div>
+                      <span class="text-[10px] text-gray-400 dark:text-gray-500 block truncate">Invite friends &amp; earn USDC</span>
+                    </div>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
 
-              <div class="my-1 border-t border-gray-100 dark:border-slate-700/60"></div>
+                <!-- 5. VIP -->
+                <button type="button" id="menu-btn-vip" onclick="handleMenuClick('vip')"
+                  class="menu-nav-pill w-full p-2 rounded-xl text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-between group">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
+                    </span>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">VIP Desk</span>
+                        <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300">OTC</span>
+                      </div>
+                      <span class="text-[10px] text-gray-400 dark:text-gray-500 block truncate">Large trades ($10k+)</span>
+                    </div>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
 
-              <!-- 7. Support -->
-              <button type="button" id="menu-btn-support" onclick="handleMenuClick('support')"
-                class="menu-nav-pill w-full py-2 px-3 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer flex items-center gap-2.5">
-                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span>Support</span>
-              </button>
+                <!-- 6. Rewards -->
+                <button type="button" id="menu-btn-rewards" onclick="handleMenuClick('rewards')"
+                  class="menu-nav-pill w-full p-2 rounded-xl text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-between group">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="14" rx="2"/><path d="M12 8v14"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 4.8 0 0 1 12 8a4.8 4.8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
+                    </span>
+                    <div class="min-w-0">
+                      <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Rewards</span>
+                      <span class="text-[10px] text-gray-400 dark:text-gray-500 block truncate">Points &amp; tier badges</span>
+                    </div>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+
+                <!-- 7. Support -->
+                <button type="button" id="menu-btn-support" onclick="handleMenuClick('support')"
+                  class="menu-nav-pill w-full p-2 rounded-xl text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-between group">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </span>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Live Support</span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span>Online</span>
+                        </span>
+                      </div>
+                      <span class="text-[10px] text-gray-400 dark:text-gray-500 block truncate">24/7 Agent available</span>
+                    </div>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+
+              <!-- Drawer Footer -->
+              <div class="mt-4 pt-3 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-2">
+                <!-- Dark Mode Toggle -->
+                <div class="flex items-center justify-between px-2.5 py-2 rounded-xl bg-gray-50 dark:bg-slate-800/60">
+                  <span class="text-xs font-medium text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                    <span>Dark Mode</span>
+                  </span>
+                  <button type="button" onclick="toggleDarkMode()" class="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 font-semibold shadow-2xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-600 cursor-pointer">
+                    Toggle
+                  </button>
+                </div>
+                <!-- Logout Button -->
+                <button type="button" id="menu-logout-btn" onclick="logoutUser(); closeNavMenu();"
+                  class="hidden w-full py-2 px-3 rounded-xl text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  <span>Sign out</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1497,7 +1621,7 @@
   <script src="/js/order.js?v=5"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=5"></script>
-  <script src="/js/main.js?v=18"></script>
+  <script src="/js/main.js?v=19"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>

@@ -129,6 +129,31 @@ function openNavMenu() {
   const iconLines = document.getElementById('hamburger-icon-lines');
   const iconClose = document.getElementById('hamburger-icon-close');
   if (!dropdown) return;
+
+  // Refresh user state inside the menu drawer
+  const email = (localStorage.getItem('velcro_user_email') || '').trim();
+  const menuCard = document.getElementById('menu-user-card');
+  const menuEmail = document.getElementById('menu-user-email');
+  const menuAvatar = document.getElementById('menu-user-avatar');
+  const menuLogout = document.getElementById('menu-logout-btn');
+
+  if (email) {
+    if (menuEmail) menuEmail.textContent = email;
+    if (menuAvatar) menuAvatar.textContent = email.charAt(0).toUpperCase();
+    if (menuCard) menuCard.classList.remove('hidden');
+    if (menuLogout) {
+      menuLogout.classList.remove('hidden');
+      menuLogout.classList.add('flex');
+    }
+  } else {
+    if (menuEmail) menuEmail.textContent = 'Guest User';
+    if (menuAvatar) menuAvatar.textContent = 'V';
+    if (menuLogout) {
+      menuLogout.classList.add('hidden');
+      menuLogout.classList.remove('flex');
+    }
+  }
+
   if (typeof pushModalHistory === 'function') pushModalHistory('navMenu');
   dropdown.classList.remove('hidden');
   dropdown.classList.add('flex');
@@ -158,13 +183,13 @@ function closeNavMenu() {
 function setActiveMenuPill(activeKey) {
   const keys = ['swap', 'payment', 'history', 'earn', 'vip', 'rewards', 'support'];
   keys.forEach(k => {
-    // Dropdown pill on right hand side
+    // Dropdown / drawer pill on right hand side
     const mBtn = document.getElementById('menu-btn-' + k);
     if (mBtn) {
       if (k === activeKey) {
-        mBtn.className = 'menu-nav-pill w-full py-2 px-3 rounded-xl font-semibold text-left text-xs sm:text-sm bg-[#6b46ff] text-white shadow-xs transition-all cursor-pointer flex items-center gap-2.5';
+        mBtn.classList.add('menu-pill-active');
       } else {
-        mBtn.className = 'menu-nav-pill w-full py-2 px-3 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer flex items-center gap-2.5';
+        mBtn.classList.remove('menu-pill-active');
       }
     }
     // Desktop inline pill
