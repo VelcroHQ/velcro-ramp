@@ -1204,26 +1204,33 @@
     padding: 0;
     justify-content: flex-end;
   }
-  #history-modal {
-    padding: 0;
-    align-items: flex-end;
+  #history-modal,
+  #support-modal,
+  #vip-modal {
+    padding: 0 !important;
+    align-items: flex-end !important;
+    justify-content: flex-end !important;
   }
   #success-modal .success-modal-card,
   #login-overlay .success-modal-card,
   #profile-modal .success-modal-card,
-  #history-modal .history-modal-dialog {
-    width: 100%;
-    max-width: none;
+  #history-modal .history-modal-dialog,
+  #support-modal > div:last-child,
+  #vip-modal > div:last-child {
+    width: 100% !important;
+    max-width: none !important;
     max-height: 92dvh;
-    margin: auto 0 0;
-    border-radius: 24px 24px 0 0;
-    border-bottom: 0;
-    padding-bottom: env(safe-area-inset-bottom);
+    margin: auto 0 0 !important;
+    border-radius: 24px 24px 0 0 !important;
+    border-bottom: 0 !important;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
     animation: sheetUp 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   }
   #success-modal .success-modal-card,
   #login-overlay .success-modal-card,
-  #profile-modal .success-modal-card {
+  #profile-modal .success-modal-card,
+  #support-modal > div:last-child,
+  #vip-modal > div:last-child {
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -1231,7 +1238,9 @@
   #success-modal .success-modal-card::before,
   #login-overlay .success-modal-card::before,
   #profile-modal .success-modal-card::before,
-  #history-modal .history-modal-dialog::before {
+  #history-modal .history-modal-dialog::before,
+  #support-modal > div:last-child::before,
+  #vip-modal > div:last-child::before {
     content: '';
     position: absolute;
     top: 8px;
@@ -1246,7 +1255,9 @@
   .dark #success-modal .success-modal-card::before,
   .dark #login-overlay .success-modal-card::before,
   .dark #profile-modal .success-modal-card::before,
-  .dark #history-modal .history-modal-dialog::before {
+  .dark #history-modal .history-modal-dialog::before,
+  .dark #support-modal > div:last-child::before,
+  .dark #vip-modal > div:last-child::before {
     background: rgba(255, 255, 255, 0.2);
   }
   /* History is a page on phones, not a sheet: fill the screen. */
@@ -1461,6 +1472,49 @@
 .dark .menu-nav-pill.menu-pill-active span.font-semibold {
   color: #c4b5fd !important;
   font-weight: 700 !important;
+}
+
+/* Core Max-Width Utilities (guarantees modal containers never blow out) */
+.max-w-xs { max-width: 20rem !important; }
+.max-w-sm { max-width: 24rem !important; }
+.max-w-md { max-width: 28rem !important; }
+.max-w-lg { max-width: 32rem !important; }
+.max-w-xl { max-width: 36rem !important; }
+.max-w-2xl { max-width: 42rem !important; }
+
+/* Universal Modal Card Clean Layout & Centering */
+#support-modal > div:last-child,
+#vip-modal > div:last-child {
+  width: 100% !important;
+  max-width: 440px !important;
+  margin: auto !important;
+  background-color: #ffffff !important;
+  border-radius: 24px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+}
+
+.dark #support-modal > div:last-child,
+.dark #vip-modal > div:last-child {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+#tour-overlay > div:last-child {
+  width: 100% !important;
+  max-width: 420px !important;
+  margin: auto !important;
+  background-color: #ffffff !important;
+  border-radius: 24px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.22) !important;
+}
+
+.dark #tour-overlay > div:last-child {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.7) !important;
 }
 
 #vip-modal > div:last-child,

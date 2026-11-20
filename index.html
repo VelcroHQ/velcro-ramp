@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=22" rel="stylesheet">
+  <link href="/css/app.css?v=23" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -1213,17 +1213,17 @@
   <div id="history-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 overscroll-contain">
     <div class="success-modal-backdrop" onclick="hideHistoryModal()"></div>
     <div
-      class="history-modal-dialog relative bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-hidden animate-fade-in flex flex-col my-auto">
-      <div class="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white z-10">
+      class="history-modal-dialog relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-hidden animate-fade-in flex flex-col my-auto">
+      <div class="p-4 sm:p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900 z-10">
         <div>
-          <h2 class="text-lg font-bold text-velcro-navy flex items-center gap-2">
-            <svg class="w-5 h-5 text-velcro-navy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <h2 class="text-lg font-bold text-velcro-navy dark:text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-velcro-navy dark:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 3v5h5"/>
               <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
               <path d="M12 7v5l4 2"/>
             </svg>
             Transaction History</h2>
-          <p class="text-xs text-gray-500 mt-0.5">Your recent on-ramp and off-ramp orders</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Your recent on-ramp and off-ramp orders</p>
         </div>
         <button onclick="hideHistoryModal()" class="w-8 h-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-velcro-navy hover:bg-gray-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors" aria-label="Close history">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -1453,10 +1453,10 @@
     <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onclick="closeSupportModal()"></div>
     <div class="relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl z-10 animate-scale-up">
       <!-- Header -->
-      <div class="flex items-start justify-between">
+      <div class="flex items-start justify-between pb-4 border-b border-gray-100 dark:border-slate-800/80">
         <div>
           <h2 id="support-modal-title" class="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Support</h2>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get help, share feedback, and stay up to date with Velcro.</p>
+          <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">Get quick help, share feedback, or talk to our team.</p>
         </div>
         <button type="button" onclick="closeSupportModal()" aria-label="Close"
           class="shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
@@ -1467,56 +1467,78 @@
         </button>
       </div>
 
-      <!-- Action items: first three as requested -->
-      <div class="mt-6 space-y-2.5">
+      <!-- Action items -->
+      <div class="mt-4 space-y-2.5">
         <!-- 1. WhatsApp -->
         <a href="https://wa.me/2347035428475?text=Hello%20Velcro%20Support,%20I%20need%20help%20with%20an%20exchange" target="_blank" rel="noopener noreferrer"
-          class="flex items-center gap-4 p-3.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors group text-left cursor-pointer">
-          <span class="w-12 h-12 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-emerald-500">
-            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
-          </span>
-          <div class="min-w-0">
-            <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white group-hover:text-velcro-green-dark dark:group-hover:text-velcro-green transition-colors">Contact Us via WhatsApp</h3>
-            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Chat with us on WhatsApp for quick help.</p>
+          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800/80 hover:border-emerald-300 dark:hover:border-emerald-600/50 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <span class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+            </span>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">WhatsApp Chat</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300">Fastest</span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">Chat live with our 24/7 support agents</p>
+            </div>
           </div>
+          <svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
         </a>
 
         <!-- 2. Email -->
         <a href="mailto:support@usevelcro.com?subject=Velcro%20Support%20Inquiry"
-          class="flex items-center gap-4 p-3.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors group text-left cursor-pointer">
-          <span class="w-12 h-12 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-velcro-navy dark:text-gray-200">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-            </svg>
-          </span>
-          <div class="min-w-0">
-            <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white group-hover:text-velcro-green-dark dark:group-hover:text-velcro-green transition-colors">Contact Us via Email</h3>
-            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Need help? Send us an email.</p>
+          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800/80 hover:border-blue-300 dark:hover:border-blue-600/50 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-all group cursor-pointer">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <span class="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+              </svg>
+            </span>
+            <div class="min-w-0">
+              <h3 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Email Support</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">support@usevelcro.com</p>
+            </div>
           </div>
+          <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
         </a>
 
         <!-- 3. Community & Updates -->
         <a href="https://x.com/usevelcro" target="_blank" rel="noopener noreferrer"
-          class="flex items-center gap-4 p-3.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors group text-left cursor-pointer">
-          <span class="w-12 h-12 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-velcro-navy dark:text-gray-200">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m3 11 18-5v12L3 14v-3z"></path>
-              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
-            </svg>
-          </span>
-          <div class="min-w-0">
-            <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white group-hover:text-velcro-green-dark dark:group-hover:text-velcro-green transition-colors">Community &amp; Updates</h3>
-            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Connect with the community and keep up with what's new.</p>
+          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800/80 hover:border-[#6b46ff]/40 dark:hover:border-[#6b46ff]/50 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition-all group cursor-pointer">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <span class="w-11 h-11 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-[#6b46ff] dark:text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 11 18-5v12L3 14v-3z"></path>
+                <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
+              </svg>
+            </span>
+            <div class="min-w-0">
+              <h3 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-[#6b46ff] dark:group-hover:text-purple-400 transition-colors">Community &amp; Updates</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">Follow @usevelcro on X for latest updates</p>
+            </div>
           </div>
+          <svg class="w-4 h-4 text-gray-400 group-hover:text-[#6b46ff] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
         </a>
       </div>
 
-      <!-- Footer Version -->
-      <div class="pt-6 mt-4 text-center">
-        <span class="text-xs text-gray-400 dark:text-gray-500 font-medium">Velcro v2.0</span>
+      <!-- Footer Status Pill -->
+      <div class="pt-4 mt-4 border-t border-gray-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
+        <span>Velcro v2.0</span>
+        <span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Support 24/7 Online
+        </span>
       </div>
     </div>
   </div>
