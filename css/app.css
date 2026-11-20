@@ -1306,8 +1306,8 @@
 }
 
 #nav-menu-dropdown {
-  max-height: calc(100vh - 84px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

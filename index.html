@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=12" rel="stylesheet">
+  <link href="/css/app.css?v=13" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -384,9 +384,11 @@
 
       <!-- 7. Support with 4 Online Yellow Badge -->
       <button type="button" id="menu-btn-support" onclick="handleMenuClick('support')"
-        class="mobile-menu-pill relative w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
-        <span class="menu-support-badge">4 Online</span>
-        <span>Support</span>
+        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
+        <span class="inline-flex items-center justify-center gap-2">
+          <span>Support</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-[#fbbf24] text-[#78350f] shadow-xs">4 Online</span>
+        </span>
       </button>
     </div>
   </div>
@@ -441,7 +443,7 @@
               <span class="text-sm text-gray-500 font-medium">You'll send</span>
             </div>
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-              <div class="flex items-center gap-2 flex-1 min-w-0 w-full sm:w-auto opacity-50 pointer-events-none transition-opacity"
+              <div class="flex items-center gap-2 flex-1 min-w-0 w-full sm:w-auto transition-opacity"
                 id="sell-amount-step">
                 <button id="sell-currency-prefix" onclick="toggleSellInputMode()" class="text-2xl sm:text-3xl font-bold text-gray-300 hover:text-velcro-green transition-colors cursor-pointer shrink-0">$</button>
                 <input type="text" inputmode="decimal" id="sell-amount" aria-label="Amount to sell" placeholder="0.00" oninput="handleAmountInput(this, 4); calculateSell();"
@@ -818,7 +820,7 @@
               <span class="text-sm text-gray-500 font-medium">You'll send</span>
             </div>
             <div class="flex flex-row items-center justify-between gap-3">
-              <div class="flex items-center gap-2 flex-1 min-w-0 opacity-50 pointer-events-none transition-opacity"
+              <div class="flex items-center gap-2 flex-1 min-w-0 transition-opacity"
                 id="buy-amount-step">
                 <span class="text-2xl sm:text-3xl font-bold text-gray-300" id="buy-send-currency">&#8358;</span>
                 <input type="text" inputmode="decimal" id="buy-amount" aria-label="Naira you pay" placeholder="0.00" oninput="handleAmountInput(this, 2); calculateBuy();"
@@ -1233,12 +1235,14 @@
   <!-- Bread-Style Hamburger Menu Backdrop -->
   <div id="nav-menu-backdrop" class="fixed inset-0 z-40 hidden bg-black/35 backdrop-blur-[2px] transition-opacity duration-200" onclick="closeNavMenu()"></div>
 
-  <!-- Switch UI: Choose a Country / Currency Modal -->
-  <div id="country-picker-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-3 sm:p-4 overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="country-modal-title">
+  <!-- Switch UI: Choose a Country / Currency Modal (Bottom Sheet on Mobile, Centered Modal on Desktop) -->
+  <div id="country-picker-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-end md:justify-center p-0 md:p-4 overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="country-modal-title">
     <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onclick="closeCountryPicker()"></div>
-    <div class="relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-hidden shadow-2xl z-10 flex flex-col md:flex-row animate-scale-up">
+    <div class="relative bg-white dark:bg-slate-900 border-t md:border border-gray-100 dark:border-slate-800 rounded-t-3xl md:rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-hidden shadow-2xl z-10 flex flex-col md:flex-row animate-scale-up">
       <!-- Left Column: Search & Country List -->
       <div class="w-full md:w-[320px] p-4 sm:p-6 border-b-0 md:border-r border-gray-100 dark:border-slate-800 flex flex-col shrink-0">
+        <!-- Mobile Bottom Sheet Drag Handle -->
+        <div class="w-10 h-1 bg-gray-300 dark:bg-slate-700 rounded-full mx-auto mb-3 md:hidden"></div>
         <div class="flex items-center justify-between mb-4">
           <h3 id="country-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Choose a country</h3>
           <button type="button" onclick="closeCountryPicker()" aria-label="Close" class="md:hidden p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 cursor-pointer">
@@ -1418,8 +1422,8 @@
     </div>
   </div>
 
-  <!-- Floating Info & Tour Widget (Bottom Left) -->
-  <div id="info-widget" class="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-2">
+  <!-- Floating Info & Tour Widget (Bottom Left - Desktop only to preserve mobile screen clearance) -->
+  <div id="info-widget" class="fixed bottom-6 left-6 z-40 hidden md:flex flex-col items-start gap-2">
     <!-- Popup Card -->
     <div id="info-menu" class="hidden mb-1 p-2.5 sm:p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 min-w-[185px] space-y-1">
       <button type="button" onclick="triggerPwaInstall(); toggleInfoMenu();"
@@ -1496,12 +1500,12 @@
 
 
   <script src="/js/core.js?v=6"></script>
-  <script src="/js/rates.js?v=6"></script>
+  <script src="/js/rates.js?v=7"></script>
   <script src="/js/form.js?v=4"></script>
   <script src="/js/order.js?v=4"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=5"></script>
-  <script src="/js/main.js?v=12"></script>
+  <script src="/js/main.js?v=13"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>

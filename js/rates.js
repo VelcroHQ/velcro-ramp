@@ -669,7 +669,9 @@ function openCountryPicker() {
   const search = document.getElementById('country-search-input');
   if (search) {
     search.value = '';
-    setTimeout(() => search.focus(), 60);
+    if (window.innerWidth >= 768) {
+      setTimeout(() => search.focus(), 60);
+    }
   }
   renderCountryPicker();
 }
