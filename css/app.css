@@ -1319,15 +1319,33 @@
 .z-\[9999\], .z-toast { z-index: 9999 !important; }
 
 /* Right-anchored hamburger menu dropdown & backdrop */
-#nav-menu-backdrop:not(.hidden) {
-  display: block !important;
-  position: fixed !important;
-  inset: 0 !important;
-  background-color: rgba(15, 23, 42, 0.45) !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
-  z-index: 1040 !important;
-  animation: fadeInOverlay 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+/* Mobile: Dark blurred overlay for slide-over drawer */
+@media (max-width: 640px) {
+  #nav-menu-backdrop:not(.hidden) {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background-color: rgba(15, 23, 42, 0.45) !important;
+    backdrop-filter: blur(3px) !important;
+    -webkit-backdrop-filter: blur(3px) !important;
+    z-index: 1040 !important;
+    animation: fadeInOverlay 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+}
+
+/* Desktop: Transparent click-outside dismisser — ZERO blur or page dimming */
+@media (min-width: 641px) {
+  #nav-menu-backdrop:not(.hidden) {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    z-index: 1040 !important;
+    animation: none !important;
+  }
 }
 
 #nav-menu-dropdown {
@@ -1353,12 +1371,21 @@
     width: 310px !important;
     max-width: 88vw !important;
     margin: 0 !important;
+    background-color: #ffffff !important;
     border-radius: 28px 0 0 28px !important;
     border-top: none !important;
     border-bottom: none !important;
     border-right: none !important;
+    border-left: 1px solid #f1f5f9 !important;
     padding: 20px 16px 20px 16px !important;
     box-shadow: -10px 0 35px -5px rgba(0, 0, 0, 0.25) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .dark #nav-menu-dropdown {
+    background-color: #0f172a !important;
+    border-left: 1px solid #1e293b !important;
   }
 
   #nav-menu-dropdown:not(.hidden) {
@@ -1368,18 +1395,28 @@
   }
 }
 
-/* Desktop: Refined floating card */
+/* Desktop: Solid crisp floating card right-aligned under hamburger */
 @media (min-width: 641px) {
   #nav-menu-dropdown {
     position: absolute !important;
     right: 0 !important;
-    top: 100% !important;
-    margin-top: 10px !important;
+    top: calc(100% + 8px) !important;
+    margin: 0 !important;
     width: 290px !important;
     max-height: calc(100vh - 84px) !important;
-    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
-    border-radius: 22px !important;
-    padding: 12px !important;
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 20px !important;
+    padding: 10px !important;
+    box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .dark #nav-menu-dropdown {
+    background-color: #0f172a !important;
+    border: 1px solid #1e293b !important;
+    box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
   }
 
   #nav-menu-dropdown:not(.hidden) {
