@@ -259,10 +259,10 @@
             class="desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
             History
           </button>
-          <button type="button" id="desk-nav-earn" onclick="handleMenuClick('earn')"
+          <a href="https://merchant.usevelcro.com/" id="desk-nav-merchant"
             class="desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
-            Earn
-          </button>
+            Merchant
+          </a>
           <button type="button" id="desk-nav-vip" onclick="handleMenuClick('vip')"
             class="desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
             VIP
@@ -413,23 +413,28 @@
                   <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
                 </button>
 
-                <!-- 4. Earn -->
-                <button type="button" id="menu-btn-earn" onclick="handleMenuClick('earn')"
+                <!-- 4. Merchant -->
+                <a href="https://merchant.usevelcro.com/" id="menu-btn-merchant"
                   class="menu-nav-pill w-full p-2 rounded-xl text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-between group">
                   <div class="flex items-center gap-2.5 min-w-0">
-                    <span class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
-                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                    <span class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                        <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+                        <path d="M2 7h20"/>
+                      </svg>
                     </span>
                     <div class="min-w-0">
                       <div class="flex items-center gap-1.5">
-                        <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Refer &amp; Earn</span>
-                        <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300">0.3%</span>
+                        <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Merchant</span>
+                        <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">Portal</span>
                       </div>
-                      <span class="text-[10px] text-gray-500 dark:text-gray-400 block truncate">Invite friends &amp; earn USDC</span>
+                      <span class="text-[10px] text-gray-500 dark:text-gray-400 block truncate">Launch your branded exchange</span>
                     </div>
                   </div>
                   <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-                </button>
+                </a>
 
                 <!-- 5. VIP -->
                 <button type="button" id="menu-btn-vip" onclick="handleMenuClick('vip')"
@@ -1641,7 +1646,7 @@
   <script src="/js/order.js?v=6"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=6"></script>
-  <script src="/js/main.js?v=22"></script>
+  <script src="/js/main.js?v=23"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>

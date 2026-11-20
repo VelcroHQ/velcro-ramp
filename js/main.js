@@ -98,7 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       showComingSoon('payment', false);
     }
-  } else if (['earn', 'vip'].includes(hash)) {
+  } else if (hash === 'merchant' || hash === 'earn') {
+    window.location.href = 'https://merchant.usevelcro.com/';
+  } else if (hash === 'vip') {
     showComingSoon(hash, false);
   } else if (hash === 'rewards') {
     if (!email) {
@@ -186,7 +188,7 @@ function closeNavMenu() {
 }
 
 function setActiveMenuPill(activeKey) {
-  const keys = ['swap', 'payment', 'history', 'earn', 'vip', 'rewards', 'support'];
+  const keys = ['swap', 'payment', 'history', 'merchant', 'vip', 'rewards', 'support'];
   keys.forEach(k => {
     // Dropdown / drawer pill on right hand side
     const mBtn = document.getElementById('menu-btn-' + k);
@@ -308,8 +310,9 @@ function handleMenuClick(action) {
       if (typeof showHistoryModal === 'function') showHistoryModal();
       break;
     }
+    case 'merchant':
     case 'earn': {
-      showComingSoon('earn');
+      window.location.href = 'https://merchant.usevelcro.com/';
       break;
     }
     case 'vip': {
