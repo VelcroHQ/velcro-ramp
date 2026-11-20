@@ -1429,39 +1429,55 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Country Picker Search Wrap */
-.country-search-wrap {
+/* Country Picker Search Box (Flexbox layout guaranteeing zero icon/text overlap) */
+.country-search-wrap,
+.country-search-box {
   display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
   gap: 10px !important;
-  background-color: #f9fafb !important;
-  border: 1px solid #e5e7eb !important;
+  width: 100% !important;
+  background-color: #f3f4f6 !important;
+  border: 1.5px solid #e5e7eb !important;
   border-radius: 16px !important;
   padding: 10px 14px !important;
   margin-bottom: 14px !important;
   box-sizing: border-box !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
 }
 
-.dark .country-search-wrap {
+.dark .country-search-wrap,
+.dark .country-search-box {
   background-color: #1e293b !important;
   border-color: #334155 !important;
 }
 
-.country-search-wrap:focus-within {
+.country-search-wrap:focus-within,
+.country-search-box:focus-within {
   border-color: #6b46ff !important;
+  background-color: #ffffff !important;
   box-shadow: 0 0 0 3px rgba(107, 70, 255, 0.15) !important;
 }
 
-.country-search-wrap svg {
+.dark .country-search-wrap:focus-within,
+.dark .country-search-box:focus-within {
+  background-color: #0f172a !important;
+}
+
+.country-search-wrap svg,
+.country-search-box svg {
   flex-shrink: 0 !important;
   width: 16px !important;
   height: 16px !important;
   color: #9ca3af !important;
   display: block !important;
+  margin: 0 !important;
 }
 
-.country-search-wrap input {
+.country-search-wrap input,
+.country-search-box input {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
   border: none !important;
   background: transparent !important;
   outline: none !important;
@@ -1474,10 +1490,13 @@
   box-shadow: none !important;
 }
 
-.dark .country-search-wrap input {
+.dark .country-search-wrap input,
+.dark .country-search-box input {
   color: #f3f4f6 !important;
 }
 
-.country-search-wrap input::placeholder {
+.country-search-wrap input::placeholder,
+.country-search-box input::placeholder {
   color: #9ca3af !important;
+  opacity: 1 !important;
 }

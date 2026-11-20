@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=14" rel="stylesheet">
+  <link href="/css/app.css?v=15" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -1250,16 +1250,13 @@
           </button>
         </div>
         
-        <!-- Search input with clean inset search icon (no text overlap) -->
-        <div class="relative w-full mb-3.5">
-          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </div>
-          <input type="text" id="country-search-input" oninput="filterCountryList(this.value)" placeholder="Search country" autocomplete="off" spellcheck="false"
-            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#6b46ff] focus:ring-2 focus:ring-[#6b46ff]/20 transition-all">
+        <!-- Search input (pure flexbox row layout, 100% collision-free) -->
+        <div class="country-search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="country-search-input" oninput="filterCountryList(this.value)" placeholder="Search country" autocomplete="off" spellcheck="false">
         </div>
 
         <!-- Scrollable Country List -->
