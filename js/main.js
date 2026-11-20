@@ -158,13 +158,25 @@ function closeNavMenu() {
 function setActiveMenuPill(activeKey) {
   const keys = ['swap', 'payment', 'history', 'earn', 'vip', 'rewards', 'support'];
   keys.forEach(k => {
-    const btn = document.getElementById('menu-btn-' + k);
-    if (!btn) return;
-    const isSupport = k === 'support';
-    if (k === activeKey) {
-      btn.className = (isSupport ? 'relative ' : '') + 'menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer';
-    } else {
-      btn.className = (isSupport ? 'relative ' : '') + 'menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer';
+    // Mobile modal pill
+    const mBtn = document.getElementById('menu-btn-' + k);
+    if (mBtn) {
+      const isSupport = k === 'support';
+      if (k === activeKey) {
+        mBtn.className = (isSupport ? 'relative ' : '') + 'mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer';
+      } else {
+        mBtn.className = (isSupport ? 'relative ' : '') + 'mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer';
+      }
+    }
+    // Desktop inline pill
+    const dBtn = document.getElementById('desk-nav-' + k);
+    if (dBtn) {
+      const isSupport = k === 'support';
+      if (k === activeKey) {
+        dBtn.className = (isSupport ? 'relative ' : '') + 'desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer bg-[#6b46ff] text-white shadow-xs';
+      } else {
+        dBtn.className = (isSupport ? 'relative ' : '') + 'desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer';
+      }
     }
   });
 }

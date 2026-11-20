@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=8" rel="stylesheet">
+  <link href="/css/app.css?v=12" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -237,13 +237,46 @@
   </div>
 
   <!-- Navigation -->
-  <nav id="main-nav" class="sticky top-0 z-50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-gray-100/60 dark:border-slate-800/60 transition-all duration-300">
+  <nav id="main-nav" class="sticky top-0 z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border-b border-gray-100/60 dark:border-slate-800/60 transition-all duration-300">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Brand Logo on Left -->
-        <a href="/" onclick="if (typeof isComingSoonActive === 'function' && isComingSoonActive()) { event.preventDefault(); showSwapView(); }" class="flex items-center gap-2.5 transition-transform hover:scale-102">
+        <a href="/" onclick="if (typeof isComingSoonActive === 'function' && isComingSoonActive()) { event.preventDefault(); showSwapView(); }" class="flex items-center gap-2.5 transition-transform hover:scale-102 shrink-0">
           <img src="/velcro_logo.png" class="h-8 w-auto object-contain" alt="Velcro">
         </a>
+
+        <!-- Desktop Navigation Pills (Bread-Style Inline Center Bar) -->
+        <div class="hidden md:flex items-center gap-1 lg:gap-2">
+          <button type="button" id="desk-nav-swap" onclick="handleMenuClick('swap')"
+            class="desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer bg-[#6b46ff] text-white shadow-xs">
+            Swap
+          </button>
+          <button type="button" id="desk-nav-payment" onclick="handleMenuClick('payment')"
+            class="desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
+            Payment
+          </button>
+          <button type="button" id="desk-nav-history" onclick="handleMenuClick('history')"
+            class="desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
+            History
+          </button>
+          <button type="button" id="desk-nav-earn" onclick="handleMenuClick('earn')"
+            class="desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
+            Earn
+          </button>
+          <button type="button" id="desk-nav-vip" onclick="handleMenuClick('vip')"
+            class="desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
+            VIP
+          </button>
+          <button type="button" id="desk-nav-rewards" onclick="handleMenuClick('rewards')"
+            class="desk-nav-pill px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
+            Rewards
+          </button>
+          <button type="button" id="desk-nav-support" onclick="handleMenuClick('support')"
+            class="desk-nav-pill relative px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
+            <span class="desk-support-badge">4 Online</span>
+            <span>Support</span>
+          </button>
+        </div>
 
         <!-- Right Side Nav Actions -->
         <div class="flex items-center gap-2 sm:gap-3">
@@ -282,71 +315,81 @@
             </svg>
           </button>
 
-          <!-- Bread-style Hamburger Menu & Dropdown Container -->
-          <div class="relative">
-            <button type="button" id="nav-menu-toggle" onclick="toggleNavMenu()" aria-label="Toggle navigation menu" aria-expanded="false"
-              class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center text-gray-700 dark:text-gray-200 shadow-2xs transition-all cursor-pointer">
-              <svg id="hamburger-icon-lines" class="w-5 h-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="4" y1="7" x2="20" y2="7"></line>
-                <line x1="4" y1="12" x2="20" y2="12"></line>
-                <line x1="4" y1="17" x2="20" y2="17"></line>
-              </svg>
-              <svg id="hamburger-icon-close" class="hidden w-5 h-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-
-            <!-- Bread-Style Floating Pill Menu Dropdown -->
-            <div id="nav-menu-dropdown" class="hidden absolute right-0 top-full mt-3 z-50 flex-col items-center gap-2.5 w-44 sm:w-48 animate-menu-drop" onclick="event.stopPropagation()">
-              <!-- 1. Swap (Active Primary Purple Pill) -->
-              <button type="button" id="menu-btn-swap" onclick="handleMenuClick('swap')"
-                class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 hover:bg-[#5b36ef] active:scale-95 transition-all cursor-pointer">
-                Swap
-              </button>
-
-              <!-- 2. Payment -->
-              <button type="button" id="menu-btn-payment" onclick="handleMenuClick('payment')"
-                class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
-                Payment
-              </button>
-
-              <!-- 3. History -->
-              <button type="button" id="menu-btn-history" onclick="handleMenuClick('history')"
-                class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
-                History
-              </button>
-
-              <!-- 4. Earn -->
-              <button type="button" id="menu-btn-earn" onclick="handleMenuClick('earn')"
-                class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
-                Earn
-              </button>
-
-              <!-- 5. VIP -->
-              <button type="button" id="menu-btn-vip" onclick="handleMenuClick('vip')"
-                class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
-                VIP
-              </button>
-
-              <!-- 6. Rewards -->
-              <button type="button" id="menu-btn-rewards" onclick="handleMenuClick('rewards')"
-                class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
-                Rewards
-              </button>
-
-              <!-- 7. Support with 4 Online Yellow Badge -->
-              <button type="button" id="menu-btn-support" onclick="handleMenuClick('support')"
-                class="menu-nav-pill relative w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
-                <span class="menu-support-badge">4 Online</span>
-                <span>Support</span>
-              </button>
-            </div>
-          </div>
+          <!-- Bread-style Hamburger Menu Button (Mobile Only) -->
+          <button type="button" id="nav-menu-toggle" onclick="toggleNavMenu()" aria-label="Toggle navigation menu" aria-expanded="false"
+            class="md:hidden w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center text-gray-700 dark:text-gray-200 shadow-2xs transition-all cursor-pointer">
+            <svg id="hamburger-icon-lines" class="w-5 h-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="7" x2="20" y2="7"></line>
+              <line x1="4" y1="12" x2="20" y2="12"></line>
+              <line x1="4" y1="17" x2="20" y2="17"></line>
+            </svg>
+            <svg id="hamburger-icon-close" class="hidden w-5 h-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
   </nav>
+
+  <!-- Bread-Style Mobile Menu Overlay (Centered Modal exactly matching screenshot) -->
+  <div id="nav-menu-dropdown" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-md md:hidden animate-fade-in" onclick="closeNavMenu()">
+    <!-- Top Center Close (X) Circle -->
+    <button type="button" onclick="closeNavMenu()" aria-label="Close menu"
+      class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-gray-800 dark:text-white shadow-xl flex items-center justify-center mb-6 hover:scale-105 active:scale-95 transition-all cursor-pointer">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <!-- Centered Stacked Rounded Pills -->
+    <div class="flex flex-col items-center gap-3 w-full max-w-[270px]" onclick="event.stopPropagation()">
+      <!-- 1. Swap (Active Primary Purple Pill) -->
+      <button type="button" id="menu-btn-swap" onclick="handleMenuClick('swap')"
+        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer">
+        Swap
+      </button>
+
+      <!-- 2. Payment -->
+      <button type="button" id="menu-btn-payment" onclick="handleMenuClick('payment')"
+        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
+        Payment
+      </button>
+
+      <!-- 3. History -->
+      <button type="button" id="menu-btn-history" onclick="handleMenuClick('history')"
+        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
+        History
+      </button>
+
+      <!-- 4. Earn -->
+      <button type="button" id="menu-btn-earn" onclick="handleMenuClick('earn')"
+        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
+        Earn
+      </button>
+
+      <!-- 5. VIP -->
+      <button type="button" id="menu-btn-vip" onclick="handleMenuClick('vip')"
+        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
+        VIP
+      </button>
+
+      <!-- 6. Rewards -->
+      <button type="button" id="menu-btn-rewards" onclick="handleMenuClick('rewards')"
+        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
+        Rewards
+      </button>
+
+      <!-- 7. Support with 4 Online Yellow Badge -->
+      <button type="button" id="menu-btn-support" onclick="handleMenuClick('support')"
+        class="mobile-menu-pill relative w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
+        <span class="menu-support-badge">4 Online</span>
+        <span>Support</span>
+      </button>
+    </div>
+  </div>
 
   <section id="convert" class="pt-6 pb-8 lg:pt-10 lg:pb-12 relative z-10">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -354,10 +397,10 @@
 
       <!-- Conversion Card -->
       <div
-        class="premium-card rounded-3xl card-glow p-6 lg:p-8 transition-all duration-500">
+        class="premium-card rounded-2xl sm:rounded-3xl card-glow p-4 sm:p-6 lg:p-8 transition-all duration-500">
 
         <!-- Tabs -->
-        <div role="tablist" aria-label="Buy or sell" class="flex gap-1 mb-8 p-1 premium-tabs rounded-xl relative">
+        <div role="tablist" aria-label="Buy or sell" class="flex gap-1 mb-6 sm:mb-8 p-1 premium-tabs rounded-xl relative">
           <div id="tab-indicator"
             class="absolute top-1 bottom-1 w-[calc(50%-2px)] rounded-lg bg-velcro-green shadow-sm transition-all duration-300 ease-out"
             style="left: 4px;"></div>
@@ -374,7 +417,7 @@
         </div>
 
         <!-- Shared Step Indicator -->
-        <div class="mb-6 px-1" id="step-indicator-wrap">
+        <div class="mb-5 sm:mb-6 px-1" id="step-indicator-wrap">
           <div class="step-indicator">
             <div class="step-dot active" id="step-1">1</div>
             <div class="step-line" id="line-1"></div>
@@ -408,11 +451,11 @@
                 <p class="text-2xl sm:text-3xl font-bold text-gray-900">Any amount</p>
                 <p class="mt-1 text-xs text-gray-500">No need to enter one. Send what you want; we pay out exactly what arrives.</p>
               </div>
-              <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
-                <div class="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto">
+              <div class="flex flex-row items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+                <div class="flex flex-col items-start sm:items-end gap-1 flex-1 sm:flex-initial">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Coin</span>
-                  <div class="custom-select" id="sell-asset-wrap">
-                    <div role="button" tabindex="0" class="asset-pill" onclick="openSellAssetPicker()">
+                  <div class="custom-select w-full sm:w-auto" id="sell-asset-wrap">
+                    <div role="button" tabindex="0" class="asset-pill w-full sm:w-auto justify-between sm:justify-start" onclick="openSellAssetPicker()">
                       <div class="flex items-center gap-1.5" id="sell-asset-display">
                         <span class="text-gray-400 text-sm">Select</span>
                       </div>
@@ -423,10 +466,10 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto">
+                <div class="flex flex-col items-start sm:items-end gap-1 flex-1 sm:flex-initial">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Network</span>
-                  <div class="custom-select">
-                    <div role="button" tabindex="0" class="network-pill" id="sell-network-wrap"
+                  <div class="custom-select w-full sm:w-auto">
+                    <div role="button" tabindex="0" class="network-pill w-full sm:w-auto justify-between sm:justify-start" id="sell-network-wrap"
                       onclick="handleNetworkClick('sell')">
                       <span id="sell-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Choose network</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -723,11 +766,11 @@
                   oninput="handleAmountInput(this, 4); calculateBuyFromCrypto();"
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
-              <div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
-                <div class="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto">
+              <div class="flex flex-row items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+                <div class="flex flex-col items-start sm:items-end gap-1 flex-1 sm:flex-initial">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Coin</span>
-                  <div class="custom-select" id="buy-asset-wrap">
-                    <div role="button" tabindex="0" class="asset-pill" onclick="openBuyAssetPicker()">
+                  <div class="custom-select w-full sm:w-auto" id="buy-asset-wrap">
+                    <div role="button" tabindex="0" class="asset-pill w-full sm:w-auto justify-between sm:justify-start" onclick="openBuyAssetPicker()">
                       <div class="flex items-center gap-1.5" id="buy-asset-display">
                         <span class="text-gray-400 text-sm">Select</span>
                       </div>
@@ -738,10 +781,10 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto" id="buy-network-col">
+                <div class="flex flex-col items-start sm:items-end gap-1 flex-1 sm:flex-initial" id="buy-network-col">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Network</span>
-                  <div class="custom-select">
-                    <div role="button" tabindex="0" class="network-pill" id="buy-network-wrap"
+                  <div class="custom-select w-full sm:w-auto">
+                    <div role="button" tabindex="0" class="network-pill w-full sm:w-auto justify-between sm:justify-start" id="buy-network-wrap"
                       onclick="handleNetworkClick('buy')">
                       <span id="buy-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Choose network</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -1195,7 +1238,7 @@
     <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onclick="closeCountryPicker()"></div>
     <div class="relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-hidden shadow-2xl z-10 flex flex-col md:flex-row animate-scale-up">
       <!-- Left Column: Search & Country List -->
-      <div class="w-full md:w-[320px] p-5 sm:p-6 border-b md:border-b-0 md:border-r border-gray-100 dark:border-slate-800 flex flex-col shrink-0">
+      <div class="w-full md:w-[320px] p-4 sm:p-6 border-b-0 md:border-r border-gray-100 dark:border-slate-800 flex flex-col shrink-0">
         <div class="flex items-center justify-between mb-4">
           <h3 id="country-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Choose a country</h3>
           <button type="button" onclick="closeCountryPicker()" aria-label="Close" class="md:hidden p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 cursor-pointer">
@@ -1203,13 +1246,16 @@
           </button>
         </div>
         
-        <!-- Search input -->
-        <div class="country-search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input type="text" id="country-search-input" oninput="filterCountryList(this.value)" placeholder="Search country" autocomplete="off" spellcheck="false">
+        <!-- Search input with clean inset search icon (no text overlap) -->
+        <div class="relative w-full mb-3.5">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+          <input type="text" id="country-search-input" oninput="filterCountryList(this.value)" placeholder="Search country" autocomplete="off" spellcheck="false"
+            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#6b46ff] focus:ring-2 focus:ring-[#6b46ff]/20 transition-all">
         </div>
 
         <!-- Scrollable Country List -->
@@ -1455,7 +1501,7 @@
   <script src="/js/order.js?v=4"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=5"></script>
-  <script src="/js/main.js?v=10"></script>
+  <script src="/js/main.js?v=12"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>
