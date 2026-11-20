@@ -1327,3 +1327,12 @@
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+#info-menu:not(.hidden) {
+  animation: popInCard 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popInCard {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

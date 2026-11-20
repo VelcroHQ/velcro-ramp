@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=2" rel="stylesheet">
+  <link href="/css/app.css?v=3" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -286,9 +286,10 @@
           <!-- Bread-style Hamburger Button -->
           <button type="button" id="nav-menu-toggle" onclick="toggleNavMenu()" aria-label="Open menu"
             class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center text-gray-700 dark:text-gray-200 shadow-2xs transition-all cursor-pointer">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="8" x2="21" y2="8"></line>
-              <line x1="3" y1="16" x2="21" y2="16"></line>
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="7" x2="20" y2="7"></line>
+              <line x1="4" y1="12" x2="20" y2="12"></line>
+              <line x1="4" y1="17" x2="20" y2="17"></line>
             </svg>
           </button>
         </div>
@@ -1093,7 +1094,7 @@
 
   <!-- Bread-Style Hamburger Menu Overlay -->
   <div id="nav-menu-overlay" class="fixed inset-0 z-[100] hidden flex items-start justify-end p-4 sm:p-6 sm:pr-8 pt-18 sm:pt-20 backdrop-blur-md bg-black/45 transition-opacity" onclick="if (event.target === this) closeNavMenu()">
-    <div class="relative flex flex-col items-center gap-3 w-48 sm:w-52" onclick="event.stopPropagation()">
+    <div class="relative flex flex-col items-center gap-2.5 w-48 sm:w-52" onclick="event.stopPropagation()">
       <!-- Close button floating top-right -->
       <button type="button" onclick="closeNavMenu()" aria-label="Close menu"
         class="self-end mb-1 p-2 rounded-full bg-white dark:bg-slate-800 text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white shadow-md hover:scale-105 transition-all cursor-pointer">
@@ -1105,65 +1106,46 @@
 
       <!-- 1. Swap (Active Primary Purple Pill) -->
       <button type="button" onclick="handleMenuClick('swap')"
-        class="w-full py-3 px-6 rounded-full font-bold text-center text-sm sm:text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 hover:bg-[#5b36ef] active:scale-95 transition-all cursor-pointer">
+        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 hover:bg-[#5b36ef] active:scale-95 transition-all cursor-pointer">
         Swap
       </button>
 
       <!-- 2. Payment -->
       <button type="button" onclick="handleMenuClick('payment')"
-        class="w-full py-3 px-6 rounded-full font-bold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-100 dark:border-slate-700 shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         Payment
       </button>
 
       <!-- 3. History -->
       <button type="button" onclick="handleMenuClick('history')"
-        class="w-full py-3 px-6 rounded-full font-bold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-100 dark:border-slate-700 shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         History
       </button>
 
       <!-- 4. Earn -->
       <button type="button" onclick="handleMenuClick('earn')"
-        class="w-full py-3 px-6 rounded-full font-bold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-100 dark:border-slate-700 shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         Earn
       </button>
 
       <!-- 5. VIP -->
       <button type="button" onclick="handleMenuClick('vip')"
-        class="w-full py-3 px-6 rounded-full font-bold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-100 dark:border-slate-700 shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         VIP
       </button>
 
       <!-- 6. Rewards -->
       <button type="button" onclick="handleMenuClick('rewards')"
-        class="w-full py-3 px-6 rounded-full font-bold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-100 dark:border-slate-700 shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         Rewards
       </button>
 
       <!-- 7. Support with 4 Online Yellow Badge -->
       <button type="button" onclick="handleMenuClick('support')"
-        class="relative w-full py-3 px-6 rounded-full font-bold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-100 dark:border-slate-700 shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
-        <span class="absolute -top-2 right-1 sm:right-2 bg-amber-400 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-tight">4 Online</span>
+        class="relative w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+        <span class="absolute -top-1.5 right-1.5 bg-[#fbbf24] text-[#78350f] font-bold text-[11px] px-2 py-0.5 rounded-md shadow-2xs">4 Online</span>
         Support
       </button>
-
-      <!-- App Installation & Tour Links -->
-      <div class="w-full pt-2 flex flex-col gap-2">
-        <button type="button" onclick="triggerPwaInstall()" id="menu-install-btn"
-          class="w-full py-2.5 px-4 rounded-2xl text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white/90 dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:bg-white flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer">
-          <svg class="w-4 h-4 text-[#6b46ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-            <line x1="12" y1="18" x2="12.01" y2="18"></line>
-          </svg>
-          <span>Install App</span>
-        </button>
-        <button type="button" onclick="startExchangeTour()"
-          class="w-full py-2.5 px-4 rounded-2xl text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white/90 dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:bg-white flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer">
-          <svg class="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v1"></path><path d="M12 21v1"></path><path d="M4.22 4.22l.71.71"></path><path d="M18.36 18.36l.71.71"></path><path d="M1 12h1"></path><path d="M21 12h1"></path><path d="M4.22 19.78l.71-.71"></path><path d="M18.36 5.64l.71-.71"></path><circle cx="12" cy="12" r="5"></circle>
-          </svg>
-          <span>Take the tour</span>
-        </button>
-      </div>
     </div>
   </div>
 
@@ -1237,19 +1219,24 @@
   <!-- Floating Info & Tour Widget (Bottom Left - Bread Style) -->
   <div id="info-widget" class="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-2">
     <!-- Popup Card -->
-    <div id="info-menu" class="hidden mb-1 p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 min-w-[170px] space-y-1">
+    <div id="info-menu" class="hidden mb-1 p-2.5 sm:p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 min-w-[185px] space-y-1">
       <button type="button" onclick="triggerPwaInstall(); toggleInfoMenu();"
-        class="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700/60 text-sm font-semibold text-gray-800 dark:text-gray-100 transition-colors text-left cursor-pointer">
-        <svg class="w-4 h-4 text-[#6b46ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-          <line x1="12" y1="18" x2="12.01" y2="18"></line>
+        class="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700/60 text-sm font-semibold text-[#211138] dark:text-gray-100 transition-colors text-left cursor-pointer">
+        <!-- Isometric 3-layer stack icon matching Bread style -->
+        <svg class="w-5 h-5 text-[#211138] dark:text-purple-300 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2.5C7.5 2.5 4 4.1 4 6s3.5 3.5 8 3.5 8-1.6 8-3.5-3.5-3.5-8-3.5z"/>
+          <path d="M4 8.5v2.5c0 1.9 3.5 3.5 8 3.5s8-1.6 8-3.5V8.5c-1.8 1.4-4.7 2.2-8 2.2s-6.2-.8-8-2.2z"/>
+          <path d="M4 13.5v2.5c0 1.9 3.5 3.5 8 3.5s8-1.6 8-3.5v-2.5c-1.8 1.4-4.7 2.2-8 2.2s-6.2-.8-8-2.2z"/>
         </svg>
         <span>Install app</span>
       </button>
       <button type="button" onclick="startExchangeTour(); toggleInfoMenu();"
-        class="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700/60 text-sm font-semibold text-gray-800 dark:text-gray-100 transition-colors text-left cursor-pointer">
-        <svg class="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2v1"></path><path d="M12 21v1"></path><path d="M4.22 4.22l.71.71"></path><path d="M18.36 18.36l.71.71"></path><path d="M1 12h1"></path><path d="M21 12h1"></path><path d="M4.22 19.78l.71-.71"></path><path d="M18.36 5.64l.71-.71"></path><circle cx="12" cy="12" r="5"></circle>
+        class="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700/60 text-sm font-semibold text-[#211138] dark:text-gray-100 transition-colors text-left cursor-pointer">
+        <!-- Outline Lightbulb icon matching Image 1 -->
+        <svg class="w-5 h-5 text-[#211138] dark:text-purple-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+          <path d="M9 18h6"/>
+          <path d="M10 22h4"/>
         </svg>
         <span>Take the tour</span>
       </button>
@@ -1257,10 +1244,10 @@
     <!-- Floating Circular Button -->
     <button type="button" onclick="toggleInfoMenu()" aria-label="App info & tour" title="Install app & take tour"
       class="w-12 h-12 bg-[#6b46ff] hover:bg-[#5b36ef] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all text-white cursor-pointer">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="16" x2="12" y2="12"></line>
-        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"></circle>
+        <line x1="12" y1="11" x2="12" y2="17"></line>
+        <circle cx="12" cy="7.5" r="0.75" fill="currentColor"></circle>
       </svg>
     </button>
   </div>
