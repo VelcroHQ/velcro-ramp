@@ -2844,5 +2844,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', e => { if (!e.target.closest('#avatar-btn') && !e.target.closest('#avatar-menu')) $('avatar-menu').classList.add('hidden'); });
   setupMerchantNetworkStatus();
   updateSoundButton();
+
+  // Reload / Tab Close Guard: Warn merchant if markup prices are unsaved
+  window.addEventListener('beforeunload', (e) => {
+    if (typeof isPricesDirty === 'function' && isPricesDirty()) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+  });
+
   if (token) showApp();
 });

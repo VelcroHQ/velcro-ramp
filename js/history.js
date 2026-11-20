@@ -283,6 +283,7 @@ function renderHistoryList(txs) {
 }
 
 async function showHistoryModal() {
+  if (typeof pushModalHistory === 'function') pushModalHistory('history');
   const email = (localStorage.getItem('velcro_user_email') || '').trim();
   const modal = document.getElementById('history-modal');
   modal.classList.remove('hidden');
@@ -343,6 +344,7 @@ async function showHistoryModal() {
 }
 
 function hideHistoryModal() {
+  if (typeof popModalHistory === 'function') popModalHistory('history');
   const modal = document.getElementById('history-modal');
   modal.classList.add('hidden');
   modal.classList.remove('flex');
@@ -402,6 +404,7 @@ function renderNetwork(el, net) {
 function showSuccessModal(type, data) {
   if (buyExpiryInterval) { clearInterval(buyExpiryInterval); buyExpiryInterval = null; }
   if (sellExpiryInterval) { clearInterval(sellExpiryInterval); sellExpiryInterval = null; }
+  if (typeof pushModalHistory === 'function') pushModalHistory('success');
   const modal = document.getElementById('success-modal');
   const title = document.getElementById('success-title');
   const subtitle = document.getElementById('success-subtitle');
@@ -551,6 +554,7 @@ function finishOrder() {
 }
 
 function hideSuccessModal() {
+  if (typeof popModalHistory === 'function') popModalHistory('success');
   const modal = document.getElementById('success-modal');
   modal.classList.add('hidden');
   modal.classList.remove('flex');

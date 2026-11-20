@@ -4262,3 +4262,14 @@ async function sendTestEmail() {
         if (btn) { btn.disabled = false; btn.innerText = 'Send Test'; }
     }
 }
+
+// Reload / Tab Close Guard: Warn admin if unsaved campaign content exists
+window.addEventListener('beforeunload', (e) => {
+    const campBody = document.getElementById('campaign-body');
+    const campSubject = document.getElementById('campaign-subject');
+    if ((campBody && campBody.value.trim().length > 10) || (campSubject && campSubject.value.trim().length > 3)) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+    }
+});

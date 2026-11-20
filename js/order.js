@@ -314,6 +314,7 @@ async function generateWalletAddress() {
         ? 'Bitcoin needs network confirmations, usually 10–60 minutes after you send. We pay your bank automatically once it confirms and email your receipt.'
         : 'We pay your bank automatically as soon as your deposit confirms, usually within a few minutes, and email your receipt.');
       document.getElementById('sell-generated-address').classList.remove('hidden');
+      if (typeof pushOrderHistory === 'function') pushOrderHistory('sell');
       startExpiryCountdown('sell', seconds);
       startOrderHelp('sell', data.chain === 'bitcoin' ? 90 * 60 * 1000 : SUPPORT_HINT_DELAY_MS);
       btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Address ready';
@@ -381,6 +382,7 @@ async function generateWalletAddress() {
       renderSellDepositQr(data.address);
 
       document.getElementById('sell-generated-address').classList.remove('hidden');
+      if (typeof pushOrderHistory === 'function') pushOrderHistory('sell');
       startExpiryCountdown('sell', 3600);
       startOrderHelp('sell');
       btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Address ready';
@@ -455,6 +457,7 @@ async function generateWalletAddress() {
     // Generate QR code for wallet address (local)
     renderSellDepositQr(walletAddress);
     document.getElementById('sell-generated-address').classList.remove('hidden');
+    if (typeof pushOrderHistory === 'function') pushOrderHistory('sell');
     startExpiryCountdown('sell', 3600);
     startOrderHelp('sell');
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Address ready';
@@ -565,6 +568,7 @@ async function generateBankAccount() {
       document.getElementById('buy-reference').textContent = data.reference;
       currentReference = data.reference;
       document.getElementById('buy-generated-account').classList.remove('hidden');
+      if (typeof pushOrderHistory === 'function') pushOrderHistory('buy');
       startExpiryCountdown('buy', Number(data.expires_in) || 3600);
       startOrderHelp('buy');
       btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Payment details ready';
@@ -620,6 +624,7 @@ async function generateBankAccount() {
       document.getElementById('buy-reference').textContent = data.id || '-';
       currentReference = data.id || '';
       document.getElementById('buy-generated-account').classList.remove('hidden');
+      if (typeof pushOrderHistory === 'function') pushOrderHistory('buy');
       startExpiryCountdown('buy', 3600);
       startOrderHelp('buy');
       btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Payment details ready';
@@ -692,6 +697,7 @@ async function generateBankAccount() {
     document.getElementById('buy-reference').textContent = data.reference || '-';
     currentReference = data.reference || '';
     document.getElementById('buy-generated-account').classList.remove('hidden');
+    if (typeof pushOrderHistory === 'function') pushOrderHistory('buy');
     startExpiryCountdown('buy', 3600);
     startOrderHelp('buy');
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Payment details ready';
@@ -1372,6 +1378,7 @@ function unlockSellForm() {
   });
 }
 async function resetSellTransaction() {
+  if (typeof popOrderHistory === 'function') popOrderHistory('sell');
   document.getElementById('sell-tx-hash').placeholder = '0x...';
   if (currentReference) {
     try {
@@ -1417,6 +1424,7 @@ function unlockBuyForm() {
   });
 }
 async function resetBuyTransaction() {
+  if (typeof popOrderHistory === 'function') popOrderHistory('buy');
   if (currentReference) {
     try {
       fetch(`${API_BASE}/api/cancel`, {

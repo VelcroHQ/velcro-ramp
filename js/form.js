@@ -66,6 +66,7 @@ function toggleDropdown(id) {
   const isOpen = el.classList.contains('open');
   closeAllDropdowns();
   if (!isOpen) {
+    if (typeof pushModalHistory === 'function') pushModalHistory('picker');
     el.classList.add('open');
     const parent = el.closest('.custom-select');
     if (parent) parent.style.zIndex = '100001';
@@ -110,6 +111,7 @@ if (typeof window !== 'undefined' && window.visualViewport) {
 }
 
 function closeAllDropdowns() {
+  if (typeof popModalHistory === 'function') popModalHistory('picker');
   // Do not blur search inputs inside open modals/dropdowns when closing
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
     const tag = document.activeElement.tagName;
@@ -141,6 +143,7 @@ function closeAllDropdowns() {
 
 function openBuyAssetPicker() {
   closeAllDropdowns();
+  if (typeof pushModalHistory === 'function') pushModalHistory('picker');
   const modal = document.getElementById('buy-asset-options');
   const searchInput = document.getElementById('buy-asset-search');
   if (searchInput) { searchInput.value = ''; filterBuyAssets(); }
@@ -156,6 +159,7 @@ function openBuyAssetPicker() {
 }
 
 function closeBuyAssetPicker() {
+  if (typeof popModalHistory === 'function') popModalHistory('picker');
   const modal = document.getElementById('buy-asset-options');
   if (modal) modal.classList.remove('open');
   document.body.style.overflow = '';
@@ -186,6 +190,7 @@ function filterBuyAssets() {
 
 function openSellAssetPicker() {
   closeAllDropdowns();
+  if (typeof pushModalHistory === 'function') pushModalHistory('picker');
   const modal = document.getElementById('sell-asset-options');
   const searchInput = document.getElementById('sell-asset-search');
   if (searchInput) { searchInput.value = ''; filterSellAssets(); }
@@ -201,6 +206,7 @@ function openSellAssetPicker() {
 }
 
 function closeSellAssetPicker() {
+  if (typeof popModalHistory === 'function') popModalHistory('picker');
   const modal = document.getElementById('sell-asset-options');
   if (modal) modal.classList.remove('open');
   document.body.style.overflow = '';

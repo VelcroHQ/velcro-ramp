@@ -897,6 +897,11 @@ function safeRenderStoreQrCode(container, text, size = 220) {
 }
 
 function renderCheckout() {
+  try {
+    if (checkout && (!history.state || history.state.storeStep !== checkout.step)) {
+      history.pushState({ storeStep: checkout.step }, '');
+    }
+  } catch (e) {}
   document.body.classList.add('s-in-checkout');
   $('s-form').hidden = true;
   const box = $('s-checkout');
@@ -1850,12 +1855,23 @@ const AUTH_COPY = {
 };
 
 function openAuth(mode) {
+  try {
+    if (!history.state || history.state.storeModal !== 'auth') {
+      history.pushState({ storeModal: 'auth' }, '');
+    }
+  } catch (e) {}
   setAuthMode(mode);
   $('auth').hidden = false;
   setTimeout(() => $('a-email').focus(), 50);
 }
 
 function closeAuth() {
+  try {
+    if (history.state && history.state.storeModal === 'auth') {
+      _storeNavBack = true;
+      history.back();
+    }
+  } catch (e) {}
   pendingTrade = false;
   $('auth').hidden = true;
   if ($('a-pass-new')) {
@@ -2108,5 +2124,60 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!e.target.closest('.s-select')) toggleCoins(false);
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleCoins(false); });
+
+  // Navigation Guard: Intercept browser & device Back button
+  let _storeNavBack = false;
+  window.addEventListener('popstate', () => {
+    if (_storeNavBack) {
+      _storeNavBack = false;
+      return;
+    }
+    // 1. If auth modal is open, close it
+    const authModal = $('auth');
+    if (authModal && !authModal.hidden) {
+      closeAuth();
+      return;
+    }
+    // 2. If coins selector dropdown is open, close it
+    const coinOpts = $('s-coin-opts');
+    if (coinOpts && !coinOpts.hidden) {
+      toggleCoins(false);
+      return;
+    }
+    // 3. If in checkout
+    if (typeof checkout !== 'undefined' && checkout) {
+      if (checkout.step === 'pay') {
+        const isWaiting = checkout.order && WAITING_STATUSES.includes(checkout.order.status);
+        if (isWaiting) {
+          const leave = confirm('Leave this order? Your payment details will be closed.');
+          if (leave) {
+            showForm();
+          } else {
+            try { history.pushState({ storeStep: 'pay' }, ''); } catch (e) {}
+          }
+        } else {
+          showForm();
+        }
+        return;
+      }
+      if (checkout.step === 'details' || checkout.step === 'orders') {
+        showForm();
+        return;
+      }
+    }
+  });
+
+  // Reload / Tab Close Guard: Warn user if active order or unsaved details exist
+  window.addEventListener('beforeunload', (e) => {
+    const isAtPay = typeof checkout !== 'undefined' && checkout && checkout.step === 'pay' && checkout.order && WAITING_STATUSES.includes(checkout.order.status);
+    const isAtDetails = typeof checkout !== 'undefined' && checkout && checkout.step === 'details' && (($('co-wallet') && $('co-wallet').value.trim()) || ($('co-acct') && $('co-acct').value.trim()));
+    const isInputDirty = $('f-in') && parseFloat($('f-in').value) > 0;
+    if (isAtPay || isAtDetails || isInputDirty) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+  });
+
   loadStore();
 });

@@ -97,6 +97,7 @@ let pendingLoginAction = null;
 
 function promptLoginOverlay(next) {
   pendingLoginAction = typeof next === 'function' ? next : null;
+  if (typeof pushModalHistory === 'function') pushModalHistory('login');
   const overlay = document.getElementById('login-overlay');
   if (overlay) {
     overlay.classList.remove('hidden');
@@ -110,6 +111,7 @@ function promptLoginOverlay(next) {
 }
 
 function closeLoginOverlay() {
+  if (typeof popModalHistory === 'function') popModalHistory('login');
   pendingLoginAction = null;
   const overlay = document.getElementById('login-overlay');
   if (overlay) {
@@ -231,6 +233,7 @@ async function submitVerifyCode(btn) {
 function openProfile() {
   const email = profileEmail();
   if (!email) { promptLoginOverlay(openProfile); return; }
+  if (typeof pushModalHistory === 'function') pushModalHistory('profile');
   document.getElementById('profile-email').textContent = email;
   document.getElementById('profile-avatar').textContent = email.slice(0, 2).toUpperCase();
   const modal = document.getElementById('profile-modal');
@@ -243,6 +246,7 @@ function openProfile() {
 }
 
 function hideProfile() {
+  if (typeof popModalHistory === 'function') popModalHistory('profile');
   const modal = document.getElementById('profile-modal');
   modal.classList.add('hidden');
   modal.classList.remove('flex');

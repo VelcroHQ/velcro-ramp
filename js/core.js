@@ -714,3 +714,104 @@ function startRateExpiryTimer() {
     }
   }, 1000);
 }
+
+// --- Navigation & Unsaved Changes Guard ---
+var _isNavBackTracking = false;
+
+function pushModalHistory(name) {
+  try {
+    if (!history.state || history.state.velcroModal !== name) {
+      history.pushState({ velcroModal: name, ts: Date.now() }, '');
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function popModalHistory(name) {
+  try {
+    if (history.state && history.state.velcroModal === name) {
+      _isNavBackTracking = true;
+      history.back();
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function pushOrderHistory(type) {
+  try {
+    if (!history.state || history.state.velcroOrder !== type) {
+      history.pushState({ velcroOrder: type, ts: Date.now() }, '');
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function popOrderHistory(type) {
+  try {
+    if (history.state && history.state.velcroOrder) {
+      _isNavBackTracking = true;
+      history.back();
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function getTopOpenModal() {
+  const picker = document.querySelector('.asset-picker-modal.open, .custom-select-options.open');
+  if (picker) return 'picker';
+  const login = document.getElementById('login-overlay');
+  if (login && !login.classList.contains('hidden')) return 'login';
+  const historyEl = document.getElementById('history-modal');
+  if (historyEl && !historyEl.classList.contains('hidden')) return 'history';
+  const profile = document.getElementById('profile-modal');
+  if (profile && !profile.classList.contains('hidden')) return 'profile';
+  const success = document.getElementById('success-modal');
+  if (success && !success.classList.contains('hidden')) return 'success';
+  return null;
+}
+
+function closeTopOpenModal() {
+  const top = getTopOpenModal();
+  if (!top) return false;
+  if (top === 'picker') {
+    if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
+    return true;
+  }
+  if (top === 'login') {
+    if (typeof closeLoginOverlay === 'function') closeLoginOverlay();
+    return true;
+  }
+  if (top === 'history') {
+    if (typeof closeHistoryModal === 'function') closeHistoryModal();
+    return true;
+  }
+  if (top === 'profile') {
+    if (typeof closeProfileModal === 'function') closeProfileModal();
+    return true;
+  }
+  if (top === 'success') {
+    if (typeof hideSuccessModal === 'function') hideSuccessModal();
+    else if (typeof closeSuccessModal === 'function') closeSuccessModal();
+    return true;
+  }
+  return false;
+}
+
+function hasUnsavedRampChanges() {
+  // 1. Is there an active generated order awaiting payment?
+  const buyGen = document.getElementById('buy-generated-account');
+  if (buyGen && !buyGen.classList.contains('hidden')) return true;
+
+  const sellGen = document.getElementById('sell-generated-address');
+  if (sellGen && !sellGen.classList.contains('hidden')) return true;
+
+  // 2. Buy form filled with user input
+  const buyAmt = document.getElementById('buy-amount');
+  const buyWallet = document.getElementById('buy-wallet');
+  if (buyAmt && parseFloat(buyAmt.value) > 0) return true;
+  if (buyWallet && buyWallet.value.trim().length > 5) return true;
+
+  // 3. Sell form filled with user input
+  const sellAmt = document.getElementById('sell-amount');
+  const sellBankNum = document.getElementById('sell-bank-number');
+  if (sellAmt && parseFloat(sellAmt.value) > 0) return true;
+  if (sellBankNum && sellBankNum.value.trim().length >= 5) return true;
+
+  return false;
+}
