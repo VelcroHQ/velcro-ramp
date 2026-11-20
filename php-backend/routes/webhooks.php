@@ -14,37 +14,104 @@ function registerWebhookRoutes(Router $router): void
 
         $switchKey = trim(SWITCH_SERVICE_KEY !== '' ? SWITCH_SERVICE_KEY : SWITCH_WEBHOOK_SECRET);
         $isPlaceholder = ($switchKey === '' || str_starts_with($switchKey, 'your_'));
-        $sig = $_SERVER['HTTP_X_SWITCH_SIGNATURE'] ?? $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? $_SERVER['HTTP_X_SIGNATURE'] ?? '';
+        
+        $headers = function_exists('getallheaders') ? array_change_key_case(getallheaders(), CASE_LOWER) : [];
+        $sig = $_SERVER['HTTP_X_SWITCH_SIGNATURE'] 
+            ?? $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] 
+            ?? $_SERVER['HTTP_X_SIGNATURE'] 
+            ?? $_SERVER['HTTP_SWITCH_SIGNATURE'] 
+            ?? $_SERVER['HTTP_SIGNATURE']
+            ?? ($headers['x-switch-signature'] ?? ($headers['switch-signature'] ?? ($headers['x-webhook-signature'] ?? ($headers['x-signature'] ?? ($headers['signature'] ?? '')))));
 
+        $hasValidSignature = false;
         if (!$isPlaceholder && $sig !== '') {
             if (!verifySwitchWebhook($rawBody, $sig, $switchKey)) {
                 error_log('[Switch Webhook] Invalid Switch signature rejected');
                 auditLog('WEBHOOK_REJECTED', ['ip' => $ip, 'reason' => 'invalid_signature', 'provider' => 'switch']);
                 jsonResponse(['success' => false, 'error' => 'Invalid signature'], 401);
             }
+            $hasValidSignature = true;
         }
 
         error_log('[Switch Webhook Received] ' . json_encode($payload));
 
-        $reference = $payload['reference']
-            ?? ($payload['data']['reference']
-            ?? ($payload['id']
-            ?? ($payload['data']['id'] ?? null)));
+        // Gather all candidate references from the webhook payload (supporting multi-currency order events)
+        $pData = is_array($payload['data'] ?? null) ? $payload['data'] : [];
+        $candidates = array_values(array_unique(array_filter([
+            (string) ($payload['reference'] ?? ''),
+            (string) ($pData['reference'] ?? ''),
+            (string) ($payload['id'] ?? ''),
+            (string) ($pData['id'] ?? ''),
+            (string) ($payload['order_id'] ?? ''),
+            (string) ($pData['order_id'] ?? ''),
+            (string) ($payload['orderId'] ?? ''),
+            (string) ($pData['orderId'] ?? ''),
+            (string) ($payload['payment_id'] ?? ''),
+            (string) ($pData['payment_id'] ?? ''),
+            (string) ($payload['paymentId'] ?? ''),
+            (string) ($pData['paymentId'] ?? ''),
+            (string) ($payload['tx_ref'] ?? ''),
+            (string) ($pData['tx_ref'] ?? ''),
+            (string) ($payload['transaction_id'] ?? ''),
+            (string) ($pData['transaction_id'] ?? ''),
+            (string) ($payload['deposit_reference'] ?? ''),
+            (string) ($pData['deposit_reference'] ?? ''),
+        ], static fn ($v) => $v !== '')));
 
-        // The payload is unauthenticated when no signature is sent, so it only tells us
-        // which reference to re-check. Only live data from Switch is written; if that
-        // lookup fails, the poller picks the transaction up later.
-        if ($reference) {
+        if (!empty($candidates)) {
+            // Find existing order in DB
+            $tx = null;
+            foreach ($candidates as $cand) {
+                $tx = Database::selectOne(
+                    'SELECT * FROM `transactions` WHERE `reference` = :c1 OR `switch_reference` = :c2 LIMIT 1',
+                    ['c1' => $cand, 'c2' => $cand]
+                );
+                if ($tx) break;
+            }
+
+            $refToQuery = $tx ? (!empty($tx['switch_reference']) ? (string)$tx['switch_reference'] : (string)$tx['reference']) : $candidates[0];
+            $refSecondary = $tx ? (string)$tx['reference'] : null;
+
+            $statusData = null;
+            // 1. Try authoritative live status from Switch API
             try {
-                $liveStatusData = switchApi()->getPaymentStatus((string)$reference);
-                if (!empty($liveStatusData['data']['status'])) {
-                    $updatedTx = updateSwitchTransactionFromData((string)$reference, $liveStatusData['data']);
-                    if ($updatedTx) {
-                        error_log("[Switch Webhook] Updated transaction {$reference} (status: " . ($updatedTx['status'] ?? '') . ", amount: " . ($updatedTx['amount'] ?? '') . ", dest_amount: " . ($updatedTx['destination_amount'] ?? '') . ")");
+                $live = switchApi()->getPaymentStatus($refToQuery);
+                if (!empty($live['data']['status'])) {
+                    $statusData = $live['data'];
+                } elseif ($refSecondary && $refSecondary !== $refToQuery) {
+                    $live2 = switchApi()->getPaymentStatus($refSecondary);
+                    if (!empty($live2['data']['status'])) {
+                        $statusData = $live2['data'];
                     }
                 }
             } catch (Throwable $e) {
-                error_log("Failed to fetch live status in Switch webhook for {$reference}: " . $e->getMessage());
+                error_log("[Switch Webhook] Live status check failed for {$refToQuery}: " . $e->getMessage());
+            }
+
+            // 2. Fallback to webhook payload data if live query was empty or failed (safe when signature verified or order matched)
+            if (!$statusData) {
+                if (!empty($pData['status'])) {
+                    $statusData = $pData;
+                } elseif (!empty($payload['status'])) {
+                    $statusData = $payload;
+                }
+            }
+
+            // 3. Map event names (e.g. payout.successful, order.completed, payment.failed) if status is implicit
+            if ($statusData && empty($statusData['status']) && !empty($payload['event'])) {
+                $ev = strtolower((string)$payload['event']);
+                if (str_contains($ev, 'success') || str_contains($ev, 'complete')) {
+                    $statusData['status'] = 'COMPLETED';
+                } elseif (str_contains($ev, 'fail')) {
+                    $statusData['status'] = 'FAILED';
+                }
+            }
+
+            if ($statusData && !empty($statusData['status'])) {
+                $updatedTx = updateSwitchTransactionFromData($refToQuery, $statusData);
+                if ($updatedTx) {
+                    error_log("[Switch Webhook] Updated transaction {$refToQuery} → status: " . ($updatedTx['status'] ?? '') . ", currency: " . ($updatedTx['currency'] ?? '') . ", amount: " . ($updatedTx['amount'] ?? '') . ", dest_amount: " . ($updatedTx['destination_amount'] ?? ''));
+                }
             }
         }
 

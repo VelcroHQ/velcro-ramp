@@ -130,9 +130,29 @@ function referralUsdVolume(array $t, float $usdNgn): float
             return $amount;          // Switch sell: amount is the crypto sent
         }
     }
-    // Naira side: onramp and PAJ rows store NGN in `amount`; Switch sells store the NGN payout in destination_amount.
-    $ngn = ($type === 'ONRAMP' || $isPaj) ? $amount : ($dest > 0 ? $dest : $amount * (float) ($t['rate'] ?? 0));
-    return $usdNgn > 0 ? $ngn / $usdNgn : 0.0;
+    // Fiat conversion: onramp and PAJ rows store fiat in `amount`; Switch sells store fiat in destination_amount.
+    $curr = strtoupper(trim((string) ($t['currency'] ?? 'NGN')));
+    $fiatAmount = ($type === 'ONRAMP' || $isPaj) ? $amount : ($dest > 0 ? $dest : $amount * (float) ($t['rate'] ?? 0));
+    
+    if ($curr !== 'NGN' && $curr !== '') {
+        $fiatToUsdRates = [
+            'GHS' => 15.5,
+            'KES' => 129.0,
+            'ZAR' => 18.2,
+            'XOF' => 610.0,
+            'XAF' => 610.0,
+            'EGP' => 49.5,
+            'MAD' => 9.9,
+            'UGX' => 3680.0,
+            'TZS' => 2600.0,
+            'RWF' => 1380.0,
+            'USD' => 1.0,
+        ];
+        $divisor = $fiatToUsdRates[$curr] ?? 1.0;
+        return $divisor > 0 ? $fiatAmount / $divisor : 0.0;
+    }
+
+    return $usdNgn > 0 ? $fiatAmount / $usdNgn : 0.0;
 }
 
 /** Live USD→NGN rate (PAJ sell rate), fetched once per request; 1500 if PAJ is unreachable (same fallback as the stats). */

@@ -183,7 +183,8 @@ function receiptEmail(array $t): array
 {
     $asset = (string) $t['asset'];
     $symbol = strtoupper(str_contains($asset, ':') ? explode(':', $asset)[1] : $asset);
-    $ngn = static fn ($v): string => '₦' . number_format((float) $v, 2);
+    $curr = strtoupper((string) ($t['currency'] ?? 'NGN'));
+    $fiat = static fn ($v): string => formatFiatAmount($v, $curr);
     $crypto = static fn ($v): string => rtrim(rtrim(number_format((float) $v, 6, '.', ','), '0'), '.') . ' ' . $symbol;
     $short = static fn (string $s): string => strlen($s) > 18 ? substr($s, 0, 8) . '…' . substr($s, -6) : $s;
     $isPaj = strtoupper((string) ($t['channel'] ?? '')) === 'PAJ';
@@ -193,7 +194,7 @@ function receiptEmail(array $t): array
 
     if (strtoupper((string) $t['type']) === 'ONRAMP') {
         $received = (float) ($t['destination_amount'] ?? 0) > 0 ? $crypto($t['destination_amount']) : $symbol;
-        $rows = [['You paid', $ngn($t['amount'])], ['Network', $chainLabel]];
+        $rows = [['You paid', $fiat($t['amount'])], ['Network', $chainLabel]];
         if (!empty($t['wallet_address'])) {
             $rows[] = ['Wallet', $short((string) $t['wallet_address']), true];
         }
@@ -216,9 +217,10 @@ function receiptEmail(array $t): array
         return [$subject, $html, $text];
     }
 
-    // Sell: PAJ stores the naira amount in `amount`; Switch stores crypto in `amount` and the naira payout in destination_amount.
+    // Sell: PAJ stores the fiat amount in `amount`; Switch stores crypto in `amount` and the fiat payout in destination_amount.
     $paid = $isPaj ? $t['amount'] : ($t['destination_amount'] ?? null);
-    $received = $paid !== null && (float) $paid > 0 ? $ngn($paid) : 'Naira';
+    $currWord = ($curr === 'NGN') ? 'Naira' : $curr;
+    $received = $paid !== null && (float) $paid > 0 ? $fiat($paid) : $currWord;
     $ben = is_array($t['beneficiary'] ?? null) ? $t['beneficiary'] : (json_decode((string) ($t['beneficiary'] ?? ''), true) ?: []);
     $banks = ['100004' => 'OPay', '000014' => 'Access Bank', '000013' => 'GTBank', '000015' => 'Zenith Bank', '000016' => 'First Bank', '000004' => 'UBA', '000007' => 'Fidelity Bank', '000017' => 'Wema Bank', '090286' => 'Safehaven MFB', '100033' => 'PalmPay', '100026' => 'Kuda Bank'];
     $bank = (string) ($ben['bank_name'] ?? $ben['bankName'] ?? $ben['institution'] ?? ($banks[$ben['bank_code'] ?? ''] ?? ''));
@@ -228,7 +230,7 @@ function receiptEmail(array $t): array
         $rows[] = ['You sold', $crypto($t['amount'])];
     }
     if ($bank !== '') {
-        $rows[] = ['Bank', $bank];
+        $rows[] = ['Account / Bank', $bank];
     }
     if ($account !== '') {
         $holder = (string) ($ben['holder_name'] ?? '');
@@ -236,12 +238,12 @@ function receiptEmail(array $t): array
     }
     $rows[] = ['Reference', $short($ref), true];
     $rows[] = ['Date', $date];
-    $subject = "Receipt: {$received} sent to your bank";
+    $subject = "Receipt: {$received} sent to your account";
     [$html, $text] = renderOrderEmail($t, [
         'preheader' => "Your {$received} payout is complete.",
         'eyebrow' => 'Receipt',
         'title' => 'Your payout is complete',
-        'intro' => "We've sent {$received} to your bank account" . ($bank !== '' ? " at {$bank}" : '') . '. It usually lands within minutes.',
+        'intro' => "We've sent {$received} to your account" . ($bank !== '' ? " at {$bank}" : '') . '. It usually lands within minutes.',
         'amount' => ['You received', $received],
         'rows' => $rows,
         'cta' => ['Open Velcro', EMAIL_SITE_URL],
@@ -284,7 +286,8 @@ function orderInitiatedEmail(array $t): array
 {
     $asset = (string) ($t['asset'] ?? 'USDT');
     $symbol = strtoupper(str_contains($asset, ':') ? explode(':', $asset)[1] : $asset);
-    $ngn = static fn ($v): string => '₦' . number_format((float) $v, 2);
+    $curr = strtoupper((string) ($t['currency'] ?? 'NGN'));
+    $fiat = static fn ($v): string => formatFiatAmount($v, $curr);
     $crypto = static fn ($v): string => rtrim(rtrim(number_format((float) $v, 6, '.', ','), '0'), '.') . ' ' . $symbol;
     $short = static fn (string $s): string => strlen($s) > 18 ? substr($s, 0, 8) . '…' . substr($s, -6) : $s;
     [$chainLabel] = receiptChain($t);
@@ -292,7 +295,7 @@ function orderInitiatedEmail(array $t): array
 
     if (strtoupper((string) $t['type']) === 'ONRAMP') {
         $expected = (float) ($t['destination_amount'] ?? 0) > 0 ? $crypto($t['destination_amount']) : $symbol;
-        $fiatPay = $ngn($t['amount']);
+        $fiatPay = $fiat($t['amount']);
         $bankName = (string) ($t['deposit_bank_name'] ?? '-');
         $accountNum = (string) ($t['deposit_account_number'] ?? '-');
         $accountName = (string) ($t['deposit_account_name'] ?? 'Velcro Checkout');
@@ -315,7 +318,7 @@ function orderInitiatedEmail(array $t): array
             'preheader' => "Please transfer {$fiatPay} within 60 minutes to complete your order.",
             'eyebrow' => 'Order Started',
             'title' => 'Complete your crypto purchase',
-            'intro' => "We've created your order. Please transfer {$fiatPay} to the dedicated bank account below within 60 minutes. Once detected, {$expected} will be sent to your wallet automatically.",
+            'intro' => "We've created your order. Please transfer {$fiatPay} to the dedicated account below within 60 minutes. Once detected, {$expected} will be sent to your wallet automatically.",
             'amount' => ['Transfer exactly', $fiatPay],
             'rows' => $rows,
             'cta' => ['View Order Status', EMAIL_SITE_URL],
@@ -326,14 +329,15 @@ function orderInitiatedEmail(array $t): array
 
     // Sell / OFFRAMP
     $cryptoAmt = (float) ($t['amount'] ?? 0) > 0 ? $crypto($t['amount']) : $symbol;
-    $payoutFiat = (float) ($t['destination_amount'] ?? 0) > 0 ? $ngn($t['destination_amount']) : 'NGN';
+    $payoutFiat = (float) ($t['destination_amount'] ?? 0) > 0 ? $fiat($t['destination_amount']) : $curr;
     $depositAddress = (string) ($t['deposit_address'] ?? '-');
     $window = orderWindowLabel($t);
     $isHostfi = strtoupper((string) ($t['channel'] ?? '')) === 'HOSTFI';
     $payoutWord = $isHostfi ? "about {$payoutFiat}" : $payoutFiat; // HostFi's final amount is set when the deposit confirms
     $open = $isHostfi && (float) ($t['amount'] ?? 0) <= 0; // HostFi orders take any amount; the payout follows what arrives
     if ($open) {
-        $payoutFiat = $payoutWord = 'your naira';
+        $currWord = ($curr === 'NGN') ? 'your naira' : "your {$curr}";
+        $payoutFiat = $payoutWord = $currWord;
     }
 
     $ben = is_array($t['beneficiary'] ?? null) ? $t['beneficiary'] : (json_decode((string) ($t['beneficiary'] ?? ''), true) ?: []);
@@ -429,6 +433,7 @@ function notifyMerchantOrderIssue(array $t, string $what): void
     $asset = (string) ($t['asset'] ?? '');
     $coin = strtoupper(str_contains($asset, ':') ? explode(':', $asset)[1] : $asset);
     $customer = (string) ($t['email'] ?? '') ?: 'a customer';
+    $curr = strtoupper((string) ($t['currency'] ?? 'NGN'));
     try {
         merchantMail((string) $s['merchant']['email'], "{$s['brand']['name']}: a customer's order {$what}", [
             'preheader' => "{$customer}'s " . ($buy ? 'buy' : 'sell') . " of {$coin} {$what}. We're on it.",
@@ -439,7 +444,7 @@ function notifyMerchantOrderIssue(array $t, string $what): void
             'rows' => [
                 ['Customer', $customer],
                 ['Order', ($buy ? 'Buy ' : 'Sell ') . $coin],
-                ['Amount', $buy ? '₦' . number_format((float) ($t['amount'] ?? 0), 2) : rtrim(rtrim(number_format((float) ($t['amount'] ?? 0), 8, '.', ''), '0'), '.') . ' ' . $coin],
+                ['Amount', $buy ? formatFiatAmount($t['amount'] ?? 0, $curr) : rtrim(rtrim(number_format((float) ($t['amount'] ?? 0), 8, '.', ''), '0'), '.') . ' ' . $coin],
                 ['Reference', (string) ($t['reference'] ?? ''), true],
             ],
             'cta' => ['Open your orders', MERCHANT_SITE_URL . '/#orders'],
@@ -474,7 +479,8 @@ function orderReminderEmail(array $t): array
 {
     $asset = (string) ($t['asset'] ?? 'USDT');
     $symbol = strtoupper(str_contains($asset, ':') ? explode(':', $asset)[1] : $asset);
-    $ngn = static fn ($v): string => '₦' . number_format((float) $v, 2);
+    $curr = strtoupper((string) ($t['currency'] ?? 'NGN'));
+    $fiat = static fn ($v): string => formatFiatAmount($v, $curr);
     $crypto = static fn ($v): string => rtrim(rtrim(number_format((float) $v, 6, '.', ','), '0'), '.') . ' ' . $symbol;
     $short = static fn (string $s): string => strlen($s) > 18 ? substr($s, 0, 8) . '…' . substr($s, -6) : $s;
     [$chainLabel] = receiptChain($t);
@@ -482,7 +488,7 @@ function orderReminderEmail(array $t): array
 
     if (strtoupper((string) $t['type']) === 'ONRAMP') {
         $expected = (float) ($t['destination_amount'] ?? 0) > 0 ? $crypto($t['destination_amount']) : $symbol;
-        $fiatPay = $ngn($t['amount']);
+        $fiatPay = $fiat($t['amount']);
         $bankName = (string) ($t['deposit_bank_name'] ?? '-');
         $accountNum = (string) ($t['deposit_account_number'] ?? '-');
         $accountName = (string) ($t['deposit_account_name'] ?? 'Velcro Checkout');
@@ -513,14 +519,15 @@ function orderReminderEmail(array $t): array
 
     // Sell / OFFRAMP
     $cryptoAmt = (float) ($t['amount'] ?? 0) > 0 ? $crypto($t['amount']) : $symbol;
-    $payoutFiat = (float) ($t['destination_amount'] ?? 0) > 0 ? $ngn($t['destination_amount']) : 'NGN';
+    $payoutFiat = (float) ($t['destination_amount'] ?? 0) > 0 ? $fiat($t['destination_amount']) : $curr;
     $depositAddress = (string) ($t['deposit_address'] ?? '-');
     $window = orderWindowLabel($t);
     $isHostfi = strtoupper((string) ($t['channel'] ?? '')) === 'HOSTFI';
     $payoutWord = $isHostfi ? "about {$payoutFiat}" : $payoutFiat; // HostFi's final amount is set when the deposit confirms
     $open = $isHostfi && (float) ($t['amount'] ?? 0) <= 0; // HostFi orders take any amount; the payout follows what arrives
     if ($open) {
-        $payoutFiat = $payoutWord = 'your naira';
+        $currWord = ($curr === 'NGN') ? 'your naira' : "your {$curr}";
+        $payoutFiat = $payoutWord = $currWord;
     }
 
     $rows = [

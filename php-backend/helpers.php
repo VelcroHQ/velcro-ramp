@@ -1391,6 +1391,42 @@ function calculateTxVolumes(array $t): array
 }
 
 /**
+ * Get display currency symbol for supported fiat currencies.
+ */
+function getCurrencySymbol(?string $currency): string
+{
+    $c = strtoupper(trim((string) ($currency ?: 'NGN')));
+    return match ($c) {
+        'NGN' => '₦',
+        'GHS' => 'GH₵',
+        'KES' => 'KSh ',
+        'ZAR' => 'R ',
+        'XOF' => 'CFA ',
+        'XAF' => 'CFA ',
+        'EGP' => 'E£ ',
+        'MAD' => 'MAD ',
+        'UGX' => 'USh ',
+        'TZS' => 'TSh ',
+        'RWF' => 'RF ',
+        'USD' => '$',
+        'EUR' => '€',
+        'GBP' => '£',
+        default => ($c !== '' ? "{$c} " : '₦'),
+    };
+}
+
+/**
+ * Format fiat amount with its appropriate currency symbol.
+ */
+function formatFiatAmount($amount, ?string $currency = 'NGN'): string
+{
+    $curr = strtoupper(trim((string) ($currency ?: 'NGN')));
+    $symbol = getCurrencySymbol($curr);
+    $formatted = number_format((float) $amount, 2);
+    return $symbol . $formatted;
+}
+
+/**
  * Update a transaction record in the database with authoritative data from Switch.
  * Captures the actual crypto amount deposited (even if different from initial estimate),
  * the actual destination amount (NGN paid to bank or crypto sent to wallet),
@@ -1462,9 +1498,12 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
     }
 
     $isOfframp = ($tx && strtoupper((string)$tx['type']) === 'OFFRAMP') || $direction === 'OFFRAMP';
+    $currency = $d['currency'] ?? ($destination['currency'] ?? ($source['currency'] ?? null));
+    $country = $d['country'] ?? null;
+    $switchRef = !empty($d['id']) ? (string)$d['id'] : (!empty($d['reference']) ? (string)$d['reference'] : null);
 
     if ($isOfframp) {
-        // OFFRAMP (Sell crypto for NGN)
+        // OFFRAMP (Sell crypto for fiat)
         $realCrypto = null;
         if (isset($source['amount']) && (float)$source['amount'] > 0) {
             $realCrypto = (float)$source['amount'];
@@ -1478,12 +1517,20 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
             $realRate = $realFiat / $realCrypto;
         }
 
+        $srcCurrency = $source['currency'] ?? ($d['asset'] ? (explode(':', (string)$d['asset'])[1] ?? null) : null);
+        $dstCurrency = $destination['currency'] ?? ($currency ?? null);
+
         $params = [
             'status' => $normalizedStatus,
             'real_crypto' => $realCrypto,
             'real_source_amount' => $realCrypto,
             'real_dest_amount' => $realFiat,
             'real_rate' => $realRate,
+            'currency' => $currency,
+            'country' => $country,
+            'src_currency' => $srcCurrency,
+            'dst_currency' => $dstCurrency,
+            'switch_reference' => $switchRef,
             'hash' => $hash,
             'explorer_url' => $explorerUrl,
             'meta' => jsonEncodeNullable($d),
@@ -1505,6 +1552,11 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
                 `source_amount` = COALESCE(:real_source_amount, `source_amount`, `amount`),
                 `destination_amount` = COALESCE(:real_dest_amount, `destination_amount`),
                 `rate` = COALESCE(:real_rate, `rate`),
+                `currency` = COALESCE(:currency, `currency`),
+                `country` = COALESCE(:country, `country`),
+                `source_currency` = COALESCE(:src_currency, `source_currency`),
+                `destination_currency` = COALESCE(:dst_currency, `destination_currency`),
+                `switch_reference` = COALESCE(`switch_reference`, :switch_reference),
                 `hash` = COALESCE(:hash, `hash`),
                 `explorer_url` = COALESCE(:explorer_url, `explorer_url`),
                 `meta` = :meta,
@@ -1513,7 +1565,7 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
             $params
         );
     } else {
-        // ONRAMP (Buy crypto with NGN)
+        // ONRAMP (Buy crypto with fiat)
         $storedMeta = $tx['meta'] ?? [];
         if (is_string($storedMeta)) {
             $storedMeta = json_decode($storedMeta, true) ?: [];
@@ -1534,6 +1586,9 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
             $realRate = $realFiat / $realCrypto;
         }
 
+        $srcCurrency = $source['currency'] ?? ($currency ?? null);
+        $dstCurrency = $destination['currency'] ?? ($d['asset'] ? (explode(':', (string)$d['asset'])[1] ?? null) : null);
+
         $params = [
             'status' => $normalizedStatus,
             'real_fiat' => $realFiat,
@@ -1541,6 +1596,11 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
             'real_crypto' => $realCrypto,
             'fee_developer' => $feeDev !== null ? (float) $feeDev : null,
             'real_rate' => $realRate,
+            'currency' => $currency,
+            'country' => $country,
+            'src_currency' => $srcCurrency,
+            'dst_currency' => $dstCurrency,
+            'switch_reference' => $switchRef,
             'hash' => $hash,
             'explorer_url' => $explorerUrl,
             'meta' => jsonEncodeNullable($d),
@@ -1563,6 +1623,11 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
                 `destination_amount` = COALESCE(:real_crypto, `destination_amount`),
                 `fee_developer` = COALESCE(:fee_developer, `fee_developer`),
                 `rate` = COALESCE(:real_rate, `rate`),
+                `currency` = COALESCE(:currency, `currency`),
+                `country` = COALESCE(:country, `country`),
+                `source_currency` = COALESCE(:src_currency, `source_currency`),
+                `destination_currency` = COALESCE(:dst_currency, `destination_currency`),
+                `switch_reference` = COALESCE(`switch_reference`, :switch_reference),
                 `hash` = COALESCE(:hash, `hash`),
                 `explorer_url` = COALESCE(:explorer_url, `explorer_url`),
                 `meta` = :meta,
@@ -1588,13 +1653,20 @@ function updateSwitchTransactionFromData(string $reference, array $d): ?array
             $tAmt = number_format((float) ($finalTx['amount'] ?? 0), 2);
             $tDest = number_format((float) ($finalTx['destination_amount'] ?? 0), 4);
             $tAsset = $finalTx['asset'] ?? 'USDT';
+            $tCurr = strtoupper((string) ($finalTx['currency'] ?? 'NGN'));
+            $currSym = getCurrencySymbol($tCurr);
             $tEmail = !empty($finalTx['email']) ? "\n👤 <b>User:</b> {$finalTx['email']}" : '';
             $tRef = $finalTx['reference'];
             $tProfit = !empty($finalTx['fee_developer']) && (float) $finalTx['fee_developer'] > 0
                 ? "\n💰 <b>Platform Fee:</b> " . number_format((float) $finalTx['fee_developer'], 4)
                 : '';
             $tHash = !empty($finalTx['hash']) ? "\n🔗 <b>TX:</b> <code>" . substr((string) $finalTx['hash'], 0, 12) . "…</code>" : '';
-            sendTelegramAlert("🚀 <b>Velcro Order Completed!</b>\n\n📌 <b>Type:</b> {$tType}\n💵 <b>Amount:</b> ₦{$tAmt} → {$tDest} {$tAsset}{$tProfit}{$tEmail}{$tHash}\n🆔 <b>Ref:</b> <code>{$tRef}</code>");
+            
+            $flowDesc = ($tType === 'ONRAMP') 
+                ? "{$currSym}{$tAmt} {$tCurr} → {$tDest} {$tAsset}"
+                : "{$tAmt} {$tAsset} → {$currSym}{$tDest} {$tCurr}";
+
+            sendTelegramAlert("🚀 <b>Velcro Order Completed!</b>\n\n📌 <b>Type:</b> {$tType}\n💵 <b>Amount:</b> {$flowDesc}{$tProfit}{$tEmail}{$tHash}\n🆔 <b>Ref:</b> <code>{$tRef}</code>");
         } catch (Throwable $alertErr) {}
     }
 

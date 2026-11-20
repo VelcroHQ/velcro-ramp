@@ -158,7 +158,7 @@ function renderHistoryList(txs) {
     return;
   }
 
-  const ngn = v => `₦${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatFiat = (v, curr) => formatFiatDigits(v, curr || 'NGN');
   const crypto = (v, sym) => `${Number(v).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${sym}`;
   const short = s => s.length > 16 ? `${s.slice(0, 6)}…${s.slice(-6)}` : s;
   const copyIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
@@ -221,8 +221,9 @@ function renderHistoryList(txs) {
 
     const sentCrypto = tx.source_amount || (tx.channel !== 'PAJ' ? tx.amount : null);
     const receivedFiat = tx.destination_amount || (tx.channel === 'PAJ' ? tx.amount : null);
-    const sent = isBuy ? ngn(tx.amount) : (sentCrypto ? crypto(sentCrypto, assetName) : assetName);
-    const received = isBuy ? (tx.destination_amount ? crypto(tx.destination_amount, assetName) : '—') : (receivedFiat ? ngn(receivedFiat) : '—');
+    const txCurr = tx.currency || meta.currency || 'NGN';
+    const sent = isBuy ? formatFiat(tx.amount, txCurr) : (sentCrypto ? crypto(sentCrypto, assetName) : assetName);
+    const received = isBuy ? (tx.destination_amount ? crypto(tx.destination_amount, assetName) : '—') : (receivedFiat ? formatFiat(receivedFiat, txCurr) : '—');
 
     let explorer = (tx.hash || tx.explorer_url) ? (tx.explorer_url || getExplorerUrl(tx.hash, network)) : '';
     if (explorer === '#') explorer = '';
@@ -338,7 +339,24 @@ function formatFiatDigits(num, currency = 'NGN') {
   if (num === null || num === undefined || num === '') return '-';
   const val = Number(num);
   if (isNaN(val)) return String(num);
-  const symbol = (currency === 'NGN' || !currency) ? '₦' : currency + ' ';
+  const c = String(currency || 'NGN').toUpperCase().trim();
+  const symbols = {
+    'NGN': '₦',
+    'GHS': 'GH₵',
+    'KES': 'KSh ',
+    'ZAR': 'R ',
+    'XOF': 'CFA ',
+    'XAF': 'CFA ',
+    'EGP': 'E£ ',
+    'MAD': 'MAD ',
+    'UGX': 'USh ',
+    'TZS': 'TSh ',
+    'RWF': 'RF ',
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£'
+  };
+  const symbol = symbols[c] || (c ? `${c} ` : '₦');
   return `${symbol}${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
@@ -391,6 +409,7 @@ function showSuccessModal(type, data) {
   const statusBadge = document.getElementById('success-badge-status');
 
   const isBuy = (type === 'buy');
+  const txCurr = data.currency || (typeof currentCurrency !== 'undefined' ? currentCurrency : 'NGN');
   const rawAsset = (data.asset || (isBuy ? currentBuyAsset : currentSellAsset) || (isBuy ? 'SOL' : 'USDT')).toUpperCase();
   
   let rawCrypto = isBuy ? (data.cryptoAmount || data.destinationAmount) : (data.cryptoAmount || data.amount);
@@ -416,7 +435,7 @@ function showSuccessModal(type, data) {
     if (secondaryRow && secondaryLabel && secondaryValue) {
       if (rawFiat && Number(rawFiat) > 0) {
         secondaryLabel.textContent = 'You paid';
-        secondaryValue.textContent = formatFiatDigits(rawFiat);
+        secondaryValue.textContent = formatFiatDigits(rawFiat, txCurr);
         secondaryRow.classList.remove('hidden');
       } else {
         secondaryRow.classList.add('hidden');
@@ -455,8 +474,8 @@ function showSuccessModal(type, data) {
     if (subtitle) subtitle.textContent = 'Your funds have been sent to your bank account.';
     if (statusBadge) statusBadge.textContent = 'Payout complete';
     if (heroLabel) heroLabel.textContent = 'You received';
-    if (amountEl) amountEl.textContent = formatFiatDigits(rawFiat);
-    if (assetTag) assetTag.textContent = ''; // the ₦ sign already says NGN
+    if (amountEl) amountEl.textContent = formatFiatDigits(rawFiat, txCurr);
+    if (assetTag) assetTag.textContent = (txCurr === 'NGN' ? '' : txCurr);
 
     if (secondaryRow && secondaryLabel && secondaryValue) {
       if (rawCrypto && Number(rawCrypto) > 0) {
