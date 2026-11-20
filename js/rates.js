@@ -370,7 +370,7 @@ function updateCurrencyPillState() {
     } else {
       pill.classList.remove('cursor-pointer', 'hover:scale-102');
       pill.classList.add('cursor-default', 'opacity-90');
-      pill.setAttribute('title', 'Naira (NGN) - HostFi/PAJ settlement');
+      pill.setAttribute('title', 'Naira (NGN)');
       if (chevron) chevron.style.display = 'none';
     }
   });
@@ -654,7 +654,7 @@ function openCountryPicker() {
   const provider = isBuy ? (typeof buyProvider !== 'undefined' ? buyProvider : 'switch') : (typeof sellProvider !== 'undefined' ? sellProvider : 'switch');
   if (provider !== 'switch') {
     if (typeof showToast === 'function') {
-      showToast('Multi-currency is available for Switch assets only. HostFi & PAJ support Naira (NGN).', 'info');
+      showToast('This asset settles in Naira (NGN). Multi-currency is available on select coins.', 'info');
     }
     return;
   }
@@ -711,7 +711,7 @@ function renderCountryPicker(filter = '') {
       return `
         <div onclick="selectCountry('${c.code}')" 
           class="flex items-center justify-between p-3 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/40 opacity-45 blur-[0.3px] hover:opacity-70 transition-all cursor-not-allowed select-none"
-          title="${c.name} is currently paused in admin">
+          title="${c.name} is currently unavailable">
           <div class="flex items-center gap-3">
             <img src="${c.flag}" class="w-7 h-7 rounded-full object-cover shrink-0 shadow-2xs" alt="${c.code}">
             <span class="font-medium text-sm text-gray-700 dark:text-gray-300">${c.name}</span>
@@ -749,7 +749,7 @@ async function selectCountry(code) {
   const provider = isBuy ? (typeof buyProvider !== 'undefined' ? buyProvider : 'switch') : (typeof sellProvider !== 'undefined' ? sellProvider : 'switch');
   if (provider !== 'switch' && code !== 'NG') {
     if (typeof showToast === 'function') {
-      showToast('Multi-currency is available for Switch assets only. HostFi & PAJ support Naira (NGN).', 'warning');
+      showToast('This asset settles in Naira (NGN).', 'warning');
     }
     return;
   }
@@ -757,7 +757,7 @@ async function selectCountry(code) {
   const cfg = getCountryConfig(code);
   if (!isCountryEnabled(code)) {
     if (typeof showToast === 'function') {
-      showToast(`${cfg.name} (${cfg.currency}) is coming soon via Switch!`, 'info');
+      showToast(`${cfg.name} (${cfg.currency}) is coming soon!`, 'info');
     }
     return;
   }
