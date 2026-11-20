@@ -85,8 +85,10 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   const hash = (window.location.hash || '').replace('#', '').toLowerCase();
-  if (['payment', 'earn', 'vip', 'rewards'].includes(hash)) {
+  if (['payment', 'earn', 'vip'].includes(hash)) {
     showComingSoon(hash, false);
+  } else if (hash === 'rewards') {
+    if (typeof openProfile === 'function') openProfile();
   }
 });
 
@@ -161,10 +163,6 @@ const COMING_SOON_DATA = {
     title: 'Private Client is on the way.',
     body: "Trade large volumes with competitive rates and dedicated execution. We're getting everything ready for launch.",
     extra: '<a href="https://wa.me/2347035428475?text=' + encodeURIComponent('Hi Velcro Desk, I am inquiring about Private Client / VIP OTC trades ($10k+ / ₦15M+).') + '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#6b46ff] text-white hover:bg-[#5b36ef] shadow-sm transition-all">Chat with OTC Desk &rarr;</a>'
-  },
-  rewards: {
-    title: 'Rewards are almost here.',
-    body: "Earn points on every swap and redeem them for real value. We're putting the finishing touches on it."
   }
 };
 
@@ -241,7 +239,12 @@ function handleMenuClick(action) {
       break;
     }
     case 'rewards': {
-      showComingSoon('rewards');
+      if (typeof isComingSoonActive === 'function' && isComingSoonActive()) {
+        showSwapView();
+      }
+      if (typeof openProfile === 'function') {
+        openProfile();
+      }
       break;
     }
     case 'support': {

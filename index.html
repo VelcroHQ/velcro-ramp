@@ -1003,45 +1003,15 @@
     </div>
   </section>
 
-  <!-- Coming Soon Feature Section (Bread Style) -->
+  <!-- Coming Soon Feature Section -->
   <section id="feature-coming-soon" style="display: none;" class="min-h-[65vh] flex-col items-center justify-center px-4 py-12 text-center relative z-10 animate-fade-in">
     <div class="max-w-md mx-auto flex flex-col items-center">
-      <!-- 3D Isometric Purple Layer Stack -->
-      <div class="mb-7 transform hover:scale-105 transition-transform duration-300">
-        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="csTopGrad" x1="20" y1="0" x2="100" y2="30" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#a78bfa" />
-              <stop offset="1" stop-color="#7c3aed" />
-            </linearGradient>
-            <linearGradient id="csLeftGrad" x1="20" y1="15" x2="60" y2="42" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#6d28d9" />
-              <stop offset="1" stop-color="#5b21b6" />
-            </linearGradient>
-            <linearGradient id="csRightGrad" x1="60" y1="30" x2="100" y2="42" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#4c1d95" />
-              <stop offset="1" stop-color="#3b0764" />
-            </linearGradient>
-          </defs>
-          <!-- Layer 3 (Bottom) -->
-          <g transform="translate(0, 44)">
-            <path d="M20 17 L60 32 L60 44 L20 29 Z" fill="url(#csLeftGrad)" />
-            <path d="M60 32 L100 17 L100 29 L60 44 Z" fill="url(#csRightGrad)" />
-            <path d="M60 2 L100 17 L60 32 L20 17 Z" fill="url(#csTopGrad)" />
-          </g>
-          <!-- Layer 2 (Middle) -->
-          <g transform="translate(0, 22)">
-            <path d="M20 17 L60 32 L60 44 L20 29 Z" fill="url(#csLeftGrad)" />
-            <path d="M60 32 L100 17 L100 29 L60 44 Z" fill="url(#csRightGrad)" />
-            <path d="M60 2 L100 17 L60 32 L20 17 Z" fill="url(#csTopGrad)" />
-          </g>
-          <!-- Layer 1 (Top) -->
-          <g transform="translate(0, 0)">
-            <path d="M20 17 L60 32 L60 44 L20 29 Z" fill="url(#csLeftGrad)" />
-            <path d="M60 32 L100 17 L100 29 L60 44 Z" fill="url(#csRightGrad)" />
-            <path d="M60 2 L100 17 L60 32 L20 17 Z" fill="url(#csTopGrad)" />
-          </g>
-        </svg>
+      <!-- Velcro Brand Emblem with Soft Glow -->
+      <div class="mb-7 relative flex items-center justify-center">
+        <div class="absolute -inset-4 bg-gradient-to-tr from-velcro-green/25 to-[#6b46ff]/25 rounded-full blur-xl opacity-75"></div>
+        <div class="relative w-24 h-24 rounded-3xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700/80 shadow-xl flex items-center justify-center p-4 transform hover:scale-105 transition-transform duration-300">
+          <img src="/velcro_favicon.png" class="w-full h-full object-contain rounded-2xl" alt="Velcro">
+        </div>
       </div>
 
       <!-- Pill Badge: Coming Soon -->
@@ -1327,17 +1297,18 @@
     </div>
   </div>
 
-  <!-- Floating Info & Tour Widget (Bottom Left - Bread Style) -->
+  <!-- Floating Info & Tour Widget (Bottom Left) -->
   <div id="info-widget" class="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-2">
     <!-- Popup Card -->
     <div id="info-menu" class="hidden mb-1 p-2.5 sm:p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 min-w-[185px] space-y-1">
       <button type="button" onclick="triggerPwaInstall(); toggleInfoMenu();"
         class="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700/60 text-sm font-semibold text-[#211138] dark:text-gray-100 transition-colors text-left cursor-pointer">
-        <!-- Isometric 3-layer stack icon matching Bread style -->
-        <svg class="w-5 h-5 text-[#211138] dark:text-purple-300 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2.5C7.5 2.5 4 4.1 4 6s3.5 3.5 8 3.5 8-1.6 8-3.5-3.5-3.5-8-3.5z"/>
-          <path d="M4 8.5v2.5c0 1.9 3.5 3.5 8 3.5s8-1.6 8-3.5V8.5c-1.8 1.4-4.7 2.2-8 2.2s-6.2-.8-8-2.2z"/>
-          <path d="M4 13.5v2.5c0 1.9 3.5 3.5 8 3.5s8-1.6 8-3.5v-2.5c-1.8 1.4-4.7 2.2-8 2.2s-6.2-.8-8-2.2z"/>
+        <!-- Install App Smartphone Icon -->
+        <svg class="w-5 h-5 text-[#211138] dark:text-purple-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="3" ry="3"></rect>
+          <line x1="12" y1="18" x2="12.01" y2="18"></line>
+          <path d="m9 9 3 3 3-3"></path>
+          <path d="M12 5v7"></path>
         </svg>
         <span>Install app</span>
       </button>
@@ -1409,7 +1380,7 @@
   <script src="/js/order.js?v=3"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=3"></script>
-  <script src="/js/main.js?v=7"></script>
+  <script src="/js/main.js?v=8"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>
