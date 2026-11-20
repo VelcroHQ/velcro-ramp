@@ -526,13 +526,27 @@ async function resolveAccountName() {
       if (!res.ok) throw new Error(payload.message || 'Could not resolve account name');
     } else {
       const switchCode = currentBankSwitchCode || currentBankCode;
-      if (!switchCode) { nameLoading.classList.add('hidden'); nameInput.classList.remove('hidden'); nameError.textContent = 'Selected bank is not supported for this asset'; nameError.classList.remove('hidden'); return; }
+      const isMoMo = typeof isMobileMoneyCountry === 'function' && isMobileMoneyCountry(currentCountry);
+      if (!switchCode) {
+        nameLoading.classList.add('hidden');
+        nameInput.classList.remove('hidden');
+        nameError.textContent = isMoMo ? 'Please select a network / provider' : 'Selected bank is not supported for this asset';
+        nameError.classList.remove('hidden');
+        return;
+      }
       const res = await fetch(`${API_BASE}/api/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           country: currentCountry,
-          beneficiary: { account_number: bankNum, bank_code: switchCode }
+          currency: currentCurrency,
+          channel: isMoMo ? 'MOBILEMONEY' : 'BANK',
+          beneficiary: {
+            account_number: bankNum,
+            mobile_number: bankNum,
+            bank_code: switchCode,
+            mobile_network: switchCode
+          }
         })
       });
       payload = await res.json();
@@ -550,7 +564,9 @@ async function resolveAccountName() {
   } catch (err) {
     nameLoading.classList.add('hidden');
     nameInput.classList.remove('hidden');
-    nameError.textContent = err.message || 'Could not verify account. Please check details.';
+    nameInput.removeAttribute('readonly');
+    const isMoMo = typeof isMobileMoneyCountry === 'function' && isMobileMoneyCountry(currentCountry);
+    nameError.textContent = err.message || (isMoMo ? 'Could not verify name automatically. Please confirm your name.' : 'Could not verify account. Please check details.');
     nameError.classList.remove('hidden');
   }
 }
@@ -560,8 +576,10 @@ function validateAccount() {
   const errorEl = document.getElementById('sell-bank-error');
   const nameWrap = document.getElementById('sell-name-wrap');
   const nameInput = document.getElementById('sell-account-name');
-  const accReq = countryRequirements['account_number'];
-  const regex = accReq?.regex ? new RegExp(accReq.regex) : /^[0-9]{10,11}$/;
+  const isMoMo = typeof isMobileMoneyCountry === 'function' && isMobileMoneyCountry(currentCountry);
+  const accReq = countryRequirements['account_number'] || countryRequirements['mobile_number'];
+  const regex = accReq?.regex ? new RegExp(accReq.regex) : (isMoMo ? /^[0-9]{9,15}$/ : /^[0-9]{10,11}$/);
+  const minLen = isMoMo ? 9 : 10;
 
   if (!bankNum) {
     errorEl.classList.add('hidden');
@@ -569,8 +587,8 @@ function validateAccount() {
     nameInput.value = '';
     return;
   }
-  if (!regex.test(bankNum) || bankNum.length < 10) {
-    errorEl.textContent = accReq?.hint || 'Enter a valid account number (10+ digits)';
+  if (!regex.test(bankNum) || bankNum.length < minLen) {
+    errorEl.textContent = accReq?.hint || (isMoMo ? 'Enter a valid mobile money number (e.g. 024...)' : 'Enter a valid account number (10+ digits)');
     errorEl.classList.remove('hidden');
     nameWrap?.classList.add('hidden');
     nameInput.value = '';

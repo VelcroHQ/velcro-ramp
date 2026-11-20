@@ -376,6 +376,11 @@ function getCountryConfig(code) {
   return SUPPORTED_COUNTRIES.find(c => c.code === code) || SUPPORTED_COUNTRIES[0];
 }
 
+function isMobileMoneyCountry(code) {
+  const cfg = getCountryConfig(code || currentCountry);
+  return cfg?.channel === 'MOBILEMONEY';
+}
+
 function isCountryEnabled(code) {
   if (code === 'NG') return true;
   return Boolean(enabledCountriesMap && enabledCountriesMap[code]);
@@ -430,9 +435,19 @@ function updateCurrencySymbols() {
     buySendFlag.alt = cfg.code;
   }
 
-  const accNumInput = document.getElementById('sell-account-number');
-  if (accNumInput) {
-    accNumInput.placeholder = (cfg.channel === 'MOBILEMONEY') ? 'Enter mobile money number' : 'Enter account number';
+  const isMoMo = isMobileMoneyCountry(cfg.code);
+  const sellBankLabel = document.getElementById('sell-bank-label');
+  const sellBankPlaceholder = document.getElementById('sell-bank-placeholder');
+  const sellNumberLabel = document.getElementById('sell-number-label');
+  const sellBankNumInput = document.getElementById('sell-bank-number') || document.getElementById('sell-account-number');
+
+  if (sellBankLabel) sellBankLabel.textContent = isMoMo ? 'Choose mobile network' : 'Choose bank';
+  if (sellBankPlaceholder && !currentBankCode) {
+    sellBankPlaceholder.textContent = isMoMo ? 'Select network / provider' : 'Select your bank';
+  }
+  if (sellNumberLabel) sellNumberLabel.textContent = isMoMo ? 'Mobile money number' : 'Account number';
+  if (sellBankNumInput) {
+    sellBankNumInput.placeholder = isMoMo ? (cfg.hint ? `Enter ${cfg.hint.toLowerCase()} number` : 'Enter mobile money number (e.g. 024...)') : 'Enter account number';
   }
 
   if (typeof updateBuyMinLimitUI === 'function') {
@@ -501,8 +516,34 @@ const DEFAULT_NIGERIAN_BANKS = [
 
 let cachedBanks = [...DEFAULT_NIGERIAN_BANKS];
 async function fetchInstitutions() {
-  const bankReq = countryRequirements['bank_code'];
-  switchBanks = bankReq?.option || [];
+  const isMoMo = typeof isMobileMoneyCountry === 'function' && isMobileMoneyCountry(currentCountry);
+  const reqKey = isMoMo ? 'mobile_network' : 'bank_code';
+  const reqObj = countryRequirements[reqKey] || countryRequirements['bank_code'] || countryRequirements['mobile_network'];
+  
+  if (reqObj && Array.isArray(reqObj.option) && reqObj.option.length > 0) {
+    switchBanks = reqObj.option;
+    mergeBanks();
+    return;
+  }
+
+  // If not yet in countryRequirements, fetch directly from Switch API via backend proxy
+  try {
+    const channel = isMoMo ? 'MOBILEMONEY' : 'BANK';
+    const res = await fetch(`${API_BASE}/api/institutions?country=${encodeURIComponent(currentCountry)}&currency=${encodeURIComponent(currentCurrency)}&channel=${channel}`, { cache: 'default' });
+    if (res.ok) {
+      const data = await res.json();
+      const list = data.data || data || [];
+      if (Array.isArray(list) && list.length > 0) {
+        switchBanks = list;
+        mergeBanks();
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Direct fetchInstitutions failed:', err.message);
+  }
+
+  switchBanks = [];
   mergeBanks();
 }
 
@@ -516,7 +557,7 @@ function normalizeBankName(name) {
 function mergeBanks() {
   const byNorm = {};
 
-  // Seed with DEFAULT_NIGERIAN_BANKS when country is Nigeria
+  // Seed with DEFAULT_NIGERIAN_BANKS ONLY when country is Nigeria
   if (currentCountry === 'NG') {
     for (const b of DEFAULT_NIGERIAN_BANKS) {
       if (!b || !b.name) continue;
@@ -525,7 +566,7 @@ function mergeBanks() {
     }
   }
 
-  // Merge Switch banks
+  // Merge Switch institutions / networks
   for (const b of switchBanks) {
     if (!b || !b.name) continue;
     const norm = normalizeBankName(b.name);
@@ -543,38 +584,40 @@ function mergeBanks() {
     }
   }
 
-  // Merge PAJ banks
-  for (const b of pajBanks) {
-    if (!b || !b.name) continue;
-    const norm = normalizeBankName(b.name);
-    if (!norm) continue;
-    const targetPajId = b.id || b.code || '';
-    if (byNorm[norm]) {
-      byNorm[norm].pajId = targetPajId;
-      if (!byNorm[norm].code) byNorm[norm].code = b.code;
-    } else {
-      // Try fuzzy match
-      let matched = false;
-      for (const key of Object.keys(byNorm)) {
-        if (norm.includes(key) || key.includes(norm)) {
-          byNorm[key].pajId = targetPajId;
-          matched = true;
-          break;
+  // Merge PAJ banks ONLY for Nigeria
+  if (currentCountry === 'NG') {
+    for (const b of pajBanks) {
+      if (!b || !b.name) continue;
+      const norm = normalizeBankName(b.name);
+      if (!norm) continue;
+      const targetPajId = b.id || b.code || '';
+      if (byNorm[norm]) {
+        byNorm[norm].pajId = targetPajId;
+        if (!byNorm[norm].code) byNorm[norm].code = b.code;
+      } else {
+        // Try fuzzy match
+        let matched = false;
+        for (const key of Object.keys(byNorm)) {
+          if (norm.includes(key) || key.includes(norm)) {
+            byNorm[key].pajId = targetPajId;
+            matched = true;
+            break;
+          }
         }
-      }
-      if (!matched) {
-        byNorm[norm] = {
-          name: b.name,
-          code: b.code,
-          switchCode: '',
-          pajId: targetPajId
-        };
+        if (!matched) {
+          byNorm[norm] = {
+            name: b.name,
+            code: b.code,
+            switchCode: '',
+            pajId: targetPajId
+          };
+        }
       }
     }
   }
 
   const merged = Object.values(byNorm).filter(b => b && b.name);
-  cachedBanks = (merged.length > 0 ? merged : [...DEFAULT_NIGERIAN_BANKS]).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  cachedBanks = (merged.length > 0 ? merged : (currentCountry === 'NG' ? [...DEFAULT_NIGERIAN_BANKS] : [])).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   populateBanks();
 }
 
@@ -584,25 +627,29 @@ function populateBanks(filter = '') {
   const container = document.getElementById('sell-bank-options');
   if (!container) return;
   
-  // Initialize header if not present
-  if (!container.querySelector('.dropdown-header')) {
-    container.innerHTML = `
-      <div class="dropdown-header shrink-0 p-3 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <div class="flex items-center gap-2 mb-2 md:hidden">
-          <span class="text-sm font-bold text-gray-900 dark:text-white flex-1 px-1">Choose bank</span>
-          <button onclick="closeAllDropdowns()" class="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-500 dark:text-gray-400" aria-label="Close">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-          </button>
-        </div>
-        <div class="relative">
-          <input type="text" id="bank-filter" placeholder="Search banks..." autocomplete="off" autocorrect="off" 
-            class="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:border-velcro-green bg-gray-50 dark:bg-slate-800 dark:text-white transition-all" 
-            oninput="populateBanks(this.value)" onclick="event.stopPropagation()">
-        </div>
+  const isMoMo = typeof isMobileMoneyCountry === 'function' && isMobileMoneyCountry(currentCountry);
+  const headerTitle = isMoMo ? 'Choose mobile network' : 'Choose bank';
+  const searchPlaceholder = isMoMo ? 'Search network / provider...' : 'Search banks...';
+  const emptyMessage = isMoMo ? 'No mobile networks available' : 'No banks available';
+
+  // Always reset or update header based on current channel
+  container.innerHTML = `
+    <div class="dropdown-header shrink-0 p-3 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div class="flex items-center gap-2 mb-2 md:hidden">
+        <span class="text-sm font-bold text-gray-900 dark:text-white flex-1 px-1">${headerTitle}</span>
+        <button onclick="closeAllDropdowns()" class="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-500 dark:text-gray-400" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
       </div>
-      <div id="bank-list-items" class="flex-1 overflow-y-auto min-h-0 -webkit-overflow-scrolling-touch overscroll-contain"></div>
-    `;
-  }
+      <div class="relative">
+        <input type="text" id="bank-filter" placeholder="${searchPlaceholder}" autocomplete="off" autocorrect="off" 
+          value="${escapeHtml(filter)}"
+          class="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:border-velcro-green bg-gray-50 dark:bg-slate-800 dark:text-white transition-all" 
+          oninput="populateBanks(this.value)" onclick="event.stopPropagation()">
+      </div>
+    </div>
+    <div id="bank-list-items" class="flex-1 overflow-y-auto min-h-0 -webkit-overflow-scrolling-touch overscroll-contain"></div>
+  `;
 
   const listContainer = document.getElementById('bank-list-items');
   if (listContainer && !listContainer._kbDismissBound) {
@@ -631,18 +678,20 @@ function populateBanks(filter = '') {
   if (banks.length === 0) {
     listContainer.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs flex flex-col items-center gap-2">
       <i data-lucide="alert-circle" class="w-5 h-5 opacity-50"></i>
-      <span>No banks available</span>
+      <span>${emptyMessage}</span>
     </div>`;
     safeLucideInit();
     return;
   }
 
   banks = [...banks].sort((a, b) => {
-    const aTop = TOP_BANK_CODES.indexOf(a.code);
-    const bTop = TOP_BANK_CODES.indexOf(b.code);
-    if (aTop !== -1 && bTop !== -1) return aTop - bTop;
-    if (aTop !== -1) return -1;
-    if (bTop !== -1) return 1;
+    if (currentCountry === 'NG') {
+      const aTop = TOP_BANK_CODES.indexOf(a.code);
+      const bTop = TOP_BANK_CODES.indexOf(b.code);
+      if (aTop !== -1 && bTop !== -1) return aTop - bTop;
+      if (aTop !== -1) return -1;
+      if (bTop !== -1) return 1;
+    }
     return (a.name || '').localeCompare(b.name || '');
   });
 
@@ -665,8 +714,8 @@ function populateBanks(filter = '') {
   let html = '';
   let topCount = 0;
   banks.forEach((b, i) => {
-    const isTop = TOP_BANK_CODES.includes(b.code);
-    if (!isTop && topCount > 0 && topCount < 16 && !term) {
+    const isTop = (currentCountry === 'NG') && TOP_BANK_CODES.includes(b.code);
+    if (currentCountry === 'NG' && !isTop && topCount > 0 && topCount < 16 && !term) {
       html += `<div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-slate-800/80 border-y border-gray-100 dark:border-slate-800">More Banks</div>`;
       topCount = 99;
     }
@@ -687,7 +736,7 @@ function populateBanks(filter = '') {
   });
 
   if (banks.length === 0) {
-    html += `<div class="custom-option text-gray-400 p-3 text-sm">No banks found</div>`;
+    html += `<div class="custom-option text-gray-400 p-3 text-sm">${isMoMo ? 'No networks found' : 'No banks found'}</div>`;
   }
   listContainer.innerHTML = html;
 }
@@ -817,14 +866,31 @@ async function selectCountry(code) {
   // Reset banks / institutions for new country
   cachedBanks = (currentCountry === 'NG') ? [...DEFAULT_NIGERIAN_BANKS] : [];
   countryRequirements = {};
-  
+  currentBankCode = '';
+  currentBankSwitchCode = '';
+  currentBankPajId = '';
+  currentBankName = '';
+
+  const bankDisplay = document.getElementById('sell-bank-display');
+  if (bankDisplay) {
+    const isMoMo = isMobileMoneyCountry(cfg.code);
+    bankDisplay.innerHTML = `<span class="text-gray-400" id="sell-bank-placeholder">${isMoMo ? 'Select network / provider' : 'Select your bank'}</span>`;
+  }
+  const bankNum = document.getElementById('sell-bank-number');
+  if (bankNum) bankNum.value = '';
+  const accName = document.getElementById('sell-account-name');
+  if (accName) accName.value = '';
+  const nameWrap = document.getElementById('sell-name-wrap');
+  if (nameWrap) nameWrap.classList.add('hidden');
+  const bankError = document.getElementById('sell-bank-error');
+  if (bankError) bankError.classList.add('hidden');
+
   if (typeof fetchRequirements === 'function') {
-    fetchRequirements();
+    await fetchRequirements();
   }
   if (typeof fetchInstitutions === 'function') {
-    fetchInstitutions();
-  }
-  if (typeof populateBanks === 'function') {
+    await fetchInstitutions();
+  } else if (typeof populateBanks === 'function') {
     populateBanks();
   }
 

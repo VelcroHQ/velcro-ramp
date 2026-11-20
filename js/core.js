@@ -186,7 +186,25 @@ function getBankLogoUrl(bank) {
 
   if (code && BANK_LOGO_MAP[code]) return BANK_LOGO_MAP[code];
 
-  if (name) {
+  if (name || code) {
+    // Mobile Money & Regional Africa Networks
+    if (name.includes('mtn') || code === 'MTN') return '/logos/banks/mtn.svg';
+    if (name.includes('vodafone') || name.includes('telecel') || code === 'VODAFONE') return '/logos/banks/vodafone.svg';
+    if (name.includes('airtel') || code === 'AIRTEL') return '/logos/banks/airtel.svg';
+    if (name.includes('mpesa') || name.includes('m-pesa') || name.includes('safaricom') || code === 'MPESA') return '/logos/banks/mpesa.svg';
+    if (name.includes('orange') || code === 'ORANGE') return '/logos/banks/orange-money.svg';
+    if (name.includes('wave') || code === 'WAVE') return '/logos/banks/wave.svg';
+    if (name.includes('moov') || code === 'MOOV') return '/logos/banks/moov.svg';
+    if (name.includes('capitec') || code === '2766') return '/logos/banks/capitec.svg';
+    if (name.includes('fnb') || name.includes('first national') || code === '2762') return '/logos/banks/fnb.svg';
+    if (name.includes('standard bank') || code === '2763') return '/logos/banks/standard-bank.svg';
+    if (name.includes('nedbank') || code === '2764') return '/logos/banks/nedbank.svg';
+    if (name.includes('absa') || code === '2761' || code === '03') return '/logos/banks/absa.svg';
+    if (name.includes('equity') || code === '68') return '/logos/banks/equity-bank.svg';
+    if (name.includes('kcb') || name.includes('kenya commercial') || code === '01') return '/logos/banks/kcb.svg';
+    if (name.includes('co-op') || name.includes('cooperative') || code === '11') return '/logos/banks/coop-bank.svg';
+
+    // Nigerian Banks
     if (name.includes('guaranty') || name.includes('gtbank') || name.includes('gtb')) return '/logos/banks/guaranty-trust-bank.png';
     if (name.includes('access')) return name.includes('diamond') ? '/logos/banks/access-bank-diamond.png' : '/logos/banks/access-bank.png';
     if (name.includes('zenith')) return '/logos/banks/zenith-bank.png';

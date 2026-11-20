@@ -167,8 +167,16 @@ function registerPublicRoutes(Router $router): void
     });
 
     $router->get('/api/institutions', function () {
+        $country = strtoupper(query('country') ?: 'NG');
+        $currency = strtoupper(query('currency') ?: 'NGN');
+        $channel = strtoupper(query('channel') ?: '');
+        if (!$channel) {
+            $mobileMoneyCountries = ['GH', 'CI', 'CM', 'SN', 'UG', 'RW', 'TZ', 'KE'];
+            $channel = in_array($country, $mobileMoneyCountries, true) ? 'MOBILEMONEY' : 'BANK';
+        }
+
         // One saved list per country, currency and channel; only letters and digits reach the file name.
-        $cacheKey = preg_replace('/[^a-z0-9]/', '', strtolower(query('country') ?: 'ng') . '_' . strtolower(query('currency') ?: 'ngn') . '_' . strtolower(query('channel') ?: 'bank'));
+        $cacheKey = preg_replace('/[^a-z0-9]/', '', strtolower($country) . '_' . strtolower($currency) . '_' . strtolower($channel));
         $cacheFile = BASE_PATH . '/data/institutions_cache_' . $cacheKey . '.json';
         $cacheTtl = 86400; // 24 hours
 
@@ -182,9 +190,9 @@ function registerPublicRoutes(Router $router): void
 
         try {
             $data = switchApi()->getInstitutions([
-                'country' => query('country') ?: 'NG',
-                'currency' => query('currency') ?: 'NGN',
-                'channel' => query('channel') ?: 'BANK',
+                'country' => $country,
+                'currency' => $currency,
+                'channel' => $channel,
             ]);
             if (!empty($data['data']) && is_array($data['data'])) {
                 @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
@@ -210,8 +218,23 @@ function registerPublicRoutes(Router $router): void
         if (!$country || !is_array($beneficiary)) {
             jsonResponse(errorResponse('country and beneficiary are required'), 400);
         }
+
+        // Cross-map account number & mobile number, bank code & mobile network for seamless lookup
+        if (!empty($beneficiary['account_number']) && empty($beneficiary['mobile_number'])) {
+            $beneficiary['mobile_number'] = $beneficiary['account_number'];
+        }
+        if (!empty($beneficiary['mobile_number']) && empty($beneficiary['account_number'])) {
+            $beneficiary['account_number'] = $beneficiary['mobile_number'];
+        }
+        if (!empty($beneficiary['bank_code']) && empty($beneficiary['mobile_network'])) {
+            $beneficiary['mobile_network'] = $beneficiary['bank_code'];
+        }
+        if (!empty($beneficiary['mobile_network']) && empty($beneficiary['bank_code'])) {
+            $beneficiary['bank_code'] = $beneficiary['mobile_network'];
+        }
+
         try {
-            $data = switchApi()->lookupBeneficiary($country, $beneficiary);
+            $data = switchApi()->lookupBeneficiary((string) $country, $beneficiary);
             jsonResponse($data);
         } catch (Throwable $e) {
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
@@ -228,13 +251,18 @@ function registerPublicRoutes(Router $router): void
         if (!$direction || !$country) {
             jsonResponse(errorResponse('direction and country are required'), 400);
         }
+        $channel = query('channel');
+        if (!$channel) {
+            $mobileMoneyCountries = ['GH', 'CI', 'CM', 'SN', 'UG', 'RW', 'TZ', 'KE'];
+            $channel = in_array(strtoupper((string) $country), $mobileMoneyCountries, true) ? 'MOBILEMONEY' : 'BANK';
+        }
         try {
             $data = switchApi()->getRequirements([
                 'direction' => $direction,
                 'country' => $country,
                 'currency' => query('currency'),
                 'type' => query('type'),
-                'channel' => query('channel'),
+                'channel' => $channel,
             ]);
             jsonResponse($data);
         } catch (Throwable $e) {
@@ -525,8 +553,24 @@ function registerPublicRoutes(Router $router): void
 
         $initiateChannel = body($body, 'channel');
         if (!$initiateChannel) {
-            $mobileMoneyCountries = ['GH', 'CI', 'CM', 'SN', 'UG', 'RW', 'TZ'];
+            $mobileMoneyCountries = ['GH', 'CI', 'CM', 'SN', 'UG', 'RW', 'TZ', 'KE'];
             $initiateChannel = in_array(strtoupper((string) $country), $mobileMoneyCountries, true) ? 'MOBILEMONEY' : 'BANK';
+        }
+
+        // Cross-map account number & mobile number, bank code & mobile network for seamless Switch API payout
+        if (is_array($beneficiary)) {
+            if (!empty($beneficiary['account_number']) && empty($beneficiary['mobile_number'])) {
+                $beneficiary['mobile_number'] = $beneficiary['account_number'];
+            }
+            if (!empty($beneficiary['mobile_number']) && empty($beneficiary['account_number'])) {
+                $beneficiary['account_number'] = $beneficiary['mobile_number'];
+            }
+            if (!empty($beneficiary['bank_code']) && empty($beneficiary['mobile_network'])) {
+                $beneficiary['mobile_network'] = $beneficiary['bank_code'];
+            }
+            if (!empty($beneficiary['mobile_network']) && empty($beneficiary['bank_code'])) {
+                $beneficiary['bank_code'] = $beneficiary['mobile_network'];
+            }
         }
 
         try {

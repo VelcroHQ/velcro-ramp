@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <circle cx="50" cy="50" r="48" fill="#003D6A"/>
+  <rect x="22" y="38" width="56" height="24" rx="4" fill="#E31837"/>
+  <text x="50" y="55" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="12" fill="#FFFFFF" text-anchor="middle" letter-spacing="0.5">CAPITEC</text>
+</svg>

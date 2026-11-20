@@ -428,7 +428,9 @@ async function generateWalletAddress() {
           holder_type: 'INDIVIDUAL',
           holder_name: accountName,
           account_number: bankNum,
-          bank_code: currentBankSwitchCode || currentBankCode
+          mobile_number: bankNum,
+          bank_code: currentBankSwitchCode || currentBankCode,
+          mobile_network: currentBankSwitchCode || currentBankCode
         },
         email: localStorage.getItem('velcro_user_email') || '', ref: localStorage.getItem('velcro_ref') || ''
       })

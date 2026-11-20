@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=20" rel="stylesheet">
+  <link href="/css/app.css?v=21" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -576,7 +576,7 @@
                 <div class="flex flex-col items-start sm:items-end gap-1 flex-1 sm:flex-initial">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Coin</span>
                   <div class="custom-select w-full sm:w-auto" id="sell-asset-wrap">
-                    <div role="button" tabindex="0" class="asset-pill w-full sm:w-auto justify-between sm:justify-start" onclick="openSellAssetPicker()">
+                    <div role="button" tabindex="0" class="asset-pill w-full sm:w-auto justify-between sm:justify-start flex-nowrap whitespace-nowrap shrink-0" onclick="openSellAssetPicker()">
                       <div class="flex items-center gap-1.5 whitespace-nowrap shrink-0" id="sell-asset-display">
                         <span class="text-gray-400 text-sm whitespace-nowrap">Select</span>
                       </div>
@@ -658,13 +658,13 @@
           <div class="input-panel space-y-4">
             <div class="flex flex-col sm:flex-row gap-4">
               <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-500 mb-2">Choose bank</label>
+                <label id="sell-bank-label" class="block text-sm font-medium text-gray-500 mb-2">Choose bank</label>
                 <div class="custom-select w-full" id="sell-bank-wrap">
                   <div role="button" tabindex="0"
                     class="custom-select-trigger w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm transition-all hover:border-velcro-green"
                     onclick="toggleDropdown('sell-bank-options')">
                     <div class="flex items-center gap-2" id="sell-bank-display">
-                      <span class="text-gray-400">Select your bank</span>
+                      <span class="text-gray-400" id="sell-bank-placeholder">Select your bank</span>
                     </div>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
@@ -677,7 +677,7 @@
                 </div>
               </div>
               <div class="flex-1">
-                <label for="sell-bank-number" class="block text-sm font-medium text-gray-500 mb-2">Account number</label>
+                <label for="sell-bank-number" id="sell-number-label" class="block text-sm font-medium text-gray-500 mb-2">Account number</label>
                 <input type="tel" id="sell-bank-number" placeholder="Enter account number" inputmode="numeric"
                   pattern="[0-9]*"
                   class="w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm text-gray-900 outline-none transition-all focus:border-velcro-green amount-input"
@@ -891,7 +891,7 @@
                 <div class="flex flex-col items-start sm:items-end gap-1 flex-1 sm:flex-initial">
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Coin</span>
                   <div class="custom-select w-full sm:w-auto" id="buy-asset-wrap">
-                    <div role="button" tabindex="0" class="asset-pill w-full sm:w-auto justify-between sm:justify-start" onclick="openBuyAssetPicker()">
+                    <div role="button" tabindex="0" class="asset-pill w-full sm:w-auto justify-between sm:justify-start flex-nowrap whitespace-nowrap shrink-0" onclick="openBuyAssetPicker()">
                       <div class="flex items-center gap-1.5 whitespace-nowrap shrink-0" id="buy-asset-display">
                         <span class="text-gray-400 text-sm whitespace-nowrap">Select</span>
                       </div>
@@ -1615,13 +1615,13 @@
   <div id="toast-container" class="fixed top-4 right-4 z-[9999] space-y-3 pointer-events-none"></div>
 
 
-  <script src="/js/core.js?v=7"></script>
-  <script src="/js/rates.js?v=10"></script>
-  <script src="/js/form.js?v=6"></script>
-  <script src="/js/order.js?v=5"></script>
+  <script src="/js/core.js?v=9"></script>
+  <script src="/js/rates.js?v=12"></script>
+  <script src="/js/form.js?v=8"></script>
+  <script src="/js/order.js?v=6"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=5"></script>
-  <script src="/js/main.js?v=19"></script>
+  <script src="/js/main.js?v=20"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>
