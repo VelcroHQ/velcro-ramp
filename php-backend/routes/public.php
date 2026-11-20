@@ -881,38 +881,48 @@ function registerPublicRoutes(Router $router): void
                     }
                 }
                 $row = decodeJsonColumns($row, ['beneficiary', 'meta']);
+                $ben = is_array($row['beneficiary'] ?? null) ? $row['beneficiary'] : [];
+                $meta = is_array($row['meta'] ?? null) ? $row['meta'] : [];
+                $metaBen = is_array($meta['beneficiary'] ?? null) ? $meta['beneficiary'] : [];
+                $metaDest = is_array($meta['destination'] ?? null) ? $meta['destination'] : [];
+
                 if (empty($row['wallet_address'])) {
-                    $ben = $row['beneficiary'] ?? [];
-                    $meta = $row['meta'] ?? [];
                     $row['wallet_address'] = $ben['wallet_address']
-                        ?? ($meta['beneficiary']['wallet_address']
+                        ?? ($metaBen['wallet_address']
                         ?? ($meta['recipient']
-                        ?? ($meta['destination']['address'] ?? null)));
+                        ?? ($metaDest['address'] ?? null)));
                 }
 
                 if (($row['channel'] ?? '') === 'HOSTFI') {
-                    $row['hostfi_rate'] = hostfiOrderRate($row);
+                    try {
+                        $row['hostfi_rate'] = hostfiOrderRate($row);
+                    } catch (Throwable $e) {}
                 }
+
                 // The email is not verified, so anyone can query any email here.
                 // Return only what the history UI needs: no raw provider payload, masked bank account.
                 // ponytail: real fix is email-OTP login; until then this list is enumerable by email.
-                $meta = is_array($row['meta'] ?? null) ? $row['meta'] : [];
                 $row['meta'] = array_filter([
                     'chain' => $meta['chain'] ?? null,
                     'network' => $meta['network'] ?? null,
                     'recipient' => $meta['recipient'] ?? null,
-                    'destination' => isset($meta['destination']['address']) ? ['address' => $meta['destination']['address']] : null,
+                    'destination' => !empty($metaDest['address']) ? ['address' => $metaDest['address']] : null,
                 ]);
-                if (is_array($row['beneficiary'] ?? null)) {
+
+                if (!empty($ben)) {
                     foreach (['account_number', 'accountNumber'] as $k) {
-                        if (!empty($row['beneficiary'][$k])) {
-                            $row['beneficiary'][$k] = '******' . substr((string) $row['beneficiary'][$k], -4);
+                        if (!empty($ben[$k])) {
+                            $ben[$k] = '******' . substr((string) $ben[$k], -4);
                         }
                     }
+                    $row['beneficiary'] = $ben;
                 }
+
                 unset($row['callback_url']);
                 if (($row['channel'] ?? '') === 'HOSTFI') {
-                    $row['hostfi_progress'] = hostfiProgress((string) $row['reference']);
+                    try {
+                        $row['hostfi_progress'] = hostfiProgress((string) $row['reference']);
+                    } catch (Throwable $e) {}
                 }
             }
             unset($row);

@@ -4,11 +4,25 @@
 let userHistoryCache = [];
 let currentHistoryFilter = 'all';
 
+function safeJsonParse(val) {
+  if (!val) return {};
+  if (typeof val === 'object') return val;
+  if (typeof val === 'string') {
+    try {
+      return JSON.parse(val);
+    } catch (e) {
+      return {};
+    }
+  }
+  return {};
+}
+
 function updateHistoryTabCounts() {
+  if (!Array.isArray(userHistoryCache)) userHistoryCache = [];
   const allCount = userHistoryCache.length;
-  const buyCount = userHistoryCache.filter(tx => (tx.type || '').toUpperCase() === 'ONRAMP').length;
-  const sellCount = userHistoryCache.filter(tx => (tx.type || '').toUpperCase() === 'OFFRAMP').length;
-  const compCount = userHistoryCache.filter(tx => (tx.status || '').toUpperCase() === 'COMPLETED').length;
+  const buyCount = userHistoryCache.filter(tx => (tx && tx.type || '').toUpperCase() === 'ONRAMP').length;
+  const sellCount = userHistoryCache.filter(tx => (tx && tx.type || '').toUpperCase() === 'OFFRAMP').length;
+  const compCount = userHistoryCache.filter(tx => (tx && tx.status || '').toUpperCase() === 'COMPLETED').length;
 
   const btnAll = document.getElementById('hist-filter-all');
   const btnBuy = document.getElementById('hist-filter-onramp');
@@ -22,22 +36,22 @@ function updateHistoryTabCounts() {
 }
 
 function filterHistory(filter) {
-  currentHistoryFilter = filter;
+  currentHistoryFilter = filter || 'all';
   document.querySelectorAll('.hist-filter-btn').forEach(b => {
-    b.className = 'hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap';
+    b.className = 'hist-filter-btn px-3 py-1 rounded-full font-medium bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 transition-all whitespace-nowrap text-xs';
   });
-  const activeBtn = document.getElementById(`hist-filter-${filter}`);
+  const activeBtn = document.getElementById(`hist-filter-${currentHistoryFilter}`);
   if (activeBtn) {
-    activeBtn.className = 'hist-filter-btn px-3 py-1 rounded-full font-medium bg-velcro-navy text-white transition-all whitespace-nowrap';
+    activeBtn.className = 'hist-filter-btn px-3 py-1 rounded-full font-bold bg-[#6b46ff] text-white shadow-2xs transition-all whitespace-nowrap text-xs';
   }
 
-  let filtered = userHistoryCache;
-  if (filter === 'onramp') {
-    filtered = userHistoryCache.filter(tx => (tx.type || '').toUpperCase() === 'ONRAMP');
-  } else if (filter === 'offramp') {
-    filtered = userHistoryCache.filter(tx => (tx.type || '').toUpperCase() === 'OFFRAMP');
-  } else if (filter === 'completed') {
-    filtered = userHistoryCache.filter(tx => (tx.status || '').toUpperCase() === 'COMPLETED');
+  let filtered = Array.isArray(userHistoryCache) ? userHistoryCache : [];
+  if (currentHistoryFilter === 'onramp') {
+    filtered = filtered.filter(tx => (tx && tx.type || '').toUpperCase() === 'ONRAMP');
+  } else if (currentHistoryFilter === 'offramp') {
+    filtered = filtered.filter(tx => (tx && tx.type || '').toUpperCase() === 'OFFRAMP');
+  } else if (currentHistoryFilter === 'completed') {
+    filtered = filtered.filter(tx => (tx && tx.status || '').toUpperCase() === 'COMPLETED');
   }
   renderHistoryList(filtered);
 }
@@ -202,8 +216,8 @@ function renderHistoryList(txs) {
     const shortRef = String(tx.reference || '').slice(0, 8).toUpperCase();
     const asset = String(tx.asset || '');
     const assetName = (asset.includes(':') ? asset.split(':')[1] : asset).toUpperCase();
-    const ben = tx.beneficiary ? (typeof tx.beneficiary === 'string' ? JSON.parse(tx.beneficiary) : tx.beneficiary) : {};
-    const meta = tx.meta ? (typeof tx.meta === 'string' ? JSON.parse(tx.meta) : tx.meta) : {};
+    const ben = safeJsonParse(tx.beneficiary);
+    const meta = safeJsonParse(tx.meta);
     const network = String(meta.network || meta.chain || (asset.includes(':') ? asset.split(':')[0] : 'solana')).toLowerCase();
     const net = networkInfo(network);
 
@@ -298,16 +312,45 @@ async function showHistoryModal() {
 
   const list = document.getElementById('history-list');
 
-  list.innerHTML = '<div class="text-center py-8 text-gray-400">Loading transactions...</div>';
+  if (list) {
+    list.innerHTML = `
+      <div class="text-center py-10 text-gray-400 flex flex-col items-center gap-2">
+        <svg class="animate-spin w-5 h-5 text-[#6b46ff]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-xs font-medium">Loading transactions…</span>
+      </div>
+    `;
+  }
 
   try {
     const res = await fetch(`${API_BASE}/api/transactions?email=${encodeURIComponent(email)}`);
+    if (!res.ok) {
+      const errPayload = await res.json().catch(() => ({}));
+      throw new Error(errPayload.message || `Server returned ${res.status}`);
+    }
     const payload = await res.json();
-    userHistoryCache = scrub(payload.data || []);
+    const listData = Array.isArray(payload.data) ? payload.data : [];
+    userHistoryCache = typeof scrub === 'function' ? scrub(listData) : listData;
     updateHistoryTabCounts();
     filterHistory(currentHistoryFilter || 'all');
   } catch (err) {
-    list.innerHTML = '<div class="text-center py-8 text-red-400">Failed to load history</div>';
+    console.error('Failed to load history:', err);
+    if (list) {
+      list.innerHTML = `
+        <div class="text-center py-10 flex flex-col items-center gap-2.5">
+          <div class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/40 text-red-500 flex items-center justify-center">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">Unable to load order history</p>
+          <p class="text-xs text-gray-400 max-w-xs">${typeof escapeHtml === 'function' ? escapeHtml(err.message || 'Please check your connection and try again.') : (err.message || 'Error')}</p>
+          <button type="button" onclick="showHistoryModal()" class="mt-1 px-4 py-2 rounded-xl bg-[#6b46ff] hover:bg-[#5b36ef] text-white text-xs font-bold transition-all shadow-xs cursor-pointer">
+            Try again
+          </button>
+        </div>
+      `;
+    }
   }
 }
 
