@@ -814,10 +814,10 @@ function renderCountryPicker(filter = '') {
       // Disabled / switched off by admin: blurred, dimmed with lock icon matching Switch screenshot!
       return `
         <div onclick="selectCountry('${c.code}')" 
-          class="flex items-center justify-between p-3 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/40 opacity-45 blur-[0.3px] hover:opacity-70 transition-all cursor-not-allowed select-none"
+          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/40 opacity-45 blur-[0.3px] hover:opacity-70 transition-all cursor-not-allowed select-none"
           title="${c.name} is currently unavailable">
           <div class="flex items-center gap-3">
-            <img src="${c.flag}" class="w-7 h-7 rounded-full object-cover shrink-0 shadow-2xs" alt="${c.code}">
+            <img src="${c.flag}" class="w-8 h-8 rounded-full object-cover shrink-0 shadow-xs" alt="${c.code}">
             <span class="font-medium text-sm text-gray-700 dark:text-gray-300">${c.name}</span>
           </div>
           <div class="flex items-center gap-2">
@@ -834,9 +834,9 @@ function renderCountryPicker(filter = '') {
     // Active / enabled state: crisp, clickable card
     return `
       <div onclick="selectCountry('${c.code}')" 
-        class="flex items-center justify-between p-3 rounded-2xl border ${isSelected ? 'border-[#6b46ff] bg-purple-50/50 dark:bg-purple-950/20 shadow-xs' : 'border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/60 hover:border-gray-300'} transition-all cursor-pointer">
+        class="flex items-center justify-between p-3.5 rounded-2xl border ${isSelected ? 'border-[#6b46ff] bg-purple-50/50 dark:bg-purple-950/20 shadow-xs' : 'border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/60 hover:border-gray-300'} transition-all cursor-pointer">
         <div class="flex items-center gap-3">
-          <img src="${c.flag}" class="w-7 h-7 rounded-full object-cover shrink-0 shadow-2xs" alt="${c.code}">
+          <img src="${c.flag}" class="w-8 h-8 rounded-full object-cover shrink-0 shadow-xs" alt="${c.code}">
           <span class="font-bold text-sm text-gray-900 dark:text-white">${c.name}</span>
         </div>
         <div class="flex items-center gap-2">

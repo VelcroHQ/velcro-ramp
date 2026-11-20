@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=25" rel="stylesheet">
+  <link href="/css/app.css?v=26" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -1372,13 +1372,13 @@
       </div>
 
       <!-- Header -->
-      <div id="country-modal-header" class="px-5 pt-3 pb-3 sm:px-6 sm:pt-5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between shrink-0 select-none">
-        <div>
-          <h3 id="country-modal-title" class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Choose a country</h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Select a regional currency for instant settlement</p>
+      <div id="country-modal-header" class="px-6 pt-4 pb-4 sm:px-7 sm:pt-6 sm:pb-5 border-b border-gray-100 dark:border-slate-800/80 flex items-start justify-between gap-4 shrink-0 select-none">
+        <div class="min-w-0">
+          <h3 id="country-modal-title" class="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">Choose a country</h3>
+          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 leading-normal">Select a regional currency for instant settlement</p>
         </div>
         <button type="button" onclick="closeCountryPicker()" aria-label="Close"
-          class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer shrink-0">
+          class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer shrink-0 mt-0.5 active:scale-95 shadow-2xs">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1387,7 +1387,7 @@
       </div>
       
       <!-- Search input container -->
-      <div class="p-4 sm:p-5 pb-2 shrink-0">
+      <div class="px-6 pt-4 pb-1 sm:px-7 sm:pt-5 shrink-0">
         <div class="country-search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
@@ -1398,7 +1398,7 @@
       </div>
 
       <!-- Scrollable Country List -->
-      <div id="country-picker-list" class="flex-1 overflow-y-auto space-y-2 p-4 sm:p-5 pt-1 pr-3 max-h-[380px] min-h-[220px] overscroll-contain">
+      <div id="country-picker-list" class="flex-1 overflow-y-auto space-y-2.5 px-6 pb-6 pt-1 sm:px-7 sm:pb-7 max-h-[380px] min-h-[220px] overscroll-contain">
         <!-- Rendered dynamically -->
       </div>
     </div>
@@ -1645,7 +1645,7 @@
 
 
   <script src="/js/core.js?v=9"></script>
-  <script src="/js/rates.js?v=13"></script>
+  <script src="/js/rates.js?v=14"></script>
   <script src="/js/form.js?v=8"></script>
   <script src="/js/order.js?v=6"></script>
   <script src="/js/account.js?v=3"></script>
