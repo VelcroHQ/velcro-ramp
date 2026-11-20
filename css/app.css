@@ -193,6 +193,9 @@
     bottom: 1rem !important;
     right: 1rem !important;
   }
+  #support-widget button:first-child {
+    display: none !important;
+  }
 }
 
 /* Modal slide and scroll optimizations */
