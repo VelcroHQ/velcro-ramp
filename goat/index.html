@@ -616,6 +616,27 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                    <div>
+                        <h2 style="font-size: 16px; font-weight: 700; margin: 0 0 4px 0;">Fiat Currencies &amp; Countries (Switch API)</h2>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin: 0;">Enable or disable regional fiat currencies. Disabled currencies appear locked and blurred in the user country selector.</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="search" id="countries-search" placeholder="Search countries" oninput="renderCountrySettings()" aria-label="Search countries">
+                        <button class="btn-primary" id="countries-save-btn" onclick="saveCountrySettings()" disabled>Save country settings</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>Country</th><th>Currency</th><th>Channel</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="countries-body">
+                        <tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading countries…</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div id="section-hostfi" class="view-content">

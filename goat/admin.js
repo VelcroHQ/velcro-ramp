@@ -3028,6 +3028,7 @@ async function fetchRoutes() {
         w.style.display = warn.length ? 'block' : 'none';
         w.innerText = warn.join(' ');
         renderRoutes();
+        fetchCountrySettings();
     } catch (e) {
         showToast(e.message, 'error');
     }
@@ -3115,6 +3116,118 @@ async function saveRoutes() {
     } catch (e) {
         showToast(e.message, 'error');
         btn.disabled = false;
+    }
+}
+
+// ─── Fiat Currencies & Countries (Switch API) ───
+let countrySettings = {
+    'NG': true,
+    'GH': false,
+    'KE': false,
+    'ZA': false,
+    'EG': false,
+    'MA': false,
+    'CI': false,
+    'UG': false,
+    'RW': false,
+    'TZ': false,
+    'CM': false,
+    'SN': false
+};
+const countryEdits = {};
+
+const ADMIN_SUPPORTED_COUNTRIES = [
+    { code: 'NG', name: 'Nigeria', currency: 'NGN', flag: '/flags/ng.svg', channel: 'Bank Transfer' },
+    { code: 'GH', name: 'Ghana', currency: 'GHS', flag: '/flags/gh.svg', channel: 'Mobile Money' },
+    { code: 'KE', name: 'Kenya', currency: 'KES', flag: '/flags/ke.svg', channel: 'M-Pesa / Mobile Money' },
+    { code: 'ZA', name: 'South Africa', currency: 'ZAR', flag: '/flags/za.svg', channel: 'Bank Transfer' },
+    { code: 'EG', name: 'Egypt', currency: 'EGP', flag: '/flags/eg.svg', channel: 'Bank Transfer' },
+    { code: 'MA', name: 'Morocco', currency: 'MAD', flag: '/flags/ma.svg', channel: 'Bank Transfer' },
+    { code: 'CI', name: 'Ivory Coast', currency: 'XOF', flag: '/flags/ci.svg', channel: 'Mobile Money' },
+    { code: 'UG', name: 'Uganda', currency: 'UGX', flag: '/flags/ug.svg', channel: 'Mobile Money' },
+    { code: 'RW', name: 'Rwanda', currency: 'RWF', flag: '/flags/rw.svg', channel: 'Mobile Money' },
+    { code: 'TZ', name: 'Tanzania', currency: 'TZS', flag: '/flags/tz.svg', channel: 'Mobile Money' },
+    { code: 'CM', name: 'Cameroon', currency: 'XAF', flag: '/flags/cm.svg', channel: 'Mobile Money' },
+    { code: 'SN', name: 'Senegal', currency: 'XOF', flag: '/flags/sn.svg', channel: 'Mobile Money' }
+];
+
+async function fetchCountrySettings() {
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/settings`, { headers: { 'Authorization': adminKey } });
+        if (!res.ok) return;
+        const s = await res.json();
+        if (s && s.enabled_countries) {
+            countrySettings = { ...countrySettings, ...s.enabled_countries };
+        }
+        Object.keys(countryEdits).forEach(k => delete countryEdits[k]);
+        renderCountrySettings();
+    } catch (e) {
+        console.warn('Failed to load country settings:', e);
+    }
+}
+
+function renderCountrySettings() {
+    const tbody = document.getElementById('countries-body');
+    if (!tbody) return;
+    const filter = (document.getElementById('countries-search')?.value || '').toLowerCase();
+    const matched = ADMIN_SUPPORTED_COUNTRIES.filter(c => !filter || c.name.toLowerCase().includes(filter) || c.currency.toLowerCase().includes(filter) || c.code.toLowerCase().includes(filter));
+
+    tbody.innerHTML = matched.map(c => {
+        const isDefault = c.code === 'NG';
+        const isEnabled = isDefault ? true : (c.code in countryEdits ? countryEdits[c.code] : !!countrySettings[c.code]);
+        return `
+        <tr>
+            <td data-label="Country">
+                <span style="display: inline-flex; align-items: center; gap: 8px;">
+                    <img src="${c.flag}" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover;" alt="${c.code}">
+                    <b>${c.name}</b>
+                </span>
+            </td>
+            <td data-label="Currency"><code>${c.currency}</code></td>
+            <td data-label="Channel">${c.channel}</td>
+            <td data-label="Status">
+                <span class="status-pill ${isEnabled ? 'completed' : 'cancelled'}">${isEnabled ? 'Active' : 'Disabled'}</span>
+            </td>
+            <td data-label="Action">
+                ${isDefault ? '<span style="font-size: 11px; font-weight: 700; color: var(--text-secondary);">Default (Always On)</span>' : `
+                <input type="checkbox" class="route-toggle" aria-label="Toggle ${c.name}" ${isEnabled ? 'checked' : ''} onchange="editCountry('${c.code}', this.checked)">
+                `}
+            </td>
+        </tr>`;
+    }).join('');
+
+    const btn = document.getElementById('countries-save-btn');
+    if (btn) {
+        const n = Object.keys(countryEdits).length;
+        btn.innerText = n ? `Save ${n} country change${n === 1 ? '' : 's'}` : 'Save country settings';
+        btn.disabled = !n;
+    }
+}
+
+function editCountry(code, on) {
+    if (code === 'NG') return;
+    if (!!countrySettings[code] === on) {
+        delete countryEdits[code];
+    } else {
+        countryEdits[code] = on;
+    }
+    renderCountrySettings();
+}
+
+async function saveCountrySettings() {
+    const n = Object.keys(countryEdits).length;
+    if (!n) return;
+    const btn = document.getElementById('countries-save-btn');
+    if (btn) btn.disabled = true;
+    try {
+        await adminPost('/api/admin/settings', { enabled_countries: { ...countryEdits } });
+        showToast(`Saved ${n} country change${n === 1 ? '' : 's'}.`, 'success');
+        Object.assign(countrySettings, countryEdits);
+        Object.keys(countryEdits).forEach(k => delete countryEdits[k]);
+        renderCountrySettings();
+    } catch (e) {
+        showToast(e.message, 'error');
+        if (btn) btn.disabled = false;
     }
 }
 

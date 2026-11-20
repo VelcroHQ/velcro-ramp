@@ -423,10 +423,12 @@
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="shrink-0 flex items-center">
-                <div class="bg-gray-100 border border-gray-200 rounded-lg px-3 py-1.5 flex items-center gap-2">
-                  <img id="sell-receive-flag" src="/flags/ng.png" class="w-4 h-auto rounded-sm" alt="">
-                  <span class="text-gray-700 font-semibold text-sm" id="sell-receive-currency-code">NGN</span>
-                </div>
+                <button type="button" onclick="openCountryPicker()" id="sell-currency-pill" title="Choose country &amp; currency"
+                  class="bg-gray-100 hover:bg-gray-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-1.5 flex items-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-102">
+                  <img id="sell-receive-flag" src="/flags/ng.svg" class="w-5 h-5 rounded-full object-cover shrink-0" alt="NG">
+                  <span class="text-gray-900 dark:text-gray-100 font-bold text-sm" id="sell-receive-currency-code">NGN</span>
+                  <svg class="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
               </div>
             </div>
           </div>
@@ -728,10 +730,12 @@
                   class="display-input text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent outline-none w-full p-0 border-none focus:ring-0 amount-input placeholder-gray-300">
               </div>
               <div class="shrink-0 flex items-center">
-                <div class="bg-gray-100 border border-gray-200 rounded-lg px-3 py-1.5 flex items-center gap-2">
-                  <img id="buy-send-flag" src="/flags/ng.png" class="w-4 h-auto rounded-sm" alt="">
-                  <span class="text-gray-700 font-semibold text-sm" id="buy-send-currency-code">NGN</span>
-                </div>
+                <button type="button" onclick="openCountryPicker()" id="buy-currency-pill" title="Choose country &amp; currency"
+                  class="bg-gray-100 hover:bg-gray-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-1.5 flex items-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-102">
+                  <img id="buy-send-flag" src="/flags/ng.svg" class="w-5 h-5 rounded-full object-cover shrink-0" alt="NG">
+                  <span class="text-gray-900 dark:text-gray-100 font-bold text-sm" id="buy-send-currency-code">NGN</span>
+                  <svg class="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
               </div>
             </div>
           </div>
@@ -1218,6 +1222,46 @@
     </div>
   </div>
 
+  <!-- Switch UI: Choose a Country / Currency Modal -->
+  <div id="country-picker-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-3 sm:p-4 overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="country-modal-title">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onclick="closeCountryPicker()"></div>
+    <div class="relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-hidden shadow-2xl z-10 flex flex-col md:flex-row animate-scale-up">
+      <!-- Left Column: Search & Country List -->
+      <div class="w-full md:w-[320px] p-5 sm:p-6 border-b md:border-b-0 md:border-r border-gray-100 dark:border-slate-800 flex flex-col shrink-0">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="country-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Choose a country</h3>
+          <button type="button" onclick="closeCountryPicker()" aria-label="Close" class="md:hidden p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 cursor-pointer">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        
+        <!-- Search input -->
+        <div class="relative mb-3">
+          <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="country-search-input" oninput="filterCountryList(this.value)" placeholder="Search country"
+            class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#6b46ff] transition-all">
+        </div>
+
+        <!-- Scrollable Country List -->
+        <div id="country-picker-list" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[380px] min-h-[220px]">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Right Column (Desktop): Currency Details Preview / Switch Graphic -->
+      <div class="hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center bg-gray-50/50 dark:bg-slate-900/50 relative">
+        <button type="button" onclick="closeCountryPicker()" aria-label="Close" class="absolute top-5 right-5 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200/60 dark:border-slate-700 flex items-center justify-center text-gray-500 dark:text-gray-300 text-xl font-bold mb-4 shadow-2xs">
+          $
+        </div>
+        <h4 id="country-preview-title" class="text-base font-bold text-gray-900 dark:text-white mb-1.5">Select a currency to continue</h4>
+        <p id="country-preview-desc" class="text-xs text-gray-500 dark:text-gray-400 max-w-[220px]">Choose a currency from the left panel</p>
+      </div>
+    </div>
+  </div>
+
   <!-- VIP Modal -->
   <div id="vip-modal" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center p-4 overflow-y-auto overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="vip-title">
     <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onclick="closeVipModal()"></div>
@@ -1362,7 +1406,7 @@
 
 
   <script src="/js/core.js?v=4"></script>
-  <script src="/js/rates.js?v=3"></script>
+  <script src="/js/rates.js?v=4"></script>
   <script src="/js/form.js?v=3"></script>
   <script src="/js/order.js?v=3"></script>
   <script src="/js/account.js?v=3"></script>

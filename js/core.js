@@ -753,6 +753,8 @@ function popOrderHistory(type) {
 }
 
 function getTopOpenModal() {
+  const countryPicker = document.getElementById('country-picker-modal');
+  if (countryPicker && !countryPicker.classList.contains('hidden')) return 'countryPicker';
   const navMenu = document.getElementById('nav-menu-overlay');
   if (navMenu && navMenu.classList.contains('is-open')) return 'navMenu';
   const vipModal = document.getElementById('vip-modal');
@@ -775,6 +777,10 @@ function getTopOpenModal() {
 function closeTopOpenModal() {
   const top = getTopOpenModal();
   if (!top) return false;
+  if (top === 'countryPicker') {
+    if (typeof closeCountryPicker === 'function') closeCountryPicker();
+    return true;
+  }
   if (top === 'navMenu') {
     if (typeof closeNavMenu === 'function') closeNavMenu();
     return true;

@@ -672,6 +672,17 @@ function registerAdminRoutes(Router $router): void
             }
             $settings['hostfi_fee'] = $hFee;
         }
+        if (isset($body['enabled_countries']) && is_array($body['enabled_countries'])) {
+            $existing = (array) ($settings['enabled_countries'] ?? defaultSettings()['enabled_countries']);
+            foreach ($body['enabled_countries'] as $cc => $on) {
+                $cc = strtoupper(trim((string) $cc));
+                if (preg_match('/^[A-Z]{2}$/', $cc)) {
+                    $existing[$cc] = (bool) $on;
+                }
+            }
+            $existing['NG'] = true; // Nigeria is always locked on
+            $settings['enabled_countries'] = $existing;
+        }
         if (isset($body['sell_timer_minutes']) && is_array($body['sell_timer_minutes'])) {
             $timers = (array) ($settings['sell_timer_minutes'] ?? []);
             foreach ($body['sell_timer_minutes'] as $key => $mins) {

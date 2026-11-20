@@ -52,6 +52,10 @@ async function fetchSettings() {
       if (data.data.sell_timer_minutes) sellTimerMinutes = data.data.sell_timer_minutes;
       if (Array.isArray(data.data.hostfi_assets) && data.data.hostfi_assets.length) loadHostfiAssets();
       if (Array.isArray(data.data.hostfi_buy_assets) && data.data.hostfi_buy_assets.length) loadHostfiBuyAssets();
+      if (data.data.enabled_countries && typeof data.data.enabled_countries === 'object') {
+        enabledCountriesMap = data.data.enabled_countries;
+        renderCountryPicker();
+      }
     }
   } catch (err) {
     // Use defaults
@@ -321,8 +325,34 @@ function updateRateDisplays() {
   }
 }
 
+const SUPPORTED_COUNTRIES = [
+  { code: 'NG', name: 'Nigeria', currency: 'NGN', symbol: '&#8358;', flag: '/flags/ng.svg', channel: 'BANK', hint: 'Bank account' },
+  { code: 'GH', name: 'Ghana', currency: 'GHS', symbol: 'GH&#8373;', flag: '/flags/gh.svg', channel: 'MOBILEMONEY', hint: 'Mobile money number' },
+  { code: 'KE', name: 'Kenya', currency: 'KES', symbol: 'KSh', flag: '/flags/ke.svg', channel: 'MOBILEMONEY', hint: 'M-Pesa / Mobile money' },
+  { code: 'ZA', name: 'South Africa', currency: 'ZAR', symbol: 'R', flag: '/flags/za.svg', channel: 'BANK', hint: 'Bank account' },
+  { code: 'EG', name: 'Egypt', currency: 'EGP', symbol: 'E&#163;', flag: '/flags/eg.svg', channel: 'BANK', hint: 'Bank account' },
+  { code: 'MA', name: 'Morocco', currency: 'MAD', symbol: 'MAD', flag: '/flags/ma.svg', channel: 'BANK', hint: 'Bank account' },
+  { code: 'CI', name: 'Ivory Coast', currency: 'XOF', symbol: 'CFA', flag: '/flags/ci.svg', channel: 'MOBILEMONEY', hint: 'Wave / Orange / MTN' },
+  { code: 'UG', name: 'Uganda', currency: 'UGX', symbol: 'USh', flag: '/flags/ug.svg', channel: 'MOBILEMONEY', hint: 'MTN / Airtel' },
+  { code: 'RW', name: 'Rwanda', currency: 'RWF', symbol: 'FRw', flag: '/flags/rw.svg', channel: 'MOBILEMONEY', hint: 'MTN / Airtel' },
+  { code: 'TZ', name: 'Tanzania', currency: 'TZS', symbol: 'TSh', flag: '/flags/tz.svg', channel: 'MOBILEMONEY', hint: 'M-Pesa / Tigo' },
+  { code: 'CM', name: 'Cameroon', currency: 'XAF', symbol: 'FCFA', flag: '/flags/cm.svg', channel: 'MOBILEMONEY', hint: 'Orange / MTN' },
+  { code: 'SN', name: 'Senegal', currency: 'XOF', symbol: 'CFA', flag: '/flags/sn.svg', channel: 'MOBILEMONEY', hint: 'Wave / Orange' }
+];
+
+let enabledCountriesMap = { 'NG': true };
+
+function getCountryConfig(code) {
+  return SUPPORTED_COUNTRIES.find(c => c.code === code) || SUPPORTED_COUNTRIES[0];
+}
+
+function isCountryEnabled(code) {
+  if (code === 'NG') return true;
+  return Boolean(enabledCountriesMap && enabledCountriesMap[code]);
+}
+
 function updateCurrencySymbols() {
-  const symbol = '&#8358;';
+  const cfg = getCountryConfig(currentCountry);
   const sellReceiveCurrency = document.getElementById('sell-receive-currency');
   const buySendCurrency = document.getElementById('buy-send-currency');
   const buyConfirmSymbol = document.getElementById('buy-confirm-currency-symbol');
@@ -330,14 +360,25 @@ function updateCurrencySymbols() {
   const buySendCode = document.getElementById('buy-send-currency-code');
   const sellReceiveFlag = document.getElementById('sell-receive-flag');
   const buySendFlag = document.getElementById('buy-send-flag');
-  const flagMap = { 'NGN': '/flags/ng.png' };
-  if (sellReceiveCurrency) sellReceiveCurrency.innerHTML = symbol;
-  if (buySendCurrency) buySendCurrency.innerHTML = symbol;
-  if (buyConfirmSymbol) buyConfirmSymbol.innerHTML = symbol;
-  if (sellReceiveCode) sellReceiveCode.textContent = 'NGN';
-  if (buySendCode) buySendCode.textContent = 'NGN';
-  if (sellReceiveFlag) sellReceiveFlag.src = flagMap['NGN'];
-  if (buySendFlag) buySendFlag.src = flagMap['NGN'];
+
+  if (sellReceiveCurrency) sellReceiveCurrency.innerHTML = cfg.symbol;
+  if (buySendCurrency) buySendCurrency.innerHTML = cfg.symbol;
+  if (buyConfirmSymbol) buyConfirmSymbol.innerHTML = cfg.symbol;
+  if (sellReceiveCode) sellReceiveCode.textContent = cfg.currency;
+  if (buySendCode) buySendCode.textContent = cfg.currency;
+  if (sellReceiveFlag) {
+    sellReceiveFlag.src = cfg.flag;
+    sellReceiveFlag.alt = cfg.code;
+  }
+  if (buySendFlag) {
+    buySendFlag.src = cfg.flag;
+    buySendFlag.alt = cfg.code;
+  }
+
+  const accNumInput = document.getElementById('sell-account-number');
+  if (accNumInput) {
+    accNumInput.placeholder = (cfg.channel === 'MOBILEMONEY') ? 'Enter mobile money number' : 'Enter account number';
+  }
 }
 
 async function fetchRequirements() {
@@ -581,40 +622,130 @@ function populateBanks(filter = '') {
   listContainer.innerHTML = html;
 }
 
-async function selectCountry(code, currency, label, flag) {
-  currentCountry = code;
-  currentCurrency = currency;
-  const flagHtml = flag ? `<img src="${flag}" class="w-5 h-auto rounded-sm" alt="${code}">` : '';
-  document.getElementById('country-display').innerHTML = `<span class="flex items-center gap-2 font-medium text-gray-900">${flagHtml} ${label}</span>`;
-  document.querySelectorAll('#country-options .custom-option').forEach(o => o.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
-  document.getElementById('country-options').classList.remove('open');
-  
-  // Reset state for new country
-  cachedBanks = [];
-  countryRequirements = {};
-  populateBanks();
-  
-  // Only fetch rates/requirements for Nigeria for now
-  if (code !== 'NG') {
-    showToast(`${label} support is coming soon!`, 'info');
-    updateCurrencySymbols();
+function openCountryPicker() {
+  if (typeof pushModalHistory === 'function') pushModalHistory('countryPicker');
+  const modal = document.getElementById('country-picker-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+  const search = document.getElementById('country-search-input');
+  if (search) {
+    search.value = '';
+    setTimeout(() => search.focus(), 60);
+  }
+  renderCountryPicker();
+}
+
+function closeCountryPicker() {
+  if (typeof popModalHistory === 'function') popModalHistory('countryPicker');
+  const modal = document.getElementById('country-picker-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+}
+
+function filterCountryList(query) {
+  renderCountryPicker(query);
+}
+
+function renderCountryPicker(filter = '') {
+  const container = document.getElementById('country-picker-list');
+  if (!container) return;
+
+  const q = (filter || '').trim().toLowerCase();
+  const matched = SUPPORTED_COUNTRIES.filter(c => 
+    !q || c.name.toLowerCase().includes(q) || c.currency.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+  );
+
+  if (!matched.length) {
+    container.innerHTML = '<div class="p-8 text-center text-xs text-gray-400">No matching countries found</div>';
     return;
   }
 
-  // Reset state for new country
-  cachedBanks = [...DEFAULT_NIGERIAN_BANKS];
-  countryRequirements = {};
-  populateBanks();
-  
+  container.innerHTML = matched.map(c => {
+    const isSelected = c.code === currentCountry;
+    const isEnabled = isCountryEnabled(c.code);
+
+    if (!isEnabled) {
+      // Disabled / switched off by admin: blurred, dimmed with lock icon matching Switch screenshot!
+      return `
+        <div onclick="selectCountry('${c.code}')" 
+          class="flex items-center justify-between p-3 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/40 opacity-45 blur-[0.3px] hover:opacity-70 transition-all cursor-not-allowed select-none"
+          title="${c.name} is currently paused in admin">
+          <div class="flex items-center gap-3">
+            <img src="${c.flag}" class="w-7 h-7 rounded-full object-cover shrink-0 shadow-2xs" alt="${c.code}">
+            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">${c.name}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-400 font-mono">${c.currency}</span>
+            <svg class="w-4 h-4 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+        </div>
+      `;
+    }
+
+    // Active / enabled state: crisp, clickable card
+    return `
+      <div onclick="selectCountry('${c.code}')" 
+        class="flex items-center justify-between p-3 rounded-2xl border ${isSelected ? 'border-[#6b46ff] bg-purple-50/50 dark:bg-purple-950/20 shadow-xs' : 'border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/60 hover:border-gray-300'} transition-all cursor-pointer">
+        <div class="flex items-center gap-3">
+          <img src="${c.flag}" class="w-7 h-7 rounded-full object-cover shrink-0 shadow-2xs" alt="${c.code}">
+          <span class="font-bold text-sm text-gray-900 dark:text-white">${c.name}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold font-mono text-gray-500 dark:text-gray-400">${c.currency}</span>
+          ${isSelected ? '<svg class="w-4 h-4 text-[#6b46ff] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function selectCountry(code) {
+  const cfg = getCountryConfig(code);
+  if (!isCountryEnabled(code)) {
+    if (typeof showToast === 'function') {
+      showToast(`${cfg.name} (${cfg.currency}) is coming soon via Switch!`, 'info');
+    }
+    return;
+  }
+
+  currentCountry = cfg.code;
+  currentCurrency = cfg.currency;
+
+  closeCountryPicker();
+
   updateCurrencySymbols();
+
+  // Reset banks / institutions for new country
+  cachedBanks = (currentCountry === 'NG') ? [...DEFAULT_NIGERIAN_BANKS] : [];
+  countryRequirements = {};
   
+  if (typeof fetchRequirements === 'function') {
+    fetchRequirements();
+  }
+  if (typeof fetchInstitutions === 'function') {
+    fetchInstitutions();
+  }
+  if (typeof populateBanks === 'function') {
+    populateBanks();
+  }
+
   // Force rate refresh for both directions
-  fetchRate('OFFRAMP');
-  fetchRate('ONRAMP');
-  
-  await fetchRequirements();
-  fetchInstitutions();
+  if (typeof fetchRate === 'function') {
+    fetchRate('OFFRAMP');
+    fetchRate('ONRAMP');
+  }
+
+  if (typeof calculateSell === 'function') calculateSell();
+  if (typeof calculateBuy === 'function') calculateBuy();
 }
 
 let lastModalClose = 0;

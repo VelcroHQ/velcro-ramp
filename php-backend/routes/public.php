@@ -866,6 +866,7 @@ function registerPublicRoutes(Router $router): void
             'routes_off' => routesOff(),
             'hostfi_fee' => hostfiFee(),
             'sell_timer_minutes' => (object) ($settings['sell_timer_minutes'] ?? ['default' => 60]),
+            'enabled_countries' => $settings['enabled_countries'] ?? ['NG' => true],
         ]));
     });
 }

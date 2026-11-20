@@ -205,6 +205,21 @@ function defaultSettings(): array
         // Minutes a user has to send crypto after getting an address.
         'sell_timer_minutes' => ['BTC' => 120, 'default' => 60],
         'referral_fee' => 0.3,
+        // Supported fiat countries & currencies (Switch API)
+        'enabled_countries' => [
+            'NG' => true,  // Nigeria (default, always enabled)
+            'GH' => false, // Ghana
+            'KE' => false, // Kenya
+            'ZA' => false, // South Africa
+            'EG' => false, // Egypt
+            'MA' => false, // Morocco
+            'CI' => false, // Ivory Coast
+            'UG' => false, // Uganda
+            'RW' => false, // Rwanda
+            'TZ' => false, // Tanzania
+            'CM' => false, // Cameroon
+            'SN' => false, // Senegal
+        ],
         'telegram_bot_token' => TELEGRAM_BOT_TOKEN,
         'telegram_chat_id' => TELEGRAM_CHAT_ID,
         'telegram_alerts_enabled' => TELEGRAM_ALERTS_ENABLED,
