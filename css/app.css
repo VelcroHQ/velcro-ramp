@@ -1493,7 +1493,11 @@
 #country-picker-modal .country-picker-card {
   width: 100% !important;
   max-width: 440px !important;
+  max-height: min(600px, 86vh) !important;
   margin: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
   background-color: #ffffff !important;
   border-radius: 24px !important;
   border: 1px solid #e2e8f0 !important;
@@ -1659,3 +1663,50 @@
 .bg-\[\#6b46ff\]\/15 { background-color: rgba(107, 70, 255, 0.15) !important; }
 .bg-\[\#6b46ff\]\/20 { background-color: rgba(107, 70, 255, 0.2) !important; }
 .bg-\[\#6b46ff\]\/25 { background-color: rgba(107, 70, 255, 0.25) !important; }
+
+/* Universal Modal Backdrop & Strict Card Constraints */
+.modal-backdrop,
+.country-modal-backdrop,
+.success-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  z-index: 0 !important;
+  transition: opacity 0.22s ease !important;
+}
+
+.dark .modal-backdrop,
+.dark .country-modal-backdrop,
+.dark .success-modal-backdrop {
+  background-color: rgba(2, 6, 23, 0.8) !important;
+}
+
+.bg-black\/60 { background-color: rgba(0, 0, 0, 0.6) !important; }
+.bg-black\/70 { background-color: rgba(0, 0, 0, 0.7) !important; }
+.backdrop-blur-xs,
+.backdrop-blur-sm {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.max-h-\[85vh\] { max-height: 85vh !important; }
+.max-h-\[88vh\] { max-height: 88vh !important; }
+.max-h-\[380px\] { max-height: 380px !important; }
+
+#country-picker-list {
+  max-height: 380px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: thin !important;
+}
+
+@media (max-width: 639px) {
+  #country-picker-modal .country-picker-card {
+    max-height: 86dvh !important;
+  }
+  #country-picker-list {
+    max-height: calc(86dvh - 180px) !important;
+  }
+}

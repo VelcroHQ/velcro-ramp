@@ -806,23 +806,22 @@ function renderCountryPicker(filter = '') {
     return;
   }
 
-  container.innerHTML = matched.map(c => {
+  function renderRow(c) {
     const isSelected = c.code === currentCountry;
     const isEnabled = isCountryEnabled(c.code);
 
     if (!isEnabled) {
-      // Disabled / switched off by admin: blurred, dimmed with lock icon matching Switch screenshot!
       return `
         <div onclick="selectCountry('${c.code}')" 
-          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/40 opacity-45 blur-[0.3px] hover:opacity-70 transition-all cursor-not-allowed select-none"
+          class="flex items-center justify-between p-3 rounded-2xl border border-gray-100 dark:border-slate-800/80 bg-gray-50/40 dark:bg-slate-800/30 opacity-50 hover:opacity-75 transition-all cursor-not-allowed select-none"
           title="${c.name} is currently unavailable">
           <div class="flex items-center gap-3">
-            <img src="${c.flag}" class="w-8 h-8 rounded-full object-cover shrink-0 shadow-xs" alt="${c.code}">
-            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">${c.name}</span>
+            <img src="${c.flag}" class="w-7 h-7 rounded-full object-cover shrink-0 shadow-2xs" alt="${c.code}">
+            <span class="font-medium text-xs sm:text-sm text-gray-600 dark:text-gray-300">${c.name}</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-xs text-gray-400 font-mono">${c.currency}</span>
-            <svg class="w-4 h-4 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
             </svg>
@@ -831,21 +830,45 @@ function renderCountryPicker(filter = '') {
       `;
     }
 
-    // Active / enabled state: crisp, clickable card
     return `
       <div onclick="selectCountry('${c.code}')" 
         class="flex items-center justify-between p-3.5 rounded-2xl border ${isSelected ? 'border-[#6b46ff] bg-purple-50/50 dark:bg-purple-950/20 shadow-xs' : 'border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/60 hover:border-gray-300'} transition-all cursor-pointer">
         <div class="flex items-center gap-3">
           <img src="${c.flag}" class="w-8 h-8 rounded-full object-cover shrink-0 shadow-xs" alt="${c.code}">
-          <span class="font-bold text-sm text-gray-900 dark:text-white">${c.name}</span>
+          <div>
+            <span class="font-bold text-sm text-gray-900 dark:text-white block leading-tight">${c.name}</span>
+            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Instant settlement</span>
+          </div>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-xs font-bold font-mono text-gray-500 dark:text-gray-400">${c.currency}</span>
+          <span class="text-xs font-bold font-mono text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">${c.currency}</span>
           ${isSelected ? '<svg class="w-4 h-4 text-[#6b46ff] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
         </div>
       </div>
     `;
-  }).join('');
+  }
+
+  // If searching, display search results directly
+  if (q) {
+    container.innerHTML = matched.map(renderRow).join('');
+    return;
+  }
+
+  // If no search, categorize cleanly: Available Currencies vs Coming Soon
+  const enabled = matched.filter(c => isCountryEnabled(c.code));
+  const upcoming = matched.filter(c => !isCountryEnabled(c.code));
+
+  let html = enabled.map(renderRow).join('');
+  if (upcoming.length) {
+    html += `
+      <div class="pt-3 pb-1.5 px-1 flex items-center justify-between text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        <span>Coming Soon</span>
+        <span class="text-[10px] lowercase font-normal bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">integrating rails</span>
+      </div>
+    `;
+    html += upcoming.map(renderRow).join('');
+  }
+  container.innerHTML = html;
 }
 
 async function selectCountry(code) {
