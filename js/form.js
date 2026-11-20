@@ -237,6 +237,12 @@ function filterSellAssets() {
 
 function switchTab(tab) {
   currentProvider = tab === 'sell' ? sellProvider : buyProvider;
+  if (currentProvider !== 'switch' && typeof currentCountry !== 'undefined' && currentCountry !== 'NG') {
+    currentCountry = 'NG';
+    currentCurrency = 'NGN';
+    if (typeof updateCurrencySymbols === 'function') updateCurrencySymbols();
+  }
+  if (typeof updateCurrencyPillState === 'function') updateCurrencyPillState();
   const indicator = document.getElementById('tab-indicator');
   const sellTab = document.getElementById('tab-sell');
   const buyTab = document.getElementById('tab-buy');
@@ -287,6 +293,12 @@ async function selectSellAsset(symbol, logo, name, provider) {
   closeAllDropdowns(); // Clear everything first
   currentSellAsset = symbol;
   sellProvider = currentProvider = provider || 'switch';
+  if (sellProvider !== 'switch' && typeof currentCountry !== 'undefined' && currentCountry !== 'NG') {
+    currentCountry = 'NG';
+    currentCurrency = 'NGN';
+    if (typeof updateCurrencySymbols === 'function') updateCurrencySymbols();
+  }
+  if (typeof updateCurrencyPillState === 'function') updateCurrencyPillState();
   currentBankCode = currentProvider === 'paj' ? (currentBankPajId || currentBankCode) : (currentBankSwitchCode || currentBankCode);
   currentSellInputMode = 'USD';
   const prefix = document.getElementById('sell-currency-prefix');
@@ -576,6 +588,12 @@ async function selectBuyAsset(symbol, logo, name, provider) {
   closeAllDropdowns(); // Clear everything first
   currentBuyAsset = symbol;
   buyProvider = currentProvider = provider || 'switch';
+  if (buyProvider !== 'switch' && typeof currentCountry !== 'undefined' && currentCountry !== 'NG') {
+    currentCountry = 'NG';
+    currentCurrency = 'NGN';
+    if (typeof updateCurrencySymbols === 'function') updateCurrencySymbols();
+  }
+  if (typeof updateCurrencyPillState === 'function') updateCurrencyPillState();
   document.getElementById('buy-asset-display').innerHTML = `
     <img src="${logo}" class="w-6 h-6" alt="${symbol}">
     <span class="font-bold text-sm sm:text-base">${symbol}</span>

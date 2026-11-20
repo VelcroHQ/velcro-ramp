@@ -351,6 +351,31 @@ function isCountryEnabled(code) {
   return Boolean(enabledCountriesMap && enabledCountriesMap[code]);
 }
 
+function updateCurrencyPillState() {
+  const isBuy = !document.getElementById('form-buy')?.classList.contains('hidden');
+  const provider = isBuy ? (typeof buyProvider !== 'undefined' ? buyProvider : 'switch') : (typeof sellProvider !== 'undefined' ? sellProvider : 'switch');
+  const isSwitch = provider === 'switch';
+
+  const sellPill = document.getElementById('sell-currency-pill');
+  const buyPill = document.getElementById('buy-currency-pill');
+
+  [sellPill, buyPill].forEach(pill => {
+    if (!pill) return;
+    const chevron = pill.querySelector('svg');
+    if (isSwitch) {
+      pill.classList.add('cursor-pointer', 'hover:scale-102');
+      pill.classList.remove('cursor-default', 'opacity-90');
+      pill.setAttribute('title', 'Choose country & currency');
+      if (chevron) chevron.style.display = '';
+    } else {
+      pill.classList.remove('cursor-pointer', 'hover:scale-102');
+      pill.classList.add('cursor-default', 'opacity-90');
+      pill.setAttribute('title', 'Naira (NGN) - HostFi/PAJ settlement');
+      if (chevron) chevron.style.display = 'none';
+    }
+  });
+}
+
 function updateCurrencySymbols() {
   const cfg = getCountryConfig(currentCountry);
   const sellReceiveCurrency = document.getElementById('sell-receive-currency');
@@ -379,6 +404,8 @@ function updateCurrencySymbols() {
   if (accNumInput) {
     accNumInput.placeholder = (cfg.channel === 'MOBILEMONEY') ? 'Enter mobile money number' : 'Enter account number';
   }
+
+  updateCurrencyPillState();
 }
 
 async function fetchRequirements() {
@@ -623,6 +650,15 @@ function populateBanks(filter = '') {
 }
 
 function openCountryPicker() {
+  const isBuy = !document.getElementById('form-buy')?.classList.contains('hidden');
+  const provider = isBuy ? (typeof buyProvider !== 'undefined' ? buyProvider : 'switch') : (typeof sellProvider !== 'undefined' ? sellProvider : 'switch');
+  if (provider !== 'switch') {
+    if (typeof showToast === 'function') {
+      showToast('Multi-currency is available for Switch assets only. HostFi & PAJ support Naira (NGN).', 'info');
+    }
+    return;
+  }
+
   if (typeof pushModalHistory === 'function') pushModalHistory('countryPicker');
   const modal = document.getElementById('country-picker-modal');
   if (modal) {
@@ -709,6 +745,15 @@ function renderCountryPicker(filter = '') {
 }
 
 async function selectCountry(code) {
+  const isBuy = !document.getElementById('form-buy')?.classList.contains('hidden');
+  const provider = isBuy ? (typeof buyProvider !== 'undefined' ? buyProvider : 'switch') : (typeof sellProvider !== 'undefined' ? sellProvider : 'switch');
+  if (provider !== 'switch' && code !== 'NG') {
+    if (typeof showToast === 'function') {
+      showToast('Multi-currency is available for Switch assets only. HostFi & PAJ support Naira (NGN).', 'warning');
+    }
+    return;
+  }
+
   const cfg = getCountryConfig(code);
   if (!isCountryEnabled(code)) {
     if (typeof showToast === 'function') {
