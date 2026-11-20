@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=13" rel="stylesheet">
+  <link href="/css/app.css?v=14" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -334,7 +334,7 @@
   </nav>
 
   <!-- Bread-Style Mobile Menu Overlay (Centered Modal exactly matching screenshot) -->
-  <div id="nav-menu-dropdown" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-md md:hidden animate-fade-in" onclick="closeNavMenu()">
+  <div id="nav-menu-dropdown" style="z-index: 99999;" class="fixed inset-0 z-modal hidden flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-md md:hidden animate-fade-in" onclick="closeNavMenu()">
     <!-- Top Center Close (X) Circle -->
     <button type="button" onclick="closeNavMenu()" aria-label="Close menu"
       class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-gray-800 dark:text-white shadow-xl flex items-center justify-center mb-6 hover:scale-105 active:scale-95 transition-all cursor-pointer">
@@ -1505,7 +1505,7 @@
   <script src="/js/order.js?v=4"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=5"></script>
-  <script src="/js/main.js?v=13"></script>
+  <script src="/js/main.js?v=14"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>

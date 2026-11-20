@@ -1299,6 +1299,11 @@
   outline-offset: 2px;
 }
 
+/* High z-index layer support */
+.z-\[100\], .z-modal { z-index: 100 !important; }
+.z-\[110\], .z-tour { z-index: 110 !important; }
+.z-\[9999\], .z-toast { z-index: 9999 !important; }
+
 /* Bread-style hamburger menu dropdown & backdrop */
 #nav-menu-backdrop:not(.hidden) {
   display: block !important;
@@ -1306,19 +1311,22 @@
 }
 
 #nav-menu-dropdown {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 #nav-menu-dropdown::-webkit-scrollbar {
-  display: none;
+  display: none !important;
 }
 
 #nav-menu-dropdown:not(.hidden) {
   display: flex !important;
-  animation: slideInMenu 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeInOverlay 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .menu-nav-pill {
