@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=17" rel="stylesheet">
+  <link href="/css/app.css?v=18" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -444,8 +444,8 @@
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Coin</span>
                   <div class="custom-select w-full sm:w-auto" id="sell-asset-wrap">
                     <div role="button" tabindex="0" class="asset-pill w-full sm:w-auto justify-between sm:justify-start" onclick="openSellAssetPicker()">
-                      <div class="flex items-center gap-1.5" id="sell-asset-display">
-                        <span class="text-gray-400 text-sm">Select</span>
+                      <div class="flex items-center gap-1.5 whitespace-nowrap shrink-0" id="sell-asset-display">
+                        <span class="text-gray-400 text-sm whitespace-nowrap">Select</span>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
@@ -459,7 +459,7 @@
                   <div class="custom-select w-full sm:w-auto">
                     <div role="button" tabindex="0" class="network-pill w-full sm:w-auto justify-between sm:justify-start" id="sell-network-wrap"
                       onclick="handleNetworkClick('sell')">
-                      <span id="sell-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Choose network</span>
+                      <span id="sell-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm whitespace-nowrap">Choose network</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
                         <path d="m6 9 6 6 6-6" />
@@ -759,8 +759,8 @@
                   <span class="text-[10px] text-gray-400 font-medium tracking-wide block uppercase">Coin</span>
                   <div class="custom-select w-full sm:w-auto" id="buy-asset-wrap">
                     <div role="button" tabindex="0" class="asset-pill w-full sm:w-auto justify-between sm:justify-start" onclick="openBuyAssetPicker()">
-                      <div class="flex items-center gap-1.5" id="buy-asset-display">
-                        <span class="text-gray-400 text-sm">Select</span>
+                      <div class="flex items-center gap-1.5 whitespace-nowrap shrink-0" id="buy-asset-display">
+                        <span class="text-gray-400 text-sm whitespace-nowrap">Select</span>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
@@ -774,7 +774,7 @@
                   <div class="custom-select w-full sm:w-auto">
                     <div role="button" tabindex="0" class="network-pill w-full sm:w-auto justify-between sm:justify-start" id="buy-network-wrap"
                       onclick="handleNetworkClick('buy')">
-                      <span id="buy-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm">Choose network</span>
+                      <span id="buy-network-display" class="flex items-center gap-1.5 text-gray-400 text-sm whitespace-nowrap">Choose network</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
                         <path d="m6 9 6 6 6-6" />
@@ -1482,13 +1482,13 @@
   <div id="toast-container" class="fixed top-4 right-4 z-[9999] space-y-3 pointer-events-none"></div>
 
 
-  <script src="/js/core.js?v=6"></script>
-  <script src="/js/rates.js?v=7"></script>
-  <script src="/js/form.js?v=4"></script>
+  <script src="/js/core.js?v=7"></script>
+  <script src="/js/rates.js?v=8"></script>
+  <script src="/js/form.js?v=5"></script>
   <script src="/js/order.js?v=4"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=5"></script>
-  <script src="/js/main.js?v=16"></script>
+  <script src="/js/main.js?v=17"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>

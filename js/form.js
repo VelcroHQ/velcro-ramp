@@ -305,9 +305,9 @@ async function selectSellAsset(symbol, logo, name, provider) {
   if (prefix) prefix.textContent = '$';
 
   document.getElementById('sell-asset-display').innerHTML = `
-    <img src="${logo}" class="w-6 h-6" alt="${symbol}">
-    <span class="font-bold text-sm sm:text-base">${symbol}</span>
-    <span class="text-gray-400 text-[10px] hidden sm:inline ml-1">${name}</span>
+    <img src="${logo}" class="w-6 h-6 shrink-0" alt="${symbol}">
+    <span class="font-bold text-sm sm:text-base whitespace-nowrap">${symbol}</span>
+    <span class="text-gray-400 text-xs hidden sm:inline ml-1 whitespace-nowrap">${name}</span>
   `;
   closeSellAssetPicker();
   safeSetText('sell-asset-name', symbol);
@@ -352,7 +352,7 @@ async function selectSellAsset(symbol, logo, name, provider) {
   } else if (currentProvider === 'paj') {
     currentSellNetwork = 'solana';
     currentRate.sell = 0;
-    document.getElementById('sell-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
+    document.getElementById('sell-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full shrink-0"><span class="font-medium text-sm whitespace-nowrap">Solana</span>';
     safeSetText('sell-network-name', 'Solana');
     safeSetText('sell-confirm-network', 'Solana');
     safeSetSrc('sell-confirm-network-img', '/logos/solana.png');
@@ -380,7 +380,7 @@ async function selectSellAsset(symbol, logo, name, provider) {
       const bc = switchAssetsData.blockchains[defaultChain];
       const chainLogo = getChainLogo(defaultChain);
       const chainName = bc ? bc.name : defaultChain.charAt(0).toUpperCase() + defaultChain.slice(1);
-      document.getElementById('sell-network-display').innerHTML = `<img src="${chainLogo}" class="w-5 h-5 rounded-full" alt="${chainName}"><span class="font-medium text-sm">${chainName}</span>`;
+      document.getElementById('sell-network-display').innerHTML = `<img src="${chainLogo}" class="w-5 h-5 rounded-full shrink-0" alt="${chainName}"><span class="font-medium text-sm whitespace-nowrap">${chainName}</span>`;
       safeSetText('sell-network-name', chainName);
       safeSetText('sell-confirm-network', chainName);
       safeSetSrc('sell-confirm-network-img', chainLogo);
@@ -433,8 +433,8 @@ function selectSellNetwork(id, logo, name, optionEl) {
     sellProvider = currentProvider = 'switch';
   }
   document.getElementById('sell-network-display').innerHTML = `
-    <img src="${logo}" class="w-5 h-5 rounded-full" alt="${name}">
-    <span class="font-medium text-sm">${name}</span>
+    <img src="${logo}" class="w-5 h-5 rounded-full shrink-0" alt="${name}">
+    <span class="font-medium text-sm whitespace-nowrap">${name}</span>
   `;
   safeSetText('sell-network-name', name);
   safeSetText('sell-confirm-network', name);
@@ -595,9 +595,9 @@ async function selectBuyAsset(symbol, logo, name, provider) {
   }
   if (typeof updateCurrencyPillState === 'function') updateCurrencyPillState();
   document.getElementById('buy-asset-display').innerHTML = `
-    <img src="${logo}" class="w-6 h-6" alt="${symbol}">
-    <span class="font-bold text-sm sm:text-base">${symbol}</span>
-    <span class="text-gray-400 text-[10px] hidden sm:inline ml-1">${name}</span>
+    <img src="${logo}" class="w-6 h-6 shrink-0" alt="${symbol}">
+    <span class="font-bold text-sm sm:text-base whitespace-nowrap">${symbol}</span>
+    <span class="text-gray-400 text-xs hidden sm:inline ml-1 whitespace-nowrap">${name}</span>
   `;
   // Close modal picker
   closeBuyAssetPicker();
@@ -632,7 +632,7 @@ async function selectBuyAsset(symbol, logo, name, provider) {
     currentRate.buy = 0;
     const netCol = document.getElementById('buy-network-col');
     if (netCol) netCol.style.display = '';
-    document.getElementById('buy-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
+    document.getElementById('buy-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full shrink-0"><span class="font-medium text-sm whitespace-nowrap">Solana</span>';
     safeSetText('buy-confirm-network', 'Solana');
     safeSetSrc('buy-confirm-network-img', '/logos/solana.png');
     const netOptions = document.getElementById('buy-network-options');
@@ -657,7 +657,7 @@ async function selectBuyAsset(symbol, logo, name, provider) {
       const bc = switchAssetsData.blockchains[defaultChain];
       const chainLogo = getChainLogo(defaultChain);
       const chainName = bc ? bc.name : defaultChain.charAt(0).toUpperCase() + defaultChain.slice(1);
-      document.getElementById('buy-network-display').innerHTML = `<img src="${chainLogo}" class="w-5 h-5 rounded-full" alt="${chainName}"><span class="font-medium text-sm">${chainName}</span>`;
+      document.getElementById('buy-network-display').innerHTML = `<img src="${chainLogo}" class="w-5 h-5 rounded-full shrink-0" alt="${chainName}"><span class="font-medium text-sm whitespace-nowrap">${chainName}</span>`;
       safeSetText('buy-confirm-network', chainName);
       safeSetSrc('buy-confirm-network-img', chainLogo);
       document.querySelectorAll('#buy-network-options .custom-option').forEach(o => {
@@ -678,8 +678,8 @@ function selectBuyNetwork(id, logo, name, optionEl) {
     buyProvider = currentProvider = 'switch';
   }
   document.getElementById('buy-network-display').innerHTML = `
-    <img src="${logo}" class="w-5 h-5 rounded-full" alt="${name}">
-    <span class="font-medium text-sm">${name}</span>
+    <img src="${logo}" class="w-5 h-5 rounded-full shrink-0" alt="${name}">
+    <span class="font-medium text-sm whitespace-nowrap">${name}</span>
   `;
   safeSetText('buy-confirm-network', name);
   safeSetSrc('buy-confirm-network-img', logo);

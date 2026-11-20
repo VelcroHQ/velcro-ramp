@@ -498,13 +498,13 @@ async function setDefaults() {
 
       currentSellAsset = sellSym;
       currentSellNetwork = sellChain;
-      document.getElementById('sell-asset-display').innerHTML = `<img src="${sellLogo}" class="w-6 h-6" alt="${sellSym}"><span class="font-medium">${sellSym}</span><span class="text-gray-500 text-xs">${sellAsset.name}</span>`;
+      document.getElementById('sell-asset-display').innerHTML = `<img src="${sellLogo}" class="w-6 h-6 shrink-0" alt="${sellSym}"><span class="font-bold text-sm sm:text-base whitespace-nowrap">${sellSym}</span><span class="text-gray-400 text-xs hidden sm:inline ml-1 whitespace-nowrap">${sellAsset.name}</span>`;
       document.getElementById('sell-currency-prefix').innerHTML = sellSym === 'CNGN' ? '₦' : '$';
       document.getElementById('sell-asset-name').textContent = sellSym;
       document.getElementById('sell-confirm-asset').textContent = sellSym;
       document.getElementById('sell-confirm-asset-img').src = sellLogo;
       document.getElementById('sell-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
-      document.getElementById('sell-network-display').innerHTML = `<img src="${chainLogo}" class="w-6 h-6" alt="${chainName}"><span class="font-semibold">${chainName}</span>`;
+      document.getElementById('sell-network-display').innerHTML = `<img src="${chainLogo}" class="w-6 h-6 shrink-0" alt="${chainName}"><span class="font-semibold whitespace-nowrap">${chainName}</span>`;
       document.getElementById('sell-network-name').textContent = chainName;
       document.getElementById('sell-confirm-network-img').src = chainLogo;
       document.getElementById('sell-amount-step').classList.remove('opacity-50', 'pointer-events-none');
@@ -532,14 +532,14 @@ async function setDefaults() {
       currentBuyAsset = buySym;
       currentBuyNetwork = buyChain;
       buyProvider = 'switch';
-      document.getElementById('buy-asset-display').innerHTML = `<img src="${buyLogo}" class="w-6 h-6" alt="${buySym}"><span class="font-medium">${buySym}</span><span class="text-gray-500 text-xs">${buyAsset.name}</span>`;
+      document.getElementById('buy-asset-display').innerHTML = `<img src="${buyLogo}" class="w-6 h-6 shrink-0" alt="${buySym}"><span class="font-bold text-sm sm:text-base whitespace-nowrap">${buySym}</span><span class="text-gray-400 text-xs hidden sm:inline ml-1 whitespace-nowrap">${buyAsset.name}</span>`;
       document.getElementById('buy-amount-label').textContent = buySym;
       document.getElementById('buy-confirm-asset').textContent = buySym;
       document.getElementById('buy-confirm-asset-img').src = buyLogo;
       document.getElementById('buy-network-wrap').classList.remove('opacity-50', 'pointer-events-none');
       const netCol = document.getElementById('buy-network-col');
       if (netCol) netCol.style.display = '';
-      document.getElementById('buy-network-display').innerHTML = `<img src="${chainLogo}" class="w-6 h-6" alt="${chainName}"><span class="font-semibold">${chainName}</span>`;
+      document.getElementById('buy-network-display').innerHTML = `<img src="${chainLogo}" class="w-6 h-6 shrink-0" alt="${chainName}"><span class="font-semibold whitespace-nowrap">${chainName}</span>`;
       document.getElementById('buy-confirm-network').textContent = chainName;
       document.getElementById('buy-confirm-network-img').src = chainLogo;
       document.getElementById('buy-amount-step').classList.remove('opacity-50', 'pointer-events-none');
@@ -558,11 +558,11 @@ async function setDefaults() {
       currentBuyAsset = buySym;
       currentBuyNetwork = 'solana';
       buyProvider = 'paj';
-      document.getElementById('buy-asset-display').innerHTML = `<img src="${buyLogo}" class="w-6 h-6" alt="${buySym}"><span class="font-medium">${buySym}</span><span class="text-gray-500 text-xs">Solana</span>`;
+      document.getElementById('buy-asset-display').innerHTML = `<img src="${buyLogo}" class="w-6 h-6 shrink-0" alt="${buySym}"><span class="font-bold text-sm sm:text-base whitespace-nowrap">${buySym}</span><span class="text-gray-400 text-xs hidden sm:inline ml-1 whitespace-nowrap">Solana</span>`;
       document.getElementById('buy-amount-label').textContent = buySym;
       safeSetText('buy-confirm-asset', buySym);
       safeSetSrc('buy-confirm-asset-img', buyLogo);
-      document.getElementById('buy-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full"><span class="font-medium text-sm">Solana</span>';
+      document.getElementById('buy-network-display').innerHTML = '<img src="/logos/solana.png" class="w-5 h-5 rounded-full shrink-0"><span class="font-medium text-sm whitespace-nowrap">Solana</span>';
       safeSetText('buy-confirm-network', 'Solana');
       safeSetSrc('buy-confirm-network-img', '/logos/solana.png');
       const netCol = document.getElementById('buy-network-col');
