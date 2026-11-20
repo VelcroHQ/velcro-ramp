@@ -3168,18 +3168,18 @@ let countrySettings = {
 const countryEdits = {};
 
 const ADMIN_SUPPORTED_COUNTRIES = [
-    { code: 'NG', name: 'Nigeria', currency: 'NGN', flag: '/flags/ng.svg', channel: 'Bank Transfer' },
-    { code: 'GH', name: 'Ghana', currency: 'GHS', flag: '/flags/gh.svg', channel: 'Mobile Money' },
-    { code: 'KE', name: 'Kenya', currency: 'KES', flag: '/flags/ke.svg', channel: 'M-Pesa / Mobile Money' },
-    { code: 'ZA', name: 'South Africa', currency: 'ZAR', flag: '/flags/za.svg', channel: 'Bank Transfer' },
-    { code: 'EG', name: 'Egypt', currency: 'EGP', flag: '/flags/eg.svg', channel: 'Bank Transfer' },
-    { code: 'MA', name: 'Morocco', currency: 'MAD', flag: '/flags/ma.svg', channel: 'Bank Transfer' },
-    { code: 'CI', name: 'Ivory Coast', currency: 'XOF', flag: '/flags/ci.svg', channel: 'Mobile Money' },
-    { code: 'UG', name: 'Uganda', currency: 'UGX', flag: '/flags/ug.svg', channel: 'Mobile Money' },
-    { code: 'RW', name: 'Rwanda', currency: 'RWF', flag: '/flags/rw.svg', channel: 'Mobile Money' },
-    { code: 'TZ', name: 'Tanzania', currency: 'TZS', flag: '/flags/tz.svg', channel: 'Mobile Money' },
-    { code: 'CM', name: 'Cameroon', currency: 'XAF', flag: '/flags/cm.svg', channel: 'Mobile Money' },
-    { code: 'SN', name: 'Senegal', currency: 'XOF', flag: '/flags/sn.svg', channel: 'Mobile Money' }
+    { code: 'NG', name: 'Nigeria', currency: 'NGN', flag: 'flags/ng.svg', channel: 'Bank Transfer' },
+    { code: 'GH', name: 'Ghana', currency: 'GHS', flag: 'flags/gh.svg', channel: 'Mobile Money' },
+    { code: 'KE', name: 'Kenya', currency: 'KES', flag: 'flags/ke.svg', channel: 'M-Pesa / Mobile Money' },
+    { code: 'ZA', name: 'South Africa', currency: 'ZAR', flag: 'flags/za.svg', channel: 'Bank Transfer' },
+    { code: 'EG', name: 'Egypt', currency: 'EGP', flag: 'flags/eg.svg', channel: 'Bank Transfer' },
+    { code: 'MA', name: 'Morocco', currency: 'MAD', flag: 'flags/ma.svg', channel: 'Bank Transfer' },
+    { code: 'CI', name: 'Ivory Coast', currency: 'XOF', flag: 'flags/ci.svg', channel: 'Mobile Money' },
+    { code: 'UG', name: 'Uganda', currency: 'UGX', flag: 'flags/ug.svg', channel: 'Mobile Money' },
+    { code: 'RW', name: 'Rwanda', currency: 'RWF', flag: 'flags/rw.svg', channel: 'Mobile Money' },
+    { code: 'TZ', name: 'Tanzania', currency: 'TZS', flag: 'flags/tz.svg', channel: 'Mobile Money' },
+    { code: 'CM', name: 'Cameroon', currency: 'XAF', flag: 'flags/cm.svg', channel: 'Mobile Money' },
+    { code: 'SN', name: 'Senegal', currency: 'XOF', flag: 'flags/sn.svg', channel: 'Mobile Money' }
 ];
 
 async function fetchCountrySettings() {
@@ -3210,7 +3210,7 @@ function renderCountrySettings() {
         <tr>
             <td data-label="Country">
                 <span style="display: inline-flex; align-items: center; gap: 8px;">
-                    <img src="${c.flag}" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover;" alt="${c.code}">
+                    <img src="${c.flag}" onerror="if(this.src.indexOf('https://ramp.usevelcro.com')===-1)this.src='https://ramp.usevelcro.com/flags/' + '${c.code}'.toLowerCase() + '.svg';" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover;" alt="${c.code}">
                     <b>${c.name}</b>
                 </span>
             </td>
