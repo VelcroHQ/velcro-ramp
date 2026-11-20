@@ -753,6 +753,8 @@ function popOrderHistory(type) {
 }
 
 function getTopOpenModal() {
+  const supportModal = document.getElementById('support-modal');
+  if (supportModal && !supportModal.classList.contains('hidden')) return 'support';
   const countryPicker = document.getElementById('country-picker-modal');
   if (countryPicker && !countryPicker.classList.contains('hidden')) return 'countryPicker';
   const navMenu = document.getElementById('nav-menu-dropdown');
@@ -777,6 +779,10 @@ function getTopOpenModal() {
 function closeTopOpenModal() {
   const top = getTopOpenModal();
   if (!top) return false;
+  if (top === 'support') {
+    if (typeof closeSupportModal === 'function') closeSupportModal();
+    return true;
+  }
   if (top === 'countryPicker') {
     if (typeof closeCountryPicker === 'function') closeCountryPicker();
     return true;

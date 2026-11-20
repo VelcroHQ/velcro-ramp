@@ -107,6 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       if (typeof showHistoryModal === 'function') showHistoryModal();
     }
+  } else if (hash === 'support') {
+    openSupportModal();
   }
 });
 
@@ -288,9 +290,29 @@ function handleMenuClick(action) {
       break;
     }
     case 'support': {
-      window.open('https://wa.me/2347035428475?text=Hello%20Velcro%20Support,%20I%20need%20help%20with%20an%20exchange', '_blank', 'noopener,noreferrer');
+      openSupportModal();
       break;
     }
+  }
+}
+
+function openSupportModal() {
+  if (typeof pushModalHistory === 'function') pushModalHistory('support');
+  const modal = document.getElementById('support-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeSupportModal() {
+  if (typeof popModalHistory === 'function') popModalHistory('support');
+  const modal = document.getElementById('support-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
   }
 }
 
