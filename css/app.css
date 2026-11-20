@@ -1206,7 +1206,8 @@
   }
   #history-modal,
   #support-modal,
-  #vip-modal {
+  #vip-modal,
+  #country-picker-modal {
     padding: 0 !important;
     align-items: flex-end !important;
     justify-content: flex-end !important;
@@ -1216,7 +1217,8 @@
   #profile-modal .success-modal-card,
   #history-modal .history-modal-dialog,
   #support-modal > div:last-child,
-  #vip-modal > div:last-child {
+  #vip-modal > div:last-child,
+  #country-picker-modal .country-picker-card {
     width: 100% !important;
     max-width: none !important;
     max-height: 92dvh;
@@ -1484,7 +1486,8 @@
 
 /* Universal Modal Card Clean Layout & Centering */
 #support-modal > div:last-child,
-#vip-modal > div:last-child {
+#vip-modal > div:last-child,
+#country-picker-modal .country-picker-card {
   width: 100% !important;
   max-width: 440px !important;
   margin: auto !important;
@@ -1495,7 +1498,8 @@
 }
 
 .dark #support-modal > div:last-child,
-.dark #vip-modal > div:last-child {
+.dark #vip-modal > div:last-child,
+.dark #country-picker-modal .country-picker-card {
   background-color: #0f172a !important;
   border-color: #1e293b !important;
   box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
@@ -1519,6 +1523,7 @@
 
 #vip-modal > div:last-child,
 #support-modal > div:last-child,
+#country-picker-modal .country-picker-card,
 #tour-overlay > div {
   animation: modalScaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1607,4 +1612,35 @@
 .country-search-box input::placeholder {
   color: #9ca3af !important;
   opacity: 1 !important;
+}
+
+/* Interactive Bottom Sheet Drag Handle */
+.sheet-drag-handle {
+  display: none !important;
+}
+
+@media (max-width: 639px) {
+  .sheet-drag-handle {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 26px !important;
+    padding-top: 8px !important;
+    cursor: grab !important;
+    touch-action: none !important;
+    flex-shrink: 0 !important;
+  }
+  .sheet-drag-handle:active {
+    cursor: grabbing !important;
+  }
+  .sheet-drag-pill {
+    width: 38px !important;
+    height: 4px !important;
+    border-radius: 9999px !important;
+    background-color: rgba(15, 23, 42, 0.2) !important;
+  }
+  .dark .sheet-drag-pill {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+  }
 }

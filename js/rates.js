@@ -754,6 +754,11 @@ function openCountryPicker() {
   if (typeof pushModalHistory === 'function') pushModalHistory('countryPicker');
   const modal = document.getElementById('country-picker-modal');
   if (modal) {
+    const card = modal.querySelector('.country-picker-card');
+    if (card) {
+      card.style.transform = '';
+      card.style.transition = '';
+    }
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     document.body.style.overflow = 'hidden';
@@ -772,6 +777,11 @@ function closeCountryPicker() {
   if (typeof popModalHistory === 'function') popModalHistory('countryPicker');
   const modal = document.getElementById('country-picker-modal');
   if (modal) {
+    const card = modal.querySelector('.country-picker-card');
+    if (card) {
+      card.style.transform = '';
+      card.style.transition = '';
+    }
     modal.classList.add('hidden');
     modal.classList.remove('flex');
     document.body.style.overflow = '';

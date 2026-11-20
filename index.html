@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=23" rel="stylesheet">
+  <link href="/css/app.css?v=24" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -1354,45 +1354,43 @@
   <div id="nav-menu-backdrop" class="fixed inset-0 z-40 hidden bg-transparent" onclick="closeNavMenu()"></div>
 
   <!-- Switch UI: Choose a Country / Currency Modal (Bottom Sheet on Mobile, Centered Modal on Desktop) -->
-  <div id="country-picker-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-end md:justify-center p-0 md:p-4 overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="country-modal-title">
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onclick="closeCountryPicker()"></div>
-    <div class="relative bg-white dark:bg-slate-900 border-t md:border border-gray-100 dark:border-slate-800 rounded-t-3xl md:rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-hidden shadow-2xl z-10 flex flex-col md:flex-row animate-scale-up">
-      <!-- Left Column: Search & Country List -->
-      <div class="w-full md:w-[320px] p-4 sm:p-6 border-b-0 md:border-r border-gray-100 dark:border-slate-800 flex flex-col shrink-0">
-        <!-- Mobile Bottom Sheet Drag Handle -->
-        <div class="w-10 h-1 bg-gray-300 dark:bg-slate-700 rounded-full mx-auto mb-3 md:hidden"></div>
-        <div class="flex items-center justify-between mb-4">
-          <h3 id="country-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Choose a country</h3>
-          <button type="button" onclick="closeCountryPicker()" aria-label="Close" class="md:hidden p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 cursor-pointer">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
+  <div id="country-picker-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-3 sm:p-4 overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="country-modal-title">
+    <div id="country-picker-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onclick="closeCountryPicker()"></div>
+    <div id="country-picker-card" class="country-picker-card relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-md w-full max-h-[85vh] sm:max-h-[88vh] overflow-hidden shadow-2xl z-10 flex flex-col animate-scale-up">
+      <!-- Mobile Sheet Drag Handle -->
+      <div id="country-drag-handle" class="sheet-drag-handle cursor-grab select-none shrink-0" style="touch-action: none;">
+        <div class="sheet-drag-pill"></div>
+      </div>
+
+      <!-- Header -->
+      <div id="country-modal-header" class="px-5 pt-3 pb-3 sm:px-6 sm:pt-5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between shrink-0 select-none">
+        <div>
+          <h3 id="country-modal-title" class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Choose a country</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Select a regional currency for instant settlement</p>
         </div>
-        
-        <!-- Search input (pure flexbox row layout, 100% collision-free) -->
+        <button type="button" onclick="closeCountryPicker()" aria-label="Close"
+          class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer shrink-0">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Search input container -->
+      <div class="p-4 sm:p-5 pb-2 shrink-0">
         <div class="country-search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="country-search-input" oninput="filterCountryList(this.value)" placeholder="Search country" autocomplete="off" spellcheck="false">
-        </div>
-
-        <!-- Scrollable Country List -->
-        <div id="country-picker-list" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[380px] min-h-[220px]">
-          <!-- Rendered dynamically -->
+          <input type="text" id="country-search-input" oninput="filterCountryList(this.value)" placeholder="Search country or currency..." autocomplete="off" spellcheck="false">
         </div>
       </div>
 
-      <!-- Right Column (Desktop): Currency Details Preview / Switch Graphic -->
-      <div class="hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center bg-gray-50/50 dark:bg-slate-900/50 relative">
-        <button type="button" onclick="closeCountryPicker()" aria-label="Close" class="absolute top-5 right-5 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-        <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200/60 dark:border-slate-700 flex items-center justify-center text-gray-500 dark:text-gray-300 text-xl font-bold mb-4 shadow-2xs">
-          $
-        </div>
-        <h4 id="country-preview-title" class="text-base font-bold text-gray-900 dark:text-white mb-1.5">Select a currency to continue</h4>
-        <p id="country-preview-desc" class="text-xs text-gray-500 dark:text-gray-400 max-w-[220px]">Choose a currency from the left panel</p>
+      <!-- Scrollable Country List -->
+      <div id="country-picker-list" class="flex-1 overflow-y-auto space-y-2 p-4 sm:p-5 pt-1 pr-3 max-h-[380px] min-h-[220px] overscroll-contain">
+        <!-- Rendered dynamically -->
       </div>
     </div>
   </div>
@@ -1452,6 +1450,7 @@
   <div id="support-modal" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center p-4 overflow-y-auto overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="support-modal-title">
     <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onclick="closeSupportModal()"></div>
     <div class="relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl z-10 animate-scale-up">
+      <div class="sheet-drag-handle cursor-grab select-none shrink-0" style="touch-action: none;"><div class="sheet-drag-pill"></div></div>
       <!-- Header -->
       <div class="flex items-start justify-between pb-4 border-b border-gray-100 dark:border-slate-800/80">
         <div>
@@ -1637,12 +1636,12 @@
 
 
   <script src="/js/core.js?v=9"></script>
-  <script src="/js/rates.js?v=12"></script>
+  <script src="/js/rates.js?v=13"></script>
   <script src="/js/form.js?v=8"></script>
   <script src="/js/order.js?v=6"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=6"></script>
-  <script src="/js/main.js?v=21"></script>
+  <script src="/js/main.js?v=22"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>

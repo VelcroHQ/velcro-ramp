@@ -5,6 +5,11 @@
   populateBanks();
   await fetchRequirements();
   fetchInstitutions();
+  // Initialize bottom sheet drag-to-dismiss gestures
+  initSheetDraggable('country-picker-modal', '.country-picker-card', () => typeof closeCountryPicker === 'function' && closeCountryPicker(), '#country-picker-list');
+  initSheetDraggable('support-modal', '> div:last-child', () => typeof closeSupportModal === 'function' && closeSupportModal());
+  initSheetDraggable('vip-modal', '> div:last-child', () => typeof closeVipModal === 'function' && closeVipModal());
+
 
   // Navigation Guard: Intercept browser & device Back button
   window.addEventListener('popstate', function () {
@@ -477,5 +482,125 @@ function endExchangeTour() {
   if (overlay) {
     overlay.classList.add('hidden');
     overlay.classList.remove('flex');
+  }
+}
+
+/**
+ * Smooth, native-like Bottom Sheet Drag-to-Dismiss Gesture Engine.
+ * Handles touch / pointer downward swipe on the drag handle, modal header,
+ * or top of the scrollable list without moving or scrolling the inner content.
+ */
+function initSheetDraggable(modalId, cardSelector, closeFn, scrollableSelector) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  const card = modal.querySelector(cardSelector);
+  if (!card) return;
+
+  const handle = card.querySelector('.sheet-drag-handle, [data-sheet-drag]');
+  const header = card.querySelector('#country-modal-header, .sheet-header, [data-drag-header]') || card.firstElementChild;
+  const scrollable = scrollableSelector ? card.querySelector(scrollableSelector) : null;
+
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+  let startTime = 0;
+
+  function startDrag(clientY, target) {
+    const isMobile = window.innerWidth < 640;
+    const isHandle = handle && (handle.contains(target) || target === handle);
+    if (!isMobile && !isHandle) return;
+
+    if (target && target.closest('button, input, a, [onclick]')) {
+      if (!isHandle) return;
+    }
+
+    startY = clientY;
+    currentY = clientY;
+    startTime = Date.now();
+    isDragging = true;
+    card.style.transition = 'none';
+
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  }
+
+  function onPointerDown(e) {
+    if (e.button !== undefined && e.button !== 0) return;
+    startDrag(e.clientY, e.target);
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    const y = e.clientY;
+    const deltaY = y - startY;
+
+    if (deltaY > 0) {
+      if (e.cancelable) e.preventDefault();
+      card.style.transform = `translateY(${deltaY}px)`;
+    } else {
+      card.style.transform = `translateY(${deltaY * 0.15}px)`;
+    }
+  }
+
+  function onPointerUp(e) {
+    if (!isDragging) return;
+    isDragging = false;
+
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerUp);
+
+    const deltaY = (e.clientY || currentY) - startY;
+    const duration = Date.now() - startTime;
+    const velocity = deltaY / Math.max(1, duration);
+
+    if (deltaY > 60 || (deltaY > 20 && velocity > 0.35)) {
+      card.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+      card.style.transform = 'translateY(110%)';
+      setTimeout(() => {
+        card.style.transform = '';
+        card.style.transition = '';
+        if (typeof closeFn === 'function') closeFn();
+      }, 200);
+    } else {
+      card.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+      card.style.transform = 'translateY(0)';
+      setTimeout(() => {
+        card.style.transition = '';
+      }, 220);
+    }
+  }
+
+  if (handle) {
+    handle.addEventListener('pointerdown', onPointerDown);
+  }
+
+  if (header && header !== handle) {
+    header.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button, input, a')) return;
+      onPointerDown(e);
+    });
+  }
+
+  if (scrollable) {
+    let touchStartY = 0;
+    scrollable.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    scrollable.addEventListener('touchmove', (e) => {
+      if (!e.touches || e.touches.length !== 1) return;
+      const moveY = e.touches[0].clientY;
+      const diff = moveY - touchStartY;
+
+      // If at top of list and pulling downwards: initiate sheet drag
+      if (scrollable.scrollTop <= 0 && diff > 10 && !isDragging) {
+        if (e.cancelable) e.preventDefault();
+        startDrag(touchStartY, handle || card);
+      }
+    }, { passive: false });
   }
 }
