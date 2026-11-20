@@ -129,14 +129,39 @@ function registerPublicRoutes(Router $router): void
     });
 
     $router->get('/api/rates', function () {
+        $cacheFile = BASE_PATH . '/data/rates_global_cache.json';
+        $cacheTtl = 60; // 60 seconds TTL
+
+        if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+            $cached = @json_decode((string) file_get_contents($cacheFile), true);
+            if (is_array($cached) && !empty($cached['data'])) {
+                jsonResponse($cached);
+                return;
+            }
+        }
+
         try {
             $data = switchApi()->getRates([
                 'country' => query('country'),
                 'currency' => query('currency'),
             ]);
+            if (!empty($data['data']) && is_array($data['data'])) {
+                $dir = dirname($cacheFile);
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0755, true);
+                }
+                @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
+            }
             jsonResponse($data);
         } catch (Throwable $e) {
             error_log('Switch /rates failed: ' . $e->getMessage());
+            if (is_file($cacheFile)) {
+                $cached = @json_decode((string) file_get_contents($cacheFile), true);
+                if (is_array($cached) && !empty($cached['data'])) {
+                    jsonResponse($cached);
+                    return;
+                }
+            }
             jsonResponse(successResponse([], 'Switch rates unavailable'));
         }
     });
@@ -225,22 +250,82 @@ function registerPublicRoutes(Router $router): void
         if (!$direction || !$country) {
             jsonResponse(errorResponse('direction and country are required'), 400);
         }
+
+        $currency = (string) body($body, 'currency', 'NGN');
+        $asset = (string) body($body, 'asset', '');
+        $channel = (string) body($body, 'channel', '');
+
+        // Auto-detect channel for mobile money dominant countries
+        $mobileMoneyCountries = ['GH', 'CI', 'CM', 'SN', 'UG', 'RW', 'TZ'];
+        if (!$channel) {
+            $channel = in_array(strtoupper((string) $country), $mobileMoneyCountries, true) ? 'MOBILEMONEY' : 'BANK';
+            $body['channel'] = $channel;
+        }
+
+        // Cache rate for 30s to absorb rapid polling/tab-switching without hitting Switch rate limits
+        $cacheKey = preg_replace('/[^a-zA-Z0-9_]/', '', strtoupper("{$direction}_{$country}_{$currency}_{$asset}_{$channel}"));
+        $cacheFile = BASE_PATH . '/data/rate_cache_' . $cacheKey . '.json';
+        $cacheTtl = 30; // 30 seconds
+
+        if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+            $cached = @json_decode((string) file_get_contents($cacheFile), true);
+            if (is_array($cached) && !empty($cached['data']['rate'])) {
+                jsonResponse($cached);
+                return;
+            }
+        }
+
         try {
-            $data = switchApi()->getRate($body);
+            $data = null;
+            try {
+                $data = switchApi()->getRate($body);
+            } catch (Throwable $firstErr) {
+                // If Switch rejected due to channel mismatch, auto-correct and retry
+                $msg = $firstErr->getMessage();
+                if (stripos($msg, 'try MOBILEMONEY') !== false) {
+                    $body['channel'] = 'MOBILEMONEY';
+                    $data = switchApi()->getRate($body);
+                } elseif (stripos($msg, 'try BANK') !== false) {
+                    $body['channel'] = 'BANK';
+                    $data = switchApi()->getRate($body);
+                } else {
+                    throw $firstErr;
+                }
+            }
+
             $feePercent = getPlatformFee();
             if (!empty($data['data']['rate'])) {
                 $effRate = (float) $data['data']['rate'];
                 if (strtoupper((string) $direction) === 'OFFRAMP') {
-                    $directRate = round($effRate / (1 - ($feePercent / 100)), 2);
+                    $directRate = round($effRate / (1 - ($feePercent / 100)), 4);
                 } else {
-                    $directRate = round($effRate * (1 - ($feePercent / 100)), 2);
+                    $directRate = round($effRate * (1 - ($feePercent / 100)), 4);
                 }
                 $data['data']['effective_rate'] = $effRate;
                 $data['data']['direct_rate'] = $directRate;
                 $data['data']['fee_percent'] = $feePercent;
+
+                // Cache fresh rate
+                $dir = dirname($cacheFile);
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0755, true);
+                }
+                @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
             }
             jsonResponse($data);
         } catch (Throwable $e) {
+            error_log('Switch /rate failed: ' . $e->getMessage());
+
+            // Graceful fallback to recent cached rate (up to 1 hour old) on transient upstream error
+            if (is_file($cacheFile)) {
+                $stale = @json_decode((string) file_get_contents($cacheFile), true);
+                if (is_array($stale) && !empty($stale['data']['rate'])) {
+                    $stale['fallback'] = true;
+                    jsonResponse($stale);
+                    return;
+                }
+            }
+
             $status = $e->getCode() >= 400 ? $e->getCode() : 400;
             jsonResponse([
                 'status' => 'ERROR',
@@ -326,13 +411,35 @@ function registerPublicRoutes(Router $router): void
                     $switchAsset = strtolower($network) . ':' . strtolower($asset);
                 }
 
-                $rateWithFeeData = switchApi()->getRate([
+                $channel = (string) body($body, 'channel', '');
+                $mobileMoneyCountries = ['GH', 'CI', 'CM', 'SN', 'UG', 'RW', 'TZ'];
+                if (!$channel) {
+                    $channel = in_array(strtoupper((string) $country), $mobileMoneyCountries, true) ? 'MOBILEMONEY' : 'BANK';
+                }
+
+                $ratePayload = [
                     'direction' => $direction,
                     'asset' => $switchAsset,
                     'country' => $country,
                     'currency' => $currency,
-                    'channel' => 'BANK',
-                ]);
+                    'channel' => $channel,
+                ];
+
+                $rateWithFeeData = null;
+                try {
+                    $rateWithFeeData = switchApi()->getRate($ratePayload);
+                } catch (Throwable $firstErr) {
+                    $msg = $firstErr->getMessage();
+                    if (stripos($msg, 'try MOBILEMONEY') !== false) {
+                        $ratePayload['channel'] = 'MOBILEMONEY';
+                        $rateWithFeeData = switchApi()->getRate($ratePayload);
+                    } elseif (stripos($msg, 'try BANK') !== false) {
+                        $ratePayload['channel'] = 'BANK';
+                        $rateWithFeeData = switchApi()->getRate($ratePayload);
+                    } else {
+                        throw $firstErr;
+                    }
+                }
                 $effectiveRate = (float) ($rateWithFeeData['data']['rate'] ?? 0);
 
                 if ($direction === 'OFFRAMP') {
@@ -349,7 +456,7 @@ function registerPublicRoutes(Router $router): void
                         'effective_rate' => round($effectiveRate, 2),
                         'fee_percent' => $feePercent,
                         'receive_amount' => round($receiveFiat, 2),
-                        'receive_currency' => 'NGN',
+                        'receive_currency' => $currency ?: 'NGN',
                     ]));
                 } else {
                     $directRate = round($effectiveRate * (1 - ($feePercent / 100)), 2);
@@ -416,6 +523,12 @@ function registerPublicRoutes(Router $router): void
             $walletAddress = $beneficiary['wallet_address'];
         }
 
+        $initiateChannel = body($body, 'channel');
+        if (!$initiateChannel) {
+            $mobileMoneyCountries = ['GH', 'CI', 'CM', 'SN', 'UG', 'RW', 'TZ'];
+            $initiateChannel = in_array(strtoupper((string) $country), $mobileMoneyCountries, true) ? 'MOBILEMONEY' : 'BANK';
+        }
+
         try {
             $data = switchApi()->initiateOrder([
                 'direction' => $direction,
@@ -423,7 +536,7 @@ function registerPublicRoutes(Router $router): void
                 'country' => $country,
                 'asset' => $asset,
                 'currency' => body($body, 'currency'),
-                'channel' => body($body, 'channel'),
+                'channel' => $initiateChannel,
                 'beneficiary' => $beneficiary,
                 'reference' => $txRef,
                 'reason' => body($body, 'reason'),

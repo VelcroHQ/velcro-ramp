@@ -109,7 +109,8 @@ async function loadHostfiAssets() {
 
 async function fetchAllRates() {
   try {
-    const res = await fetch(`${API_BASE}/api/rates`);
+    const qs = `country=${encodeURIComponent(currentCountry)}&currency=${encodeURIComponent(currentCurrency)}`;
+    const res = await fetch(`${API_BASE}/api/rates?${qs}`);
     if (!res.ok) throw new Error('Failed to fetch global rates');
     const payload = await res.json();
     const rates = payload.data || [];
@@ -130,32 +131,53 @@ async function fetchAllRates() {
     calculateSell();
     calculateBuy();
   } catch (err) {
-    // Rate fetch failed
+    // Keep existing rates smoothly without interrupting the user
+    console.warn('fetchAllRates failed:', err.message || err);
   }
 }
 
-async function fetchRate(forcedDirection) {
+async function fetchRate(forcedDirection, isUserAction = false) {
   // Fallback or forced single rate fetch
   const direction = forcedDirection || (document.getElementById('form-sell').classList.contains('hidden') ? 'ONRAMP' : 'OFFRAMP');
   const asset = direction === 'OFFRAMP' ? currentSellAsset : currentBuyAsset;
   const network = direction === 'OFFRAMP' ? currentSellNetwork : currentBuyNetwork;
   currentSwitchAsset = getSwitchAsset(asset, network);
   if (!currentSwitchAsset) return;
-  try {
-    const body = {
-      direction,
-      asset: currentSwitchAsset,
-      country: currentCountry,
-      currency: currentCurrency,
-      channel: 'BANK'
-    };
+
+  const countryCfg = typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry) : null;
+  const channel = countryCfg?.channel || 'BANK';
+
+  const body = {
+    direction,
+    asset: currentSwitchAsset,
+    country: currentCountry,
+    currency: currentCurrency,
+    channel
+  };
+
+  const attemptFetch = async () => {
     const res = await fetch(`${API_BASE}/api/rate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    if (!res.ok) throw new Error('Failed to fetch rate');
-    const payload = await res.json();
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || 'Failed to fetch rate');
+    }
+    return res.json();
+  };
+
+  try {
+    let payload;
+    try {
+      payload = await attemptFetch();
+    } catch (e1) {
+      // Retry once after 1.2s on transient network or rate limit hiccups
+      await new Promise(r => setTimeout(r, 1200));
+      payload = await attemptFetch();
+    }
+
     const data = payload.data || {};
     const rate = Number(data.rate || data.data?.rate || 0);
     const directRate = Number(data.direct_rate || data.data?.direct_rate || 0);
@@ -172,7 +194,13 @@ async function fetchRate(forcedDirection) {
     if (direction === 'OFFRAMP') calculateSell();
     else calculateBuy();
   } catch (err) {
-    showToast(err.message || 'Failed to fetch rate', 'error');
+    console.warn('Rate fetch error:', err.message || err);
+    // If we have an existing valid rate, keep it seamlessly.
+    // Only alert if user explicitly triggered an action with zero rate available.
+    const existingRate = direction === 'OFFRAMP' ? currentRate.sell : currentRate.buy;
+    if (isUserAction && (!existingRate || existingRate <= 0)) {
+      showToast('Live rate temporarily unavailable. Retrying...', 'info');
+    }
   }
 }
 
@@ -284,8 +312,9 @@ function updateRateDisplays() {
       if (directRate > 0) {
         const isUsdStable = currentSellAsset === 'USDT' || currentSellAsset === 'USDC' || currentSellAsset === 'USDG';
         const label = isUsdStable ? '$1' : `1 ${currentSellAsset}`;
+        const fiatSymbol = (typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry)?.symbol : null) || '₦';
         const formatted = Number(directRate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        sellRateEl.innerHTML = `${pulse}Rate: ${label} = ₦${formatted}`;
+        sellRateEl.innerHTML = `${pulse}Rate: ${label} = ${fiatSymbol}${formatted}`;
       } else {
         sellRateEl.innerHTML = pending;
       }
@@ -314,8 +343,9 @@ function updateRateDisplays() {
       if (directRate > 0) {
         const isUsdStable = currentBuyAsset === 'USDT' || currentBuyAsset === 'USDC' || currentBuyAsset === 'USDG';
         const label = isUsdStable ? '$1' : `1 ${currentBuyAsset}`;
+        const fiatSymbol = (typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry)?.symbol : null) || '₦';
         const formatted = Number(directRate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        buyRateEl.innerHTML = `${pulse}Rate: ${label} = ₦${formatted}`;
+        buyRateEl.innerHTML = `${pulse}Rate: ${label} = ${fiatSymbol}${formatted}`;
       } else {
         buyRateEl.innerHTML = pending;
       }
