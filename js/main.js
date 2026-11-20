@@ -158,13 +158,13 @@ function closeNavMenu() {
 function setActiveMenuPill(activeKey) {
   const keys = ['swap', 'payment', 'history', 'earn', 'vip', 'rewards', 'support'];
   keys.forEach(k => {
-    // Mobile modal pill
+    // Dropdown pill on right hand side
     const mBtn = document.getElementById('menu-btn-' + k);
     if (mBtn) {
       if (k === activeKey) {
-        mBtn.className = 'mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer';
+        mBtn.className = 'menu-nav-pill w-full py-2 px-3.5 rounded-xl font-semibold text-left text-xs sm:text-sm bg-[#6b46ff] text-white shadow-xs transition-all cursor-pointer';
       } else {
-        mBtn.className = 'mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer';
+        mBtn.className = 'menu-nav-pill w-full py-2 px-3.5 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer';
       }
     }
     // Desktop inline pill

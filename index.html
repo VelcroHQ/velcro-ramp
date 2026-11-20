@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=16" rel="stylesheet">
+  <link href="/css/app.css?v=17" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -314,80 +314,70 @@
             </svg>
           </button>
 
-          <!-- Bread-style Hamburger Menu Button (Mobile Only) -->
-          <button type="button" id="nav-menu-toggle" onclick="toggleNavMenu()" aria-label="Toggle navigation menu" aria-expanded="false"
-            class="md:hidden w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center text-gray-700 dark:text-gray-200 shadow-2xs transition-all cursor-pointer">
-            <svg id="hamburger-icon-lines" class="w-5 h-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="7" x2="20" y2="7"></line>
-              <line x1="4" y1="12" x2="20" y2="12"></line>
-              <line x1="4" y1="17" x2="20" y2="17"></line>
-            </svg>
-            <svg id="hamburger-icon-close" class="hidden w-5 h-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <!-- Hamburger Button & Right-Hand Dropdown -->
+          <div class="relative">
+            <button type="button" id="nav-menu-toggle" onclick="toggleNavMenu()" aria-label="Toggle navigation menu" aria-expanded="false"
+              class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center text-gray-700 dark:text-gray-200 shadow-2xs transition-all cursor-pointer">
+              <svg id="hamburger-icon-lines" class="w-5 h-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="7" x2="20" y2="7"></line>
+                <line x1="4" y1="12" x2="20" y2="12"></line>
+                <line x1="4" y1="17" x2="20" y2="17"></line>
+              </svg>
+              <svg id="hamburger-icon-close" class="hidden w-5 h-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <!-- Dropdown: Positioned directly on the Right Hand Side under the Hamburger button -->
+            <div id="nav-menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 sm:w-52 p-1.5 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700/80 z-[1000] flex-col gap-0.5" onclick="event.stopPropagation()">
+              <!-- 1. Swap -->
+              <button type="button" id="menu-btn-swap" onclick="handleMenuClick('swap')"
+                class="menu-nav-pill w-full py-2 px-3.5 rounded-xl font-medium text-left text-xs sm:text-sm bg-[#6b46ff] text-white shadow-xs transition-all cursor-pointer">
+                Swap
+              </button>
+
+              <!-- 2. Payment -->
+              <button type="button" id="menu-btn-payment" onclick="handleMenuClick('payment')"
+                class="menu-nav-pill w-full py-2 px-3.5 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer">
+                Payment
+              </button>
+
+              <!-- 3. History -->
+              <button type="button" id="menu-btn-history" onclick="handleMenuClick('history')"
+                class="menu-nav-pill w-full py-2 px-3.5 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer">
+                History
+              </button>
+
+              <!-- 4. Earn -->
+              <button type="button" id="menu-btn-earn" onclick="handleMenuClick('earn')"
+                class="menu-nav-pill w-full py-2 px-3.5 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer">
+                Earn
+              </button>
+
+              <!-- 5. VIP -->
+              <button type="button" id="menu-btn-vip" onclick="handleMenuClick('vip')"
+                class="menu-nav-pill w-full py-2 px-3.5 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer">
+                VIP
+              </button>
+
+              <!-- 6. Rewards -->
+              <button type="button" id="menu-btn-rewards" onclick="handleMenuClick('rewards')"
+                class="menu-nav-pill w-full py-2 px-3.5 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer">
+                Rewards
+              </button>
+
+              <!-- 7. Support -->
+              <button type="button" id="menu-btn-support" onclick="handleMenuClick('support')"
+                class="menu-nav-pill w-full py-2 px-3.5 rounded-xl font-medium text-left text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-all cursor-pointer">
+                Support
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </nav>
-
-  <!-- Bread-Style Mobile Menu Overlay (Centered Modal exactly matching screenshot) -->
-  <div id="nav-menu-dropdown" style="z-index: 99999;" class="fixed inset-0 z-modal hidden flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-md md:hidden animate-fade-in" onclick="closeNavMenu()">
-    <!-- Top Center Close (X) Circle -->
-    <button type="button" onclick="closeNavMenu()" aria-label="Close menu"
-      class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-gray-800 dark:text-white shadow-xl flex items-center justify-center mb-6 hover:scale-105 active:scale-95 transition-all cursor-pointer">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
-
-    <!-- Centered Stacked Rounded Pills -->
-    <div class="flex flex-col items-center gap-3 w-full max-w-[270px]" onclick="event.stopPropagation()">
-      <!-- 1. Swap (Active Primary Purple Pill) -->
-      <button type="button" id="menu-btn-swap" onclick="handleMenuClick('swap')"
-        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer">
-        Swap
-      </button>
-
-      <!-- 2. Payment -->
-      <button type="button" id="menu-btn-payment" onclick="handleMenuClick('payment')"
-        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
-        Payment
-      </button>
-
-      <!-- 3. History -->
-      <button type="button" id="menu-btn-history" onclick="handleMenuClick('history')"
-        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
-        History
-      </button>
-
-      <!-- 4. Earn -->
-      <button type="button" id="menu-btn-earn" onclick="handleMenuClick('earn')"
-        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
-        Earn
-      </button>
-
-      <!-- 5. VIP -->
-      <button type="button" id="menu-btn-vip" onclick="handleMenuClick('vip')"
-        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
-        VIP
-      </button>
-
-      <!-- 6. Rewards -->
-      <button type="button" id="menu-btn-rewards" onclick="handleMenuClick('rewards')"
-        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
-        Rewards
-      </button>
-
-      <!-- 7. Support -->
-      <button type="button" id="menu-btn-support" onclick="handleMenuClick('support')"
-        class="mobile-menu-pill w-full py-3.5 px-6 rounded-full font-bold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md active:scale-95 transition-all cursor-pointer">
-        Support
-      </button>
-    </div>
-  </div>
 
   <section id="convert" class="pt-6 pb-8 lg:pt-10 lg:pb-12 relative z-10">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1228,8 +1218,8 @@
     </div>
   </div>
 
-  <!-- Bread-Style Hamburger Menu Backdrop -->
-  <div id="nav-menu-backdrop" class="fixed inset-0 z-40 hidden bg-black/35 backdrop-blur-[2px] transition-opacity duration-200" onclick="closeNavMenu()"></div>
+  <!-- Right-anchored Hamburger Menu Backdrop (Click to close) -->
+  <div id="nav-menu-backdrop" class="fixed inset-0 z-40 hidden bg-transparent" onclick="closeNavMenu()"></div>
 
   <!-- Switch UI: Choose a Country / Currency Modal (Bottom Sheet on Mobile, Centered Modal on Desktop) -->
   <div id="country-picker-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-end md:justify-center p-0 md:p-4 overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="country-modal-title">
@@ -1498,7 +1488,7 @@
   <script src="/js/order.js?v=4"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=5"></script>
-  <script src="/js/main.js?v=15"></script>
+  <script src="/js/main.js?v=16"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>
