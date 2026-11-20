@@ -85,10 +85,28 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   const hash = (window.location.hash || '').replace('#', '').toLowerCase();
-  if (['payment', 'earn', 'vip'].includes(hash)) {
+  const email = (localStorage.getItem('velcro_user_email') || '').trim();
+
+  if (hash === 'payment') {
+    if (!email) {
+      promptLoginOverlay(() => showComingSoon('payment'));
+    } else {
+      showComingSoon('payment', false);
+    }
+  } else if (['earn', 'vip'].includes(hash)) {
     showComingSoon(hash, false);
   } else if (hash === 'rewards') {
-    if (typeof openProfile === 'function') openProfile();
+    if (!email) {
+      promptLoginOverlay(openProfile);
+    } else {
+      if (typeof openProfile === 'function') openProfile();
+    }
+  } else if (hash === 'history') {
+    if (!email) {
+      promptLoginOverlay(showHistoryModal);
+    } else {
+      if (typeof showHistoryModal === 'function') showHistoryModal();
+    }
   }
 });
 
@@ -172,6 +190,14 @@ function isComingSoonActive() {
 }
 
 function showComingSoon(feature, pushState = true) {
+  if (feature === 'payment') {
+    const email = (localStorage.getItem('velcro_user_email') || '').trim();
+    if (!email) {
+      promptLoginOverlay(() => showComingSoon('payment', pushState));
+      return;
+    }
+  }
+
   const data = COMING_SOON_DATA[feature];
   if (!data) return;
 
@@ -217,16 +243,26 @@ function showSwapView(pushState = true) {
 
 function handleMenuClick(action) {
   closeNavMenu();
+  const email = (localStorage.getItem('velcro_user_email') || '').trim();
+
   switch (action) {
     case 'swap': {
       showSwapView();
       break;
     }
     case 'payment': {
+      if (!email) {
+        promptLoginOverlay(() => showComingSoon('payment'));
+        return;
+      }
       showComingSoon('payment');
       break;
     }
     case 'history': {
+      if (!email) {
+        promptLoginOverlay(showHistoryModal);
+        return;
+      }
       if (typeof showHistoryModal === 'function') showHistoryModal();
       break;
     }
@@ -241,6 +277,10 @@ function handleMenuClick(action) {
     case 'rewards': {
       if (typeof isComingSoonActive === 'function' && isComingSoonActive()) {
         showSwapView();
+      }
+      if (!email) {
+        promptLoginOverlay(openProfile);
+        return;
       }
       if (typeof openProfile === 'function') {
         openProfile();

@@ -283,52 +283,19 @@ function renderHistoryList(txs) {
 }
 
 async function showHistoryModal() {
-  if (typeof pushModalHistory === 'function') pushModalHistory('history');
   const email = (localStorage.getItem('velcro_user_email') || '').trim();
+  if (!email) {
+    promptLoginOverlay(showHistoryModal);
+    return;
+  }
+
+  if (typeof pushModalHistory === 'function') pushModalHistory('history');
   const modal = document.getElementById('history-modal');
   modal.classList.remove('hidden');
   modal.classList.add('flex');
   document.body.style.overflow = 'hidden';
 
   const list = document.getElementById('history-list');
-
-  if (!email) {
-    let localTxs = [];
-    try {
-      localTxs = JSON.parse(localStorage.getItem('velcro_recent_orders') || '[]');
-    } catch (e) {}
-
-    if (localTxs.length > 0) {
-      userHistoryCache = scrub(localTxs);
-      updateHistoryTabCounts();
-      filterHistory(currentHistoryFilter || 'all');
-      const banner = document.createElement('div');
-      banner.className = 'mb-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/40 rounded-xl text-xs text-blue-800 dark:text-blue-300 flex items-center justify-between gap-2';
-      banner.innerHTML = `
-        <span>📱 Showing recent orders from this browser.</span>
-        <button onclick="hideHistoryModal(); promptLoginOverlay(showHistoryModal);" class="font-bold underline cursor-pointer shrink-0">Add email</button>
-      `;
-      list.prepend(banner);
-      return;
-    }
-
-    list.innerHTML = `
-      <div class="text-center py-12 px-4">
-        <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-amber-500/10 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-          </svg>
-        </div>
-        <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1">Add your email to see your orders</h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-5 max-w-xs mx-auto">Please connect your email address to view your order history and transaction tracking.</p>
-        <button onclick="hideHistoryModal(); promptLoginOverlay(showHistoryModal);" class="px-5 py-2.5 bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer">
-          Add email
-        </button>
-      </div>
-    `;
-    return;
-  }
 
   list.innerHTML = '<div class="text-center py-8 text-gray-400">Loading transactions...</div>';
 
