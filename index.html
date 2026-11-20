@@ -335,7 +335,7 @@
               <!-- Drawer Header (Visible on Mobile) -->
               <div class="flex items-center justify-between pb-3 mb-2 border-b border-gray-100 dark:border-slate-800 sm:hidden">
                 <div class="flex items-center gap-2">
-                  <img src="/logos/velcro-brand.svg" class="h-6 w-auto" alt="Velcro" onerror="this.src='/logos/velcro.svg'">
+                  <img src="/velcro_logo.png" class="h-6 w-auto object-contain" alt="Velcro">
                   <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Menu</span>
                 </div>
                 <button type="button" onclick="closeNavMenu()" aria-label="Close menu"
@@ -1168,32 +1168,31 @@
   </section>
 
   <!-- Coming Soon Feature Section -->
-  <section id="feature-coming-soon" style="display: none;" class="min-h-[65vh] flex-col items-center justify-center px-4 py-12 text-center relative z-10 animate-fade-in">
-    <div class="max-w-md mx-auto flex flex-col items-center">
-      <!-- Velcro Brand Emblem with Soft Glow -->
-      <div class="mb-7 relative flex items-center justify-center">
-        <div class="absolute -inset-4 bg-gradient-to-tr from-velcro-green/25 to-[#6b46ff]/25 rounded-full blur-xl opacity-75"></div>
-        <div class="relative w-24 h-24 rounded-3xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700/80 shadow-xl flex items-center justify-center p-4 transform hover:scale-105 transition-transform duration-300">
-          <img src="/velcro_favicon.png" class="w-full h-full object-contain rounded-2xl" alt="Velcro">
-        </div>
+  <section id="feature-coming-soon" style="display: none;" class="min-h-[50vh] flex flex-col items-center justify-center px-4 py-8 sm:py-12 text-center relative z-10 animate-fade-in">
+    <div class="max-w-md w-full mx-auto bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col items-center">
+      
+      <!-- Full Velcro Brand Logo: Small & Fine -->
+      <div class="mb-5 flex items-center justify-center">
+        <img src="/velcro_logo.png" class="h-8 sm:h-9 w-auto object-contain" alt="Velcro">
       </div>
 
       <!-- Pill Badge: Coming Soon -->
-      <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-[#211138] dark:text-gray-200 border border-gray-200/60 dark:border-slate-700 mb-6 shadow-2xs">
-        Coming Soon
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 mb-4 shadow-2xs">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>Coming Soon</span>
       </span>
 
       <!-- Heading -->
-      <h2 id="cs-title" class="text-2xl sm:text-3xl font-bold text-[#6b46ff] tracking-tight mb-4">
+      <h2 id="cs-title" class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight mb-2.5">
         Earn is almost here.
       </h2>
 
       <!-- Body -->
-      <p id="cs-body" class="text-sm sm:text-base text-[#211138] dark:text-gray-300 leading-relaxed font-normal mb-6">
+      <p id="cs-body" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed font-normal mb-6 max-w-sm">
         We're putting the finishing touches on a new way to grow your assets with Velcro. Stay tuned for the launch.
       </p>
 
-      <div id="cs-extra" class="mb-5 flex flex-col items-center"></div>
+      <div id="cs-extra" class="mb-5 flex flex-col items-center w-full"></div>
 
       <!-- Back to Swap Action -->
       <button type="button" onclick="showSwapView()"
@@ -1621,7 +1620,7 @@
   <script src="/js/order.js?v=6"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=6"></script>
-  <script src="/js/main.js?v=20"></script>
+  <script src="/js/main.js?v=21"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>
