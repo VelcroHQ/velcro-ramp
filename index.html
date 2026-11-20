@@ -1234,6 +1234,37 @@
     </div>
   </div>
 
+  <!-- Floating Info & Tour Widget (Bottom Left - Bread Style) -->
+  <div id="info-widget" class="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-2">
+    <!-- Popup Card -->
+    <div id="info-menu" class="hidden mb-1 p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 min-w-[170px] space-y-1">
+      <button type="button" onclick="triggerPwaInstall(); toggleInfoMenu();"
+        class="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700/60 text-sm font-semibold text-gray-800 dark:text-gray-100 transition-colors text-left cursor-pointer">
+        <svg class="w-4 h-4 text-[#6b46ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+          <line x1="12" y1="18" x2="12.01" y2="18"></line>
+        </svg>
+        <span>Install app</span>
+      </button>
+      <button type="button" onclick="startExchangeTour(); toggleInfoMenu();"
+        class="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700/60 text-sm font-semibold text-gray-800 dark:text-gray-100 transition-colors text-left cursor-pointer">
+        <svg class="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v1"></path><path d="M12 21v1"></path><path d="M4.22 4.22l.71.71"></path><path d="M18.36 18.36l.71.71"></path><path d="M1 12h1"></path><path d="M21 12h1"></path><path d="M4.22 19.78l.71-.71"></path><path d="M18.36 5.64l.71-.71"></path><circle cx="12" cy="12" r="5"></circle>
+        </svg>
+        <span>Take the tour</span>
+      </button>
+    </div>
+    <!-- Floating Circular Button -->
+    <button type="button" onclick="toggleInfoMenu()" aria-label="App info & tour" title="Install app & take tour"
+      class="w-12 h-12 bg-[#6b46ff] hover:bg-[#5b36ef] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all text-white cursor-pointer">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+    </button>
+  </div>
+
   <!-- Support Widget -->
   <div id="support-widget" class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
     <div id="support-menu" class="hidden mb-1 space-y-2">
@@ -1280,7 +1311,7 @@
   <script src="/js/order.js?v=3"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=3"></script>
-  <script src="/js/main.js?v=4"></script>
+  <script src="/js/main.js?v=5"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>

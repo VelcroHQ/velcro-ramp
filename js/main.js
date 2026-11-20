@@ -56,6 +56,19 @@ window.addEventListener('beforeinstallprompt', (e) => {
   if (btn) btn.classList.remove('opacity-50');
 });
 
+function toggleInfoMenu() {
+  const menu = document.getElementById('info-menu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+document.addEventListener('click', (e) => {
+  const widget = document.getElementById('info-widget');
+  const menu = document.getElementById('info-menu');
+  if (widget && menu && !widget.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+
 function toggleNavMenu() {
   const overlay = document.getElementById('nav-menu-overlay');
   if (!overlay) return;
