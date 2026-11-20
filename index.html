@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=3" rel="stylesheet">
+  <link href="/css/app.css?v=4" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -241,9 +241,8 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Brand Logo on Left -->
-        <a href="/" class="flex items-center gap-2.5 transition-transform hover:scale-102">
+        <a href="/" onclick="if (typeof isComingSoonActive === 'function' && isComingSoonActive()) { event.preventDefault(); showSwapView(); }" class="flex items-center gap-2.5 transition-transform hover:scale-102">
           <img src="/velcro_logo.png" class="h-8 w-auto object-contain" alt="Velcro">
-          <span class="font-extrabold text-xl text-gray-900 dark:text-white tracking-tight">Velcro</span>
         </a>
 
         <!-- Right Side Nav Actions -->
@@ -948,6 +947,76 @@
     </div>
   </section>
 
+  <!-- Coming Soon Feature Section (Bread Style) -->
+  <section id="feature-coming-soon" style="display: none;" class="min-h-[65vh] flex-col items-center justify-center px-4 py-12 text-center relative z-10 animate-fade-in">
+    <div class="max-w-md mx-auto flex flex-col items-center">
+      <!-- 3D Isometric Purple Layer Stack -->
+      <div class="mb-7 transform hover:scale-105 transition-transform duration-300">
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="csTopGrad" x1="20" y1="0" x2="100" y2="30" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#a78bfa" />
+              <stop offset="1" stop-color="#7c3aed" />
+            </linearGradient>
+            <linearGradient id="csLeftGrad" x1="20" y1="15" x2="60" y2="42" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#6d28d9" />
+              <stop offset="1" stop-color="#5b21b6" />
+            </linearGradient>
+            <linearGradient id="csRightGrad" x1="60" y1="30" x2="100" y2="42" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#4c1d95" />
+              <stop offset="1" stop-color="#3b0764" />
+            </linearGradient>
+          </defs>
+          <!-- Layer 3 (Bottom) -->
+          <g transform="translate(0, 44)">
+            <path d="M20 17 L60 32 L60 44 L20 29 Z" fill="url(#csLeftGrad)" />
+            <path d="M60 32 L100 17 L100 29 L60 44 Z" fill="url(#csRightGrad)" />
+            <path d="M60 2 L100 17 L60 32 L20 17 Z" fill="url(#csTopGrad)" />
+          </g>
+          <!-- Layer 2 (Middle) -->
+          <g transform="translate(0, 22)">
+            <path d="M20 17 L60 32 L60 44 L20 29 Z" fill="url(#csLeftGrad)" />
+            <path d="M60 32 L100 17 L100 29 L60 44 Z" fill="url(#csRightGrad)" />
+            <path d="M60 2 L100 17 L60 32 L20 17 Z" fill="url(#csTopGrad)" />
+          </g>
+          <!-- Layer 1 (Top) -->
+          <g transform="translate(0, 0)">
+            <path d="M20 17 L60 32 L60 44 L20 29 Z" fill="url(#csLeftGrad)" />
+            <path d="M60 32 L100 17 L100 29 L60 44 Z" fill="url(#csRightGrad)" />
+            <path d="M60 2 L100 17 L60 32 L20 17 Z" fill="url(#csTopGrad)" />
+          </g>
+        </svg>
+      </div>
+
+      <!-- Pill Badge: Coming Soon -->
+      <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-[#211138] dark:text-gray-200 border border-gray-200/60 dark:border-slate-700 mb-6 shadow-2xs">
+        Coming Soon
+      </span>
+
+      <!-- Heading -->
+      <h2 id="cs-title" class="text-2xl sm:text-3xl font-bold text-[#6b46ff] tracking-tight mb-4">
+        Earn is almost here.
+      </h2>
+
+      <!-- Body -->
+      <p id="cs-body" class="text-sm sm:text-base text-[#211138] dark:text-gray-300 leading-relaxed font-normal mb-6">
+        We're putting the finishing touches on a new way to grow your assets with Velcro. Stay tuned for the launch.
+      </p>
+
+      <div id="cs-extra" class="mb-5 flex flex-col items-center"></div>
+
+      <!-- Back to Swap Action -->
+      <button type="button" onclick="showSwapView()"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 transition-colors cursor-pointer shadow-2xs">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Back to Swap</span>
+      </button>
+    </div>
+  </section>
+
   <!-- Mobile Dropdown Backdrop -->
   <div id="dropdown-backdrop" class="dropdown-backdrop" onclick="closeAllDropdowns()"></div>
 
@@ -1093,7 +1162,7 @@
   </div>
 
   <!-- Bread-Style Hamburger Menu Overlay -->
-  <div id="nav-menu-overlay" class="fixed inset-0 z-[100] hidden flex items-start justify-end p-4 sm:p-6 sm:pr-8 pt-18 sm:pt-20 backdrop-blur-md bg-black/45 transition-opacity" onclick="if (event.target === this) closeNavMenu()">
+  <div id="nav-menu-overlay" onclick="if (event.target === this) closeNavMenu()">
     <div class="relative flex flex-col items-center gap-2.5 w-48 sm:w-52" onclick="event.stopPropagation()">
       <!-- Close button floating top-right -->
       <button type="button" onclick="closeNavMenu()" aria-label="Close menu"
@@ -1105,44 +1174,44 @@
       </button>
 
       <!-- 1. Swap (Active Primary Purple Pill) -->
-      <button type="button" onclick="handleMenuClick('swap')"
-        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 hover:bg-[#5b36ef] active:scale-95 transition-all cursor-pointer">
+      <button type="button" id="menu-btn-swap" onclick="handleMenuClick('swap')"
+        class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 hover:bg-[#5b36ef] active:scale-95 transition-all cursor-pointer">
         Swap
       </button>
 
       <!-- 2. Payment -->
-      <button type="button" onclick="handleMenuClick('payment')"
-        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+      <button type="button" id="menu-btn-payment" onclick="handleMenuClick('payment')"
+        class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         Payment
       </button>
 
       <!-- 3. History -->
-      <button type="button" onclick="handleMenuClick('history')"
-        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+      <button type="button" id="menu-btn-history" onclick="handleMenuClick('history')"
+        class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         History
       </button>
 
       <!-- 4. Earn -->
-      <button type="button" onclick="handleMenuClick('earn')"
-        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+      <button type="button" id="menu-btn-earn" onclick="handleMenuClick('earn')"
+        class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         Earn
       </button>
 
       <!-- 5. VIP -->
-      <button type="button" onclick="handleMenuClick('vip')"
-        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+      <button type="button" id="menu-btn-vip" onclick="handleMenuClick('vip')"
+        class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         VIP
       </button>
 
       <!-- 6. Rewards -->
-      <button type="button" onclick="handleMenuClick('rewards')"
-        class="w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+      <button type="button" id="menu-btn-rewards" onclick="handleMenuClick('rewards')"
+        class="menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         Rewards
       </button>
 
       <!-- 7. Support with 4 Online Yellow Badge -->
-      <button type="button" onclick="handleMenuClick('support')"
-        class="relative w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
+      <button type="button" id="menu-btn-support" onclick="handleMenuClick('support')"
+        class="menu-nav-pill relative w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
         <span class="absolute -top-1.5 right-1.5 bg-[#fbbf24] text-[#78350f] font-bold text-[11px] px-2 py-0.5 rounded-md shadow-2xs">4 Online</span>
         Support
       </button>
@@ -1292,13 +1361,13 @@
   <div id="toast-container" class="fixed top-4 right-4 z-[9999] space-y-3 pointer-events-none"></div>
 
 
-  <script src="/js/core.js?v=3"></script>
+  <script src="/js/core.js?v=4"></script>
   <script src="/js/rates.js?v=3"></script>
   <script src="/js/form.js?v=3"></script>
   <script src="/js/order.js?v=3"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=3"></script>
-  <script src="/js/main.js?v=5"></script>
+  <script src="/js/main.js?v=6"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>

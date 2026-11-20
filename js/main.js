@@ -19,6 +19,12 @@
       return;
     }
 
+    // 2. If Coming Soon view is active, Back navigates back to Swap view
+    if (typeof isComingSoonActive === 'function' && isComingSoonActive()) {
+      showSwapView(false);
+      return;
+    }
+
     // 2. If an order payment screen is active, confirm before exiting to prevent loss of details
     const buyGen = document.getElementById('buy-generated-account');
     const sellGen = document.getElementById('sell-generated-address');
@@ -69,13 +75,20 @@ document.addEventListener('click', (e) => {
   }
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+  const hash = (window.location.hash || '').replace('#', '').toLowerCase();
+  if (['payment', 'earn', 'vip', 'rewards'].includes(hash)) {
+    showComingSoon(hash, false);
+  }
+});
+
 function toggleNavMenu() {
   const overlay = document.getElementById('nav-menu-overlay');
   if (!overlay) return;
-  if (overlay.classList.contains('hidden')) {
-    openNavMenu();
-  } else {
+  if (overlay.classList.contains('is-open')) {
     closeNavMenu();
+  } else {
+    openNavMenu();
   }
 }
 
@@ -83,40 +96,126 @@ function openNavMenu() {
   const overlay = document.getElementById('nav-menu-overlay');
   if (!overlay) return;
   if (typeof pushModalHistory === 'function') pushModalHistory('navMenu');
-  overlay.classList.remove('hidden');
+  overlay.classList.add('is-open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeNavMenu() {
   if (typeof popModalHistory === 'function') popModalHistory('navMenu');
   const overlay = document.getElementById('nav-menu-overlay');
-  if (overlay) overlay.classList.add('hidden');
+  if (overlay) overlay.classList.remove('is-open');
   document.body.style.overflow = '';
+}
+
+function setActiveMenuPill(activeKey) {
+  const keys = ['swap', 'payment', 'history', 'earn', 'vip', 'rewards', 'support'];
+  keys.forEach(k => {
+    const btn = document.getElementById('menu-btn-' + k);
+    if (!btn) return;
+    const isSupport = k === 'support';
+    if (k === activeKey) {
+      btn.className = (isSupport ? 'relative ' : '') + 'menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer';
+    } else {
+      btn.className = (isSupport ? 'relative ' : '') + 'menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer';
+    }
+  });
+}
+
+const COMING_SOON_DATA = {
+  payment: {
+    title: 'Payments are on the way.',
+    body: "Send and receive payments with a simple link or wallet address. We're getting everything ready for launch.",
+    extra: '<a href="/store/" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6b46ff] hover:underline">Looking for Velcro Store? Open store &rarr;</a>'
+  },
+  earn: {
+    title: 'Earn is almost here.',
+    body: "We're putting the finishing touches on a new way to grow your assets with Velcro. Stay tuned for the launch."
+  },
+  vip: {
+    title: 'Private Client is on the way.',
+    body: "Trade large volumes with competitive rates and dedicated execution. We're getting everything ready for launch.",
+    extra: '<a href="https://wa.me/2347035428475?text=' + encodeURIComponent('Hi Velcro Desk, I am inquiring about Private Client / VIP OTC trades ($10k+ / ₦15M+).') + '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#6b46ff] text-white hover:bg-[#5b36ef] shadow-sm transition-all">Chat with OTC Desk &rarr;</a>'
+  },
+  rewards: {
+    title: 'Rewards are almost here.',
+    body: "Earn points on every swap and redeem them for real value. We're putting the finishing touches on it."
+  }
+};
+
+function isComingSoonActive() {
+  const cs = document.getElementById('feature-coming-soon');
+  return cs && cs.style.display !== 'none';
+}
+
+function showComingSoon(feature, pushState = true) {
+  const data = COMING_SOON_DATA[feature];
+  if (!data) return;
+
+  const convert = document.getElementById('convert');
+  const cs = document.getElementById('feature-coming-soon');
+  const title = document.getElementById('cs-title');
+  const body = document.getElementById('cs-body');
+  const extra = document.getElementById('cs-extra');
+
+  if (title) title.textContent = data.title;
+  if (body) body.textContent = data.body;
+  if (extra) extra.innerHTML = data.extra || '';
+
+  if (convert) convert.style.display = 'none';
+  if (cs) {
+    cs.style.display = 'flex';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  setActiveMenuPill(feature);
+
+  if (pushState && window.history && window.history.pushState) {
+    window.history.pushState({ view: 'coming-soon', feature: feature }, '', '#' + feature);
+  }
+}
+
+function showSwapView(pushState = true) {
+  const convert = document.getElementById('convert');
+  const cs = document.getElementById('feature-coming-soon');
+
+  if (cs) cs.style.display = 'none';
+  if (convert) {
+    convert.style.display = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  setActiveMenuPill('swap');
+
+  if (pushState && window.history && window.history.pushState) {
+    window.history.pushState({ view: 'swap' }, '', window.location.pathname);
+  }
 }
 
 function handleMenuClick(action) {
   closeNavMenu();
   switch (action) {
     case 'swap': {
-      const convert = document.getElementById('convert');
-      if (convert) convert.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showSwapView();
       break;
     }
     case 'payment': {
-      window.location.href = '/store/';
+      showComingSoon('payment');
       break;
     }
     case 'history': {
       if (typeof showHistoryModal === 'function') showHistoryModal();
       break;
     }
-    case 'earn':
-    case 'rewards': {
-      if (typeof openProfile === 'function') openProfile();
+    case 'earn': {
+      showComingSoon('earn');
       break;
     }
     case 'vip': {
-      openVipModal();
+      showComingSoon('vip');
+      break;
+    }
+    case 'rewards': {
+      showComingSoon('rewards');
       break;
     }
     case 'support': {

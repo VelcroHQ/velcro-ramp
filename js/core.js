@@ -754,7 +754,7 @@ function popOrderHistory(type) {
 
 function getTopOpenModal() {
   const navMenu = document.getElementById('nav-menu-overlay');
-  if (navMenu && !navMenu.classList.contains('hidden')) return 'navMenu';
+  if (navMenu && navMenu.classList.contains('is-open')) return 'navMenu';
   const vipModal = document.getElementById('vip-modal');
   if (vipModal && !vipModal.classList.contains('hidden')) return 'vip';
   const tour = document.getElementById('tour-overlay');
