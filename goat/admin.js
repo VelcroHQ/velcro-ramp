@@ -3015,6 +3015,7 @@ let routeRows = [];          // [{side, provider, symbol, enabled}] from the ser
 const routeEdits = {};       // "side:provider:SYM" → bool, unsaved changes
 
 async function fetchRoutes() {
+    fetchCountrySettings();
     try {
         const res = await fetch(`${API_BASE}/api/admin/routes`, { headers: { 'Authorization': adminKey } });
         const data = scrub(await res.json());
@@ -3028,7 +3029,6 @@ async function fetchRoutes() {
         w.style.display = warn.length ? 'block' : 'none';
         w.innerText = warn.join(' ');
         renderRoutes();
-        fetchCountrySettings();
     } catch (e) {
         showToast(e.message, 'error');
     }
@@ -3845,6 +3845,7 @@ function switchSection(id) {
     }
     if (id === 'coins') {
         fetchRoutes();
+        fetchCountrySettings();
     }
     if (id === 'merchants') {
         fetchMerchants();
