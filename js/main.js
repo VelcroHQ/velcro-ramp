@@ -73,6 +73,14 @@ document.addEventListener('click', (e) => {
   if (widget && menu && !widget.contains(e.target)) {
     menu.classList.add('hidden');
   }
+
+  const dropdown = document.getElementById('nav-menu-dropdown');
+  const toggleBtn = document.getElementById('nav-menu-toggle');
+  if (dropdown && !dropdown.classList.contains('hidden')) {
+    if (!dropdown.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+      closeNavMenu();
+    }
+  }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -83,9 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function toggleNavMenu() {
-  const overlay = document.getElementById('nav-menu-overlay');
-  if (!overlay) return;
-  if (overlay.classList.contains('is-open')) {
+  const dropdown = document.getElementById('nav-menu-dropdown');
+  if (!dropdown) return;
+  if (!dropdown.classList.contains('hidden')) {
     closeNavMenu();
   } else {
     openNavMenu();
@@ -93,18 +101,36 @@ function toggleNavMenu() {
 }
 
 function openNavMenu() {
-  const overlay = document.getElementById('nav-menu-overlay');
-  if (!overlay) return;
+  const dropdown = document.getElementById('nav-menu-dropdown');
+  const backdrop = document.getElementById('nav-menu-backdrop');
+  const btn = document.getElementById('nav-menu-toggle');
+  const iconLines = document.getElementById('hamburger-icon-lines');
+  const iconClose = document.getElementById('hamburger-icon-close');
+  if (!dropdown) return;
   if (typeof pushModalHistory === 'function') pushModalHistory('navMenu');
-  overlay.classList.add('is-open');
-  document.body.style.overflow = 'hidden';
+  dropdown.classList.remove('hidden');
+  dropdown.classList.add('flex');
+  if (backdrop) backdrop.classList.remove('hidden');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  if (iconLines) iconLines.classList.add('hidden');
+  if (iconClose) iconClose.classList.remove('hidden');
 }
 
 function closeNavMenu() {
   if (typeof popModalHistory === 'function') popModalHistory('navMenu');
-  const overlay = document.getElementById('nav-menu-overlay');
-  if (overlay) overlay.classList.remove('is-open');
-  document.body.style.overflow = '';
+  const dropdown = document.getElementById('nav-menu-dropdown');
+  const backdrop = document.getElementById('nav-menu-backdrop');
+  const btn = document.getElementById('nav-menu-toggle');
+  const iconLines = document.getElementById('hamburger-icon-lines');
+  const iconClose = document.getElementById('hamburger-icon-close');
+  if (dropdown) {
+    dropdown.classList.add('hidden');
+    dropdown.classList.remove('flex');
+  }
+  if (backdrop) backdrop.classList.add('hidden');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  if (iconLines) iconLines.classList.remove('hidden');
+  if (iconClose) iconClose.classList.add('hidden');
 }
 
 function setActiveMenuPill(activeKey) {
@@ -114,9 +140,9 @@ function setActiveMenuPill(activeKey) {
     if (!btn) return;
     const isSupport = k === 'support';
     if (k === activeKey) {
-      btn.className = (isSupport ? 'relative ' : '') + 'menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer';
+      btn.className = (isSupport ? 'relative ' : '') + 'menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-[#6b46ff] text-white shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer';
     } else {
-      btn.className = (isSupport ? 'relative ' : '') + 'menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer';
+      btn.className = (isSupport ? 'relative ' : '') + 'menu-nav-pill w-full py-3 px-6 rounded-full font-semibold text-center text-sm sm:text-base bg-white dark:bg-slate-800 text-[#211138] dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer';
     }
   });
 }

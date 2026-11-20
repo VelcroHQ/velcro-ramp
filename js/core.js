@@ -755,8 +755,8 @@ function popOrderHistory(type) {
 function getTopOpenModal() {
   const countryPicker = document.getElementById('country-picker-modal');
   if (countryPicker && !countryPicker.classList.contains('hidden')) return 'countryPicker';
-  const navMenu = document.getElementById('nav-menu-overlay');
-  if (navMenu && navMenu.classList.contains('is-open')) return 'navMenu';
+  const navMenu = document.getElementById('nav-menu-dropdown');
+  if (navMenu && !navMenu.classList.contains('hidden')) return 'navMenu';
   const vipModal = document.getElementById('vip-modal');
   if (vipModal && !vipModal.classList.contains('hidden')) return 'vip';
   const tour = document.getElementById('tour-overlay');
