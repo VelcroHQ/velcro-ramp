@@ -9,6 +9,7 @@
   initSheetDraggable('country-picker-modal', '.country-picker-card', () => typeof closeCountryPicker === 'function' && closeCountryPicker(), '#country-picker-list');
   initSheetDraggable('support-modal', '> div:last-child', () => typeof closeSupportModal === 'function' && closeSupportModal());
   initSheetDraggable('vip-modal', '> div:last-child', () => typeof closeVipModal === 'function' && closeVipModal());
+  initSheetDraggable('payment-modal', '> div:last-child', () => typeof closePaymentModal === 'function' && closePaymentModal());
 
 
   // Navigation Guard: Intercept browser & device Back button
@@ -295,11 +296,7 @@ function handleMenuClick(action) {
       break;
     }
     case 'payment': {
-      if (!email) {
-        promptLoginOverlay(() => showComingSoon('payment'));
-        return;
-      }
-      showComingSoon('payment');
+      openPaymentModal();
       break;
     }
     case 'history': {
@@ -316,7 +313,7 @@ function handleMenuClick(action) {
       break;
     }
     case 'vip': {
-      showComingSoon('vip');
+      openVipModal();
       break;
     }
     case 'rewards': {
@@ -353,6 +350,37 @@ function closeSupportModal() {
   if (typeof popModalHistory === 'function') popModalHistory('support');
   const modal = document.getElementById('support-modal');
   if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+}
+
+
+function openPaymentModal() {
+  if (typeof pushModalHistory === 'function') pushModalHistory('payment');
+  const modal = document.getElementById('payment-modal');
+  if (modal) {
+    const card = modal.querySelector('> div:last-child');
+    if (card) {
+      card.style.transform = '';
+      card.style.transition = '';
+    }
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closePaymentModal() {
+  if (typeof popModalHistory === 'function') popModalHistory('payment');
+  const modal = document.getElementById('payment-modal');
+  if (modal) {
+    const card = modal.querySelector('> div:last-child');
+    if (card) {
+      card.style.transform = '';
+      card.style.transition = '';
+    }
     modal.classList.add('hidden');
     modal.classList.remove('flex');
     document.body.style.overflow = '';

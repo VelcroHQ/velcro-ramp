@@ -1207,6 +1207,7 @@
   #history-modal,
   #support-modal,
   #vip-modal,
+  #payment-modal,
   #country-picker-modal {
     padding: 0 !important;
     align-items: flex-end !important;
@@ -1218,6 +1219,7 @@
   #history-modal .history-modal-dialog,
   #support-modal > div:last-child,
   #vip-modal > div:last-child,
+  #payment-modal > div:last-child,
   #country-picker-modal .country-picker-card {
     width: 100% !important;
     max-width: none !important;
@@ -1487,6 +1489,7 @@
 /* Universal Modal Card Clean Layout & Centering */
 #support-modal > div:last-child,
 #vip-modal > div:last-child,
+#payment-modal > div:last-child,
 #country-picker-modal .country-picker-card {
   width: 100% !important;
   max-width: 440px !important;
@@ -1499,6 +1502,7 @@
 
 .dark #support-modal > div:last-child,
 .dark #vip-modal > div:last-child,
+.dark #payment-modal > div:last-child,
 .dark #country-picker-modal .country-picker-card {
   background-color: #0f172a !important;
   border-color: #1e293b !important;
@@ -1523,6 +1527,7 @@
 
 #vip-modal > div:last-child,
 #support-modal > div:last-child,
+#payment-modal > div:last-child,
 #country-picker-modal .country-picker-card,
 #tour-overlay > div {
   animation: modalScaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1644,3 +1649,13 @@
     background-color: rgba(255, 255, 255, 0.25) !important;
   }
 }
+
+/* Core Brand Colors (#6b46ff) */
+.bg-\[\#6b46ff\] { background-color: #6b46ff !important; }
+.hover\:bg-\[\#5b36ef\]:hover { background-color: #5b36ef !important; }
+.text-\[\#6b46ff\] { color: #6b46ff !important; }
+.border-\[\#6b46ff\] { border-color: #6b46ff !important; }
+.bg-\[\#6b46ff\]\/10 { background-color: rgba(107, 70, 255, 0.1) !important; }
+.bg-\[\#6b46ff\]\/15 { background-color: rgba(107, 70, 255, 0.15) !important; }
+.bg-\[\#6b46ff\]\/20 { background-color: rgba(107, 70, 255, 0.2) !important; }
+.bg-\[\#6b46ff\]\/25 { background-color: rgba(107, 70, 255, 0.25) !important; }
