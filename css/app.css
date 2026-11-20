@@ -1386,3 +1386,56 @@
   from { opacity: 0; transform: translateY(6px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* Country Picker Search Wrap */
+.country-search-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 16px !important;
+  padding: 10px 14px !important;
+  margin-bottom: 14px !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dark .country-search-wrap {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.country-search-wrap:focus-within {
+  border-color: #6b46ff !important;
+  box-shadow: 0 0 0 3px rgba(107, 70, 255, 0.15) !important;
+}
+
+.country-search-wrap svg {
+  flex-shrink: 0 !important;
+  width: 16px !important;
+  height: 16px !important;
+  color: #9ca3af !important;
+  display: block !important;
+}
+
+.country-search-wrap input {
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: #111827 !important;
+  box-shadow: none !important;
+}
+
+.dark .country-search-wrap input {
+  color: #f3f4f6 !important;
+}
+
+.country-search-wrap input::placeholder {
+  color: #9ca3af !important;
+}
