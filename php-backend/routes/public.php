@@ -219,18 +219,30 @@ function registerPublicRoutes(Router $router): void
             jsonResponse(errorResponse('country and beneficiary are required'), 400);
         }
 
-        // Cross-map account number & mobile number, bank code & mobile network for seamless lookup
-        if (!empty($beneficiary['account_number']) && empty($beneficiary['mobile_number'])) {
-            $beneficiary['mobile_number'] = $beneficiary['account_number'];
+        $channel = body($body, 'channel');
+        if (!$channel) {
+            $mobileMoneyCountries = ['GH', 'CI', 'CM', 'SN', 'UG', 'RW', 'TZ', 'KE'];
+            $channel = in_array(strtoupper((string) $country), $mobileMoneyCountries, true) ? 'MOBILEMONEY' : 'BANK';
         }
-        if (!empty($beneficiary['mobile_number']) && empty($beneficiary['account_number'])) {
-            $beneficiary['account_number'] = $beneficiary['mobile_number'];
-        }
-        if (!empty($beneficiary['bank_code']) && empty($beneficiary['mobile_network'])) {
-            $beneficiary['mobile_network'] = $beneficiary['bank_code'];
-        }
-        if (!empty($beneficiary['mobile_network']) && empty($beneficiary['bank_code'])) {
-            $beneficiary['bank_code'] = $beneficiary['mobile_network'];
+
+        // Clean beneficiary based on channel so Switch schema validator does not reject it
+        if ($channel === 'BANK') {
+            unset($beneficiary['mobile_network'], $beneficiary['mobile_number']);
+            if (empty($beneficiary['account_number']) && !empty($beneficiary['mobile_number'])) {
+                $beneficiary['account_number'] = $beneficiary['mobile_number'];
+            }
+            if (empty($beneficiary['bank_code']) && !empty($beneficiary['mobile_network'])) {
+                $beneficiary['bank_code'] = $beneficiary['mobile_network'];
+            }
+        } else {
+            // MOBILEMONEY
+            unset($beneficiary['account_number'], $beneficiary['bank_code']);
+            if (empty($beneficiary['mobile_number']) && !empty($beneficiary['account_number'])) {
+                $beneficiary['mobile_number'] = $beneficiary['account_number'];
+            }
+            if (empty($beneficiary['mobile_network']) && !empty($beneficiary['bank_code'])) {
+                $beneficiary['mobile_network'] = $beneficiary['bank_code'];
+            }
         }
 
         try {
@@ -557,19 +569,24 @@ function registerPublicRoutes(Router $router): void
             $initiateChannel = in_array(strtoupper((string) $country), $mobileMoneyCountries, true) ? 'MOBILEMONEY' : 'BANK';
         }
 
-        // Cross-map account number & mobile number, bank code & mobile network for seamless Switch API payout
+        // Clean beneficiary based on channel so Switch schema validator does not reject it
         if (is_array($beneficiary)) {
-            if (!empty($beneficiary['account_number']) && empty($beneficiary['mobile_number'])) {
-                $beneficiary['mobile_number'] = $beneficiary['account_number'];
-            }
-            if (!empty($beneficiary['mobile_number']) && empty($beneficiary['account_number'])) {
-                $beneficiary['account_number'] = $beneficiary['mobile_number'];
-            }
-            if (!empty($beneficiary['bank_code']) && empty($beneficiary['mobile_network'])) {
-                $beneficiary['mobile_network'] = $beneficiary['bank_code'];
-            }
-            if (!empty($beneficiary['mobile_network']) && empty($beneficiary['bank_code'])) {
-                $beneficiary['bank_code'] = $beneficiary['mobile_network'];
+            if ($initiateChannel === 'BANK') {
+                unset($beneficiary['mobile_network'], $beneficiary['mobile_number']);
+                if (empty($beneficiary['account_number']) && !empty($beneficiary['mobile_number'])) {
+                    $beneficiary['account_number'] = $beneficiary['mobile_number'];
+                }
+                if (empty($beneficiary['bank_code']) && !empty($beneficiary['mobile_network'])) {
+                    $beneficiary['bank_code'] = $beneficiary['mobile_network'];
+                }
+            } else {
+                unset($beneficiary['account_number'], $beneficiary['bank_code']);
+                if (empty($beneficiary['mobile_number']) && !empty($beneficiary['account_number'])) {
+                    $beneficiary['mobile_number'] = $beneficiary['account_number'];
+                }
+                if (empty($beneficiary['mobile_network']) && !empty($beneficiary['bank_code'])) {
+                    $beneficiary['mobile_network'] = $beneficiary['bank_code'];
+                }
             }
         }
 

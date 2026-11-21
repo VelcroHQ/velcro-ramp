@@ -173,6 +173,7 @@ function renderHistoryList(txs) {
   }
 
   const formatFiat = (v, curr) => formatFiatDigits(v, curr || 'NGN');
+  const ngn = v => formatFiat(v, 'NGN');
   const crypto = (v, sym) => `${Number(v).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${sym}`;
   const short = s => s.length > 16 ? `${s.slice(0, 6)}…${s.slice(-6)}` : s;
   const copyIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
