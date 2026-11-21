@@ -201,34 +201,39 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=28" rel="stylesheet">
+  <link href="/css/app.css?v=30" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
 
   <!-- Email prompt: shown when the user taps Add email or starts a transaction -->
-  <div id="login-overlay" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-4 overflow-y-auto overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="login-title">
-    <div class="success-modal-backdrop" onclick="closeLoginOverlay()"></div>
+  <div id="login-overlay" class="asset-picker-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="asset-picker-backdrop" onclick="closeLoginOverlay()"></div>
 
-    <div class="success-modal-card success-modal-animate relative my-auto z-10">
-      <button type="button" onclick="closeLoginOverlay()" aria-label="Close"
-        class="absolute top-3.5 right-3.5 z-20 w-8 h-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-velcro-navy hover:bg-gray-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
+    <div class="asset-picker-sheet">
+      <div class="asset-picker-header">
+        <h3 id="login-title">Sign In</h3>
+        <button type="button" class="asset-picker-close" onclick="closeLoginOverlay()" aria-label="Close">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
 
-      <div class="relative z-10 px-6 pt-9 pb-6 sm:px-7 text-center">
-        <span class="mx-auto w-14 h-14 rounded-2xl bg-velcro-green/15 text-velcro-navy dark:text-velcro-green inline-flex items-center justify-center">
+      <div class="p-6 text-center">
+        <span class="mx-auto w-12 h-12 rounded-2xl bg-[#6b46ff]/10 text-[#6b46ff] inline-flex items-center justify-center mb-3">
           <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
         </span>
-        <h2 id="login-title" class="mt-4 text-xl font-bold tracking-tight text-velcro-navy dark:text-white">Login / Add your email</h2>
-        <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Connect your email to access your Rewards, Order History, and Payments.</p>
+        <h4 class="text-base font-bold text-gray-900 dark:text-white">Connect your email</h4>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-relaxed max-w-xs mx-auto">Access your rewards, transaction history, and instant receipts.</p>
 
-        <form id="login-form" toolname="authenticate_user_email" tooldescription="Save user email address to attach receipts and view transaction history" onsubmit="handleLoginSubmit(event)" class="mt-6 text-left">
+        <form id="login-form" toolname="authenticate_user_email" tooldescription="Save user email address to attach receipts and view transaction history" onsubmit="handleLoginSubmit(event)" class="mt-5 text-left">
           <label for="login-email" class="block mb-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">Email address</label>
-          <input type="email" id="login-email" required autocomplete="email" inputmode="email" placeholder="you@example.com" class="login-input placeholder-gray-400">
+          <div class="asset-picker-search-wrap mb-4">
+            <input type="email" id="login-email" required autocomplete="email" inputmode="email" placeholder="you@example.com" class="w-full text-sm">
+          </div>
           <button type="submit" id="login-submit-btn"
-            class="mt-4 w-full h-12 rounded-xl bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy text-sm font-bold transition-colors inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-velcro-green/30">
-            Continue
+            style="background-color: #6b46ff !important; color: #ffffff !important;"
+            class="w-full h-11 rounded-xl text-xs sm:text-sm font-bold shadow-md hover:opacity-90 inline-flex items-center justify-center gap-2 transition-all cursor-pointer">
+            <span>Continue</span>
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </button>
         </form>
@@ -427,10 +432,7 @@
                       </svg>
                     </span>
                     <div class="min-w-0 flex-1">
-                      <div class="flex items-center justify-between">
-                        <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white">Merchant</span>
-                        <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">Portal</span>
-                      </div>
+                      <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Merchant</span>
                       <span class="text-[10px] text-gray-500 dark:text-gray-400 block truncate">Launch your branded exchange</span>
                     </div>
                   </div>
@@ -445,10 +447,7 @@
                       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
                     </span>
                     <div class="min-w-0 flex-1">
-                      <div class="flex items-center justify-between">
-                        <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white">VIP Desk</span>
-                        <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-violet-100 text-[#6b46ff] dark:bg-violet-950/80 dark:text-violet-300">OTC</span>
-                      </div>
+                      <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">VIP Desk</span>
                       <span class="text-[10px] text-gray-500 dark:text-gray-400 block truncate">Large trades ($10k+)</span>
                     </div>
                   </div>
@@ -478,13 +477,7 @@
                       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     </span>
                     <div class="min-w-0 flex-1">
-                      <div class="flex items-center justify-between">
-                        <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white">Live Support</span>
-                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
-                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                          <span>Online</span>
-                        </span>
-                      </div>
+                      <span class="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white block">Live Support</span>
                       <span class="text-[10px] text-gray-500 dark:text-gray-400 block truncate">24/7 Agent available</span>
                     </div>
                   </div>
@@ -1219,35 +1212,29 @@
   <div id="dropdown-backdrop" class="dropdown-backdrop" onclick="closeAllDropdowns()"></div>
 
   <!-- History Modal -->
-  <div id="history-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 overscroll-contain">
-    <div class="success-modal-backdrop" onclick="hideHistoryModal()"></div>
-    <div
-      class="history-modal-dialog relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-hidden animate-fade-in flex flex-col my-auto">
-      <div class="p-4 sm:p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900 z-10">
-        <div>
-          <h2 class="text-lg font-bold text-velcro-navy dark:text-white flex items-center gap-2">
-            <svg class="w-5 h-5 text-velcro-navy dark:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3v5h5"/>
-              <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
-              <path d="M12 7v5l4 2"/>
-            </svg>
-            Transaction History</h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Your recent on-ramp and off-ramp orders</p>
-        </div>
-        <button onclick="hideHistoryModal()" class="w-8 h-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-velcro-navy hover:bg-gray-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors" aria-label="Close history">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+  <div id="history-modal" class="asset-picker-modal" role="dialog" aria-modal="true" aria-labelledby="history-modal-title">
+    <div class="asset-picker-backdrop" onclick="hideHistoryModal()"></div>
+    <div class="asset-picker-sheet history-modal-dialog">
+      <!-- Header matching asset coin modal -->
+      <div class="asset-picker-header">
+        <h3 id="history-modal-title">Transaction History</h3>
+        <button type="button" class="asset-picker-close" onclick="hideHistoryModal()" aria-label="Close history">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
       </div>
 
       <!-- Quick Filter Pills: Horizontally slidable on mobile -->
-      <div class="px-4 sm:px-6 py-2.5 bg-gray-50/90 dark:bg-slate-900/60 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 text-xs">
+      <div class="px-4 py-2.5 bg-gray-50/80 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 text-xs">
         <button onclick="filterHistory('all')" id="hist-filter-all" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-velcro-navy text-white transition-all whitespace-nowrap">All</button>
-        <button onclick="filterHistory('onramp')" id="hist-filter-onramp" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap">Buy (Crypto)</button>
-        <button onclick="filterHistory('offramp')" id="hist-filter-offramp" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap">Sell (Cash)</button>
-        <button onclick="filterHistory('completed')" id="hist-filter-completed" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all whitespace-nowrap">Completed</button>
+        <button onclick="filterHistory('onramp')" id="hist-filter-onramp" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 transition-all whitespace-nowrap">Buy (Crypto)</button>
+        <button onclick="filterHistory('offramp')" id="hist-filter-offramp" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 transition-all whitespace-nowrap">Sell (Cash)</button>
+        <button onclick="filterHistory('completed')" id="hist-filter-completed" class="hist-filter-btn px-3 py-1 rounded-full font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700 transition-all whitespace-nowrap">Completed</button>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 pb-8 sm:pb-8 space-y-3 overscroll-contain" id="history-list" style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
+      <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-5 pb-8 sm:pb-8 space-y-3 overscroll-contain asset-picker-list" id="history-list" style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
         <div class="text-center py-8 text-gray-400">Loading transactions...</div>
       </div>
     </div>
@@ -1339,22 +1326,24 @@
   </div>
 
   <!-- Profile & referrals -->
-  <div id="profile-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-4 overflow-y-auto overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="profile-title">
-    <div class="success-modal-backdrop" onclick="hideProfile()"></div>
-    <div class="success-modal-card success-modal-animate relative my-auto z-10">
-      <button type="button" onclick="hideProfile()" aria-label="Close"
-        class="absolute top-3.5 right-3.5 z-20 w-8 h-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-velcro-navy hover:bg-gray-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
-      <div class="relative z-10 px-6 pt-8 pb-6 sm:px-7">
-        <div class="flex items-center gap-3 pr-8">
+  <div id="profile-modal" class="asset-picker-modal" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+    <div class="asset-picker-backdrop" onclick="hideProfile()"></div>
+    <div class="asset-picker-sheet">
+      <div class="asset-picker-header">
+        <h3 id="profile-title">Your Account</h3>
+        <button type="button" class="asset-picker-close" onclick="hideProfile()" aria-label="Close">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="p-5 sm:p-6 overflow-y-auto max-h-[480px]">
+        <div class="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-slate-800">
           <span id="profile-avatar" class="shrink-0 w-11 h-11 rounded-full bg-velcro-navy text-velcro-green text-sm font-bold inline-flex items-center justify-center"></span>
           <div class="min-w-0">
-            <h2 id="profile-title" class="text-base font-bold tracking-tight text-velcro-navy dark:text-white">Your account</h2>
-            <p id="profile-email" class="text-sm text-gray-500 dark:text-gray-400 truncate"></p>
+            <h4 class="text-sm font-bold text-gray-900 dark:text-white">Active Session</h4>
+            <p id="profile-email" class="text-xs text-gray-500 dark:text-gray-400 truncate"></p>
           </div>
         </div>
-        <div id="profile-body" class="mt-6"></div>
+        <div id="profile-body" class="mt-4"></div>
       </div>
     </div>
   </div>
@@ -1363,301 +1352,246 @@
   <div id="nav-menu-backdrop" class="fixed inset-0 z-40 hidden bg-transparent" onclick="closeNavMenu()"></div>
 
   <!-- Switch UI: Choose a Country / Currency Modal (Bottom Sheet on Mobile, Centered Modal on Desktop) -->
-  <div id="country-picker-modal" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-3 sm:p-4 overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="country-modal-title">
-    <div id="country-picker-backdrop" class="modal-backdrop" onclick="closeCountryPicker()"></div>
-    <div id="country-picker-card" class="country-picker-card relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-md w-full max-h-[85vh] sm:max-h-[88vh] overflow-hidden shadow-2xl z-10 flex flex-col animate-scale-up">
-      <!-- Mobile Sheet Drag Handle -->
-      <div id="country-drag-handle" class="sheet-drag-handle cursor-grab select-none shrink-0" style="touch-action: none;">
-        <div class="sheet-drag-pill"></div>
-      </div>
-
-      <!-- Header -->
-      <div id="country-modal-header" class="px-6 pt-4 pb-4 sm:px-7 sm:pt-6 sm:pb-5 border-b border-gray-100 dark:border-slate-800/80 flex items-start justify-between gap-4 shrink-0 select-none">
-        <div class="min-w-0">
-          <h3 id="country-modal-title" class="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">Choose a country</h3>
-          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 leading-normal">Select a regional currency for instant settlement</p>
-        </div>
-        <button type="button" onclick="closeCountryPicker()" aria-label="Close"
-          class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer shrink-0 mt-0.5 active:scale-95 shadow-2xs">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+  <div id="country-picker-modal" class="asset-picker-modal" role="dialog" aria-modal="true" aria-labelledby="country-modal-title">
+    <div id="country-picker-backdrop" class="asset-picker-backdrop" onclick="closeCountryPicker()"></div>
+    <div id="country-picker-card" class="asset-picker-sheet country-picker-card">
+      <!-- Header matching asset coin modal -->
+      <div class="asset-picker-header">
+        <h3 id="country-modal-title">Choose a country</h3>
+        <button type="button" class="asset-picker-close" onclick="closeCountryPicker()" aria-label="Close">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
       
-      <!-- Search input container -->
-      <div class="px-6 pt-4 pb-1 sm:px-7 sm:pt-5 shrink-0">
-        <div class="country-search-box">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Search input container matching asset coin modal -->
+      <div class="asset-picker-search">
+        <div class="asset-picker-search-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <path d="m21 21-4.35-4.35"></path>
           </svg>
           <input type="text" id="country-search-input" oninput="filterCountryList(this.value)" placeholder="Search country or currency..." autocomplete="off" spellcheck="false">
         </div>
       </div>
 
-      <!-- Scrollable Country List -->
-      <div id="country-picker-list" class="flex-1 overflow-y-auto space-y-2.5 px-6 pb-6 pt-1 sm:px-7 sm:pb-7 max-h-[380px] min-h-[220px] overscroll-contain">
+      <!-- Scrollable Country List matching asset coin modal -->
+      <div id="country-picker-list" class="asset-picker-list">
         <!-- Rendered dynamically -->
       </div>
     </div>
   </div>
 
   <!-- Payment Solutions Modal -->
-  <div id="payment-modal" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center p-4 overflow-y-auto overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
-    <div class="modal-backdrop" onclick="closePaymentModal()"></div>
-    <div class="relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl z-10 animate-scale-up">
-      <!-- Mobile Sheet Drag Handle -->
-      <div class="sheet-drag-handle cursor-grab select-none shrink-0" style="touch-action: none;">
-        <div class="sheet-drag-pill"></div>
-      </div>
-
-      <!-- Header -->
-      <div class="flex items-start justify-between pb-4 border-b border-gray-100 dark:border-slate-800/80">
-        <div>
-          <span class="inline-block px-2.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold rounded-full mb-1.5">Checkout &amp; Invoicing</span>
-          <h2 id="payment-modal-title" class="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">Velcro Payments</h2>
-          <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">Accept crypto &amp; Naira payments with instant settlement.</p>
-        </div>
-        <button type="button" onclick="closePaymentModal()" aria-label="Close"
-          class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer shrink-0 mt-0.5 active:scale-95 shadow-2xs">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+  <div id="payment-modal" class="asset-picker-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
+    <div class="asset-picker-backdrop" onclick="closePaymentModal()"></div>
+    <div class="asset-picker-sheet">
+      <!-- Header matching asset coin modal -->
+      <div class="asset-picker-header">
+        <h3 id="payment-modal-title">Velcro Payments</h3>
+        <button type="button" class="asset-picker-close" onclick="closePaymentModal()" aria-label="Close">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
 
-      <!-- Payment Solution Cards -->
-      <div class="mt-4 space-y-2.5">
+      <!-- Payment Solution List matching asset coin modal -->
+      <div class="asset-picker-list">
         <!-- 1. Velcro Store -->
-        <a href="/store/" target="_blank" rel="noopener noreferrer"
-          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800/80 hover:border-blue-300 dark:hover:border-blue-600/50 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-all group cursor-pointer">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <span class="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="8" cy="21" r="1"></circle>
-                <circle cx="19" cy="21" r="1"></circle>
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
-              </svg>
-            </span>
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Velcro Store</h3>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300">Live</span>
-              </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">Online crypto checkout &amp; catalog</p>
+        <a href="/store/" target="_blank" rel="noopener noreferrer" class="asset-picker-item group">
+          <span class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="21" r="1"></circle>
+              <circle cx="19" cy="21" r="1"></circle>
+              <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+            </svg>
+          </span>
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol flex items-center gap-2">
+              <span>Velcro Store</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300">Live</span>
             </div>
+            <div class="asset-picker-name">Online crypto checkout &amp; catalog</div>
           </div>
-          <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
+          <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
 
         <!-- 2. Merchant Portal -->
-        <a href="https://merchant.usevelcro.com/" target="_blank" rel="noopener noreferrer"
-          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800/80 hover:border-emerald-300 dark:hover:border-emerald-600/50 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <span class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
-                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-                <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
-                <path d="M2 7h20"/>
-              </svg>
-            </span>
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Merchant Portal</h3>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300">Portal</span>
-              </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">Brand your own exchange &amp; payment gateway</p>
+        <a href="https://merchant.usevelcro.com/" target="_blank" rel="noopener noreferrer" class="asset-picker-item group">
+          <span class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+              <path d="M2 7h20"/>
+            </svg>
+          </span>
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol flex items-center gap-2">
+              <span>Merchant Portal</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300">Portal</span>
             </div>
+            <div class="asset-picker-name">Launch your branded crypto exchange</div>
           </div>
-          <svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
+          <svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
 
-        <!-- 3. API & Enterprise Invoicing -->
-        <a href="https://wa.me/2347035428475?text=Hello%20Velcro%20Payments,%20I%20would%20like%20to%20integrate%20Velcro%20Payment%20Links%20and%20API" target="_blank" rel="noopener noreferrer"
-          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800/80 hover:border-purple-300 dark:hover:border-purple-600/50 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition-all group cursor-pointer">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <span class="w-11 h-11 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-[#6b46ff] dark:text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-              </svg>
-            </span>
-            <div class="min-w-0">
-              <h3 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-[#6b46ff] dark:group-hover:text-purple-400 transition-colors">Payment API &amp; Webhooks</h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">Automated crypto-to-Naira settlement API</p>
-            </div>
+        <!-- 3. Payment API & Invoicing -->
+        <a href="https://wa.me/2347035428475?text=Hello%20Velcro%20Payments,%20I%20would%20like%20to%20integrate%20Velcro%20Payment%20Links%20and%20API" target="_blank" rel="noopener noreferrer" class="asset-picker-item group">
+          <span class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-950/60 text-[#6b46ff] dark:text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </span>
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol">Payment API &amp; Webhooks</div>
+            <div class="asset-picker-name">Automated crypto-to-fiat settlement API</div>
           </div>
-          <svg class="w-4 h-4 text-gray-400 group-hover:text-[#6b46ff] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
+          <svg class="w-4 h-4 text-gray-400 group-hover:text-[#6b46ff] group-hover:translate-x-0.5 transition-all shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
       </div>
 
-      <!-- Footer Info -->
-      <div class="pt-4 mt-4 border-t border-gray-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-        <span>Velcro Merchant Rails</span>
-        <span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          Instant Payouts
-        </span>
+      <div class="px-5 py-3.5 bg-gray-50/70 dark:bg-slate-900/40 border-t border-gray-100 dark:border-slate-800 text-center text-[11px] text-gray-400">
+        Velcro Commercial Infrastructure &bull; Instant Settlement
       </div>
     </div>
   </div>
 
   <!-- VIP Modal -->
-  <div id="vip-modal" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center p-4 overflow-y-auto overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="vip-title">
-    <div class="modal-backdrop" onclick="closeVipModal()"></div>
-    <div class="relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl z-10 text-center animate-scale-up">
-      <!-- Mobile Sheet Drag Handle -->
-      <div class="sheet-drag-handle cursor-grab select-none shrink-0" style="touch-action: none;">
-        <div class="sheet-drag-pill"></div>
-      </div>
-      <button type="button" onclick="closeVipModal()" aria-label="Close"
-        class="absolute top-4 right-4 sm:top-5 sm:right-5 w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer z-20 active:scale-95 shadow-2xs">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-      
-      <div class="w-16 h-16 rounded-2xl bg-[#6b46ff]/10 text-[#6b46ff] flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 3h12l4 6-10 13L2 9Z"></path>
-          <path d="M11 3 8 9l4 13 4-13-3-6"></path>
-          <path d="M2 9h20"></path>
-        </svg>
-      </div>
-
-      <span class="inline-block px-3 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-full mb-2">High-Volume OTC</span>
-      <h3 id="vip-title" class="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white mb-2">Velcro VIP Desk</h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
-        Exclusive corporate and high-volume crypto liquidity for orders above <strong class="text-gray-900 dark:text-white">$10,000 (₦15M+)</strong>.
-      </p>
-
-      <div class="space-y-3 text-left mb-6 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-100 dark:border-slate-800">
-        <div class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200">
-          <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center shrink-0 font-bold text-xs">✓</div>
-          <span>Zero slippage & custom institutional rates</span>
-        </div>
-        <div class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200">
-          <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center shrink-0 font-bold text-xs">✓</div>
-          <span>Instant multi-million bank settlements</span>
-        </div>
-        <div class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200">
-          <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center shrink-0 font-bold text-xs">✓</div>
-          <span>Direct 24/7 dedicated OTC desk on WhatsApp</span>
-        </div>
-      </div>
-
-      <a href="https://wa.me/2347035428475?text=Hello%20Velcro%20VIP%20Desk,%20I%20would%20like%20to%20trade%20high%20volume%20crypto"
-        target="_blank" rel="noopener noreferrer"
-        class="w-full py-3.5 px-6 rounded-xl font-bold bg-[#6b46ff] hover:bg-[#5b36ef] text-white shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
-        <span>Chat with VIP Desk</span>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>
-        </svg>
-      </a>
-    </div>
-  </div>
-
-  <!-- Support Modal (Bread Style) -->
-  <div id="support-modal" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center p-4 overflow-y-auto overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="support-modal-title">
-    <div class="modal-backdrop" onclick="closeSupportModal()"></div>
-    <div class="relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl z-10 animate-scale-up">
-      <div class="sheet-drag-handle cursor-grab select-none shrink-0" style="touch-action: none;"><div class="sheet-drag-pill"></div></div>
-      <!-- Header -->
-      <div class="flex items-start justify-between pb-4 border-b border-gray-100 dark:border-slate-800/80">
-        <div>
-          <h2 id="support-modal-title" class="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Support</h2>
-          <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">Get quick help, share feedback, or talk to our team.</p>
-        </div>
-        <button type="button" onclick="closeSupportModal()" aria-label="Close"
-          class="shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+  <div id="vip-modal" class="asset-picker-modal" role="dialog" aria-modal="true" aria-labelledby="vip-title">
+    <div class="asset-picker-backdrop" onclick="closeVipModal()"></div>
+    <div class="asset-picker-sheet">
+      <!-- Header matching asset coin modal -->
+      <div class="asset-picker-header">
+        <h3 id="vip-title">Velcro VIP Desk</h3>
+        <button type="button" class="asset-picker-close" onclick="closeVipModal()" aria-label="Close">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
 
-      <!-- Action items -->
-      <div class="mt-4 space-y-2.5">
+      <div class="p-6 text-center">
+        <div class="w-14 h-14 rounded-2xl bg-[#6b46ff]/10 text-[#6b46ff] flex items-center justify-center mx-auto mb-3">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3h12l4 6-10 13L2 9Z"></path>
+            <path d="M11 3 8 9l4 13 4-13-3-6"></path>
+            <path d="M2 9h20"></path>
+          </svg>
+        </div>
+
+        <span class="inline-block px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[11px] font-bold rounded-full mb-2">High-Volume OTC</span>
+        <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-1.5">Private Client Execution</h4>
+        <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-5 max-w-xs mx-auto">
+          Exclusive institutional liquidity for orders above <strong class="text-gray-900 dark:text-white">$10,000 (₦15M+)</strong>.
+        </p>
+
+        <div class="text-left mb-5 divide-y divide-gray-100 dark:divide-slate-800/80 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 overflow-hidden text-xs">
+          <div class="flex items-center gap-2.5 p-3 text-gray-700 dark:text-gray-200">
+            <span class="text-emerald-500 font-bold">✓</span>
+            <span>Zero slippage &amp; institutional pricing</span>
+          </div>
+          <div class="flex items-center gap-2.5 p-3 text-gray-700 dark:text-gray-200">
+            <span class="text-emerald-500 font-bold">✓</span>
+            <span>Instant multi-million bank settlements</span>
+          </div>
+          <div class="flex items-center gap-2.5 p-3 text-gray-700 dark:text-gray-200">
+            <span class="text-emerald-500 font-bold">✓</span>
+            <span>Dedicated 24/7 OTC desk on WhatsApp</span>
+          </div>
+        </div>
+
+        <a href="https://wa.me/2347035428475?text=Hello%20Velcro%20VIP%20Desk,%20I%20would%20like%20to%20trade%20high%20volume%20crypto"
+          target="_blank" rel="noopener noreferrer"
+          style="background-color: #6b46ff !important; color: #ffffff !important;"
+          class="w-full py-3 px-5 rounded-xl font-bold shadow-md hover:opacity-90 flex items-center justify-center gap-2 transition-all cursor-pointer text-xs sm:text-sm">
+          <span>Chat with VIP Desk</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Support Modal -->
+  <div id="support-modal" class="asset-picker-modal" role="dialog" aria-modal="true" aria-labelledby="support-modal-title">
+    <div class="asset-picker-backdrop" onclick="closeSupportModal()"></div>
+    <div class="asset-picker-sheet">
+      <!-- Header matching asset coin modal -->
+      <div class="asset-picker-header">
+        <h3 id="support-modal-title">Support</h3>
+        <button type="button" class="asset-picker-close" onclick="closeSupportModal()" aria-label="Close">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content list matching asset coin modal -->
+      <div class="asset-picker-list">
         <!-- 1. WhatsApp -->
         <a href="https://wa.me/2347035428475?text=Hello%20Velcro%20Support,%20I%20need%20help%20with%20an%20exchange" target="_blank" rel="noopener noreferrer"
-          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800/80 hover:border-emerald-300 dark:hover:border-emerald-600/50 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <span class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-              </svg>
-            </span>
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">WhatsApp Chat</h3>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300">Fastest</span>
-              </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">Chat live with our 24/7 support agents</p>
+          class="asset-picker-item group">
+          <span class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+          </span>
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol flex items-center gap-2">
+              <span>WhatsApp Chat</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300">Fastest</span>
             </div>
+            <div class="asset-picker-name">Chat live with our 24/7 support agents</div>
           </div>
-          <svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
+          <svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
 
         <!-- 2. Email -->
         <a href="mailto:support@usevelcro.com?subject=Velcro%20Support%20Inquiry"
-          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800/80 hover:border-blue-300 dark:hover:border-blue-600/50 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-all group cursor-pointer">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <span class="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-              </svg>
-            </span>
-            <div class="min-w-0">
-              <h3 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Email Support</h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">support@usevelcro.com</p>
-            </div>
+          class="asset-picker-item group">
+          <span class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+            </svg>
+          </span>
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol">Email Support</div>
+            <div class="asset-picker-name">support@usevelcro.com</div>
           </div>
-          <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
+          <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
 
         <!-- 3. Community & Updates -->
         <a href="https://x.com/usevelcro" target="_blank" rel="noopener noreferrer"
-          class="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-slate-800/80 hover:border-[#6b46ff]/40 dark:hover:border-[#6b46ff]/50 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition-all group cursor-pointer">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <span class="w-11 h-11 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-[#6b46ff] dark:text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m3 11 18-5v12L3 14v-3z"></path>
-                <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
-              </svg>
-            </span>
-            <div class="min-w-0">
-              <h3 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-[#6b46ff] dark:group-hover:text-purple-400 transition-colors">Community &amp; Updates</h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">Follow @usevelcro on X for latest updates</p>
-            </div>
+          class="asset-picker-item group">
+          <span class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-950/60 text-[#6b46ff] dark:text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 11 18-5v12L3 14v-3z"></path>
+              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
+            </svg>
+          </span>
+          <div class="asset-picker-info">
+            <div class="asset-picker-symbol">Community &amp; Updates</div>
+            <div class="asset-picker-name">Follow @usevelcro on X for latest updates</div>
           </div>
-          <svg class="w-4 h-4 text-gray-400 group-hover:text-[#6b46ff] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
+          <svg class="w-4 h-4 text-gray-400 group-hover:text-[#6b46ff] group-hover:translate-x-0.5 transition-all shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
       </div>
 
-      <!-- Footer Status Pill -->
-      <div class="pt-4 mt-4 border-t border-gray-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-        <span>Velcro v2.0</span>
+      <div class="px-5 py-3.5 bg-gray-50/70 dark:bg-slate-900/40 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-gray-400">
+        <span>Velcro Support</span>
         <span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Support 24/7 Online
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          24/7 Live
         </span>
       </div>
     </div>
@@ -1757,12 +1691,12 @@
 
 
   <script src="/js/core.js?v=9"></script>
-  <script src="/js/rates.js?v=15"></script>
+  <script src="/js/rates.js?v=16"></script>
   <script src="/js/form.js?v=8"></script>
   <script src="/js/order.js?v=6"></script>
   <script src="/js/account.js?v=3"></script>
   <script src="/js/history.js?v=6"></script>
-  <script src="/js/main.js?v=25"></script>
+  <script src="/js/main.js?v=28"></script>
 
   <!-- WebMCP In-Browser Model Context Protocol Tool Registration -->
   <script>

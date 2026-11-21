@@ -770,15 +770,16 @@
   justify-content: flex-end;
   flex-direction: column;
 }
-.asset-picker-modal.open {
-  display: flex;
+.asset-picker-modal.open,
+.asset-picker-modal.flex:not(.hidden) {
+  display: flex !important;
 }
 .asset-picker-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .asset-picker-sheet {
   position: relative;
@@ -805,6 +806,7 @@
   font-weight: 600;
   color: #111827;
   margin: 0;
+  text-align: center;
 }
 .asset-picker-back {
   position: absolute;
@@ -821,9 +823,40 @@
   justify-content: center;
   cursor: pointer;
   color: #374151;
+  transition: all 0.15s ease;
 }
 .asset-picker-back:hover {
   background: #e5e7eb;
+}
+.asset-picker-close {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+.asset-picker-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.dark .asset-picker-close {
+  background: #1e293b;
+  color: #94a3b8;
+}
+.dark .asset-picker-close:hover {
+  background: #334155;
+  color: #ffffff;
 }
 .asset-picker-search {
   padding: 12px 20px 4px;
@@ -1490,27 +1523,29 @@
 #support-modal > div:last-child,
 #vip-modal > div:last-child,
 #payment-modal > div:last-child,
-#country-picker-modal .country-picker-card {
+#country-picker-modal .country-picker-card,
+#country-picker-modal .asset-picker-sheet {
   width: 100% !important;
-  max-width: 440px !important;
+  max-width: 420px !important;
   max-height: min(600px, 86vh) !important;
   margin: auto !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   background-color: #ffffff !important;
-  border-radius: 24px !important;
+  border-radius: 20px !important;
   border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18) !important;
 }
 
 .dark #support-modal > div:last-child,
 .dark #vip-modal > div:last-child,
 .dark #payment-modal > div:last-child,
-.dark #country-picker-modal .country-picker-card {
+.dark #country-picker-modal .country-picker-card,
+.dark #country-picker-modal .asset-picker-sheet {
   background-color: #0f172a !important;
   border-color: #1e293b !important;
-  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
 }
 
 #tour-overlay > div:last-child {
@@ -1696,10 +1731,11 @@
 .max-h-\[380px\] { max-height: 380px !important; }
 
 #country-picker-list {
-  max-height: 380px !important;
+  max-height: 400px !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
   scrollbar-width: thin !important;
+  padding: 4px 0 24px !important;
 }
 
 @media (max-width: 639px) {
