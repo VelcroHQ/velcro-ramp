@@ -412,6 +412,19 @@ async function generateWalletAddress() {
     return;
   }
   try {
+    const isMoMo = (typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry)?.channel : null) === 'MOBILEMONEY' || ((currentCountry === 'GH' || currentCountry === 'KE'));
+    const beneficiary = isMoMo ? {
+      holder_type: 'INDIVIDUAL',
+      holder_name: accountName,
+      mobile_number: bankNum,
+      mobile_network: currentBankSwitchCode || currentBankCode
+    } : {
+      holder_type: 'INDIVIDUAL',
+      holder_name: accountName,
+      account_number: bankNum,
+      bank_code: currentBankSwitchCode || currentBankCode
+    };
+
     const res = await fetch(`${API_BASE}/api/initiate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -421,17 +434,10 @@ async function generateWalletAddress() {
         country: currentCountry,
         currency: currentCurrency,
         asset: currentSwitchAsset,
-        channel: (typeof getCountryConfig === 'function' ? getCountryConfig(currentCountry)?.channel : null) || ((currentCountry === 'GH' || currentCountry === 'KE') ? 'MOBILEMONEY' : 'BANK'),
+        channel: isMoMo ? 'MOBILEMONEY' : 'BANK',
         reason: 'PERSONAL_TRANSFER',
         narration: 'Crypto Offramp Settlement',
-        beneficiary: {
-          holder_type: 'INDIVIDUAL',
-          holder_name: accountName,
-          account_number: bankNum,
-          mobile_number: bankNum,
-          bank_code: currentBankSwitchCode || currentBankCode,
-          mobile_network: currentBankSwitchCode || currentBankCode
-        },
+        beneficiary,
         email: localStorage.getItem('velcro_user_email') || '', ref: localStorage.getItem('velcro_ref') || ''
       })
     });

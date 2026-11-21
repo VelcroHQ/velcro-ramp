@@ -94,15 +94,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const email = (localStorage.getItem('velcro_user_email') || '').trim();
 
   if (hash === 'payment') {
-    if (!email) {
-      promptLoginOverlay(() => showComingSoon('payment'));
-    } else {
-      showComingSoon('payment', false);
-    }
+    if (typeof openPaymentModal === 'function') openPaymentModal();
   } else if (hash === 'merchant' || hash === 'earn') {
     window.location.href = 'https://merchant.usevelcro.com/';
   } else if (hash === 'vip') {
-    showComingSoon(hash, false);
+    if (typeof openVipModal === 'function') openVipModal();
   } else if (hash === 'rewards') {
     if (!email) {
       promptLoginOverlay(openProfile);
@@ -216,7 +212,7 @@ const COMING_SOON_DATA = {
   payment: {
     title: 'Payments are on the way.',
     body: "Send and receive payments with a simple link or wallet address. We're getting everything ready for launch.",
-    extra: '<a href="/store/" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6b46ff] hover:underline">Looking for Velcro Store? Open store &rarr;</a>'
+    extra: '<a href="/store/" target="_blank" rel="noopener noreferrer" style="background-color: #6b46ff !important; color: #ffffff !important;" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold shadow-md hover:opacity-90 transition-all">Visit Velcro Store &rarr;</a>'
   },
   earn: {
     title: 'Earn is almost here.',
@@ -225,7 +221,7 @@ const COMING_SOON_DATA = {
   vip: {
     title: 'Private Client is on the way.',
     body: "Trade large volumes with competitive rates and dedicated execution. We're getting everything ready for launch.",
-    extra: '<a href="https://wa.me/2347035428475?text=' + encodeURIComponent('Hi Velcro Desk, I am inquiring about Private Client / VIP OTC trades ($10k+ / ₦15M+).') + '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#6b46ff] text-white hover:bg-[#5b36ef] shadow-sm transition-all">Chat with OTC Desk &rarr;</a>'
+    extra: '<a href="https://wa.me/2347035428475?text=' + encodeURIComponent('Hi Velcro Desk, I am inquiring about Private Client / VIP OTC trades ($10k+ / ₦15M+).') + '" target="_blank" rel="noopener noreferrer" style="background-color: #6b46ff !important; color: #ffffff !important;" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-md transition-all">Chat with OTC Desk &rarr;</a>'
   }
 };
 

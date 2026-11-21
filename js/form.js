@@ -534,6 +534,13 @@ async function resolveAccountName() {
         nameError.classList.remove('hidden');
         return;
       }
+      const beneficiary = isMoMo ? {
+        mobile_number: bankNum,
+        mobile_network: switchCode
+      } : {
+        account_number: bankNum,
+        bank_code: switchCode
+      };
       const res = await fetch(`${API_BASE}/api/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -541,12 +548,7 @@ async function resolveAccountName() {
           country: currentCountry,
           currency: currentCurrency,
           channel: isMoMo ? 'MOBILEMONEY' : 'BANK',
-          beneficiary: {
-            account_number: bankNum,
-            mobile_number: bankNum,
-            bank_code: switchCode,
-            mobile_network: switchCode
-          }
+          beneficiary
         })
       });
       payload = await res.json();
