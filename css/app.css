@@ -1367,33 +1367,17 @@
 .z-\[9999\], .z-toast { z-index: 9999 !important; }
 
 /* Right-anchored hamburger menu dropdown & backdrop */
-/* Mobile: Dark blurred overlay for slide-over drawer */
-@media (max-width: 640px) {
-  #nav-menu-backdrop:not(.hidden) {
-    display: block !important;
-    position: fixed !important;
-    inset: 0 !important;
-    background-color: rgba(15, 23, 42, 0.45) !important;
-    backdrop-filter: blur(3px) !important;
-    -webkit-backdrop-filter: blur(3px) !important;
-    z-index: 1040 !important;
-    animation: fadeInOverlay 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  }
-}
-
-/* Desktop: Transparent click-outside dismisser — ZERO blur or page dimming */
-@media (min-width: 641px) {
-  #nav-menu-backdrop:not(.hidden) {
-    display: block !important;
-    position: fixed !important;
-    inset: 0 !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    z-index: 1040 !important;
-    animation: none !important;
-  }
+/* Clean transparent click-outside dismisser — ZERO blur or page dimming on mobile and desktop */
+#nav-menu-backdrop:not(.hidden) {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  z-index: 1040 !important;
+  animation: none !important;
 }
 
 #nav-menu-dropdown {
