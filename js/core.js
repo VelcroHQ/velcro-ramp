@@ -735,6 +735,7 @@ function startRateExpiryTimer() {
 
 // --- Navigation & Unsaved Changes Guard ---
 var _isNavBackTracking = false;
+var _poppingModal = false;
 
 function pushModalHistory(name) {
   try {
@@ -746,9 +747,11 @@ function pushModalHistory(name) {
 
 function popModalHistory(name) {
   try {
-    if (history.state && history.state.velcroModal === name) {
+    if (!_poppingModal && history.state && history.state.velcroModal === name) {
+      _poppingModal = true;
       _isNavBackTracking = true;
       history.back();
+      setTimeout(() => { _poppingModal = false; }, 300);
     }
   } catch (e) { /* ignore */ }
 }
@@ -818,6 +821,11 @@ function closeTopOpenModal() {
     return true;
   }
   if (top === 'picker') {
+    const sellModal = document.getElementById('sell-asset-options');
+    const buyModal = document.getElementById('buy-asset-options');
+    if (sellModal) sellModal.classList.remove('open');
+    if (buyModal) buyModal.classList.remove('open');
+    document.body.style.overflow = '';
     if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
     return true;
   }

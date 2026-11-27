@@ -14,6 +14,7 @@
 
   // Navigation Guard: Intercept browser & device Back button
   window.addEventListener('popstate', function () {
+    if (typeof _poppingModal !== 'undefined') _poppingModal = false;
     if (_isNavBackTracking) {
       _isNavBackTracking = false;
       return;

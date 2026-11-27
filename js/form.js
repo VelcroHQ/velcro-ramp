@@ -111,7 +111,6 @@ if (typeof window !== 'undefined' && window.visualViewport) {
 }
 
 function closeAllDropdowns() {
-  if (typeof popModalHistory === 'function') popModalHistory('picker');
   // Do not blur search inputs inside open modals/dropdowns when closing
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
     const tag = document.activeElement.tagName;
@@ -458,15 +457,15 @@ function selectSellNetwork(id, logo, name, optionEl) {
   populateBanks();
 }
 
-// HostFi coins take any amount (the payout follows what arrives), so the amount inputs are hidden.
 function setSellAnyAmount(on) {
-  ['sell-amount-step', 'sell-swap-wrap', 'sell-receive-row'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', on));
-  ['sell-any-amount', 'sell-receive-any'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', !on));
-  if (on) {
-    setFmt('sell-amount', '', 4);
-    setFmt('sell-receive', '', 2);
-    document.getElementById('sell-preview')?.classList.add('hidden');
-  }
+  // Keep inputs active so users can input and calculate their rates
+  const anyAmountEl = document.getElementById('sell-any-amount');
+  const receiveAnyEl = document.getElementById('sell-receive-any');
+  if (anyAmountEl) anyAmountEl.classList.add('hidden');
+  if (receiveAnyEl) receiveAnyEl.classList.add('hidden');
+  document.getElementById('sell-amount-step')?.classList.remove('hidden', 'opacity-50', 'pointer-events-none');
+  document.getElementById('sell-swap-wrap')?.classList.remove('hidden');
+  document.getElementById('sell-receive-row')?.classList.remove('hidden');
 }
 
 function selectSellBank(name, switchCode, pajId, optionEl) {
@@ -622,7 +621,9 @@ async function selectBuyAsset(symbol, logo, name, provider) {
   // Close modal picker
   closeBuyAssetPicker();
   document.querySelectorAll('#buy-asset-list .asset-picker-item').forEach(o => o.classList.remove('selected'));
-  if (event && event.currentTarget) event.currentTarget.classList.add('selected');
+  document.querySelectorAll('#buy-asset-list .asset-picker-item').forEach(o => {
+    if (o.dataset.symbol === symbol) o.classList.add('selected');
+  });
 
   document.getElementById('buy-amount-label').textContent = symbol;
   safeSetText('buy-confirm-asset', symbol);
