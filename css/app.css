@@ -1202,6 +1202,22 @@
 .dark .bg-white\/80 { background-color: rgba(15, 23, 42, 0.6) !important; border-color: rgba(51, 65, 85, 0.5) !important; }
 .dark .bg-gray-50\/60 { background-color: rgba(30, 41, 59, 0.4) !important; border-color: rgba(51, 65, 85, 0.5) !important; }
 
+/* Login Buttons — Strictly Velcro brand green */
+#btn-login-nav {
+  background-color: #a8cf45 !important;
+  color: #0D0D59 !important;
+}
+#btn-login-nav:hover {
+  background-color: #97bd3a !important;
+}
+#login-submit-btn {
+  background-color: #a8cf45 !important;
+  color: #0D0D59 !important;
+}
+#login-submit-btn:hover {
+  background-color: #97bd3a !important;
+}
+
 /* ─── Email prompt (shares the success-modal card) ─── */
 .login-input {
   width: 100%;

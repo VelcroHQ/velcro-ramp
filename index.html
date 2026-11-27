@@ -201,7 +201,7 @@
   <script>if (typeof QRCode === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'); }</script>
 
 
-  <link href="/css/app.css?v=32" rel="stylesheet">
+  <link href="/css/app.css?v=33" rel="stylesheet">
 </head>
 
 <body class="page-bg min-h-screen" style="padding-bottom: 80px">
@@ -227,6 +227,7 @@
           <label for="login-email" class="block mb-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">Email address</label>
           <input type="email" id="login-email" required autocomplete="email" inputmode="email" placeholder="you@example.com" class="login-input placeholder-gray-400">
           <button type="submit" id="login-submit-btn"
+            style="background-color: #a8cf45 !important; color: #0D0D59 !important;"
             class="mt-4 w-full h-12 rounded-xl bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy text-sm font-bold transition-colors inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-velcro-green/30 cursor-pointer">
             Continue
           </button>
@@ -280,7 +281,8 @@
         <div class="flex items-center gap-2 sm:gap-3">
           <!-- Login button (shown when no email is set) -->
           <button type="button" id="btn-login-nav" onclick="promptLoginOverlay()"
-            class="hidden items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap bg-[#6b46ff] hover:bg-[#5b36ef] text-white shadow-sm hover:shadow transition-all cursor-pointer">
+            style="background-color: #a8cf45 !important; color: #0D0D59 !important;"
+            class="hidden items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap bg-velcro-green hover:bg-velcro-green-dark text-velcro-navy shadow-sm hover:shadow transition-all cursor-pointer">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <rect width="20" height="16" x="2" y="4" rx="2"></rect>
               <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
